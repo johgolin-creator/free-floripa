@@ -12,6 +12,29 @@ export const functions = [
   "Promotor"
 ] as const;
 
+export const experienceLevels = [
+  {
+    value: "Iniciante",
+    label: "Estou comecando",
+    description: "Liberado para vagas simples ou como auxiliar."
+  },
+  {
+    value: "Poucas diarias",
+    label: "Ja fiz algumas diarias",
+    description: "Tem pratica inicial e precisa de orientacao."
+  },
+  {
+    value: "Experiente",
+    label: "Tenho experiencia",
+    description: "Pode assumir a funcao com autonomia."
+  },
+  {
+    value: "Profissional experiente",
+    label: "Sou profissional experiente",
+    description: "Indicado para vagas exigentes, urgentes e alto fluxo."
+  }
+] as const;
+
 export const neighborhoods = [
   "Jurerê",
   "Canasvieiras",
@@ -77,6 +100,11 @@ export const workers: WorkerProfile[] = [
     city: "Florianópolis",
     neighborhood: "Campeche",
     functions: ["Garçom", "Recepcionista", "Promotor"],
+    functionExperience: [
+      { function: "Garçom", level: "Profissional experiente", months: 60, acceptsAssistant: false, verified: true },
+      { function: "Recepcionista", level: "Experiente", months: 24, acceptsAssistant: false, verified: true },
+      { function: "Promotor", level: "Experiente", months: 18, acceptsAssistant: true, verified: false }
+    ],
     experience: "5 temporadas em eventos, restaurantes e beach clubs.",
     description: "Atendimento ágil, boa comunicação e disponibilidade para turnos noturnos.",
     availability: "Noites, fins de semana e feriados",
@@ -102,6 +130,10 @@ export const workers: WorkerProfile[] = [
     city: "Florianópolis",
     neighborhood: "Ingleses",
     functions: ["Bartender", "Garçom"],
+    functionExperience: [
+      { function: "Bartender", level: "Profissional experiente", months: 48, acceptsAssistant: false, verified: true },
+      { function: "Garçom", level: "Experiente", months: 30, acceptsAssistant: true, verified: true }
+    ],
     experience: "Bartender em bares de alto movimento e festas privadas.",
     description: "Drinks clássicos, atendimento em balcão e montagem de bar.",
     availability: "Quinta a domingo",
@@ -127,6 +159,10 @@ export const workers: WorkerProfile[] = [
     city: "Florianópolis",
     neighborhood: "Centro",
     functions: ["Operador de caixa", "Recepcionista"],
+    functionExperience: [
+      { function: "Operador de caixa", level: "Experiente", months: 20, acceptsAssistant: false, verified: false },
+      { function: "Recepcionista", level: "Poucas diarias", months: 6, acceptsAssistant: true, verified: false }
+    ],
     experience: "Caixa em casa noturna, controle de lista e atendimento.",
     description: "Organizada, pontual e acostumada com fluxo grande de pessoas.",
     availability: "Período noturno",
@@ -152,6 +188,10 @@ export const workers: WorkerProfile[] = [
     city: "Florianópolis",
     neighborhood: "Lagoa da Conceição",
     functions: ["Montador de eventos", "Limpeza"],
+    functionExperience: [
+      { function: "Montador de eventos", level: "Profissional experiente", months: 42, acceptsAssistant: false, verified: true },
+      { function: "Limpeza", level: "Experiente", months: 24, acceptsAssistant: true, verified: true }
+    ],
     experience: "Montagem, desmontagem, carga leve e pós-evento.",
     description: "Força operacional para eventos, com disponibilidade de última hora.",
     availability: "Integral",

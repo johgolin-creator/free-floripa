@@ -6,11 +6,11 @@ import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate } from "../lib/format";
-import { getOpenSlots } from "../lib/rules";
+import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getOpenSlots } from "../lib/rules";
 
 export function JobDetailsPage() {
   const { id } = useParams();
-  const { state, applyToJob, subscribeProfessional, buyCredits } = useAppStore();
+  const { state, currentWorker, applyToJob, subscribeProfessional, buyCredits } = useAppStore();
   const [message, setMessage] = useState("");
   const [showPlans, setShowPlans] = useState(false);
   const job = state.jobs.find((item) => item.id === id);
@@ -21,6 +21,7 @@ export function JobDetailsPage() {
   const company = state.companies.find((item) => item.id === currentJob.companyId);
   const application = state.applications.find((item) => item.jobId === currentJob.id && item.workerId === state.selectedWorkerId);
   const confirmed = application?.status === "Aprovada";
+  const workerExperience = getFunctionExperience(currentWorker, currentJob.function);
 
   function handleApply() {
     const result = applyToJob(currentJob.id);
@@ -84,6 +85,13 @@ export function JobDetailsPage() {
               <span className="flex items-center gap-2"><Users size={17} /> {currentJob.candidates} candidatos</span>
               <span className="flex items-center gap-2"><Building2 size={17} /> {company?.category}</span>
               <span className="flex items-center gap-2"><CheckCircle2 size={17} /> Contato após confirmação</span>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <span className="text-xs font-black uppercase text-slate-500">Seu nivel nesta funcao</span>
+              <strong className="mt-1 block text-sm text-navy-950">
+                {workerExperience ? getExperienceLabel(workerExperience.level) : "Funcao nao declarada"}
+              </strong>
+              <p className="mt-1 text-xs font-semibold text-slate-500">{getCompatibilityLabel(currentWorker, currentJob.function)}</p>
             </div>
             <button type="button" onClick={handleApply} disabled={Boolean(application) || getOpenSlots(currentJob) === 0} className="primary">
               {application ? `Status: ${application.status}` : "Candidatar-se"}

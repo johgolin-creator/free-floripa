@@ -11,6 +11,16 @@ export type JobFunction =
   | "Montador de eventos"
   | "Promotor";
 
+export type ExperienceLevel = "Iniciante" | "Poucas diarias" | "Experiente" | "Profissional experiente";
+
+export interface FunctionExperience {
+  function: JobFunction;
+  level: ExperienceLevel;
+  months: number;
+  acceptsAssistant: boolean;
+  verified: boolean;
+}
+
 export type Neighborhood =
   | "Jurerê"
   | "Canasvieiras"
@@ -42,6 +52,7 @@ export interface WorkerProfile {
   city: string;
   neighborhood: Neighborhood;
   functions: JobFunction[];
+  functionExperience: FunctionExperience[];
   experience: string;
   description: string;
   availability: string;

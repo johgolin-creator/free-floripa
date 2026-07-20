@@ -144,7 +144,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const job = state.jobs.find((item) => item.id === jobId);
         if (!job) return { ok: false, message: "Vaga não encontrada." };
 
-        const result = canApply(job, state.applications, currentWorker.id, state.subscription.creditsRemaining);
+        const result = canApply(job, state.applications, currentWorker, state.subscription.creditsRemaining);
         if (!result.allowed) {
           return { ok: false, message: result.reason, requiresPlan: state.subscription.creditsRemaining <= 0 };
         }

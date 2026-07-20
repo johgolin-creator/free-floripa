@@ -7,6 +7,7 @@ create type public.user_role as enum ('trabalhador', 'empresa', 'admin');
 create type public.application_status as enum ('Enviada', 'Em análise', 'Aprovada', 'Recusada', 'Cancelada', 'Trabalho concluído', 'Falta registrada');
 create type public.payment_method as enum ('Dinheiro', 'Pix', 'Transferência', 'A combinar');
 create type public.shift_status as enum ('Ainda não chegou', 'Fez check-in', 'Finalizou o turno');
+create type public.experience_level as enum ('Iniciante', 'Poucas diarias', 'Experiente', 'Profissional experiente');
 
 create table public.users (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -45,6 +46,19 @@ create table public.worker_profiles (
   verified boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+create table public.worker_function_experience (
+  id uuid primary key default gen_random_uuid(),
+  worker_id uuid not null references public.worker_profiles(id) on delete cascade,
+  function_name text not null,
+  level public.experience_level not null default 'Iniciante',
+  months integer not null default 0 check (months >= 0),
+  accepts_assistant boolean not null default true,
+  verified boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (worker_id, function_name)
 );
 
 create table public.company_profiles (
@@ -190,6 +204,7 @@ $$;
 
 create trigger users_updated_at before update on public.users for each row execute function public.set_updated_at();
 create trigger worker_profiles_updated_at before update on public.worker_profiles for each row execute function public.set_updated_at();
+create trigger worker_function_experience_updated_at before update on public.worker_function_experience for each row execute function public.set_updated_at();
 create trigger company_profiles_updated_at before update on public.company_profiles for each row execute function public.set_updated_at();
 create trigger jobs_updated_at before update on public.jobs for each row execute function public.set_updated_at();
 create trigger applications_updated_at before update on public.applications for each row execute function public.set_updated_at();
@@ -199,6 +214,7 @@ create trigger application_credits_updated_at before update on public.applicatio
 
 alter table public.users enable row level security;
 alter table public.worker_profiles enable row level security;
+alter table public.worker_function_experience enable row level security;
 alter table public.company_profiles enable row level security;
 alter table public.job_categories enable row level security;
 alter table public.jobs enable row level security;
@@ -218,6 +234,12 @@ create policy "categories are public" on public.job_categories for select using 
 
 create policy "workers public limited read" on public.worker_profiles for select using (true);
 create policy "workers manage own" on public.worker_profiles for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "worker function experience public read" on public.worker_function_experience for select using (true);
+create policy "workers manage own function experience" on public.worker_function_experience for all using (
+  exists (select 1 from public.worker_profiles w where w.id = worker_id and w.user_id = auth.uid())
+) with check (
+  exists (select 1 from public.worker_profiles w where w.id = worker_id and w.user_id = auth.uid())
+);
 
 create policy "companies public limited read" on public.company_profiles for select using (true);
 create policy "companies manage own" on public.company_profiles for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

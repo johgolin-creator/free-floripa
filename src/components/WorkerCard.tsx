@@ -1,13 +1,27 @@
-import { CheckCircle2, Heart, MapPin, Star } from "lucide-react";
+import { Award, CheckCircle2, Heart, MapPin, Star } from "lucide-react";
 import { useAppStore } from "../lib/store";
-import { calculateReliability } from "../lib/rules";
-import type { WorkerProfile } from "../lib/types";
+import { calculateReliability, getCompatibilityLabel, getExperienceLabel, getFunctionExperience } from "../lib/rules";
+import type { JobFunction, WorkerProfile } from "../lib/types";
 
-export function WorkerCard({ worker, showActions = true }: { worker: WorkerProfile; showActions?: boolean }) {
+export function WorkerCard({
+  worker,
+  showActions = true,
+  functionFocus
+}: {
+  worker: WorkerProfile;
+  showActions?: boolean;
+  functionFocus?: JobFunction;
+}) {
   const { state, toggleFavorite, updateApplicationStatus } = useAppStore();
   const favorite = state.favoriteWorkerIds.includes(worker.id);
   const reliability = calculateReliability(worker);
   const pendingApplication = state.applications.find((application) => application.workerId === worker.id && application.status !== "Aprovada");
+  const focusedExperience = functionFocus ? getFunctionExperience(worker, functionFocus) : null;
+  const visibleExperiences = functionFocus
+    ? focusedExperience
+      ? [focusedExperience]
+      : []
+    : worker.functions.map((item) => getFunctionExperience(worker, item)).filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   return (
     <article className="card grid gap-4 p-4">
@@ -26,6 +40,22 @@ export function WorkerCard({ worker, showActions = true }: { worker: WorkerProfi
           <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
             <MapPin size={15} /> {worker.neighborhood} · até {worker.maxDistanceKm} km
           </p>
+        </div>
+      </div>
+
+      <div className="grid gap-2">
+        {functionFocus && (
+          <span className={`badge ${focusedExperience?.verified ? "bg-aqua-100 text-aqua-700" : ""}`}>
+            <Award size={14} /> {getCompatibilityLabel(worker, functionFocus)}
+          </span>
+        )}
+        <div className="flex flex-wrap gap-2">
+          {visibleExperiences.slice(0, 4).map((experience) => (
+            <span key={experience.function} className="badge">
+              {experience.function}: {getExperienceLabel(experience.level)}
+              {experience.acceptsAssistant ? " + auxiliar" : ""}
+            </span>
+          ))}
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { ArrowLeft, Building2, Camera, CheckCircle2, LogIn, UserRound } from "lucide-react";
-import { functions } from "../data/demoData";
+import { experienceLevels, functions } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 
 export function LoginPage() {
@@ -32,6 +32,7 @@ export function LoginPage() {
 export function WorkerSignupPage() {
   const { setRole } = useAppStore();
   const navigate = useNavigate();
+  const [selectedFunctions, setSelectedFunctions] = useState<string[]>(["Garçom"]);
 
   return (
     <AuthShell title="Cadastro do trabalhador" description="Crie seu perfil para receber vagas de turnos, diárias e eventos.">
@@ -54,14 +55,49 @@ export function WorkerSignupPage() {
           <label className="label">Bairro<input className="input" required placeholder="Campeche" /></label>
         </div>
         <fieldset className="rounded-lg border border-slate-200 p-3">
-          <legend className="px-1 text-sm font-black text-slate-600">Profissões que exerce</legend>
-          <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3">
+          <legend className="px-1 text-sm font-black text-slate-600">Profissoes e nivel de experiencia</legend>
+          <div className="mt-2 grid gap-2 md:grid-cols-2">
             {functions.map((item) => (
-              <label key={item} className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-                <input type="checkbox" className="h-4 w-4 accent-aqua-500" /> {item}
-              </label>
+              <div key={item} className="rounded-lg border border-slate-200 bg-white p-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+                  <input
+                    type="checkbox"
+                    name="functions"
+                    value={item}
+                    checked={selectedFunctions.includes(item)}
+                    onChange={(event) => {
+                      setSelectedFunctions((current) =>
+                        event.target.checked ? [...current, item] : current.filter((value) => value !== item)
+                      );
+                    }}
+                    className="h-4 w-4 accent-aqua-500"
+                  />
+                  {item}
+                </label>
+                {selectedFunctions.includes(item) && (
+                  <div className="mt-3 grid gap-2">
+                    <label className="label">
+                      Nivel nesta funcao
+                      <select name={`level-${item}`} className="input">
+                        {experienceLevels.map((level) => (
+                          <option key={level.value} value={level.value}>
+                            {level.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                      <input type="checkbox" defaultChecked className="h-4 w-4 accent-aqua-500" />
+                      Aceito comecar como auxiliar nessa funcao
+                    </label>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
+          <p className="mt-3 text-xs font-semibold leading-5 text-slate-500">
+            Informe com sinceridade. Avaliacoes ruins podem limitar novas vagas nessa funcao.
+          </p>
         </fieldset>
         <label className="label">Experiência profissional<textarea className="input min-h-20 py-3" required /></label>
         <label className="label">Pequena descrição<textarea className="input min-h-20 py-3" required /></label>

@@ -33,7 +33,7 @@ export function CandidatesPage() {
                     if (!worker) return null;
                     return (
                       <div key={application.id} className="grid gap-2">
-                        <WorkerCard worker={worker} />
+                        <WorkerCard worker={worker} functionFocus={job.function} />
                         <div className="card grid gap-2 p-3 md:grid-cols-3">
                           <span className="badge justify-center">{application.status}</span>
                           <button type="button" onClick={() => alert(updateApplicationStatus(application.id, "Recusada").message)} className="secondary">

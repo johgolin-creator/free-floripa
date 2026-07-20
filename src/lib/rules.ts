@@ -1,4 +1,11 @@
-import type { Application, ApplicationStatus, Job, WorkerProfile } from "./types";
+import type { Application, ApplicationStatus, ExperienceLevel, FunctionExperience, Job, JobFunction, WorkerProfile } from "./types";
+
+export const experienceRank: Record<ExperienceLevel, number> = {
+  Iniciante: 1,
+  "Poucas diarias": 2,
+  Experiente: 3,
+  "Profissional experiente": 4
+};
 
 export function calculateReliability(worker: WorkerProfile) {
   const reviewScore = Math.round((worker.rating / 5) * 100);
@@ -21,18 +28,54 @@ export function getOpenSlots(job: Job) {
   return Math.max(0, job.quantity - job.filled);
 }
 
-export function canApply(job: Job, applications: Application[], workerId: string, creditsRemaining: number) {
+export function getFunctionExperience(worker: WorkerProfile, functionName: JobFunction): FunctionExperience | null {
+  const declared = worker.functionExperience?.find((item) => item.function === functionName);
+  if (declared) return declared;
+  if (!worker.functions.includes(functionName)) return null;
+
+  return {
+    function: functionName,
+    level: worker.verified ? "Experiente" : "Poucas diarias",
+    months: Math.max(1, Math.round(worker.completedJobs / Math.max(1, worker.functions.length))),
+    acceptsAssistant: true,
+    verified: worker.verified
+  };
+}
+
+export function getExperienceLabel(level: ExperienceLevel) {
+  if (level === "Iniciante") return "Estou comecando";
+  if (level === "Poucas diarias") return "Poucas diarias";
+  return level;
+}
+
+export function getCompatibilityLabel(worker: WorkerProfile, functionName: JobFunction) {
+  const experience = getFunctionExperience(worker, functionName);
+  if (!experience) return "Funcao nao declarada";
+  if (experience.level === "Iniciante") return experience.acceptsAssistant ? "Somente como auxiliar" : "Iniciante";
+  if (experience.level === "Poucas diarias") return "Precisa de orientacao";
+  if (experience.verified) return "Experiencia verificada";
+  return "Nivel declarado";
+}
+
+export function canApply(job: Job, applications: Application[], worker: WorkerProfile, creditsRemaining: number) {
   if (getOpenSlots(job) <= 0) {
-    return { allowed: false, reason: "Todas as vagas já foram preenchidas." };
+    return { allowed: false, reason: "Todas as vagas ja foram preenchidas." };
   }
 
-  const duplicated = applications.some((application) => application.jobId === job.id && application.workerId === workerId);
+  const duplicated = applications.some((application) => application.jobId === job.id && application.workerId === worker.id);
   if (duplicated) {
-    return { allowed: false, reason: "Você já se candidatou para esta vaga." };
+    return { allowed: false, reason: "Voce ja se candidatou para esta vaga." };
+  }
+
+  if (!getFunctionExperience(worker, job.function)) {
+    return {
+      allowed: false,
+      reason: "Antes de se candidatar, adicione esta funcao ao perfil e informe seu nivel de experiencia."
+    };
   }
 
   if (creditsRemaining <= 0) {
-    return { allowed: false, reason: "Você não possui candidaturas disponíveis." };
+    return { allowed: false, reason: "Voce nao possui candidaturas disponiveis." };
   }
 
   return { allowed: true, reason: "" };

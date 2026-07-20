@@ -1,11 +1,14 @@
 import { BadgeCheck, Edit3, Star } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { useAppStore } from "../lib/store";
-import { calculateReliability } from "../lib/rules";
+import { calculateReliability, getExperienceLabel, getFunctionExperience } from "../lib/rules";
 
 export function WorkerProfilePage() {
   const { currentWorker } = useAppStore();
   const reliability = calculateReliability(currentWorker);
+  const functionExperiences = currentWorker.functions
+    .map((item) => getFunctionExperience(currentWorker, item))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   return (
     <div>
@@ -44,6 +47,20 @@ export function WorkerProfilePage() {
               <h3 className="font-black text-navy-950">Descrição</h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">{currentWorker.description}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">Disponibilidade: {currentWorker.availability}</p>
+              <h3 className="mt-5 font-black text-navy-950">Nivel por profissao</h3>
+              <div className="mt-2 grid gap-2">
+                {functionExperiences.map((experience) => (
+                  <div key={experience.function} className="rounded-lg bg-slate-50 p-3">
+                    <span className="text-xs font-black uppercase text-slate-500">{experience.function}</span>
+                    <strong className="mt-1 block text-sm text-navy-950">{getExperienceLabel(experience.level)}</strong>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">
+                      {experience.months} meses informados
+                      {experience.acceptsAssistant ? " � aceita auxiliar" : ""}
+                      {experience.verified ? " � verificado" : ""}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
             <div>
               <h3 className="font-black text-navy-950">Avaliações recebidas</h3>
