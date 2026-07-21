@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import logoUrl from "../assets/free-floripa-logo.png";
+import logoUrl from "../assets/free-floripa-logo.jpg?inline";
 import { BrandLogo } from "../components/BrandLogo";
 import { JobCard } from "../components/JobCard";
 import { functions } from "../data/demoData";

@@ -1,4 +1,4 @@
-import logoUrl from "../assets/free-floripa-logo.png";
+import logoUrl from "../assets/free-floripa-logo.jpg?inline";
 
 export function BrandLogo({ compact = false, inverted = false }: { compact?: boolean; inverted?: boolean }) {
   return (
