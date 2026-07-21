@@ -25,7 +25,7 @@ export function ApplicationsPage() {
                   <span className="badge">{application.status}</span>
                   <h3 className="mt-2 font-black text-navy-950">{job.title}</h3>
                   <p className="text-sm text-slate-600">
-                    {company?.establishmentName} · {job.neighborhood} · {formatCurrency(job.dailyValue)}
+                    {company?.establishmentName} - {job.neighborhood} - {formatCurrency(job.dailyValue)}
                   </p>
                   <p className="mt-1 text-xs font-semibold text-slate-500">Enviada em {formatDateTime(application.createdAt)}</p>
                 </div>

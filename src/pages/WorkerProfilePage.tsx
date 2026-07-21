@@ -47,7 +47,7 @@ export function WorkerProfilePage() {
               <h3 className="font-black text-navy-950">Descrição</h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">{currentWorker.description}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">Disponibilidade: {currentWorker.availability}</p>
-              <h3 className="mt-5 font-black text-navy-950">Nivel por profissao</h3>
+              <h3 className="mt-5 font-black text-navy-950">Nível por profissão</h3>
               <div className="mt-2 grid gap-2">
                 {functionExperiences.map((experience) => (
                   <div key={experience.function} className="rounded-lg bg-slate-50 p-3">
@@ -55,8 +55,8 @@ export function WorkerProfilePage() {
                     <strong className="mt-1 block text-sm text-navy-950">{getExperienceLabel(experience.level)}</strong>
                     <p className="mt-1 text-xs font-semibold text-slate-500">
                       {experience.months} meses informados
-                      {experience.acceptsAssistant ? " � aceita auxiliar" : ""}
-                      {experience.verified ? " � verificado" : ""}
+                      {experience.acceptsAssistant ? " - aceita auxiliar" : ""}
+                      {experience.verified ? " - verificado" : ""}
                     </p>
                   </div>
                 ))}
@@ -67,7 +67,7 @@ export function WorkerProfilePage() {
               <div className="mt-2 grid gap-2">
                 {currentWorker.reviews.map((review) => (
                   <div key={review.id} className="rounded-lg bg-slate-50 p-3">
-                    <span className="flex items-center gap-1 text-sm font-bold text-navy-950"><Star size={15} /> {review.rating} · {review.authorName}</span>
+                    <span className="flex items-center gap-1 text-sm font-bold text-navy-950"><Star size={15} /> {review.rating} - {review.authorName}</span>
                     <p className="mt-1 text-sm text-slate-600">{review.comment}</p>
                   </div>
                 ))}

@@ -56,7 +56,7 @@ export function WorkerSignupPage() {
           <label className="label">Bairro<input className="input" required placeholder="Campeche" /></label>
         </div>
         <fieldset className="rounded-lg border border-slate-200 p-3">
-          <legend className="px-1 text-sm font-black text-slate-600">Profissoes e nivel de experiencia</legend>
+          <legend className="px-1 text-sm font-black text-slate-600">Profissões e nível de experiência</legend>
           <div className="mt-2 grid gap-2 md:grid-cols-2">
             {functions.map((item) => (
               <div key={item} className="rounded-lg border border-slate-200 bg-white p-3">
@@ -78,7 +78,7 @@ export function WorkerSignupPage() {
                 {selectedFunctions.includes(item) && (
                   <div className="mt-3 grid gap-2">
                     <label className="label">
-                      Nivel nesta funcao
+                      Nível nesta função
                       <select name={`level-${item}`} className="input">
                         {experienceLevels.map((level) => (
                           <option key={level.value} value={level.value}>
@@ -89,7 +89,7 @@ export function WorkerSignupPage() {
                     </label>
                     <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
                       <input type="checkbox" defaultChecked className="h-4 w-4 accent-aqua-500" />
-                      Aceito comecar como auxiliar nessa funcao
+                      Aceito começar como auxiliar nessa função
                     </label>
                   </div>
                 )}
@@ -97,7 +97,7 @@ export function WorkerSignupPage() {
             ))}
           </div>
           <p className="mt-3 text-xs font-semibold leading-5 text-slate-500">
-            Informe com sinceridade. Avaliacoes ruins podem limitar novas vagas nessa funcao.
+            Informe com sinceridade. Avaliações ruins podem limitar novas vagas nessa função.
           </p>
         </fieldset>
         <label className="label">Experiência profissional<textarea className="input min-h-20 py-3" required /></label>

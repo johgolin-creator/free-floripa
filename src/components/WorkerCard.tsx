@@ -38,7 +38,7 @@ export function WorkerCard({
           </div>
           <p className="text-sm font-semibold text-slate-600">{worker.functions.join(", ")}</p>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
-            <MapPin size={15} /> {worker.neighborhood} · até {worker.maxDistanceKm} km
+            <MapPin size={15} /> {worker.neighborhood} - até {worker.maxDistanceKm} km
           </p>
         </div>
       </div>

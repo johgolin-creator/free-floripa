@@ -87,9 +87,9 @@ export function JobDetailsPage() {
               <span className="flex items-center gap-2"><CheckCircle2 size={17} /> Contato após confirmação</span>
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-3">
-              <span className="text-xs font-black uppercase text-slate-500">Seu nivel nesta funcao</span>
+              <span className="text-xs font-black uppercase text-slate-500">Seu nível nesta função</span>
               <strong className="mt-1 block text-sm text-navy-950">
-                {workerExperience ? getExperienceLabel(workerExperience.level) : "Funcao nao declarada"}
+                {workerExperience ? getExperienceLabel(workerExperience.level) : "Função não declarada"}
               </strong>
               <p className="mt-1 text-xs font-semibold text-slate-500">{getCompatibilityLabel(currentWorker, currentJob.function)}</p>
             </div>

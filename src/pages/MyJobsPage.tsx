@@ -44,7 +44,7 @@ export function MyJobsPage() {
                   <span className="badge">{shift.status}</span>
                   <h3 className="mt-2 font-black text-navy-950">{company?.establishmentName}</h3>
                   <p className="text-sm text-slate-600">
-                    {job.function} · {formatDate(job.date)} · {job.startsAt} às {job.endsAt} · {formatCurrency(job.dailyValue)}
+                    {job.function} - {formatDate(job.date)} - {job.startsAt} às {job.endsAt} - {formatCurrency(job.dailyValue)}
                   </p>
                   <p className="mt-1 text-sm text-slate-600">Endereço: {shift.status === "Ainda não chegou" ? job.approximateAddress : job.fullAddress}</p>
                   <div className="mt-2 grid gap-1 text-xs font-semibold text-slate-500">

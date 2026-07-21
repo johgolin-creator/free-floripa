@@ -11,7 +11,7 @@ export function BrandLogo({ compact = false, inverted = false }: { compact?: boo
           Free Floripa
         </strong>
         <span className={`block truncate text-xs font-semibold ${inverted ? "text-slate-300" : "text-slate-500"}`}>
-          A equipe que voce precisa
+          A equipe que você precisa
         </span>
       </div>
     </div>

@@ -7,7 +7,7 @@ create type public.user_role as enum ('trabalhador', 'empresa', 'admin');
 create type public.application_status as enum ('Enviada', 'Em análise', 'Aprovada', 'Recusada', 'Cancelada', 'Trabalho concluído', 'Falta registrada');
 create type public.payment_method as enum ('Dinheiro', 'Pix', 'Transferência', 'A combinar');
 create type public.shift_status as enum ('Ainda não chegou', 'Fez check-in', 'Finalizou o turno');
-create type public.experience_level as enum ('Iniciante', 'Poucas diarias', 'Experiente', 'Profissional experiente');
+create type public.experience_level as enum ('Iniciante', 'Poucas diárias', 'Experiente', 'Profissional experiente');
 
 create table public.users (
   id uuid primary key references auth.users(id) on delete cascade,

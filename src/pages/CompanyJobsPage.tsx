@@ -25,10 +25,10 @@ export function CompanyJobsPage() {
                 </div>
                 <h3 className="font-black text-navy-950">{job.title}</h3>
                 <p className="text-sm text-slate-600">
-                  {job.neighborhood} · {formatDate(job.date)} · {formatCurrency(job.dailyValue)}
+                  {job.neighborhood} - {formatDate(job.date)} - {formatCurrency(job.dailyValue)}
                 </p>
                 <p className="mt-1 text-sm font-semibold text-slate-500">
-                  {getOpenSlots(job)} vagas restantes · {job.candidates} candidatos
+                  {getOpenSlots(job)} vagas restantes - {job.candidates} candidatos
                 </p>
               </div>
               <Link to="/app/candidatos" className="secondary">Ver candidatos</Link>

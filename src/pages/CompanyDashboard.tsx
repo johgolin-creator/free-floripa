@@ -53,7 +53,7 @@ export function CompanyDashboard() {
                   <div>
                     <span className={job.urgent ? "badge urgent" : "badge"}>{job.urgent ? "URGENTE" : job.function}</span>
                     <h4 className="mt-2 font-black text-navy-950">{job.title}</h4>
-                    <p className="text-sm text-slate-600">{job.neighborhood} · {job.startsAt} às {job.endsAt} · {formatCurrency(job.dailyValue)}</p>
+                    <p className="text-sm text-slate-600">{job.neighborhood} - {job.startsAt} às {job.endsAt} - {formatCurrency(job.dailyValue)}</p>
                   </div>
                   <span className="text-sm font-bold text-slate-600">{job.filled}/{job.quantity} confirmados</span>
                 </div>

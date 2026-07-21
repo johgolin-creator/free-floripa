@@ -11,7 +11,7 @@ export type JobFunction =
   | "Montador de eventos"
   | "Promotor";
 
-export type ExperienceLevel = "Iniciante" | "Poucas diarias" | "Experiente" | "Profissional experiente";
+export type ExperienceLevel = "Iniciante" | "Poucas diárias" | "Experiente" | "Profissional experiente";
 
 export interface FunctionExperience {
   function: JobFunction;

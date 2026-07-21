@@ -61,11 +61,11 @@ export function PublicHome() {
             <img src={logoUrl} alt="Free Floripa" className="h-auto w-full max-w-[230px] rounded-lg bg-white p-3 shadow-soft md:max-w-[280px]" />
             <div className="max-w-4xl">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-sm font-bold text-aqua-100">
-                <Waves size={17} /> Florianopolis pronta para turnos, diarias e eventos
+                <Waves size={17} /> Florianópolis pronta para turnos, diárias e eventos
               </div>
               <h1 className="text-4xl font-black leading-tight md:text-5xl">Free Floripa</h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
-                A plataforma para empresas encontrarem mao de obra temporaria com mais organizacao, historico e nivel de experiencia por funcao.
+                A plataforma para empresas encontrarem mão de obra temporária com mais organização, histórico e nível de experiência por função.
               </p>
               <div className="mt-6 grid gap-3 sm:flex">
                 <Link to="/cadastro-empresa" onClick={() => setRole("empresa")} className="primary">
@@ -81,9 +81,9 @@ export function PublicHome() {
 
         <section className="border-b border-slate-200 bg-white">
           <div className="mx-auto grid max-w-7xl gap-3 px-4 py-4 sm:grid-cols-3">
-            <Metric value="5" label="candidaturas gratis por mes" />
+            <Metric value="5" label="candidaturas grátis por mês" />
             <Metric value="3 min" label="para publicar uma vaga" />
-            <Metric value="por funcao" label="nivel de experiencia" />
+            <Metric value="por função" label="nível de experiência" />
           </div>
         </section>
 
@@ -107,9 +107,9 @@ export function PublicHome() {
         <section className="bg-white">
           <div className="mx-auto grid max-w-7xl gap-4 px-4 py-12 md:grid-cols-3">
             {[
-              ["1", "Vaga com criterio", "A empresa informa funcao, valor, horario, bairro e experiencia esperada."],
-              ["2", "Candidatura transparente", "O trabalhador aparece com nivel por profissao e indicacao se aceita auxiliar."],
-              ["3", "Equipe confirmada", "Aprovacao, check-in, check-out e avaliacoes ficam organizados no historico."]
+              ["1", "Vaga com critério", "A empresa informa função, valor, horário, bairro e experiência esperada."],
+              ["2", "Candidatura transparente", "O trabalhador aparece com nível por profissão e indicação se aceita auxiliar."],
+              ["3", "Equipe confirmada", "Aprovação, check-in, check-out e avaliações ficam organizados no histórico."]
             ].map(([step, title, text]) => (
               <article key={step} className="card p-5">
                 <span className="grid h-10 w-10 place-items-center rounded-lg bg-aqua-100 font-black text-aqua-700">{step}</span>
@@ -122,7 +122,7 @@ export function PublicHome() {
 
         <section className="mx-auto max-w-7xl px-4 py-12">
           <div className="mb-5">
-            <p className="text-xs font-black uppercase text-aqua-700">Profissoes</p>
+            <p className="text-xs font-black uppercase text-aqua-700">Profissões</p>
             <h2 className="text-2xl font-black text-navy-950">Categorias de profissionais</h2>
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
@@ -139,20 +139,20 @@ export function PublicHome() {
             <BenefitBlock
               icon={<BriefcaseBusiness />}
               title="Para empresas"
-              items={["Reposicao urgente", "Candidatos por nivel", "Favoritos", "Historico de contratacoes"]}
+              items={["Reposição urgente", "Candidatos por nível", "Favoritos", "Histórico de contratações"]}
             />
             <BenefitBlock
               icon={<UsersRound />}
               title="Para trabalhadores"
-              items={["Vagas proximas", "Perfil por profissao", "Candidatura rapida", "Avaliacoes no historico"]}
+              items={["Vagas próximas", "Perfil por profissão", "Candidatura rápida", "Avaliações no histórico"]}
             />
           </div>
         </section>
 
         <section className="mx-auto max-w-7xl px-4 py-12">
           <div className="grid gap-4 md:grid-cols-3">
-            <Feature icon={<ShieldCheck />} title="Contato protegido" text="Telefone e endereco completo aparecem somente apos confirmacao." />
-            <Feature icon={<ClipboardCheck />} title="Experiencia declarada" text="Cada profissao tem nivel proprio para reduzir candidaturas fora do perfil." />
+            <Feature icon={<ShieldCheck />} title="Contato protegido" text="Telefone e endereço completo aparecem somente após confirmação." />
+            <Feature icon={<ClipboardCheck />} title="Experiência declarada" text="Cada profissão tem nível próprio para reduzir candidaturas fora do perfil." />
             <Feature icon={<Smartphone />} title="Mobile primeiro" text="Interface preparada para publicar, aprovar e acompanhar pelo celular." />
           </div>
         </section>

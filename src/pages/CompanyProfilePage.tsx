@@ -15,7 +15,7 @@ export function CompanyProfilePage() {
             <img src={currentCompany.logoUrl} alt="" className="h-28 w-28 rounded-lg border-4 border-white object-cover shadow-soft" />
             <div>
               <h2 className="text-2xl font-black text-navy-950">{currentCompany.establishmentName}</h2>
-              <p className="text-sm font-semibold text-slate-600">{currentCompany.category} · {currentCompany.neighborhood}</p>
+              <p className="text-sm font-semibold text-slate-600">{currentCompany.category} - {currentCompany.neighborhood}</p>
               <p className="mt-1 flex items-center gap-1 text-sm text-slate-600"><Star size={15} /> {currentCompany.rating.toFixed(1)} de avaliação</p>
             </div>
           </div>

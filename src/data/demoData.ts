@@ -15,18 +15,18 @@ export const functions = [
 export const experienceLevels = [
   {
     value: "Iniciante",
-    label: "Estou comecando",
+    label: "Estou começando",
     description: "Liberado para vagas simples ou como auxiliar."
   },
   {
-    value: "Poucas diarias",
-    label: "Ja fiz algumas diarias",
-    description: "Tem pratica inicial e precisa de orientacao."
+    value: "Poucas diárias",
+    label: "Já fiz algumas diárias",
+    description: "Tem prática inicial e precisa de orientação."
   },
   {
     value: "Experiente",
-    label: "Tenho experiencia",
-    description: "Pode assumir a funcao com autonomia."
+    label: "Tenho experiência",
+    description: "Pode assumir a função com autonomia."
   },
   {
     value: "Profissional experiente",
@@ -161,7 +161,7 @@ export const workers: WorkerProfile[] = [
     functions: ["Operador de caixa", "Recepcionista"],
     functionExperience: [
       { function: "Operador de caixa", level: "Experiente", months: 20, acceptsAssistant: false, verified: false },
-      { function: "Recepcionista", level: "Poucas diarias", months: 6, acceptsAssistant: true, verified: false }
+      { function: "Recepcionista", level: "Poucas diárias", months: 6, acceptsAssistant: true, verified: false }
     ],
     experience: "Caixa em casa noturna, controle de lista e atendimento.",
     description: "Organizada, pontual e acostumada com fluxo grande de pessoas.",
