@@ -4,7 +4,7 @@
 
 :root {
   color: #09263d;
-  background: #f4f7f8;
+  background: #eef4f4;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -32,7 +32,7 @@ button:disabled {
 }
 
 .card {
-  @apply rounded-lg border border-slate-200 bg-white shadow-sm;
+  @apply rounded-lg border border-slate-200 bg-white shadow-soft;
 }
 
 .input {
@@ -44,11 +44,11 @@ button:disabled {
 }
 
 .primary {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-aqua-500 px-4 text-sm font-bold text-navy-950 transition hover:bg-aqua-300;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-aqua-500 px-4 text-sm font-black text-navy-950 shadow-sm transition hover:bg-aqua-300;
 }
 
 .secondary {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-navy-900 transition hover:bg-slate-50;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-navy-900 shadow-sm transition hover:bg-slate-50;
 }
 
 .danger {

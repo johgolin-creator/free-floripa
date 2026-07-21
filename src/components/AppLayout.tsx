@@ -11,6 +11,7 @@ import {
   UsersRound
 } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { BrandLogo } from "./BrandLogo";
 import { RoleSwitcher } from "./RoleSwitcher";
 import { useAppStore } from "../lib/store";
 
@@ -40,11 +41,7 @@ export function AppLayout() {
     <div className="min-h-screen bg-slate-100 pb-20 md:grid md:grid-cols-[260px_1fr] md:pb-0">
       <aside className="hidden border-r border-slate-200 bg-navy-950 p-5 text-white md:flex md:flex-col">
         <NavLink to="/" className="mb-7 flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-lg bg-aqua-300 font-black text-navy-950">FF</div>
-          <div>
-            <strong className="block text-lg">Free Floripa</strong>
-            <span className="text-xs text-slate-300">Contratação rápida</span>
-          </div>
+          <BrandLogo inverted />
         </NavLink>
 
         <RoleSwitcher />
@@ -82,8 +79,7 @@ export function AppLayout() {
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:px-8">
           <div className="flex items-center justify-between gap-3">
             <NavLink to="/" className="flex items-center gap-2 md:hidden">
-              <div className="grid h-10 w-10 place-items-center rounded-lg bg-aqua-300 font-black text-navy-950">FF</div>
-              <strong>Free Floripa</strong>
+              <BrandLogo compact />
             </NavLink>
             <div className="hidden md:block">
               <p className="text-xs font-bold uppercase text-aqua-700">A equipe que você precisa, quando você precisa.</p>

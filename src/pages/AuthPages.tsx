@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, type ReactNode } from "react";
 import { ArrowLeft, Building2, Camera, CheckCircle2, LogIn, UserRound } from "lucide-react";
+import { BrandLogo } from "../components/BrandLogo";
 import { experienceLevels, functions } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 
@@ -154,7 +155,9 @@ function AuthShell({ title, description, children }: { title: string; descriptio
         </Link>
         <section className="card p-5">
           <div className="mb-5">
-            <div className="mb-4 grid h-12 w-12 place-items-center rounded-lg bg-aqua-300 font-black text-navy-950">FF</div>
+            <div className="mb-4">
+              <BrandLogo />
+            </div>
             <h1 className="text-2xl font-black text-navy-950">{title}</h1>
             <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
             <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-aqua-700">
