@@ -1,14 +1,18 @@
 import { useState } from "react";
-import { BadgeCheck, Edit3, Star } from "lucide-react";
+import { BadgeCheck, Edit3, Save, Star } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
+import { experienceLevels, functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 import { calculateReliability, getExperienceLabel, getFunctionExperience } from "../lib/rules";
+import type { JobFunction } from "../lib/types";
 
 export function WorkerProfilePage() {
   const { currentWorker, updateWorkerProfile } = useAppStore();
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [selectedFunctions, setSelectedFunctions] = useState<JobFunction[]>(currentWorker.functions);
   const reliability = calculateReliability(currentWorker);
   const functionExperiences = currentWorker.functions
     .map((item) => getFunctionExperience(currentWorker, item))
@@ -16,7 +20,23 @@ export function WorkerProfilePage() {
 
   return (
     <div>
-      <SectionHeader eyebrow="Perfil" title="Perfil do trabalhador" action={<button type="button" onClick={() => setEditing(true)} className="primary"><Edit3 size={17} /> Editar perfil</button>} />
+      <SectionHeader
+        eyebrow="Perfil"
+        title="Perfil do trabalhador"
+        action={
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedFunctions(currentWorker.functions);
+              setError("");
+              setEditing(true);
+            }}
+            className="primary"
+          >
+            <Edit3 size={17} /> Editar perfil
+          </button>
+        }
+      />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       <section className="card overflow-hidden">
         <div className="h-36 bg-[url('https://images.unsplash.com/photo-1523755231516-e43fd2e8dca5?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
@@ -85,27 +105,148 @@ export function WorkerProfilePage() {
       {editing && (
         <Modal title="Editar perfil do trabalhador" onClose={() => setEditing(false)}>
           <form
-            className="grid gap-3"
+            className="grid max-h-[72vh] gap-3 overflow-auto pr-1"
             onSubmit={(event) => {
               event.preventDefault();
               const form = new FormData(event.currentTarget);
+              const name = String(form.get("name") || "").trim();
+              const phone = String(form.get("phone") || "").trim();
+              const email = String(form.get("email") || "").trim();
+              const avatarUrl = String(form.get("avatarUrl") || "").trim();
+              const birthDate = String(form.get("birthDate") || "").trim();
+              const city = String(form.get("city") || "").trim();
+              const neighborhood = String(form.get("neighborhood") || "").trim();
+              const experience = String(form.get("experience") || "").trim();
               const description = String(form.get("description") || "").trim();
               const availability = String(form.get("availability") || "").trim();
               const maxDistanceKm = Number(form.get("maxDistanceKm"));
-              if (!description || !availability || maxDistanceKm <= 0) return;
+
+              if (!name || !phone || !email || !birthDate || !city || !neighborhood || !description || !availability || maxDistanceKm <= 0) {
+                setError("Preencha nome, contato, localização, descrição, disponibilidade e distância máxima.");
+                return;
+              }
+              if (selectedFunctions.length === 0) {
+                setError("Selecione pelo menos uma profissão.");
+                return;
+              }
 
               updateWorkerProfile({
+                name,
+                phone,
+                email,
+                avatarUrl: avatarUrl || currentWorker.avatarUrl,
+                birthDate,
+                city,
+                neighborhood: neighborhood as typeof currentWorker.neighborhood,
+                functions: selectedFunctions,
+                functionExperience: selectedFunctions.map((functionName) => {
+                  const existing = currentWorker.functionExperience.find((item) => item.function === functionName);
+                  return {
+                    function: functionName,
+                    level: String(form.get(`level-${functionName}`) || existing?.level || "Iniciante") as NonNullable<typeof existing>["level"],
+                    months: Math.max(0, Number(form.get(`months-${functionName}`) || existing?.months || 0)),
+                    acceptsAssistant: form.get(`assistant-${functionName}`) === "on",
+                    verified: existing?.verified ?? false
+                  };
+                }),
+                experience,
                 description,
                 availability,
                 maxDistanceKm,
                 hasTransport: form.get("hasTransport") === "on"
               });
+              setError("");
               setEditing(false);
               setMessage("Perfil atualizado com sucesso.");
             }}
           >
+            {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="label">
+                Nome completo
+                <input name="name" className="input" required defaultValue={currentWorker.name} />
+              </label>
+              <label className="label">
+                Telefone
+                <input name="phone" className="input" required defaultValue={currentWorker.phone} />
+              </label>
+              <label className="label">
+                E-mail de contato
+                <input name="email" type="email" className="input" required defaultValue={currentWorker.email} />
+              </label>
+              <label className="label">
+                Data de nascimento
+                <input name="birthDate" type="date" className="input" required defaultValue={currentWorker.birthDate} />
+              </label>
+              <label className="label md:col-span-2">
+                Foto do perfil
+                <input name="avatarUrl" className="input" defaultValue={currentWorker.avatarUrl} placeholder="Cole aqui o link da foto" />
+              </label>
+              <label className="label">
+                Cidade
+                <input name="city" className="input" required defaultValue={currentWorker.city} />
+              </label>
+              <label className="label">
+                Bairro
+                <select name="neighborhood" className="input" required defaultValue={currentWorker.neighborhood}>
+                  {neighborhoods.map((item) => <option key={item}>{item}</option>)}
+                </select>
+              </label>
+            </div>
+            <fieldset className="rounded-lg border border-slate-200 p-3">
+              <legend className="px-1 text-sm font-black text-slate-600">Profissões e experiência</legend>
+              <div className="mt-2 grid gap-2 md:grid-cols-2">
+                {functions.map((functionName) => {
+                  const selected = selectedFunctions.includes(functionName);
+                  const existing = currentWorker.functionExperience.find((item) => item.function === functionName);
+                  return (
+                    <div key={functionName} className="rounded-lg border border-slate-200 bg-white p-3">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={(event) => {
+                            setSelectedFunctions((current) =>
+                              event.target.checked
+                                ? [...current, functionName]
+                                : current.filter((item) => item !== functionName)
+                            );
+                          }}
+                          className="h-4 w-4 accent-aqua-500"
+                        />
+                        {functionName}
+                      </label>
+                      {selected && (
+                        <div className="mt-3 grid gap-2">
+                          <label className="label">
+                            Nível
+                            <select name={`level-${functionName}`} className="input" defaultValue={existing?.level ?? "Iniciante"}>
+                              {experienceLevels.map((level) => (
+                                <option key={level.value} value={level.value}>{level.label}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="label">
+                            Meses de experiência
+                            <input name={`months-${functionName}`} type="number" min="0" className="input" defaultValue={existing?.months ?? 0} />
+                          </label>
+                          <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                            <input name={`assistant-${functionName}`} type="checkbox" defaultChecked={existing?.acceptsAssistant ?? true} className="h-4 w-4 accent-aqua-500" />
+                            Aceito começar como auxiliar
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </fieldset>
             <label className="label">
-              Descrição
+              Experiência profissional
+              <textarea name="experience" className="input min-h-24 py-3" defaultValue={currentWorker.experience} />
+            </label>
+            <label className="label">
+              Pequena descrição
               <textarea name="description" className="input min-h-24 py-3" required defaultValue={currentWorker.description} />
             </label>
             <label className="label">
@@ -120,7 +261,7 @@ export function WorkerProfilePage() {
               <input name="hasTransport" type="checkbox" defaultChecked={currentWorker.hasTransport} className="h-5 w-5 accent-aqua-500" />
               Tenho transporte próprio
             </label>
-            <button type="submit" className="primary">Salvar perfil</button>
+            <button type="submit" className="primary"><Save size={17} /> Salvar perfil</button>
           </form>
         </Modal>
       )}

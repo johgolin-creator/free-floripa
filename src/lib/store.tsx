@@ -48,7 +48,7 @@ interface AppContextValue {
   setRole: (role: AppState["activeRole"]) => void;
   createJob: (input: CreateJobInput) => string;
   createUrgentReplacement: (input: UrgentReplacementInput) => string;
-  updateWorkerProfile: (input: Partial<Pick<WorkerProfile, "description" | "availability" | "hasTransport" | "maxDistanceKm">>) => void;
+  updateWorkerProfile: (input: Partial<Pick<WorkerProfile, "name" | "phone" | "email" | "avatarUrl" | "birthDate" | "city" | "neighborhood" | "functions" | "functionExperience" | "experience" | "description" | "availability" | "hasTransport" | "maxDistanceKm">>) => void;
   updateCompanyProfile: (input: Partial<CompanyProfile>) => void;
   applyToJob: (jobId: string) => { ok: boolean; message: string; requiresPlan?: boolean };
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => { ok: boolean; message: string };
@@ -242,6 +242,30 @@ function createStateForUser(user: User | null, role: UserRole | null): AppState 
   };
 }
 
+function ensureAccountProfile(state: AppState, user: User | null, role: UserRole | null) {
+  if (!user || !role) return state;
+
+  if (role === "empresa") {
+    const company = state.companies.find((item) => item.id === user.id) ?? createCompanyForUser(user);
+    return {
+      ...state,
+      activeRole: "empresa" as const,
+      selectedCompanyId: company.id,
+      companies: state.companies.some((item) => item.id === company.id)
+        ? state.companies
+        : [company, ...state.companies]
+    };
+  }
+
+  const worker = state.workers.find((item) => item.id === user.id) ?? createWorkerForUser(user);
+  return {
+    ...state,
+    activeRole: "trabalhador" as const,
+    selectedWorkerId: worker.id,
+    workers: state.workers.some((item) => item.id === worker.id) ? state.workers : [worker, ...state.workers]
+  };
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const { loading: authLoading, role, user } = useAuth();
   const accountState = useMemo(() => createStateForUser(user, role), [role, user]);
@@ -278,7 +302,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading) return;
 
-    const localState = loadInitialState(localStorageKey, accountState);
+    const localState = ensureAccountProfile(loadInitialState(localStorageKey, accountState), user, role);
 
     if (!supabaseStateEnabled) {
       setState(localState);
@@ -293,7 +317,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .then((remoteState) => {
         if (!active) return;
         if (remoteState) {
-          const migratedState = mergeSeedUpdates(remoteState);
+          const migratedState = ensureAccountProfile(mergeSeedUpdates(remoteState), user, role);
           setState(migratedState);
           persist(migratedState, localStorageKey);
           if (migratedState !== remoteState) {
