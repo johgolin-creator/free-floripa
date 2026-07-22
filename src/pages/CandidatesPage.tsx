@@ -1,10 +1,12 @@
+import { Heart } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
 import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
+import { getOpenSlots } from "../lib/rules";
 
 export function CandidatesPage() {
-  const { state, currentCompany, updateApplicationStatus } = useAppStore();
+  const { state, currentCompany, toggleFavorite, updateApplicationStatus } = useAppStore();
   const companyJobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const applications = state.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId));
 
@@ -31,16 +33,33 @@ export function CandidatesPage() {
                   {jobApplications.map((application) => {
                     const worker = state.workers.find((item) => item.id === application.workerId);
                     if (!worker) return null;
+                    const favorite = state.favoriteWorkerIds.includes(worker.id);
+                    const approved = application.status === "Aprovada";
+                    const refused = application.status === "Recusada";
+                    const noSlots = getOpenSlots(job) === 0 && !approved;
                     return (
                       <div key={application.id} className="grid gap-2">
-                        <WorkerCard worker={worker} functionFocus={job.function} />
-                        <div className="card grid gap-2 p-3 md:grid-cols-3">
+                        <WorkerCard worker={worker} functionFocus={job.function} showActions={false} />
+                        <div className="card grid gap-2 p-3 md:grid-cols-4">
                           <span className="badge justify-center">{application.status}</span>
-                          <button type="button" onClick={() => alert(updateApplicationStatus(application.id, "Recusada").message)} className="secondary">
+                          <button type="button" onClick={() => toggleFavorite(worker.id)} className="secondary">
+                            <Heart size={17} fill={favorite ? "currentColor" : "none"} /> {favorite ? "Favorito" : "Favoritar"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => alert(updateApplicationStatus(application.id, "Recusada").message)}
+                            disabled={refused}
+                            className="secondary"
+                          >
                             Recusar
                           </button>
-                          <button type="button" onClick={() => alert(updateApplicationStatus(application.id, "Aprovada").message)} className="primary">
-                            Aprovar
+                          <button
+                            type="button"
+                            onClick={() => alert(updateApplicationStatus(application.id, "Aprovada").message)}
+                            disabled={approved || noSlots}
+                            className="primary"
+                          >
+                            {approved ? "Confirmado" : noSlots ? "Sem vagas" : "Aprovar"}
                           </button>
                         </div>
                       </div>

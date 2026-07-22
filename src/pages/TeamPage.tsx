@@ -1,23 +1,27 @@
 import { useState } from "react";
-import { MessageSquareText, RotateCcw, Star } from "lucide-react";
+import { BriefcaseBusiness, MessageSquareText, RotateCcw, Star } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
 import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
-import type { WorkerProfile } from "../lib/types";
+import { formatCurrency, formatDate } from "../lib/format";
+import { getOpenSlots } from "../lib/rules";
+import type { Job, WorkerProfile } from "../lib/types";
 
 const scoreOptions = [5, 4, 3, 2, 1];
 const attendanceOptions = ["Compareceu no horário", "Compareceu com atraso", "Faltou sem aviso", "Cancelou com antecedência"];
 const qualityOptions = ["Excelente", "Boa", "Regular", "Abaixo do esperado"];
 
 export function TeamPage() {
-  const { state, currentCompany, addReview } = useAppStore();
+  const { state, currentCompany, addReview, inviteWorkerToJob } = useAppStore();
   const [workerToReview, setWorkerToReview] = useState<WorkerProfile | null>(null);
+  const [workerToInvite, setWorkerToInvite] = useState<WorkerProfile | null>(null);
   const favorites = state.workers.filter((worker) => state.favoriteWorkerIds.includes(worker.id));
   const hiredIds = state.applications.filter((application) => application.status === "Aprovada").map((application) => application.workerId);
   const hired = state.workers.filter((worker) => hiredIds.includes(worker.id));
   const team = [...new Map([...favorites, ...hired].map((worker) => [worker.id, worker])).values()];
+  const openJobs = state.jobs.filter((job) => job.companyId === currentCompany.id && getOpenSlots(job) > 0);
 
   return (
     <div>
@@ -36,13 +40,14 @@ export function TeamPage() {
               <div key={worker.id} className="grid gap-2">
                 <WorkerCard worker={worker} showActions={false} />
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <button type="button" onClick={() => alert(`Convite interno criado para ${worker.name}. Escolha uma vaga aberta para enviar.`)} className="primary">
+                  <button type="button" onClick={() => setWorkerToInvite(worker)} disabled={openJobs.length === 0} className="primary">
                     <RotateCcw size={17} /> Convidar novamente
                   </button>
                   <button type="button" onClick={() => setWorkerToReview(worker)} disabled={!wasHired} className="secondary">
                     <MessageSquareText size={17} /> Avaliar colaborador
                   </button>
                 </div>
+                {openJobs.length === 0 && <p className="text-xs font-semibold text-slate-500">Crie uma vaga com saldo disponível para convidar profissionais.</p>}
                 {!wasHired && <p className="text-xs font-semibold text-slate-500">A avaliação fica disponível após aprovar o profissional em uma vaga.</p>}
               </div>
             );
@@ -65,7 +70,64 @@ export function TeamPage() {
           />
         </Modal>
       )}
+
+      {workerToInvite && (
+        <Modal title={`Convidar ${workerToInvite.name}`} onClose={() => setWorkerToInvite(null)}>
+          <InviteForm
+            jobs={openJobs}
+            onSubmit={(jobId) => {
+              const result = inviteWorkerToJob(workerToInvite.id, jobId);
+              if (result.ok) setWorkerToInvite(null);
+              alert(result.message);
+            }}
+          />
+        </Modal>
+      )}
     </div>
+  );
+}
+
+function InviteForm({ jobs, onSubmit }: { jobs: Job[]; onSubmit: (jobId: string) => void }) {
+  const [error, setError] = useState("");
+
+  return (
+    <form
+      className="grid gap-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const jobId = String(form.get("jobId") || "");
+        if (!jobId) {
+          setError("Selecione uma vaga aberta para enviar o convite.");
+          return;
+        }
+        setError("");
+        onSubmit(jobId);
+      }}
+    >
+      {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+          <BriefcaseBusiness size={17} /> Vaga para confirmação
+        </div>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+          O profissional será confirmado na vaga escolhida e receberá uma notificação.
+        </p>
+      </div>
+      <label className="label">
+        Vaga aberta
+        <select name="jobId" className="input" required>
+          {jobs.map((job) => (
+            <option key={job.id} value={job.id}>
+              {job.title} - {formatDate(job.date)} - {getOpenSlots(job)} vaga{getOpenSlots(job) > 1 ? "s" : ""} - {formatCurrency(job.dailyValue)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button type="submit" className="primary">
+        <RotateCcw size={17} /> Confirmar convite
+      </button>
+    </form>
   );
 }
 

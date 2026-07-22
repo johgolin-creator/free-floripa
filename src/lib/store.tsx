@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { initialState } from "../data/demoData";
-import { canApply, canApprove, getOpenSlots } from "./rules";
-import type { AppState, Application, ApplicationStatus, Job, JobFunction, Neighborhood, PaymentMethod, Review } from "./types";
+import { canApply, getOpenSlots } from "./rules";
+import type { AppState, Application, ApplicationStatus, CompanyProfile, Job, JobFunction, Neighborhood, PaymentMethod, Review } from "./types";
 
 const STORAGE_KEY = "free-floripa:state";
 
@@ -40,11 +40,15 @@ interface AppContextValue {
   setRole: (role: AppState["activeRole"]) => void;
   createJob: (input: CreateJobInput) => string;
   createUrgentReplacement: (input: UrgentReplacementInput) => string;
+  updateCompanyProfile: (input: Partial<CompanyProfile>) => void;
   applyToJob: (jobId: string) => { ok: boolean; message: string; requiresPlan?: boolean };
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => { ok: boolean; message: string };
   toggleFavorite: (workerId: string) => void;
+  inviteWorkerToJob: (workerId: string, jobId: string) => { ok: boolean; message: string };
   checkIn: (jobId: string, workerId: string) => void;
   checkOut: (jobId: string, workerId: string) => void;
+  markNotificationRead: (notificationId: string) => void;
+  markRoleNotificationsRead: (role: AppState["activeRole"]) => void;
   subscribeProfessional: () => void;
   buyCredits: () => void;
   addReview: (workerId: string, review: Omit<Review, "id">) => void;
@@ -63,6 +67,14 @@ function loadInitialState(): AppState {
 
 function persist(nextState: AppState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+}
+
+function countApproved(applications: Application[], jobId: string) {
+  return applications.filter((application) => application.jobId === jobId && application.status === "Aprovada").length;
+}
+
+function hasShiftFor(shifts: AppState["shifts"], jobId: string, workerId: string) {
+  return shifts.some((shift) => shift.jobId === jobId && shift.workerId === workerId);
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -140,6 +152,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
           urgent: true
         });
       },
+      updateCompanyProfile(input) {
+        commit((current) => ({
+          ...current,
+          companies: current.companies.map((company) =>
+            company.id === currentCompany.id
+              ? {
+                  ...company,
+                  ...input,
+                  id: company.id,
+                  rating: company.rating,
+                  logoUrl: input.logoUrl ?? company.logoUrl
+                }
+              : company
+          )
+        }));
+      },
       applyToJob(jobId) {
         const job = state.jobs.find((item) => item.id === jobId);
         if (!job) return { ok: false, message: "Vaga não encontrada." };
@@ -186,40 +214,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const job = state.jobs.find((item) => item.id === application.jobId);
         if (!job) return { ok: false, message: "Vaga não encontrada." };
 
-        if (status === "Aprovada" && !canApprove(job, state.applications)) {
+        if (application.status === status) {
+          return { ok: true, message: `Candidatura já está marcada como ${status}.` };
+        }
+
+        const approvedWithoutCurrent = state.applications.filter(
+          (item) => item.jobId === job.id && item.id !== application.id && item.status === "Aprovada"
+        ).length;
+        if (status === "Aprovada" && approvedWithoutCurrent >= job.quantity) {
           return { ok: false, message: "Não é possível aprovar mais pessoas do que a quantidade disponível." };
         }
 
-        commit((current) => ({
-          ...current,
-          applications: current.applications.map((item) => (item.id === applicationId ? { ...item, status } : item)),
-          jobs: current.jobs.map((item) =>
-            item.id === job.id && status === "Aprovada" ? { ...item, filled: Math.min(item.quantity, item.filled + 1) } : item
-          ),
-          shifts:
+        commit((current) => {
+          const nextApplications = current.applications.map((item) => (item.id === applicationId ? { ...item, status } : item));
+          const nextShifts =
             status === "Aprovada"
-              ? [
-                  ...current.shifts,
-                  {
-                    id: crypto.randomUUID(),
-                    jobId: job.id,
-                    workerId: application.workerId,
-                    status: "Ainda não chegou"
-                  }
-                ]
-              : current.shifts,
-          notifications: [
-            {
-              id: crypto.randomUUID(),
-              title: status === "Aprovada" ? "Sua candidatura foi aprovada" : "Sua candidatura foi atualizada",
-              body: `${job.title}: status ${status}.`,
-              role: "trabalhador",
-              createdAt: new Date().toISOString(),
-              read: false
-            },
-            ...current.notifications
-          ]
-        }));
+              ? hasShiftFor(current.shifts, job.id, application.workerId)
+                ? current.shifts
+                : [
+                    ...current.shifts,
+                    {
+                      id: crypto.randomUUID(),
+                      jobId: job.id,
+                      workerId: application.workerId,
+                      status: "Ainda não chegou" as const
+                    }
+                  ]
+              : current.shifts.filter((shift) => !(shift.jobId === job.id && shift.workerId === application.workerId));
+
+          return {
+            ...current,
+            applications: nextApplications,
+            jobs: current.jobs.map((item) =>
+              item.id === job.id ? { ...item, filled: Math.min(item.quantity, countApproved(nextApplications, item.id)) } : item
+            ),
+            shifts: nextShifts,
+            notifications: [
+              {
+                id: crypto.randomUUID(),
+                title: status === "Aprovada" ? "Sua candidatura foi aprovada" : "Sua candidatura foi atualizada",
+                body: `${job.title}: status ${status}.`,
+                role: "trabalhador",
+                createdAt: new Date().toISOString(),
+                read: false
+              },
+              ...current.notifications
+            ]
+          };
+        });
 
         return { ok: true, message: `Candidatura marcada como ${status}.` };
       },
@@ -230,6 +272,77 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ? current.favoriteWorkerIds.filter((id) => id !== workerId)
             : [...current.favoriteWorkerIds, workerId]
         }));
+      },
+      inviteWorkerToJob(workerId, jobId) {
+        const worker = state.workers.find((item) => item.id === workerId);
+        if (!worker) return { ok: false, message: "Profissional não encontrado." };
+        const job = state.jobs.find((item) => item.id === jobId && item.companyId === currentCompany.id);
+        if (!job) return { ok: false, message: "Vaga não encontrada para esta empresa." };
+        const existing = state.applications.find((item) => item.jobId === jobId && item.workerId === workerId);
+        const approvedCount = state.applications.filter(
+          (item) => item.jobId === jobId && item.id !== existing?.id && item.status === "Aprovada"
+        ).length;
+
+        if (existing?.status === "Aprovada") {
+          return { ok: true, message: `${worker.name} já está confirmado nesta vaga.` };
+        }
+        if (approvedCount >= job.quantity) {
+          return { ok: false, message: "Não há vagas restantes para confirmar este profissional." };
+        }
+
+        commit((current) => {
+          const invitedApplication: Application = existing
+            ? { ...existing, status: "Aprovada" }
+            : {
+                id: crypto.randomUUID(),
+                jobId,
+                workerId,
+                status: "Aprovada",
+                createdAt: new Date().toISOString()
+              };
+          const nextApplications = existing
+            ? current.applications.map((item) => (item.id === existing.id ? invitedApplication : item))
+            : [invitedApplication, ...current.applications];
+          const nextShifts = hasShiftFor(current.shifts, jobId, workerId)
+            ? current.shifts
+            : [
+                ...current.shifts,
+                {
+                  id: crypto.randomUUID(),
+                  jobId,
+                  workerId,
+                  status: "Ainda não chegou" as const
+                }
+              ];
+
+          return {
+            ...current,
+            applications: nextApplications,
+            jobs: current.jobs.map((item) =>
+              item.id === jobId
+                ? {
+                    ...item,
+                    candidates: existing ? item.candidates : item.candidates + 1,
+                    filled: Math.min(item.quantity, countApproved(nextApplications, item.id))
+                  }
+                : item
+            ),
+            shifts: nextShifts,
+            notifications: [
+              {
+                id: crypto.randomUUID(),
+                title: "Você foi convidado para uma vaga",
+                body: `${currentCompany.establishmentName} confirmou você em ${job.title}.`,
+                role: "trabalhador",
+                createdAt: new Date().toISOString(),
+                read: false
+              },
+              ...current.notifications
+            ]
+          };
+        });
+
+        return { ok: true, message: `${worker.name} foi confirmado em ${job.title}.` };
       },
       checkIn(jobId, workerId) {
         commit((current) => ({
@@ -259,6 +372,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
             shift.jobId === jobId && shift.workerId === workerId
               ? { ...shift, status: "Finalizou o turno", checkoutAt: new Date().toISOString() }
               : shift
+          )
+        }));
+      },
+      markNotificationRead(notificationId) {
+        commit((current) => ({
+          ...current,
+          notifications: current.notifications.map((notification) =>
+            notification.id === notificationId ? { ...notification, read: true } : notification
+          )
+        }));
+      },
+      markRoleNotificationsRead(role) {
+        commit((current) => ({
+          ...current,
+          notifications: current.notifications.map((notification) =>
+            notification.role === role ? { ...notification, read: true } : notification
           )
         }));
       },
