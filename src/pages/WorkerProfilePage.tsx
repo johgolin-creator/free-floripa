@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BadgeCheck, Edit3, Save, Star } from "lucide-react";
 import { Modal } from "../components/Modal";
+import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { SectionHeader } from "../components/SectionHeader";
 import { experienceLevels, functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
@@ -13,6 +14,7 @@ export function WorkerProfilePage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [selectedFunctions, setSelectedFunctions] = useState<JobFunction[]>(currentWorker.functions);
+  const [avatarUrl, setAvatarUrl] = useState(currentWorker.avatarUrl);
   const reliability = calculateReliability(currentWorker);
   const functionExperiences = currentWorker.functions
     .map((item) => getFunctionExperience(currentWorker, item))
@@ -28,6 +30,7 @@ export function WorkerProfilePage() {
             type="button"
             onClick={() => {
               setSelectedFunctions(currentWorker.functions);
+              setAvatarUrl(currentWorker.avatarUrl);
               setError("");
               setEditing(true);
             }}
@@ -112,7 +115,6 @@ export function WorkerProfilePage() {
               const name = String(form.get("name") || "").trim();
               const phone = String(form.get("phone") || "").trim();
               const email = String(form.get("email") || "").trim();
-              const avatarUrl = String(form.get("avatarUrl") || "").trim();
               const birthDate = String(form.get("birthDate") || "").trim();
               const city = String(form.get("city") || "").trim();
               const neighborhood = String(form.get("neighborhood") || "").trim();
@@ -134,7 +136,7 @@ export function WorkerProfilePage() {
                 name,
                 phone,
                 email,
-                avatarUrl: avatarUrl || currentWorker.avatarUrl,
+                avatarUrl: avatarUrl.trim() || currentWorker.avatarUrl,
                 birthDate,
                 city,
                 neighborhood: neighborhood as typeof currentWorker.neighborhood,
@@ -178,10 +180,13 @@ export function WorkerProfilePage() {
                 Data de nascimento
                 <input name="birthDate" type="date" className="input" required defaultValue={currentWorker.birthDate} />
               </label>
-              <label className="label md:col-span-2">
-                Foto do perfil
-                <input name="avatarUrl" className="input" defaultValue={currentWorker.avatarUrl} placeholder="Cole aqui o link da foto" />
-              </label>
+              <ProfileImageUploader
+                label="Foto do perfil"
+                value={avatarUrl}
+                kind="trabalhadores"
+                previewAlt="Foto do trabalhador"
+                onChange={setAvatarUrl}
+              />
               <label className="label">
                 Cidade
                 <input name="city" className="input" required defaultValue={currentWorker.city} />
