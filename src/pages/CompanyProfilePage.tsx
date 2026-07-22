@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Edit3, Save, Star } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
+import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
 import { SectionHeader } from "../components/SectionHeader";
 import { neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
+import { getCompanyProfileCompletion } from "../lib/profileCompletion";
 import type { CompanyProfile } from "../lib/types";
 
 const companyCategories: CompanyProfile["category"][] = [
@@ -22,6 +24,7 @@ export function CompanyProfilePage() {
   const { currentCompany, updateCompanyProfile } = useAppStore();
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
+  const completion = getCompanyProfileCompletion(currentCompany);
 
   return (
     <div>
@@ -31,6 +34,7 @@ export function CompanyProfilePage() {
         action={<button type="button" onClick={() => setEditing(true)} className="primary"><Edit3 size={17} /> Editar perfil</button>}
       />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+      <ProfileCompletionAlert complete={completion.complete} missing={completion.missing} onEdit={() => setEditing(true)} />
       <section className="card overflow-hidden">
         <div className="h-36 bg-[url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
         <div className="p-5">

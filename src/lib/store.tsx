@@ -178,13 +178,14 @@ function createWorkerForUser(user: User): WorkerProfile {
           item.function === functionName &&
           "level" in item &&
           typeof item.level === "string"
-      ) as { level?: string } | undefined;
+      ) as { level?: string; months?: unknown; acceptsAssistant?: unknown } | undefined;
+      const months = typeof levelItem?.months === "number" ? levelItem.months : Number(levelItem?.months ?? 0);
 
       return {
         function: functionName,
         level: (levelItem?.level ?? "Iniciante") as WorkerProfile["functionExperience"][number]["level"],
-        months: 0,
-        acceptsAssistant: true,
+        months: Number.isFinite(months) && months > 0 ? months : 0,
+        acceptsAssistant: typeof levelItem?.acceptsAssistant === "boolean" ? levelItem.acceptsAssistant : true,
         verified: false
       };
     }),

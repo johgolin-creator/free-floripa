@@ -2,9 +2,11 @@ import { useState } from "react";
 import { BadgeCheck, Edit3, Save, Star } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
+import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
 import { SectionHeader } from "../components/SectionHeader";
 import { experienceLevels, functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
+import { getWorkerProfileCompletion } from "../lib/profileCompletion";
 import { calculateReliability, getExperienceLabel, getFunctionExperience } from "../lib/rules";
 import type { JobFunction } from "../lib/types";
 
@@ -16,6 +18,7 @@ export function WorkerProfilePage() {
   const [selectedFunctions, setSelectedFunctions] = useState<JobFunction[]>(currentWorker.functions);
   const [avatarUrl, setAvatarUrl] = useState(currentWorker.avatarUrl);
   const reliability = calculateReliability(currentWorker);
+  const completion = getWorkerProfileCompletion(currentWorker);
   const functionExperiences = currentWorker.functions
     .map((item) => getFunctionExperience(currentWorker, item))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -41,6 +44,16 @@ export function WorkerProfilePage() {
         }
       />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+      <ProfileCompletionAlert
+        complete={completion.complete}
+        missing={completion.missing}
+        onEdit={() => {
+          setSelectedFunctions(currentWorker.functions);
+          setAvatarUrl(currentWorker.avatarUrl);
+          setError("");
+          setEditing(true);
+        }}
+      />
       <section className="card overflow-hidden">
         <div className="h-36 bg-[url('https://images.unsplash.com/photo-1523755231516-e43fd2e8dca5?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
         <div className="p-5">

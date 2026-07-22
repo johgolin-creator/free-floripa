@@ -12,9 +12,11 @@ import {
   UsersRound
 } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
 import { RoleSwitcher } from "./RoleSwitcher";
 import { useAppStore } from "../lib/store";
+import { getCompanyProfileCompletion, getWorkerProfileCompletion } from "../lib/profileCompletion";
 
 const workerLinks = [
   { to: "/app/trabalhador", label: "Início", icon: Home },
@@ -33,9 +35,14 @@ const companyLinks = [
 ];
 
 export function AppLayout() {
-  const { state, storageMode, syncStatus, syncError } = useAppStore();
+  const { state, storageMode, syncStatus, syncError, currentWorker, currentCompany } = useAppStore();
   const location = useLocation();
   const links = state.activeRole === "trabalhador" ? workerLinks : companyLinks;
+  const profilePath = state.activeRole === "trabalhador" ? "/app/perfil-trabalhador" : "/app/perfil-empresa";
+  const completion =
+    state.activeRole === "trabalhador"
+      ? getWorkerProfileCompletion(currentWorker)
+      : getCompanyProfileCompletion(currentCompany);
   const unread = state.notifications.filter((notification) => notification.role === state.activeRole && !notification.read).length;
   const syncLabel =
     storageMode === "local"
@@ -47,6 +54,10 @@ export function AppLayout() {
           : syncStatus === "salvando"
             ? "Salvando"
             : "Supabase";
+
+  if (!completion.complete && location.pathname !== profilePath) {
+    return <Navigate to={profilePath} replace />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 pb-20 md:grid md:grid-cols-[260px_1fr] md:pb-0">
