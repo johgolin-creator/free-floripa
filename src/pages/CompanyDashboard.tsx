@@ -9,6 +9,13 @@ import type { CreateJobInput } from "../lib/store";
 import { formatCurrency } from "../lib/format";
 import type { JobFunction, Neighborhood, PaymentMethod } from "../lib/types";
 
+const requiredJobFieldGroups = [
+  { title: "Vaga", fields: ["Título", "Função", "Quantidade"] },
+  { title: "Turno", fields: ["Data", "Entrada", "Saída", "Valor da diária", "Pagamento"] },
+  { title: "Local", fields: ["Bairro", "Endereço aproximado", "Endereço completo"] },
+  { title: "Requisitos", fields: ["Uniforme", "Experiência exigida", "Descrição", "Benefícios"] }
+];
+
 export function CompanyDashboard() {
   const { state, currentCompany, createJob, createUrgentReplacement } = useAppStore();
   const [showJobForm, setShowJobForm] = useState(false);
@@ -132,8 +139,33 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => void
         const description = String(form.get("description") || "").trim();
         const dailyValue = Number(form.get("dailyValue"));
         const quantity = Number(form.get("quantity"));
-        if (!title || !description || dailyValue <= 0 || quantity <= 0) {
-          setError("Preencha título, descrição, quantidade e valor da diária.");
+        const date = String(form.get("date") || "").trim();
+        const startsAt = String(form.get("startsAt") || "").trim();
+        const endsAt = String(form.get("endsAt") || "").trim();
+        const approximateAddress = String(form.get("approximateAddress") || "").trim();
+        const fullAddress = String(form.get("fullAddress") || "").trim();
+        const uniform = String(form.get("uniform") || "").trim();
+        const requiredExperience = String(form.get("requiredExperience") || "").trim();
+        const benefits = String(form.get("benefits") || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+        const missingFields = [
+          !title && "título",
+          quantity <= 0 && "quantidade",
+          !date && "data",
+          !startsAt && "entrada",
+          !endsAt && "saída",
+          dailyValue <= 0 && "valor da diária",
+          !approximateAddress && "endereço aproximado",
+          !fullAddress && "endereço completo",
+          !uniform && "uniforme",
+          !requiredExperience && "experiência exigida",
+          !description && "descrição",
+          benefits.length === 0 && "benefícios"
+        ].filter(Boolean);
+        if (missingFields.length > 0) {
+          setError(`Preencha os campos obrigatórios: ${missingFields.join(", ")}.`);
           return;
         }
         setError("");
@@ -141,69 +173,99 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => void
           title,
           function: form.get("function") as JobFunction,
           quantity,
-          date: String(form.get("date")),
-          startsAt: String(form.get("startsAt")),
-          endsAt: String(form.get("endsAt")),
+          date,
+          startsAt,
+          endsAt,
           dailyValue,
           paymentMethod: form.get("paymentMethod") as PaymentMethod,
-          approximateAddress: String(form.get("approximateAddress")),
-          fullAddress: String(form.get("fullAddress")),
+          approximateAddress,
+          fullAddress,
           neighborhood: form.get("neighborhood") as Neighborhood,
-          uniform: String(form.get("uniform")),
-          requiredExperience: String(form.get("requiredExperience")),
+          uniform,
+          requiredExperience,
           description,
-          benefits: String(form.get("benefits")).split(",").map((item) => item.trim()).filter(Boolean),
+          benefits,
           urgent: form.get("urgent") === "on"
         });
       }}
     >
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
-      <label className="label">Título<input name="title" className="input" placeholder="Garçom para beach club" /></label>
+      <RequiredFieldSummary />
+      <label className="label">Título<input name="title" className="input" required placeholder="Garçom para beach club" /></label>
       <div className="grid gap-3 md:grid-cols-2">
-        <label className="label">Função<select name="function" className="input">{functions.map((item) => <option key={item}>{item}</option>)}</select></label>
-        <label className="label">Quantidade<input name="quantity" type="number" min="1" className="input" defaultValue="1" /></label>
+        <label className="label">Função<select name="function" className="input" required>{functions.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="label">Quantidade<input name="quantity" type="number" min="1" className="input" defaultValue="1" required /></label>
         <label className="label">Data<input name="date" type="date" className="input" required /></label>
-        <label className="label">Valor da diária<input name="dailyValue" type="number" min="1" className="input" placeholder="250" /></label>
+        <label className="label">Valor da diária<input name="dailyValue" type="number" min="1" className="input" required placeholder="250" /></label>
         <label className="label">Entrada<input name="startsAt" type="time" className="input" required /></label>
         <label className="label">Saída<input name="endsAt" type="time" className="input" required /></label>
-        <label className="label">Pagamento<select name="paymentMethod" className="input"><option>Dinheiro</option><option>Pix</option><option>Transferência</option><option>A combinar</option></select></label>
-        <label className="label">Bairro<select name="neighborhood" className="input">{neighborhoods.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="label">Pagamento<select name="paymentMethod" className="input" required><option>Dinheiro</option><option>Pix</option><option>Transferência</option><option>A combinar</option></select></label>
+        <label className="label">Bairro<select name="neighborhood" className="input" required>{neighborhoods.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
-      <label className="label">Endereço aproximado<input name="approximateAddress" className="input" placeholder="Jurerê, próximo à praia" /></label>
-      <label className="label">Endereço completo<input name="fullAddress" className="input" placeholder="Liberado após confirmação" /></label>
-      <label className="label">Uniforme<input name="uniform" className="input" placeholder="Camisa preta e calça preta" /></label>
-      <label className="label">Experiência exigida<input name="requiredExperience" className="input" placeholder="Experiência com atendimento" /></label>
-      <label className="label">Descrição<textarea name="description" className="input min-h-24 py-3" /></label>
-      <label className="label">Benefícios<input name="benefits" className="input" placeholder="Alimentação, transporte" /></label>
+      <label className="label">Endereço aproximado<input name="approximateAddress" className="input" required placeholder="Jurerê, próximo à praia" /></label>
+      <label className="label">Endereço completo<input name="fullAddress" className="input" required placeholder="Liberado após confirmação" /></label>
+      <label className="label">Uniforme<input name="uniform" className="input" required placeholder="Camisa preta e calça preta" /></label>
+      <label className="label">Experiência exigida<input name="requiredExperience" className="input" required placeholder="Experiência com atendimento" /></label>
+      <label className="label">Descrição<textarea name="description" className="input min-h-24 py-3" required /></label>
+      <label className="label">Benefícios<input name="benefits" className="input" required placeholder="Alimentação, transporte" /></label>
       <label className="flex items-center gap-2 text-sm font-bold text-slate-600"><input name="urgent" type="checkbox" className="h-5 w-5 accent-alert" /> Vaga urgente</label>
       <button type="submit" className="primary">Publicar vaga</button>
     </form>
   );
 }
 
+function RequiredFieldSummary() {
+  return (
+    <section className="rounded-lg border border-aqua-100 bg-aqua-100 p-3">
+      <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+        <ClipboardList size={17} /> Campos obrigatórios
+      </div>
+      <div className="mt-3 grid gap-2 md:grid-cols-2">
+        {requiredJobFieldGroups.map((group) => (
+          <div key={group.title} className="rounded-lg bg-white p-3">
+            <strong className="text-xs uppercase text-aqua-700">{group.title}</strong>
+            <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{group.fields.join(", ")}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function UrgentForm({ onSubmit }: { onSubmit: (input: any) => void }) {
+  const [error, setError] = useState("");
+
   return (
     <form
       className="grid gap-3"
       onSubmit={(event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
+        const quantity = Number(form.get("quantity"));
+        const startsAt = String(form.get("startsAt") || "").trim();
+        const dailyValue = Number(form.get("dailyValue"));
+        if (quantity <= 0 || !startsAt || dailyValue <= 0) {
+          setError("Preencha quantidade, horário e valor para criar a reposição urgente.");
+          return;
+        }
+        setError("");
         onSubmit({
           function: form.get("function") as JobFunction,
-          quantity: Number(form.get("quantity")),
-          startsAt: String(form.get("startsAt")),
-          dailyValue: Number(form.get("dailyValue")),
+          quantity,
+          startsAt,
+          dailyValue,
           neighborhood: form.get("neighborhood") as Neighborhood,
           observation: String(form.get("observation") || "")
         });
       }}
     >
+      {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
       <div className="grid gap-3 md:grid-cols-2">
-        <label className="label">Função<select name="function" className="input">{functions.map((item) => <option key={item}>{item}</option>)}</select></label>
-        <label className="label">Quantidade<input name="quantity" type="number" min="1" defaultValue="1" className="input" /></label>
+        <label className="label">Função<select name="function" className="input" required>{functions.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="label">Quantidade<input name="quantity" type="number" min="1" defaultValue="1" className="input" required /></label>
         <label className="label">Horário<input name="startsAt" type="time" className="input" required /></label>
-        <label className="label">Valor<input name="dailyValue" type="number" min="1" className="input" placeholder="280" /></label>
-        <label className="label md:col-span-2">Bairro<select name="neighborhood" className="input">{neighborhoods.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="label">Valor<input name="dailyValue" type="number" min="1" className="input" required placeholder="280" /></label>
+        <label className="label md:col-span-2">Bairro<select name="neighborhood" className="input" required>{neighborhoods.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
       <label className="label">Observação<textarea name="observation" className="input min-h-24 py-3" placeholder="Cobrir falta no turno da noite" /></label>
       <button type="submit" className="danger">Criar vaga URGENTE</button>

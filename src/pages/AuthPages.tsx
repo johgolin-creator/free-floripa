@@ -1,9 +1,22 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, Building2, Camera, CheckCircle2, LogIn, UserRound } from "lucide-react";
+import { ArrowLeft, Building2, Camera, CheckCircle2, ClipboardList, LogIn, UserRound } from "lucide-react";
 import { BrandLogo } from "../components/BrandLogo";
 import { experienceLevels, functions } from "../data/demoData";
 import { useAppStore } from "../lib/store";
+
+const companyRequiredFields = [
+  "Nome do estabelecimento",
+  "Responsável",
+  "CNPJ",
+  "Telefone",
+  "E-mail",
+  "Senha",
+  "Categoria",
+  "Bairro",
+  "Endereço",
+  "Descrição"
+];
 
 export function LoginPage() {
   const { setRole } = useAppStore();
@@ -45,6 +58,12 @@ export function WorkerSignupPage() {
           navigate("/app/trabalhador");
         }}
       >
+        <section className="rounded-lg border border-aqua-100 bg-aqua-100 p-3">
+          <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+            <ClipboardList size={17} /> Dados obrigatórios do contratante
+          </div>
+          <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">{companyRequiredFields.join(", ")}.</p>
+        </section>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="label">Nome completo<input className="input" required /></label>
           <label className="label">Telefone<input className="input" required placeholder="(48) 99999-9999" /></label>
@@ -134,7 +153,7 @@ export function CompanySignupPage() {
           <label className="label">Telefone<input className="input" required placeholder="(48) 99999-9999" /></label>
           <label className="label">E-mail<input className="input" type="email" required /></label>
           <label className="label">Senha<input className="input" type="password" required /></label>
-          <label className="label">Categoria<select className="input"><option>Restaurante</option><option>Bar</option><option>Beach club</option><option>Hotel</option><option>Casa noturna</option><option>Buffet</option><option>Agência de eventos</option><option>Outro</option></select></label>
+          <label className="label">Categoria<select className="input" required><option>Restaurante</option><option>Bar</option><option>Beach club</option><option>Hotel</option><option>Casa noturna</option><option>Buffet</option><option>Agência de eventos</option><option>Outro</option></select></label>
           <label className="label">Bairro<input className="input" required placeholder="Jurerê" /></label>
         </div>
         <label className="label">Endereço<input className="input" required /></label>

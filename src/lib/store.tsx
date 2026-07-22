@@ -282,7 +282,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ...current,
           workers: current.workers.map((worker) =>
             worker.id === workerId
-              ? { ...worker, reviews: [{ id: crypto.randomUUID(), ...review }, ...worker.reviews] }
+              ? (() => {
+                  const reviews = [{ id: crypto.randomUUID(), ...review }, ...worker.reviews];
+                  const rating = reviews.reduce((total, item) => total + item.rating, 0) / reviews.length;
+                  return {
+                    ...worker,
+                    rating: Number(rating.toFixed(1)),
+                    completedJobs: worker.completedJobs + 1,
+                    reviews
+                  };
+                })()
               : worker
           )
         }));
