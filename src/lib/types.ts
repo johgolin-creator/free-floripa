@@ -3,6 +3,7 @@ export type UserRole = "trabalhador" | "empresa";
 export type JobFunction =
   | "Garçom"
   | "Bartender"
+  | "Segurança"
   | "Auxiliar de cozinha"
   | "Copeiro"
   | "Recepcionista"
