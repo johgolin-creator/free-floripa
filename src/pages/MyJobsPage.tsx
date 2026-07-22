@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { Clock, LogIn, LogOut } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
+import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, formatDateTime } from "../lib/format";
+import type { Job } from "../lib/types";
 
 const tabs = ["Próximos", "Em andamento", "Concluídos", "Cancelados"] as const;
 
 export function MyJobsPage() {
   const { state, currentWorker, checkIn, checkOut } = useAppStore();
   const [tab, setTab] = useState<(typeof tabs)[number]>("Próximos");
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const workerShifts = state.shifts.filter((shift) => shift.workerId === currentWorker.id);
 
   const filtered = workerShifts.filter((shift) => {
@@ -63,7 +66,7 @@ export function MyJobsPage() {
                       <LogOut size={17} /> Fazer check-out
                     </button>
                   )}
-                  <button type="button" onClick={() => alert("Detalhes do turno exibidos nesta demonstração.")} className="secondary">
+                  <button type="button" onClick={() => setSelectedJob(job)} className="secondary">
                     <Clock size={17} /> Detalhes
                   </button>
                 </div>
@@ -72,6 +75,28 @@ export function MyJobsPage() {
           })}
         </div>
       )}
+
+      {selectedJob && (
+        <Modal title={selectedJob.title} onClose={() => setSelectedJob(null)}>
+          <div className="grid gap-3 text-sm text-slate-600">
+            <Info label="Data e horário" value={`${formatDate(selectedJob.date)} - ${selectedJob.startsAt} às ${selectedJob.endsAt}`} />
+            <Info label="Valor" value={formatCurrency(selectedJob.dailyValue)} />
+            <Info label="Endereço aproximado" value={selectedJob.approximateAddress} />
+            <Info label="Endereço completo" value={selectedJob.fullAddress} />
+            <Info label="Uniforme" value={selectedJob.uniform} />
+            <Info label="Benefícios" value={selectedJob.benefits.join(", ")} />
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <span className="text-xs font-black uppercase text-slate-500">{label}</span>
+      <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
     </div>
   );
 }

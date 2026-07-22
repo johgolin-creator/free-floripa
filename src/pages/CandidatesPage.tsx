@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Heart } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
@@ -7,12 +8,14 @@ import { getOpenSlots } from "../lib/rules";
 
 export function CandidatesPage() {
   const { state, currentCompany, toggleFavorite, updateApplicationStatus } = useAppStore();
+  const [message, setMessage] = useState("");
   const companyJobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const applications = state.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId));
 
   return (
     <div>
       <SectionHeader eyebrow="Candidatos" title="Candidatos por vaga" description="Aprove, recuse e favorite profissionais sem exceder a quantidade de vagas." />
+      {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       {applications.length === 0 ? (
         <EmptyState title="Nenhum candidato ainda" text="Quando trabalhadores se candidatarem às suas vagas, eles aparecerão nesta tela." />
       ) : (
@@ -47,7 +50,7 @@ export function CandidatesPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => alert(updateApplicationStatus(application.id, "Recusada").message)}
+                            onClick={() => setMessage(updateApplicationStatus(application.id, "Recusada").message)}
                             disabled={refused}
                             className="secondary"
                           >
@@ -55,7 +58,7 @@ export function CandidatesPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => alert(updateApplicationStatus(application.id, "Aprovada").message)}
+                            onClick={() => setMessage(updateApplicationStatus(application.id, "Aprovada").message)}
                             disabled={approved || noSlots}
                             className="primary"
                           >

@@ -80,13 +80,13 @@ export function JobsPage() {
           <input type="checkbox" checked={urgentOnly} onChange={(event) => setUrgentOnly(event.target.checked)} className="h-5 w-5 accent-aqua-500" />
           Mostrar somente vagas urgentes
         </label>
-        <div className="flex gap-2 md:col-span-4 md:justify-end">
+        <div className="flex flex-wrap items-center gap-2 md:col-span-4 md:justify-end">
           <button type="button" onClick={clearFilters} className="secondary">
             <RotateCcw size={17} /> Limpar
           </button>
-          <button type="button" onClick={() => undefined} className="primary">
+          <span className="badge min-h-11 px-4">
             <Filter size={17} /> {filteredJobs.length} resultados
-          </button>
+          </span>
         </div>
       </section>
 

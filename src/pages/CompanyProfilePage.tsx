@@ -20,6 +20,7 @@ const companyCategories: CompanyProfile["category"][] = [
 export function CompanyProfilePage() {
   const { currentCompany, updateCompanyProfile } = useAppStore();
   const [editing, setEditing] = useState(false);
+  const [message, setMessage] = useState("");
 
   return (
     <div>
@@ -28,6 +29,7 @@ export function CompanyProfilePage() {
         title="Perfil da empresa"
         action={<button type="button" onClick={() => setEditing(true)} className="primary"><Edit3 size={17} /> Editar perfil</button>}
       />
+      {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       <section className="card overflow-hidden">
         <div className="h-36 bg-[url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
         <div className="p-5">
@@ -58,7 +60,7 @@ export function CompanyProfilePage() {
             onSubmit={(input) => {
               updateCompanyProfile(input);
               setEditing(false);
-              alert("Perfil da empresa atualizado.");
+              setMessage("Perfil da empresa atualizado.");
             }}
           />
         </Modal>
