@@ -341,6 +341,7 @@ create policy "demo state public update" on public.app_state_snapshots for updat
 insert into public.job_categories (name) values
   ('Garçom'),
   ('Bartender'),
+  ('Segurança'),
   ('Auxiliar de cozinha'),
   ('Copeiro'),
   ('Recepcionista'),
