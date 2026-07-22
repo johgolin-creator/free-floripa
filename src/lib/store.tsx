@@ -1,6 +1,7 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { initialState } from "../data/demoData";
 import { canApply, getOpenSlots } from "./rules";
+import { loadSupabaseState, saveSupabaseState, supabaseStateEnabled } from "./supabaseState";
 import type { AppState, Application, ApplicationStatus, CompanyProfile, Job, JobFunction, Neighborhood, PaymentMethod, Review } from "./types";
 
 const STORAGE_KEY = "free-floripa:state";
@@ -35,6 +36,9 @@ export interface UrgentReplacementInput {
 
 interface AppContextValue {
   state: AppState;
+  storageMode: "supabase" | "local";
+  syncStatus: "carregando" | "sincronizado" | "salvando" | "local" | "erro";
+  syncError: string;
   currentWorker: AppState["workers"][number];
   currentCompany: AppState["companies"][number];
   setRole: (role: AppState["activeRole"]) => void;
@@ -79,14 +83,60 @@ function hasShiftFor(shifts: AppState["shifts"], jobId: string, workerId: string
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(() => loadInitialState());
+  const [syncStatus, setSyncStatus] = useState<AppContextValue["syncStatus"]>(
+    supabaseStateEnabled ? "carregando" : "local"
+  );
+  const [syncError, setSyncError] = useState("");
 
   function commit(updater: (current: AppState) => AppState) {
     setState((current) => {
       const next = updater(current);
       persist(next);
+      void persistRemote(next);
       return next;
     });
   }
+
+  async function persistRemote(nextState: AppState) {
+    if (!supabaseStateEnabled) return;
+    try {
+      setSyncStatus("salvando");
+      await saveSupabaseState(nextState);
+      setSyncError("");
+      setSyncStatus("sincronizado");
+    } catch (error) {
+      setSyncError(error instanceof Error ? error.message : "Falha ao salvar no Supabase.");
+      setSyncStatus("erro");
+    }
+  }
+
+  useEffect(() => {
+    if (!supabaseStateEnabled) return;
+
+    let active = true;
+    setSyncStatus("carregando");
+    loadSupabaseState()
+      .then((remoteState) => {
+        if (!active) return;
+        if (remoteState) {
+          setState(remoteState);
+          persist(remoteState);
+        } else {
+          void persistRemote(loadInitialState());
+        }
+        setSyncError("");
+        setSyncStatus("sincronizado");
+      })
+      .catch((error) => {
+        if (!active) return;
+        setSyncError(error instanceof Error ? error.message : "Falha ao carregar dados do Supabase.");
+        setSyncStatus("erro");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const currentWorker = state.workers.find((worker) => worker.id === state.selectedWorkerId) ?? state.workers[0];
   const currentCompany = state.companies.find((company) => company.id === state.selectedCompanyId) ?? state.companies[0];
@@ -126,6 +176,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue>(
     () => ({
       state,
+      storageMode: supabaseStateEnabled ? "supabase" : "local",
+      syncStatus,
+      syncError,
       currentWorker,
       currentCompany,
       setRole(role) {
@@ -426,7 +479,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }));
       }
     }),
-    [state, currentWorker, currentCompany]
+    [state, syncStatus, syncError, currentWorker, currentCompany]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -192,6 +192,16 @@ create table public.notifications (
   created_at timestamptz not null default now()
 );
 
+-- MVP demo persistence: stores the current app state in Supabase while auth is not active.
+-- Use VITE_SUPABASE_STATE_KEY to separate environments such as demo, staging, and production.
+create table public.app_state_snapshots (
+  id uuid primary key default gen_random_uuid(),
+  state_key text not null unique,
+  payload jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -211,6 +221,7 @@ create trigger applications_updated_at before update on public.applications for 
 create trigger work_shifts_updated_at before update on public.work_shifts for each row execute function public.set_updated_at();
 create trigger subscriptions_updated_at before update on public.subscriptions for each row execute function public.set_updated_at();
 create trigger application_credits_updated_at before update on public.application_credits for each row execute function public.set_updated_at();
+create trigger app_state_snapshots_updated_at before update on public.app_state_snapshots for each row execute function public.set_updated_at();
 
 alter table public.users enable row level security;
 alter table public.worker_profiles enable row level security;
@@ -226,6 +237,7 @@ alter table public.favorites enable row level security;
 alter table public.subscriptions enable row level security;
 alter table public.application_credits enable row level security;
 alter table public.notifications enable row level security;
+alter table public.app_state_snapshots enable row level security;
 
 create policy "users read own" on public.users for select using (auth.uid() = id);
 create policy "users update own" on public.users for update using (auth.uid() = id);
@@ -320,6 +332,11 @@ create policy "users read own subscriptions" on public.subscriptions for select 
 create policy "users read own credits" on public.application_credits for select using (auth.uid() = user_id);
 create policy "users read own notifications" on public.notifications for select using (auth.uid() = user_id);
 create policy "users update own notifications" on public.notifications for update using (auth.uid() = user_id);
+
+-- Demo-only policy for the shared MVP state. Replace with authenticated policies before production launch.
+create policy "demo state public read" on public.app_state_snapshots for select using (true);
+create policy "demo state public insert" on public.app_state_snapshots for insert with check (true);
+create policy "demo state public update" on public.app_state_snapshots for update using (true) with check (true);
 
 insert into public.job_categories (name) values
   ('Garçom'),

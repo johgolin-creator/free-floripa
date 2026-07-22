@@ -180,7 +180,7 @@ function AuthShell({ title, description, children }: { title: string; descriptio
             <h1 className="text-2xl font-black text-navy-950">{title}</h1>
             <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
             <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-aqua-700">
-              <CheckCircle2 size={17} /> Demonstração funcional; integração real será feita no Supabase.
+              <CheckCircle2 size={17} /> Demonstração funcional; integração com Supabase ativa quando configurada.
             </p>
           </div>
           {children}

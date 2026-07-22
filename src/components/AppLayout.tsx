@@ -4,6 +4,7 @@ import {
   Building2,
   CalendarCheck,
   ClipboardList,
+  Cloud,
   Home,
   Search,
   Star,
@@ -32,10 +33,20 @@ const companyLinks = [
 ];
 
 export function AppLayout() {
-  const { state } = useAppStore();
+  const { state, storageMode, syncStatus, syncError } = useAppStore();
   const location = useLocation();
   const links = state.activeRole === "trabalhador" ? workerLinks : companyLinks;
   const unread = state.notifications.filter((notification) => notification.role === state.activeRole && !notification.read).length;
+  const syncLabel =
+    storageMode === "local"
+      ? "Local"
+      : syncStatus === "erro"
+        ? "Erro Supabase"
+        : syncStatus === "carregando"
+          ? "Carregando"
+          : syncStatus === "salvando"
+            ? "Salvando"
+            : "Supabase";
 
   return (
     <div className="min-h-screen bg-slate-100 pb-20 md:grid md:grid-cols-[260px_1fr] md:pb-0">
@@ -87,8 +98,18 @@ export function AppLayout() {
                 {state.activeRole === "trabalhador" ? "Área do trabalhador" : "Área da empresa"}
               </h1>
             </div>
-            <div className="w-52 max-w-full">
-              <RoleSwitcher />
+            <div className="flex items-center gap-2">
+              <span
+                className={`hidden min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-black md:inline-flex ${
+                  syncStatus === "erro" ? "bg-red-50 text-alert" : storageMode === "supabase" ? "bg-aqua-100 text-aqua-700" : "bg-slate-100 text-slate-500"
+                }`}
+                title={syncError || (storageMode === "supabase" ? "Dados sincronizados no Supabase" : "Dados salvos apenas neste navegador")}
+              >
+                <Cloud size={16} /> {syncLabel}
+              </span>
+              <div className="w-52 max-w-full">
+                <RoleSwitcher />
+              </div>
             </div>
           </div>
         </header>
