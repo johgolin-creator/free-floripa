@@ -63,7 +63,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 function loadInitialState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : initialState;
+    return raw ? mergeSeedUpdates(JSON.parse(raw)) : initialState;
   } catch {
     return initialState;
   }
@@ -79,6 +79,50 @@ function countApproved(applications: Application[], jobId: string) {
 
 function hasShiftFor(shifts: AppState["shifts"], jobId: string, workerId: string) {
   return shifts.some((shift) => shift.jobId === jobId && shift.workerId === workerId);
+}
+
+function mergeSeedUpdates(savedState: AppState): AppState {
+  const securityJob = initialState.jobs.find((job) => job.id === "job-6");
+  const seededWorker = initialState.workers.find((worker) => worker.id === "worker-3");
+  let changed = false;
+
+  const jobs =
+    securityJob && !savedState.jobs.some((job) => job.id === securityJob.id)
+      ? [securityJob, ...savedState.jobs]
+      : savedState.jobs;
+  changed ||= jobs !== savedState.jobs;
+
+  const workers = seededWorker
+    ? savedState.workers.map((worker) => {
+        if (worker.id !== seededWorker.id) return worker;
+
+        const functions = Array.from(new Set([...worker.functions, ...seededWorker.functions]));
+        const functionExperience = [
+          ...worker.functionExperience,
+          ...seededWorker.functionExperience.filter(
+            (seedExperience) =>
+              !worker.functionExperience.some((experience) => experience.function === seedExperience.function)
+          )
+        ];
+
+        const updated =
+          functions.length !== worker.functions.length || functionExperience.length !== worker.functionExperience.length;
+        changed ||= updated;
+
+        return updated
+          ? {
+              ...worker,
+              functions,
+              functionExperience,
+              experience: worker.experience.includes("Controle de acesso")
+                ? worker.experience
+                : `${worker.experience} Controle de acesso.`
+            }
+          : worker;
+      })
+    : savedState.workers;
+
+  return changed ? { ...savedState, jobs, workers } : savedState;
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -119,8 +163,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .then((remoteState) => {
         if (!active) return;
         if (remoteState) {
-          setState(remoteState);
-          persist(remoteState);
+          const migratedState = mergeSeedUpdates(remoteState);
+          setState(migratedState);
+          persist(migratedState);
+          if (migratedState !== remoteState) {
+            void persistRemote(migratedState);
+          }
         } else {
           void persistRemote(loadInitialState());
         }
