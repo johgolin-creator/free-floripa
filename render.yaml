@@ -2,7 +2,7 @@ services:
   - type: web
     name: free-floripa
     runtime: static
-    buildCommand: npm install && npm run build
+    buildCommand: pnpm run build
     staticPublishPath: ./dist
     autoDeployTrigger: commit
     routes:
