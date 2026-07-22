@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { initialState } from "../data/demoData";
 import { canApply, getOpenSlots } from "./rules";
 import { loadSupabaseState, saveSupabaseState, supabaseStateEnabled } from "./supabaseState";
-import type { AppState, Application, ApplicationStatus, CompanyProfile, Job, JobFunction, Neighborhood, PaymentMethod, Review } from "./types";
+import type { AppState, Application, ApplicationStatus, CompanyProfile, Job, JobFunction, Neighborhood, PaymentMethod, Review, WorkerProfile } from "./types";
 
 const STORAGE_KEY = "free-floripa:state";
 
@@ -44,6 +44,7 @@ interface AppContextValue {
   setRole: (role: AppState["activeRole"]) => void;
   createJob: (input: CreateJobInput) => string;
   createUrgentReplacement: (input: UrgentReplacementInput) => string;
+  updateWorkerProfile: (input: Partial<Pick<WorkerProfile, "description" | "availability" | "hasTransport" | "maxDistanceKm">>) => void;
   updateCompanyProfile: (input: Partial<CompanyProfile>) => void;
   applyToJob: (jobId: string) => { ok: boolean; message: string; requiresPlan?: boolean };
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => { ok: boolean; message: string };
@@ -252,6 +253,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
           benefits: ["Contato liberado após confirmação"],
           urgent: true
         });
+      },
+      updateWorkerProfile(input) {
+        commit((current) => ({
+          ...current,
+          workers: current.workers.map((worker) =>
+            worker.id === currentWorker.id
+              ? {
+                  ...worker,
+                  ...input,
+                  id: worker.id,
+                  rating: worker.rating,
+                  completedJobs: worker.completedJobs,
+                  reviews: worker.reviews
+                }
+              : worker
+          )
+        }));
       },
       updateCompanyProfile(input) {
         commit((current) => ({

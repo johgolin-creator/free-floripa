@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BadgeCheck, CalendarCheck, ClipboardList, CreditCard, Star, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -9,6 +10,7 @@ import { formatDate } from "../lib/format";
 
 export function WorkerDashboard() {
   const { state, currentWorker, subscribeProfessional, buyCredits } = useAppStore();
+  const [message, setMessage] = useState("");
   const reliability = calculateReliability(currentWorker);
   const applications = state.applications.filter((application) => application.workerId === currentWorker.id);
   const urgentJobs = state.jobs.filter((job) => job.urgent).slice(0, 2);
@@ -30,6 +32,8 @@ export function WorkerDashboard() {
         <Metric icon={<BadgeCheck />} label="Índice de confiabilidade" value={`${reliability}%`} />
       </div>
 
+      {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+
       <section className="card grid gap-4 p-4 md:grid-cols-[1fr_auto_auto] md:items-center">
         <div>
           <h3 className="font-black text-navy-950">Candidaturas e plano</h3>
@@ -37,10 +41,24 @@ export function WorkerDashboard() {
             Renovação em {formatDate(state.subscription.renewalDate)}. O plano gratuito inclui 5 candidaturas por mês.
           </p>
         </div>
-        <button type="button" onClick={subscribeProfessional} className="primary">
+        <button
+          type="button"
+          onClick={() => {
+            subscribeProfessional();
+            setMessage("Plano profissional ativado. Candidaturas ilimitadas liberadas.");
+          }}
+          className="primary"
+        >
           Assinar plano profissional
         </button>
-        <button type="button" onClick={buyCredits} className="secondary">
+        <button
+          type="button"
+          onClick={() => {
+            buyCredits();
+            setMessage("Mais 5 candidaturas foram adicionadas ao seu saldo.");
+          }}
+          className="secondary"
+        >
           Comprar candidaturas
         </button>
       </section>

@@ -17,6 +17,7 @@ export function TeamPage() {
   const { state, currentCompany, addReview, inviteWorkerToJob } = useAppStore();
   const [workerToReview, setWorkerToReview] = useState<WorkerProfile | null>(null);
   const [workerToInvite, setWorkerToInvite] = useState<WorkerProfile | null>(null);
+  const [message, setMessage] = useState("");
   const favorites = state.workers.filter((worker) => state.favoriteWorkerIds.includes(worker.id));
   const hiredIds = state.applications.filter((application) => application.status === "Aprovada").map((application) => application.workerId);
   const hired = state.workers.filter((worker) => hiredIds.includes(worker.id));
@@ -30,6 +31,7 @@ export function TeamPage() {
         title="Favoritos e contratados"
         description="Convide novamente profissionais salvos e avalie colaboradores depois do turno."
       />
+      {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       {team.length === 0 ? (
         <EmptyState title="Nenhum profissional salvo" text="Favorite candidatos para montar sua base de confiança." />
       ) : (
@@ -65,7 +67,7 @@ export function TeamPage() {
                 comment: review.comment
               });
               setWorkerToReview(null);
-              alert("Avaliação registrada no histórico do colaborador.");
+              setMessage("Avaliação registrada no histórico do colaborador.");
             }}
           />
         </Modal>
@@ -78,7 +80,7 @@ export function TeamPage() {
             onSubmit={(jobId) => {
               const result = inviteWorkerToJob(workerToInvite.id, jobId);
               if (result.ok) setWorkerToInvite(null);
-              alert(result.message);
+              setMessage(result.message);
             }}
           />
         </Modal>

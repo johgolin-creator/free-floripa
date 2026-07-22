@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { AlertTriangle, BriefcaseBusiness, CheckCircle2, ClipboardList, Plus, UsersRound, Zap } from "lucide-react";
+import { Link } from "react-router-dom";
+import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
 import { functions, neighborhoods } from "../data/demoData";
@@ -20,6 +22,7 @@ export function CompanyDashboard() {
   const { state, currentCompany, createJob, createUrgentReplacement } = useAppStore();
   const [showJobForm, setShowJobForm] = useState(false);
   const [showUrgentForm, setShowUrgentForm] = useState(false);
+  const [message, setMessage] = useState("");
   const companyJobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const companyApplications = state.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId));
   const confirmed = companyApplications.filter((application) => application.status === "Aprovada").length;
@@ -50,12 +53,17 @@ export function CompanyDashboard() {
         <Metric icon={<AlertTriangle />} label="Faltas registradas" value={absences} />
       </div>
 
+      {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="card p-4">
           <h3 className="mb-3 font-black text-navy-950">Vagas abertas</h3>
+          {companyJobs.length === 0 ? (
+            <EmptyState title="Nenhuma vaga publicada" text="Use os botões acima para criar uma vaga comum ou uma reposição urgente." />
+          ) : (
           <div className="grid gap-3">
             {companyJobs.map((job) => (
-              <div key={job.id} className="rounded-lg border border-slate-200 p-3">
+              <article key={job.id} className="rounded-lg border border-slate-200 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <span className={job.urgent ? "badge urgent" : "badge"}>{job.urgent ? "URGENTE" : job.function}</span>
@@ -64,29 +72,44 @@ export function CompanyDashboard() {
                   </div>
                   <span className="text-sm font-bold text-slate-600">{job.filled}/{job.quantity} confirmados</span>
                 </div>
-              </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link to="/app/minhas-vagas" className="secondary min-h-10 px-3">Ver vaga</Link>
+                  <Link to="/app/candidatos" className="secondary min-h-10 px-3">Candidatos</Link>
+                </div>
+              </article>
             ))}
           </div>
+          )}
         </div>
 
         <div className="card p-4">
           <h3 className="mb-3 font-black text-navy-950">Operação</h3>
-          <div className="grid gap-2 text-sm font-semibold text-slate-600">
-            <span className="flex items-center gap-2"><UsersRound size={17} /> Candidatos recebidos</span>
-            <span className="flex items-center gap-2"><BriefcaseBusiness size={17} /> Trabalhos em andamento</span>
-            <span className="flex items-center gap-2"><CheckCircle2 size={17} /> Trabalhos concluídos</span>
-            <span className="flex items-center gap-2"><ClipboardList size={17} /> Histórico de contratações</span>
+          <div className="grid gap-2 text-sm font-semibold">
+            <Link to="/app/candidatos" className="secondary justify-start"><UsersRound size={17} /> Candidatos recebidos</Link>
+            <Link to="/app/minhas-vagas" className="secondary justify-start"><BriefcaseBusiness size={17} /> Vagas publicadas</Link>
+            <Link to="/app/equipe" className="secondary justify-start"><CheckCircle2 size={17} /> Favoritos e contratados</Link>
+            <Link to="/app/equipe" className="secondary justify-start"><ClipboardList size={17} /> Histórico de contratações</Link>
           </div>
         </div>
       </section>
 
-      {showJobForm && <CreateJobModal title="Criar nova vaga" onClose={() => setShowJobForm(false)} onCreate={createJob} />}
+      {showJobForm && (
+        <CreateJobModal
+          title="Criar nova vaga"
+          onClose={() => setShowJobForm(false)}
+          onCreate={(input) => {
+            createJob(input);
+            setMessage("Vaga publicada com sucesso. Ela já aparece em Minhas vagas e para os trabalhadores compatíveis.");
+          }}
+        />
+      )}
       {showUrgentForm && (
         <Modal title="Reposição urgente" onClose={() => setShowUrgentForm(false)}>
           <UrgentForm
             onSubmit={(input) => {
               createUrgentReplacement(input);
               setShowUrgentForm(false);
+              setMessage("Reposição urgente publicada. Ela foi marcada como URGENTE para os trabalhadores.");
             }}
           />
         </Modal>
@@ -112,7 +135,7 @@ function CreateJobModal({
 }: {
   title: string;
   onClose: () => void;
-  onCreate: (input: CreateJobInput) => string;
+  onCreate: (input: CreateJobInput) => void;
 }) {
   return (
     <Modal title={title} onClose={onClose}>

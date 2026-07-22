@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { BadgeCheck, Edit3, Star } from "lucide-react";
+import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
 import { useAppStore } from "../lib/store";
 import { calculateReliability, getExperienceLabel, getFunctionExperience } from "../lib/rules";
 
 export function WorkerProfilePage() {
-  const { currentWorker } = useAppStore();
+  const { currentWorker, updateWorkerProfile } = useAppStore();
+  const [editing, setEditing] = useState(false);
+  const [message, setMessage] = useState("");
   const reliability = calculateReliability(currentWorker);
   const functionExperiences = currentWorker.functions
     .map((item) => getFunctionExperience(currentWorker, item))
@@ -12,7 +16,8 @@ export function WorkerProfilePage() {
 
   return (
     <div>
-      <SectionHeader eyebrow="Perfil" title="Perfil do trabalhador" action={<button type="button" onClick={() => alert("Edição simulada do perfil aberta.")} className="primary"><Edit3 size={17} /> Editar perfil</button>} />
+      <SectionHeader eyebrow="Perfil" title="Perfil do trabalhador" action={<button type="button" onClick={() => setEditing(true)} className="primary"><Edit3 size={17} /> Editar perfil</button>} />
+      {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       <section className="card overflow-hidden">
         <div className="h-36 bg-[url('https://images.unsplash.com/photo-1523755231516-e43fd2e8dca5?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
         <div className="p-5">
@@ -76,6 +81,49 @@ export function WorkerProfilePage() {
           </div>
         </div>
       </section>
+
+      {editing && (
+        <Modal title="Editar perfil do trabalhador" onClose={() => setEditing(false)}>
+          <form
+            className="grid gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const form = new FormData(event.currentTarget);
+              const description = String(form.get("description") || "").trim();
+              const availability = String(form.get("availability") || "").trim();
+              const maxDistanceKm = Number(form.get("maxDistanceKm"));
+              if (!description || !availability || maxDistanceKm <= 0) return;
+
+              updateWorkerProfile({
+                description,
+                availability,
+                maxDistanceKm,
+                hasTransport: form.get("hasTransport") === "on"
+              });
+              setEditing(false);
+              setMessage("Perfil atualizado com sucesso.");
+            }}
+          >
+            <label className="label">
+              Descrição
+              <textarea name="description" className="input min-h-24 py-3" required defaultValue={currentWorker.description} />
+            </label>
+            <label className="label">
+              Disponibilidade
+              <input name="availability" className="input" required defaultValue={currentWorker.availability} />
+            </label>
+            <label className="label">
+              Distância máxima
+              <input name="maxDistanceKm" type="number" min="1" className="input" required defaultValue={currentWorker.maxDistanceKm} />
+            </label>
+            <label className="flex items-center gap-2 text-sm font-bold text-slate-600">
+              <input name="hasTransport" type="checkbox" defaultChecked={currentWorker.hasTransport} className="h-5 w-5 accent-aqua-500" />
+              Tenho transporte próprio
+            </label>
+            <button type="submit" className="primary">Salvar perfil</button>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }
