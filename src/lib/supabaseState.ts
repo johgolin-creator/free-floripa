@@ -5,13 +5,17 @@ const STATE_KEY = import.meta.env.VITE_SUPABASE_STATE_KEY || "free-floripa-demo"
 
 export const supabaseStateEnabled = Boolean(supabase);
 
-export async function loadSupabaseState() {
+export function getSupabaseStateKey(userId?: string | null) {
+  return userId ? `${STATE_KEY}:${userId}` : STATE_KEY;
+}
+
+export async function loadSupabaseState(stateKey = STATE_KEY) {
   if (!supabase) return null;
 
   const { data, error } = await supabase
     .from("app_state_snapshots")
     .select("payload")
-    .eq("state_key", STATE_KEY)
+    .eq("state_key", stateKey)
     .maybeSingle();
 
   if (error) {
@@ -21,12 +25,12 @@ export async function loadSupabaseState() {
   return data?.payload ? (data.payload as AppState) : null;
 }
 
-export async function saveSupabaseState(state: AppState) {
+export async function saveSupabaseState(state: AppState, stateKey = STATE_KEY) {
   if (!supabase) return;
 
   const { error } = await supabase.from("app_state_snapshots").upsert(
     {
-      state_key: STATE_KEY,
+      state_key: stateKey,
       payload: state,
       updated_at: new Date().toISOString()
     },
