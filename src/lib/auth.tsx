@@ -25,6 +25,16 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const DEFAULT_PUBLIC_APP_URL = "https://free-floripa.onrender.com";
+
+function getAuthRedirectUrl() {
+  const configuredUrl = import.meta.env.VITE_PUBLIC_APP_URL;
+  const browserOrigin = window.location.origin;
+  const isLocalOrigin = browserOrigin.includes("localhost") || browserOrigin.includes("127.0.0.1");
+  const baseUrl = configuredUrl || (isLocalOrigin ? DEFAULT_PUBLIC_APP_URL : browserOrigin);
+
+  return `${baseUrl.replace(/\/$/, "")}/login`;
+}
 
 function getUserRole(user: User | null): UserRole | null {
   const role = user?.user_metadata?.role;
@@ -113,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               ...metadata,
               role: fallbackRole
             },
-            emailRedirectTo: `${window.location.origin}/login`
+            emailRedirectTo: getAuthRedirectUrl()
           }
         });
         if (error) throw new Error(getAuthErrorMessage(error.message));
