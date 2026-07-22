@@ -89,6 +89,7 @@ function CompanyProfileForm({
         const cnpj = String(form.get("cnpj") || "").trim();
         const phone = String(form.get("phone") || "").trim();
         const email = String(form.get("email") || "").trim();
+        const logoUrl = String(form.get("logoUrl") || "").trim();
         const address = String(form.get("address") || "").trim();
         const description = String(form.get("description") || "").trim();
 
@@ -106,6 +107,7 @@ function CompanyProfileForm({
           email,
           category: form.get("category") as CompanyProfile["category"],
           neighborhood: form.get("neighborhood") as CompanyProfile["neighborhood"],
+          logoUrl: logoUrl || company.logoUrl,
           address,
           description
         });
@@ -121,6 +123,7 @@ function CompanyProfileForm({
         <label className="label">Categoria<select name="category" className="input" defaultValue={company.category} required>{companyCategories.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="label md:col-span-2">Bairro<select name="neighborhood" className="input" defaultValue={company.neighborhood} required>{neighborhoods.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
+      <label className="label">Foto ou logotipo<input name="logoUrl" className="input" defaultValue={company.logoUrl} placeholder="Cole aqui o link da imagem" /></label>
       <label className="label">Endereço<input name="address" className="input" defaultValue={company.address} required /></label>
       <label className="label">Descrição<textarea name="description" className="input min-h-24 py-3" defaultValue={company.description} required /></label>
       <button type="submit" className="primary">
