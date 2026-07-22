@@ -1,5 +1,6 @@
--- Free Floripa MVP - Supabase shared state persistence
+-- Free Floripa MVP - Supabase account-scoped state persistence
 -- Execute this in the Supabase SQL Editor if the main schema already exists.
+-- The app writes state_key as: VITE_SUPABASE_STATE_KEY || ':' || auth user id.
 
 create extension if not exists "pgcrypto";
 
@@ -31,7 +32,18 @@ alter table public.app_state_snapshots enable row level security;
 drop policy if exists "demo state public read" on public.app_state_snapshots;
 drop policy if exists "demo state public insert" on public.app_state_snapshots;
 drop policy if exists "demo state public update" on public.app_state_snapshots;
+drop policy if exists "account state read own" on public.app_state_snapshots;
+drop policy if exists "account state insert own" on public.app_state_snapshots;
+drop policy if exists "account state update own" on public.app_state_snapshots;
 
-create policy "demo state public read" on public.app_state_snapshots for select using (true);
-create policy "demo state public insert" on public.app_state_snapshots for insert with check (true);
-create policy "demo state public update" on public.app_state_snapshots for update using (true) with check (true);
+create policy "account state read own" on public.app_state_snapshots for select using (
+  auth.role() = 'authenticated' and state_key like '%:' || auth.uid()::text
+);
+create policy "account state insert own" on public.app_state_snapshots for insert with check (
+  auth.role() = 'authenticated' and state_key like '%:' || auth.uid()::text
+);
+create policy "account state update own" on public.app_state_snapshots for update using (
+  auth.role() = 'authenticated' and state_key like '%:' || auth.uid()::text
+) with check (
+  auth.role() = 'authenticated' and state_key like '%:' || auth.uid()::text
+);

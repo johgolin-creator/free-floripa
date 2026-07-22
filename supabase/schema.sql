@@ -192,8 +192,8 @@ create table public.notifications (
   created_at timestamptz not null default now()
 );
 
--- MVP demo persistence: stores the current app state in Supabase while auth is not active.
--- Use VITE_SUPABASE_STATE_KEY to separate environments such as demo, staging, and production.
+-- Account-scoped MVP persistence: stores one app snapshot per authenticated account.
+-- The app writes state_key as: VITE_SUPABASE_STATE_KEY || ':' || auth user id.
 create table public.app_state_snapshots (
   id uuid primary key default gen_random_uuid(),
   state_key text not null unique,
@@ -333,10 +333,24 @@ create policy "users read own credits" on public.application_credits for select 
 create policy "users read own notifications" on public.notifications for select using (auth.uid() = user_id);
 create policy "users update own notifications" on public.notifications for update using (auth.uid() = user_id);
 
--- Demo-only policy for the shared MVP state. Replace with authenticated policies before production launch.
-create policy "demo state public read" on public.app_state_snapshots for select using (true);
-create policy "demo state public insert" on public.app_state_snapshots for insert with check (true);
-create policy "demo state public update" on public.app_state_snapshots for update using (true) with check (true);
+drop policy if exists "demo state public read" on public.app_state_snapshots;
+drop policy if exists "demo state public insert" on public.app_state_snapshots;
+drop policy if exists "demo state public update" on public.app_state_snapshots;
+drop policy if exists "account state read own" on public.app_state_snapshots;
+drop policy if exists "account state insert own" on public.app_state_snapshots;
+drop policy if exists "account state update own" on public.app_state_snapshots;
+
+create policy "account state read own" on public.app_state_snapshots for select using (
+  auth.role() = 'authenticated' and state_key like '%:' || auth.uid()::text
+);
+create policy "account state insert own" on public.app_state_snapshots for insert with check (
+  auth.role() = 'authenticated' and state_key like '%:' || auth.uid()::text
+);
+create policy "account state update own" on public.app_state_snapshots for update using (
+  auth.role() = 'authenticated' and state_key like '%:' || auth.uid()::text
+) with check (
+  auth.role() = 'authenticated' and state_key like '%:' || auth.uid()::text
+);
 
 insert into public.job_categories (name) values
   ('Garçom'),

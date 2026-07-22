@@ -1,10 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import type { User } from "@supabase/supabase-js";
 import { initialState } from "../data/demoData";
+import { useAuth } from "./auth";
 import { canApply, getOpenSlots } from "./rules";
-import { loadSupabaseState, saveSupabaseState, supabaseStateEnabled } from "./supabaseState";
-import type { AppState, Application, ApplicationStatus, CompanyProfile, Job, JobFunction, Neighborhood, PaymentMethod, Review, WorkerProfile } from "./types";
+import { getSupabaseStateKey, loadSupabaseState, saveSupabaseState, supabaseStateEnabled } from "./supabaseState";
+import type { AppState, Application, ApplicationStatus, CompanyProfile, Job, JobFunction, Neighborhood, PaymentMethod, Review, UserRole, WorkerProfile } from "./types";
 
 const STORAGE_KEY = "free-floripa:state";
+const DEFAULT_WORKER_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
+const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=500&q=80";
 
 export interface CreateJobInput {
   title: string;
@@ -61,17 +65,21 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-function loadInitialState(): AppState {
+function getLocalStorageKey(userId?: string | null) {
+  return userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
+}
+
+function loadInitialState(storageKey = STORAGE_KEY, fallbackState = initialState): AppState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? mergeSeedUpdates(JSON.parse(raw)) : initialState;
+    const raw = localStorage.getItem(storageKey);
+    return raw ? mergeSeedUpdates(JSON.parse(raw)) : fallbackState;
   } catch {
-    return initialState;
+    return fallbackState;
   }
 }
 
-function persist(nextState: AppState) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+function persist(nextState: AppState, storageKey = STORAGE_KEY) {
+  localStorage.setItem(storageKey, JSON.stringify(nextState));
 }
 
 function countApproved(applications: Application[], jobId: string) {
@@ -126,8 +134,120 @@ function mergeSeedUpdates(savedState: AppState): AppState {
   return changed ? { ...savedState, jobs, workers } : savedState;
 }
 
+function getMetadataString(user: User, key: string, fallback = "") {
+  const value = user.user_metadata?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function getMetadataNumber(user: User, key: string, fallback: number) {
+  const value = user.user_metadata?.[key];
+  const numberValue = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : fallback;
+}
+
+function getMetadataBoolean(user: User, key: string, fallback = false) {
+  const value = user.user_metadata?.[key];
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function getMetadataStrings(user: User, key: string, fallback: string[]) {
+  const value = user.user_metadata?.[key];
+  return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : fallback;
+}
+
+function createWorkerForUser(user: User): WorkerProfile {
+  const functions = getMetadataStrings(user, "functions", ["Garçom"]) as JobFunction[];
+  const functionLevels = Array.isArray(user.user_metadata?.functionLevels) ? user.user_metadata.functionLevels : [];
+
+  return {
+    id: user.id,
+    name: getMetadataString(user, "name", user.email ?? "Trabalhador Free Floripa"),
+    phone: getMetadataString(user, "phone", ""),
+    email: user.email ?? getMetadataString(user, "email", ""),
+    avatarUrl: getMetadataString(user, "avatarUrl", DEFAULT_WORKER_AVATAR),
+    birthDate: getMetadataString(user, "birthDate", "2000-01-01"),
+    city: getMetadataString(user, "city", "Florianópolis"),
+    neighborhood: getMetadataString(user, "neighborhood", "Centro") as Neighborhood,
+    functions,
+    functionExperience: functions.map((functionName) => {
+      const levelItem = functionLevels.find(
+        (item) =>
+          item &&
+          typeof item === "object" &&
+          "function" in item &&
+          item.function === functionName &&
+          "level" in item &&
+          typeof item.level === "string"
+      ) as { level?: string } | undefined;
+
+      return {
+        function: functionName,
+        level: (levelItem?.level ?? "Iniciante") as WorkerProfile["functionExperience"][number]["level"],
+        months: 0,
+        acceptsAssistant: true,
+        verified: false
+      };
+    }),
+    experience: getMetadataString(user, "experience", ""),
+    description: getMetadataString(user, "description", "Perfil recém-criado no Free Floripa."),
+    availability: getMetadataString(user, "availability", "A combinar"),
+    hasTransport: getMetadataBoolean(user, "hasTransport", false),
+    maxDistanceKm: getMetadataNumber(user, "maxDistanceKm", 10),
+    rating: 0,
+    completedJobs: 0,
+    attendanceRate: 100,
+    punctualityRate: 100,
+    cancellations: 0,
+    reviews: [],
+    verified: false
+  };
+}
+
+function createCompanyForUser(user: User): CompanyProfile {
+  return {
+    id: user.id,
+    establishmentName: getMetadataString(user, "establishmentName", "Empresa Free Floripa"),
+    responsibleName: getMetadataString(user, "responsibleName", "Responsável"),
+    cnpj: getMetadataString(user, "cnpj", ""),
+    phone: getMetadataString(user, "phone", ""),
+    email: user.email ?? getMetadataString(user, "email", ""),
+    category: getMetadataString(user, "category", "Outro") as CompanyProfile["category"],
+    address: getMetadataString(user, "address", ""),
+    neighborhood: getMetadataString(user, "neighborhood", "Centro") as Neighborhood,
+    description: getMetadataString(user, "description", "Empresa cadastrada no Free Floripa."),
+    logoUrl: getMetadataString(user, "logoUrl", DEFAULT_COMPANY_LOGO),
+    rating: 0
+  };
+}
+
+function createStateForUser(user: User | null, role: UserRole | null): AppState {
+  if (!user || !role) return initialState;
+
+  if (role === "empresa") {
+    const company = createCompanyForUser(user);
+    return {
+      ...initialState,
+      activeRole: "empresa",
+      selectedCompanyId: company.id,
+      companies: [company, ...initialState.companies.filter((item) => item.id !== company.id)]
+    };
+  }
+
+  const worker = createWorkerForUser(user);
+  return {
+    ...initialState,
+    activeRole: "trabalhador",
+    selectedWorkerId: worker.id,
+    workers: [worker, ...initialState.workers.filter((item) => item.id !== worker.id)]
+  };
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AppState>(() => loadInitialState());
+  const { loading: authLoading, role, user } = useAuth();
+  const accountState = useMemo(() => createStateForUser(user, role), [role, user]);
+  const localStorageKey = getLocalStorageKey(user?.id);
+  const remoteStateKey = getSupabaseStateKey(user?.id);
+  const [state, setState] = useState<AppState>(() => loadInitialState(STORAGE_KEY, initialState));
   const [syncStatus, setSyncStatus] = useState<AppContextValue["syncStatus"]>(
     supabaseStateEnabled ? "carregando" : "local"
   );
@@ -136,7 +256,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   function commit(updater: (current: AppState) => AppState) {
     setState((current) => {
       const next = updater(current);
-      persist(next);
+      persist(next, localStorageKey);
       void persistRemote(next);
       return next;
     });
@@ -146,7 +266,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!supabaseStateEnabled) return;
     try {
       setSyncStatus("salvando");
-      await saveSupabaseState(nextState);
+      await saveSupabaseState(nextState, remoteStateKey);
       setSyncError("");
       setSyncStatus("sincronizado");
     } catch (error) {
@@ -156,22 +276,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    if (!supabaseStateEnabled) return;
+    if (authLoading) return;
+
+    const localState = loadInitialState(localStorageKey, accountState);
+
+    if (!supabaseStateEnabled) {
+      setState(localState);
+      setSyncStatus("local");
+      setSyncError("");
+      return;
+    }
 
     let active = true;
     setSyncStatus("carregando");
-    loadSupabaseState()
+    loadSupabaseState(remoteStateKey)
       .then((remoteState) => {
         if (!active) return;
         if (remoteState) {
           const migratedState = mergeSeedUpdates(remoteState);
           setState(migratedState);
-          persist(migratedState);
+          persist(migratedState, localStorageKey);
           if (migratedState !== remoteState) {
             void persistRemote(migratedState);
           }
         } else {
-          void persistRemote(loadInitialState());
+          setState(localState);
+          persist(localState, localStorageKey);
+          void persistRemote(localState);
         }
         setSyncError("");
         setSyncStatus("sincronizado");
@@ -185,7 +316,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [accountState, authLoading, localStorageKey, remoteStateKey]);
 
   const currentWorker = state.workers.find((worker) => worker.id === state.selectedWorkerId) ?? state.workers[0];
   const currentCompany = state.companies.find((company) => company.id === state.selectedCompanyId) ?? state.companies[0];
