@@ -9,6 +9,7 @@ import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 import type { CreateJobInput } from "../lib/store";
 import { formatCurrency } from "../lib/format";
+import { getJobStatus } from "../lib/rules";
 import type { JobFunction, Neighborhood, PaymentMethod } from "../lib/types";
 
 const requiredJobFieldGroups = [
@@ -25,6 +26,10 @@ export function CompanyDashboard() {
   const [message, setMessage] = useState("");
   const companyJobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const companyApplications = state.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId));
+  const openJobs = companyJobs.filter((job) => {
+    const status = getJobStatus(job);
+    return status === "Publicada" || status === "Urgente" || status === "Em andamento";
+  });
   const confirmed = companyApplications.filter((application) => application.status === "Aprovada").length;
   const absences = companyApplications.filter((application) => application.status === "Falta registrada").length;
 
@@ -47,7 +52,7 @@ export function CompanyDashboard() {
       />
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Metric icon={<BriefcaseBusiness />} label="Vagas abertas" value={companyJobs.length} />
+        <Metric icon={<BriefcaseBusiness />} label="Vagas abertas" value={openJobs.length} />
         <Metric icon={<CheckCircle2 />} label="Profissionais confirmados" value={confirmed} />
         <Metric icon={<ClipboardList />} label="Candidaturas recebidas" value={companyApplications.length} />
         <Metric icon={<AlertTriangle />} label="Faltas registradas" value={absences} />
@@ -74,7 +79,7 @@ export function CompanyDashboard() {
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Link to="/app/minhas-vagas" className="secondary min-h-10 px-3">Ver vaga</Link>
-                  <Link to="/app/candidatos" className="secondary min-h-10 px-3">Candidatos</Link>
+                  <Link to={`/app/candidatos?vaga=${job.id}`} className="secondary min-h-10 px-3">Candidatos</Link>
                 </div>
               </article>
             ))}

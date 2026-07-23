@@ -1,4 +1,4 @@
-import type { Application, ApplicationStatus, ExperienceLevel, FunctionExperience, Job, JobFunction, WorkerProfile } from "./types";
+import type { Application, ApplicationStatus, ExperienceLevel, FunctionExperience, Job, JobFunction, JobStatus, WorkerProfile } from "./types";
 
 export const experienceRank: Record<ExperienceLevel, number> = {
   Iniciante: 1,
@@ -26,6 +26,19 @@ export function calculateReliability(worker: WorkerProfile) {
 
 export function getOpenSlots(job: Job) {
   return Math.max(0, job.quantity - job.filled);
+}
+
+export function getJobStatus(job: Job): JobStatus | "Urgente" {
+  if (job.status === "Cancelada" || job.status === "Concluída" || job.status === "Rascunho") return job.status;
+  if (job.status === "Em andamento") return "Em andamento";
+  if (job.urgent && getOpenSlots(job) > 0) return "Urgente";
+  if (getOpenSlots(job) === 0) return "Em andamento";
+  return "Publicada";
+}
+
+export function isJobOpenForApplications(job: Job) {
+  const status = getJobStatus(job);
+  return (status === "Publicada" || status === "Urgente") && getOpenSlots(job) > 0;
 }
 
 export function getFunctionExperience(worker: WorkerProfile, functionName: JobFunction): FunctionExperience | null {
@@ -58,7 +71,7 @@ export function getCompatibilityLabel(worker: WorkerProfile, functionName: JobFu
 }
 
 export function canApply(job: Job, applications: Application[], worker: WorkerProfile, creditsRemaining: number) {
-  if (getOpenSlots(job) <= 0) {
+  if (!isJobOpenForApplications(job)) {
     return { allowed: false, reason: "Todas as vagas já foram preenchidas." };
   }
 

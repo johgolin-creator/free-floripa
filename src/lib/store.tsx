@@ -4,7 +4,7 @@ import { initialState } from "../data/demoData";
 import { useAuth } from "./auth";
 import { canApply, getOpenSlots } from "./rules";
 import { getSupabaseStateKey, loadSupabaseState, saveSupabaseState, supabaseStateEnabled } from "./supabaseState";
-import type { AppState, Application, ApplicationStatus, CompanyProfile, Job, JobFunction, Neighborhood, PaymentMethod, Review, UserRole, WorkerProfile } from "./types";
+import type { AppState, Application, ApplicationStatus, CompanyProfile, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, UserRole, WorkerProfile } from "./types";
 
 const STORAGE_KEY = "free-floripa:state";
 const DEFAULT_WORKER_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
@@ -48,6 +48,8 @@ interface AppContextValue {
   setRole: (role: AppState["activeRole"]) => void;
   createJob: (input: CreateJobInput) => string;
   createUrgentReplacement: (input: UrgentReplacementInput) => string;
+  updateJobStatus: (jobId: string, status: JobStatus) => { ok: boolean; message: string };
+  duplicateJob: (jobId: string) => { ok: boolean; message: string; jobId?: string };
   updateWorkerProfile: (input: Partial<Pick<WorkerProfile, "name" | "phone" | "email" | "avatarUrl" | "birthDate" | "city" | "neighborhood" | "functions" | "functionExperience" | "experience" | "description" | "availability" | "hasTransport" | "maxDistanceKm">>) => void;
   updateCompanyProfile: (input: Partial<CompanyProfile>) => void;
   applyToJob: (jobId: string) => { ok: boolean; message: string; requiresPlan?: boolean };
@@ -354,6 +356,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const job: Job = {
       id,
       companyId: currentCompany.id,
+      status: "Publicada",
       filled: 0,
       contactAfterConfirmation: true,
       candidates: 0,
@@ -393,6 +396,88 @@ export function AppProvider({ children }: { children: ReactNode }) {
         commit((current) => ({ ...current, activeRole: role }));
       },
       createJob: createJobHandler,
+      updateJobStatus(jobId, status) {
+        const job = state.jobs.find((item) => item.id === jobId && item.companyId === currentCompany.id);
+        if (!job) return { ok: false, message: "Vaga não encontrada para esta empresa." };
+
+        commit((current) => {
+          const affectedApplications = current.applications.filter((application) => application.jobId === jobId);
+          const nextApplications = current.applications.map((application) => {
+            if (application.jobId !== jobId) return application;
+            if (status === "Cancelada" && application.status !== "Trabalho concluído" && application.status !== "Falta registrada") {
+              return { ...application, status: "Cancelada" as const };
+            }
+            if (status === "Concluída" && application.status === "Aprovada") {
+              return { ...application, status: "Trabalho concluído" as const };
+            }
+            return application;
+          });
+          const nextShifts =
+            status === "Concluída"
+              ? current.shifts.map((shift) =>
+                  shift.jobId === jobId
+                    ? { ...shift, status: "Finalizou o turno" as const, checkoutAt: shift.checkoutAt ?? new Date().toISOString() }
+                    : shift
+                )
+              : status === "Cancelada"
+                ? current.shifts.filter((shift) => shift.jobId !== jobId)
+                : current.shifts;
+
+          return {
+            ...current,
+            applications: nextApplications,
+            shifts: nextShifts,
+            jobs: current.jobs.map((item) =>
+              item.id === jobId
+                ? {
+                    ...item,
+                    status,
+                    urgent: status === "Cancelada" || status === "Concluída" ? false : item.urgent,
+                    filled: status === "Cancelada" ? 0 : countApproved(nextApplications, item.id)
+                  }
+                : item
+            ),
+            notifications:
+              status === "Cancelada" || status === "Concluída"
+                ? [
+                    {
+                      id: crypto.randomUUID(),
+                      title: status === "Cancelada" ? "Uma vaga foi cancelada" : "Uma vaga foi encerrada",
+                      body: `${job.title}: ${affectedApplications.length} candidatura${affectedApplications.length === 1 ? "" : "s"} atualizada${affectedApplications.length === 1 ? "" : "s"}.`,
+                      role: "trabalhador",
+                      createdAt: new Date().toISOString(),
+                      read: false
+                    },
+                    ...current.notifications
+                  ]
+                : current.notifications
+          };
+        });
+
+        return { ok: true, message: `Vaga marcada como ${status}.` };
+      },
+      duplicateJob(jobId) {
+        const job = state.jobs.find((item) => item.id === jobId && item.companyId === currentCompany.id);
+        if (!job) return { ok: false, message: "Vaga não encontrada para esta empresa." };
+
+        const nextJobId = crypto.randomUUID();
+        const duplicated: Job = {
+          ...job,
+          id: nextJobId,
+          title: `${job.title} (cópia)`,
+          status: "Rascunho",
+          urgent: false,
+          filled: 0,
+          candidates: 0
+        };
+
+        commit((current) => ({
+          ...current,
+          jobs: [duplicated, ...current.jobs]
+        }));
+
+        return { ok: true, message: "Vaga duplicada como rascunho.", jobId: nextJobId };
+      },
       createUrgentReplacement(input) {
         return createJobHandler({
           title: `Reposição urgente: ${input.function}`,

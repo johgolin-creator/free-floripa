@@ -6,7 +6,7 @@ import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate } from "../lib/format";
-import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getOpenSlots } from "../lib/rules";
+import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots, isJobOpenForApplications } from "../lib/rules";
 
 export function JobDetailsPage() {
   const { id } = useParams();
@@ -22,6 +22,7 @@ export function JobDetailsPage() {
   const application = state.applications.find((item) => item.jobId === currentJob.id && item.workerId === state.selectedWorkerId);
   const confirmed = application?.status === "Aprovada";
   const workerExperience = getFunctionExperience(currentWorker, currentJob.function);
+  const jobStatus = getJobStatus(currentJob);
 
   function handleApply() {
     const result = applyToJob(currentJob.id);
@@ -44,6 +45,7 @@ export function JobDetailsPage() {
           <div>
             <div className="mb-3 flex flex-wrap gap-2">
               {currentJob.urgent && <span className="badge urgent"><AlertTriangle size={14} /> URGENTE</span>}
+              <span className="badge">{jobStatus}</span>
               <span className="badge">{currentJob.function}</span>
               <span className="badge">{currentJob.paymentMethod}</span>
             </div>
@@ -93,8 +95,8 @@ export function JobDetailsPage() {
               </strong>
               <p className="mt-1 text-xs font-semibold text-slate-500">{getCompatibilityLabel(currentWorker, currentJob.function)}</p>
             </div>
-            <button type="button" onClick={handleApply} disabled={Boolean(application) || getOpenSlots(currentJob) === 0} className="primary">
-              {application ? `Status: ${application.status}` : "Candidatar-se"}
+            <button type="button" onClick={handleApply} disabled={Boolean(application) || !isJobOpenForApplications(currentJob)} className="primary">
+              {application ? `Status: ${application.status}` : isJobOpenForApplications(currentJob) ? "Candidatar-se" : `Vaga ${jobStatus}`}
             </button>
             <p className="text-xs leading-5 text-slate-500">
               Cadastro gratuito, visualização gratuita e 5 candidaturas gratuitas por mês.

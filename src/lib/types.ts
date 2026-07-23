@@ -31,6 +31,7 @@ export type Neighborhood =
   | "Campeche";
 
 export type PaymentMethod = "Dinheiro" | "Pix" | "Transferência" | "A combinar";
+export type JobStatus = "Rascunho" | "Publicada" | "Em andamento" | "Concluída" | "Cancelada";
 
 export type ApplicationStatus =
   | "Enviada"
@@ -86,6 +87,7 @@ export interface CompanyProfile {
 export interface Job {
   id: string;
   companyId: string;
+  status?: JobStatus;
   title: string;
   function: JobFunction;
   quantity: number;
