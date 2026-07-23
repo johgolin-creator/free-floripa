@@ -31,7 +31,7 @@ export function CompanyJobsPage() {
                   {getOpenSlots(job)} vagas restantes - {job.candidates} candidatos
                 </p>
               </div>
-              <Link to="/app/candidatos" className="secondary">Ver candidatos</Link>
+              <Link to={`/app/candidatos?vaga=${job.id}`} className="secondary">Ver candidatos</Link>
             </article>
           ))}
         </div>

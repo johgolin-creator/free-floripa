@@ -83,7 +83,10 @@ function persist(nextState: AppState, storageKey = STORAGE_KEY) {
 }
 
 function countApproved(applications: Application[], jobId: string) {
-  return applications.filter((application) => application.jobId === jobId && application.status === "Aprovada").length;
+  return applications.filter(
+    (application) =>
+      application.jobId === jobId && (application.status === "Aprovada" || application.status === "Trabalho concluído")
+  ).length;
 }
 
 function hasShiftFor(shifts: AppState["shifts"], jobId: string, workerId: string) {
@@ -494,7 +497,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         const approvedWithoutCurrent = state.applications.filter(
-          (item) => item.jobId === job.id && item.id !== application.id && item.status === "Aprovada"
+          (item) =>
+            item.jobId === job.id &&
+            item.id !== application.id &&
+            (item.status === "Aprovada" || item.status === "Trabalho concluído")
         ).length;
         if (status === "Aprovada" && approvedWithoutCurrent >= job.quantity) {
           return { ok: false, message: "Não é possível aprovar mais pessoas do que a quantidade disponível." };
@@ -515,7 +521,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
                       status: "Ainda não chegou" as const
                     }
                   ]
-              : current.shifts.filter((shift) => !(shift.jobId === job.id && shift.workerId === application.workerId));
+              : status === "Trabalho concluído"
+                ? hasShiftFor(current.shifts, job.id, application.workerId)
+                  ? current.shifts.map((shift) =>
+                      shift.jobId === job.id && shift.workerId === application.workerId
+                        ? {
+                            ...shift,
+                            status: "Finalizou o turno" as const,
+                            checkoutAt: shift.checkoutAt ?? new Date().toISOString()
+                          }
+                        : shift
+                    )
+                  : [
+                      ...current.shifts,
+                      {
+                        id: crypto.randomUUID(),
+                        jobId: job.id,
+                        workerId: application.workerId,
+                        status: "Finalizou o turno" as const,
+                        checkoutAt: new Date().toISOString()
+                      }
+                    ]
+                : status === "Falta registrada"
+                  ? current.shifts.map((shift) =>
+                      shift.jobId === job.id && shift.workerId === application.workerId
+                        ? { ...shift, status: "Ainda não chegou" as const }
+                        : shift
+                    )
+                  : current.shifts.filter((shift) => !(shift.jobId === job.id && shift.workerId === application.workerId));
 
           return {
             ...current,
