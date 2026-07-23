@@ -19,7 +19,9 @@ export function TeamPage() {
   const [workerToInvite, setWorkerToInvite] = useState<WorkerProfile | null>(null);
   const [message, setMessage] = useState("");
   const favorites = state.workers.filter((worker) => state.favoriteWorkerIds.includes(worker.id));
-  const hiredIds = state.applications.filter((application) => application.status === "Aprovada").map((application) => application.workerId);
+  const hiredIds = state.applications
+    .filter((application) => application.status === "Aprovada" || application.status === "Trabalho concluído")
+    .map((application) => application.workerId);
   const hired = state.workers.filter((worker) => hiredIds.includes(worker.id));
   const team = [...new Map([...favorites, ...hired].map((worker) => [worker.id, worker])).values()];
   const openJobs = state.jobs.filter((job) => job.companyId === currentCompany.id && getOpenSlots(job) > 0);
