@@ -3,6 +3,7 @@ import {
   BriefcaseBusiness,
   Building2,
   CalendarCheck,
+  CalendarDays,
   ClipboardList,
   Cloud,
   Home,
@@ -30,6 +31,7 @@ const companyLinks = [
   { to: "/app/empresa", label: "Painel", icon: Home },
   { to: "/app/minhas-vagas", label: "Minhas vagas", icon: BriefcaseBusiness },
   { to: "/app/candidatos", label: "Candidatos", icon: UsersRound },
+  { to: "/app/escala", label: "Escala", icon: CalendarDays },
   { to: "/app/equipe", label: "Minha equipe", icon: Star },
   { to: "/app/perfil-empresa", label: "Perfil", icon: Building2 }
 ];
@@ -130,7 +132,10 @@ export function AppLayout() {
         </div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-slate-200 bg-white md:hidden">
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-30 grid border-t border-slate-200 bg-white md:hidden"
+        style={{ gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))` }}
+      >
         {links.map((link) => {
           const Icon = link.icon;
           const active = location.pathname === link.to;
@@ -138,7 +143,7 @@ export function AppLayout() {
             <NavLink
               key={link.to}
               to={link.to}
-              className={`grid min-h-16 place-items-center gap-1 px-1 text-center text-[0.68rem] font-bold ${
+              className={`grid min-h-16 place-items-center gap-1 px-0.5 text-center text-[0.62rem] font-bold ${
                 active ? "text-aqua-700" : "text-slate-500"
               }`}
             >

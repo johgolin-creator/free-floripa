@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CheckCircle2, Clock3, Heart, UserCheck, UserX } from "lucide-react";
+import { CheckCircle2, Clock3, Heart, Lock, Mail, MessageCircle, Phone, UserCheck, UserX } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
 import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
-import { formatCurrency, formatDate } from "../lib/format";
+import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
 import { getOpenSlots } from "../lib/rules";
 import type { Application, Job, WorkShift } from "../lib/types";
 
@@ -103,6 +103,7 @@ export function CandidatesPage() {
                 const favorite = state.favoriteWorkerIds.includes(worker.id);
                 const approved = application.status === "Aprovada";
                 const completed = application.status === "Trabalho concluído";
+                const contactUnlocked = approved || completed;
                 const refused = terminalStatuses.includes(application.status) && !approved;
                 const noSlots = getOpenSlots(selectedJob) === 0 && !approved && !completed;
 
@@ -177,6 +178,30 @@ export function CandidatesPage() {
                           Registrar falta
                         </button>
                       </div>
+
+                      {contactUnlocked ? (
+                        <div className="grid gap-2 rounded-lg bg-aqua-100 p-3 md:grid-cols-[1fr_auto] md:items-center">
+                          <div>
+                            <strong className="text-sm text-navy-950">Contato liberado</strong>
+                            <div className="mt-1 flex flex-wrap gap-3 text-sm font-semibold text-slate-600">
+                              <span className="flex items-center gap-1.5"><Phone size={15} /> {worker.phone}</span>
+                              <span className="flex items-center gap-1.5"><Mail size={15} /> {worker.email}</span>
+                            </div>
+                          </div>
+                          <a
+                            className="primary"
+                            href={getWhatsAppUrl(worker.phone, `Olá, ${worker.name}. Sua vaga ${selectedJob.title} no ${currentCompany.establishmentName} foi aprovada.`)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <MessageCircle size={17} /> WhatsApp
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-500">
+                          <Lock size={17} /> Contato protegido até a aprovação.
+                        </div>
+                      )}
                     </div>
                   </article>
                 );

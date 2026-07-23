@@ -1,11 +1,11 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { Navigate, useParams } from "react-router-dom";
-import { AlertTriangle, Building2, CheckCircle2, Lock, MapPin, Star, Users } from "lucide-react";
+import { AlertTriangle, Building2, CheckCircle2, Lock, Mail, MapPin, MessageCircle, Phone, Star, Users } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
 import { useAppStore } from "../lib/store";
-import { formatCurrency, formatDate } from "../lib/format";
+import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
 import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots, isJobOpenForApplications } from "../lib/rules";
 
 export function JobDetailsPage() {
@@ -20,7 +20,7 @@ export function JobDetailsPage() {
   const currentJob = job;
   const company = state.companies.find((item) => item.id === currentJob.companyId);
   const application = state.applications.find((item) => item.jobId === currentJob.id && item.workerId === state.selectedWorkerId);
-  const confirmed = application?.status === "Aprovada";
+  const confirmed = application?.status === "Aprovada" || application?.status === "Trabalho concluído";
   const workerExperience = getFunctionExperience(currentWorker, currentJob.function);
   const jobStatus = getJobStatus(currentJob);
 
@@ -88,6 +88,25 @@ export function JobDetailsPage() {
               <span className="flex items-center gap-2"><Building2 size={17} /> {company?.category}</span>
               <span className="flex items-center gap-2"><CheckCircle2 size={17} /> Contato após confirmação</span>
             </div>
+            {confirmed && company ? (
+              <div className="grid gap-2 rounded-lg border border-aqua-100 bg-white p-3">
+                <strong className="text-sm text-navy-950">Contato liberado</strong>
+                <span className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Phone size={16} /> {company.phone}</span>
+                <span className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Mail size={16} /> {company.email}</span>
+                <a
+                  href={getWhatsAppUrl(company.phone, `Olá, sou ${currentWorker.name}. Fui aprovado para a vaga ${currentJob.title}.`)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="primary"
+                >
+                  <MessageCircle size={17} /> Chamar no WhatsApp
+                </a>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 text-sm font-bold text-slate-500">
+                <Lock size={16} /> Contato protegido até aprovação.
+              </div>
+            )}
             <div className="rounded-lg border border-slate-200 bg-white p-3">
               <span className="text-xs font-black uppercase text-slate-500">Seu nível nesta função</span>
               <strong className="mt-1 block text-sm text-navy-950">

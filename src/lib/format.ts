@@ -22,6 +22,13 @@ export function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
+export function getWhatsAppUrl(phone: string, message = "") {
+  const digits = phone.replace(/\D/g, "");
+  const normalized = digits.length === 10 || digits.length === 11 ? `55${digits}` : digits;
+  const text = message ? `?text=${encodeURIComponent(message)}` : "";
+  return `https://wa.me/${normalized}${text}`;
+}
+
 export function pluralize(count: number, singular: string, plural: string) {
   return `${count} ${count === 1 ? singular : plural}`;
 }
