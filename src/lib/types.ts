@@ -32,6 +32,7 @@ export type Neighborhood =
 
 export type PaymentMethod = "Dinheiro" | "Pix" | "Transferência" | "A combinar";
 export type JobStatus = "Rascunho" | "Publicada" | "Em andamento" | "Concluída" | "Cancelada";
+export type CompanyScheduleStatus = "Planejada" | "Confirmada" | "Concluída" | "Cancelada";
 
 export type ApplicationStatus =
   | "Enviada"
@@ -127,6 +128,24 @@ export interface WorkShift {
   checkoutAt?: string;
 }
 
+export interface CompanySchedule {
+  id: string;
+  companyId: string;
+  title: string;
+  function: JobFunction;
+  quantity: number;
+  date: string;
+  startsAt: string;
+  endsAt: string;
+  neighborhood: Neighborhood;
+  location: string;
+  notes: string;
+  workerNames: string[];
+  status: CompanyScheduleStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Review {
   id: string;
   authorName: string;
@@ -156,6 +175,7 @@ export interface AppState {
   workers: WorkerProfile[];
   companies: CompanyProfile[];
   jobs: Job[];
+  companySchedules: CompanySchedule[];
   applications: Application[];
   shifts: WorkShift[];
   favoriteWorkerIds: string[];

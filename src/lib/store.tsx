@@ -4,7 +4,7 @@ import { initialState } from "../data/demoData";
 import { useAuth } from "./auth";
 import { canApply, getOpenSlots } from "./rules";
 import { getSupabaseStateKey, loadSupabaseState, saveSupabaseState, supabaseStateEnabled } from "./supabaseState";
-import type { AppState, Application, ApplicationStatus, CompanyProfile, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, UserRole, WorkerProfile } from "./types";
+import type { AppState, Application, ApplicationStatus, CompanyProfile, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, UserRole, WorkerProfile } from "./types";
 
 const STORAGE_KEY = "free-floripa:state";
 const DEFAULT_WORKER_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
@@ -38,6 +38,20 @@ export interface UrgentReplacementInput {
   observation: string;
 }
 
+export interface CompanyScheduleInput {
+  title: string;
+  function: JobFunction;
+  quantity: number;
+  date: string;
+  startsAt: string;
+  endsAt: string;
+  neighborhood: Neighborhood;
+  location: string;
+  notes: string;
+  workerNames: string[];
+  status: CompanyScheduleStatus;
+}
+
 interface AppContextValue {
   state: AppState;
   storageMode: "supabase" | "local";
@@ -48,6 +62,9 @@ interface AppContextValue {
   setRole: (role: AppState["activeRole"]) => void;
   createJob: (input: CreateJobInput) => string;
   createUrgentReplacement: (input: UrgentReplacementInput) => string;
+  createCompanySchedule: (input: CompanyScheduleInput) => string;
+  updateCompanySchedule: (scheduleId: string, input: CompanyScheduleInput) => { ok: boolean; message: string };
+  deleteCompanySchedule: (scheduleId: string) => { ok: boolean; message: string };
   updateJobStatus: (jobId: string, status: JobStatus) => { ok: boolean; message: string };
   duplicateJob: (jobId: string) => { ok: boolean; message: string; jobId?: string };
   updateWorkerProfile: (input: Partial<Pick<WorkerProfile, "name" | "phone" | "email" | "avatarUrl" | "birthDate" | "city" | "neighborhood" | "functions" | "functionExperience" | "experience" | "description" | "availability" | "hasTransport" | "maxDistanceKm">>) => void;
@@ -98,16 +115,20 @@ function hasShiftFor(shifts: AppState["shifts"], jobId: string, workerId: string
 function mergeSeedUpdates(savedState: AppState): AppState {
   const securityJob = initialState.jobs.find((job) => job.id === "job-6");
   const seededWorker = initialState.workers.find((worker) => worker.id === "worker-3");
-  let changed = false;
+  const normalizedState = {
+    ...savedState,
+    companySchedules: Array.isArray(savedState.companySchedules) ? savedState.companySchedules : []
+  };
+  let changed = !Array.isArray(savedState.companySchedules);
 
   const jobs =
-    securityJob && !savedState.jobs.some((job) => job.id === securityJob.id)
-      ? [securityJob, ...savedState.jobs]
-      : savedState.jobs;
-  changed ||= jobs !== savedState.jobs;
+    securityJob && !normalizedState.jobs.some((job) => job.id === securityJob.id)
+      ? [securityJob, ...normalizedState.jobs]
+      : normalizedState.jobs;
+  changed ||= jobs !== normalizedState.jobs;
 
   const workers = seededWorker
-    ? savedState.workers.map((worker) => {
+    ? normalizedState.workers.map((worker) => {
         if (worker.id !== seededWorker.id) return worker;
 
         const functions = Array.from(new Set([...worker.functions, ...seededWorker.functions]));
@@ -134,9 +155,9 @@ function mergeSeedUpdates(savedState: AppState): AppState {
             }
           : worker;
       })
-    : savedState.workers;
+    : normalizedState.workers;
 
-  return changed ? { ...savedState, jobs, workers } : savedState;
+  return changed ? { ...normalizedState, jobs, workers } : normalizedState;
 }
 
 function getMetadataString(user: User, key: string, fallback = "") {
@@ -396,6 +417,61 @@ export function AppProvider({ children }: { children: ReactNode }) {
         commit((current) => ({ ...current, activeRole: role }));
       },
       createJob: createJobHandler,
+      createCompanySchedule(input) {
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        const schedule: CompanySchedule = {
+          id,
+          companyId: currentCompany.id,
+          ...input,
+          createdAt: now,
+          updatedAt: now
+        };
+
+        commit((current) => ({
+          ...current,
+          companySchedules: [schedule, ...(current.companySchedules ?? [])],
+          notifications: [
+            {
+              id: crypto.randomUUID(),
+              title: "Nova escala criada",
+              body: `${input.title} em ${input.neighborhood}, ${input.date}.`,
+              role: "empresa",
+              createdAt: now,
+              read: false
+            },
+            ...current.notifications
+          ]
+        }));
+
+        return id;
+      },
+      updateCompanySchedule(scheduleId, input) {
+        const exists = (state.companySchedules ?? []).some((schedule) => schedule.id === scheduleId && schedule.companyId === currentCompany.id);
+        if (!exists) return { ok: false, message: "Escala não encontrada para esta empresa." };
+
+        commit((current) => ({
+          ...current,
+          companySchedules: (current.companySchedules ?? []).map((schedule) =>
+            schedule.id === scheduleId && schedule.companyId === currentCompany.id
+              ? { ...schedule, ...input, updatedAt: new Date().toISOString() }
+              : schedule
+          )
+        }));
+
+        return { ok: true, message: "Escala atualizada." };
+      },
+      deleteCompanySchedule(scheduleId) {
+        const exists = (state.companySchedules ?? []).some((schedule) => schedule.id === scheduleId && schedule.companyId === currentCompany.id);
+        if (!exists) return { ok: false, message: "Escala não encontrada para esta empresa." };
+
+        commit((current) => ({
+          ...current,
+          companySchedules: (current.companySchedules ?? []).filter((schedule) => schedule.id !== scheduleId)
+        }));
+
+        return { ok: true, message: "Escala excluída." };
+      },
       updateJobStatus(jobId, status) {
         const job = state.jobs.find((item) => item.id === jobId && item.companyId === currentCompany.id);
         if (!job) return { ok: false, message: "Vaga não encontrada para esta empresa." };
