@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Clock, LogIn, LogOut } from "lucide-react";
+import { Clock, LogIn, LogOut, Mail, MessageCircle, Phone } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
 import { useAppStore } from "../lib/store";
-import { formatCurrency, formatDate, formatDateTime } from "../lib/format";
+import { formatCurrency, formatDate, formatDateTime, getWhatsAppUrl } from "../lib/format";
 import type { Job } from "../lib/types";
 
 const tabs = ["Próximos", "Em andamento", "Concluídos", "Cancelados"] as const;
@@ -50,6 +50,20 @@ export function MyJobsPage() {
                     {job.function} - {formatDate(job.date)} - {job.startsAt} às {job.endsAt} - {formatCurrency(job.dailyValue)}
                   </p>
                   <p className="mt-1 text-sm text-slate-600">Endereço: {shift.status === "Ainda não chegou" ? job.approximateAddress : job.fullAddress}</p>
+                  {company && (
+                    <div className="mt-3 flex flex-wrap gap-2 rounded-lg bg-aqua-100 p-3 text-sm font-semibold text-slate-600">
+                      <span className="flex items-center gap-1.5"><Phone size={15} /> {company.phone}</span>
+                      <span className="flex items-center gap-1.5"><Mail size={15} /> {company.email}</span>
+                      <a
+                        className="inline-flex items-center gap-1.5 font-black text-aqua-700"
+                        href={getWhatsAppUrl(company.phone, `Olá, sou ${currentWorker.name}. Estou confirmado no turno ${job.title}.`)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <MessageCircle size={15} /> WhatsApp
+                      </a>
+                    </div>
+                  )}
                   <div className="mt-2 grid gap-1 text-xs font-semibold text-slate-500">
                     {shift.checkinAt && <span>Check-in: {formatDateTime(shift.checkinAt)}</span>}
                     {shift.checkoutAt && <span>Check-out: {formatDateTime(shift.checkoutAt)}</span>}
