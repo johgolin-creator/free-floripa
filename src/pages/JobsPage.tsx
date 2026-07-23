@@ -5,6 +5,7 @@ import { JobCard } from "../components/JobCard";
 import { SectionHeader } from "../components/SectionHeader";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
+import { isJobOpenForApplications } from "../lib/rules";
 import type { JobFunction, Neighborhood } from "../lib/types";
 
 export function JobsPage() {
@@ -18,6 +19,7 @@ export function JobsPage() {
 
   const filteredJobs = useMemo(() => {
     return state.jobs.filter((job) => {
+      if (!isJobOpenForApplications(job)) return false;
       const byFunction = functionFilter === "Todas" || job.function === functionFilter;
       const byNeighborhood = neighborhoodFilter === "Todos" || job.neighborhood === neighborhoodFilter;
       const byDate = !dateFilter || job.date === dateFilter;
