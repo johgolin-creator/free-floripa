@@ -1,11 +1,27 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, Building2, Camera, CheckCircle2, ClipboardList, LogIn, UserRound } from "lucide-react";
+import { ArrowLeft, Building2, CheckCircle2, ClipboardList, LogIn, UserRound } from "lucide-react";
 import { BrandLogo } from "../components/BrandLogo";
-import { experienceLevels, functions } from "../data/demoData";
+import { experienceLevels, functions, neighborhoods } from "../data/demoData";
 import { useAuth } from "../lib/auth";
 import { useAppStore } from "../lib/store";
-import type { UserRole } from "../lib/types";
+import type { JobFunction, UserRole } from "../lib/types";
+
+const workerRequiredFields = [
+  "Nome completo",
+  "Telefone",
+  "E-mail",
+  "Senha",
+  "Data de nascimento",
+  "Cidade",
+  "Bairro",
+  "Profissões",
+  "Nível de experiência",
+  "Experiência profissional",
+  "Descrição",
+  "Disponibilidade",
+  "Distância máxima"
+];
 
 const companyRequiredFields = [
   "Nome do estabelecimento",
@@ -70,7 +86,7 @@ export function WorkerSignupPage() {
   const { setRole } = useAppStore();
   const { signUp } = useAuth();
   const navigate = useNavigate();
-  const [selectedFunctions, setSelectedFunctions] = useState<string[]>(["Garçom"]);
+  const [selectedFunctions, setSelectedFunctions] = useState<JobFunction[]>(["Garçom"]);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
@@ -89,13 +105,16 @@ export function WorkerSignupPage() {
           const city = String(form.get("city") || "").trim();
           const neighborhood = String(form.get("neighborhood") || "").trim();
           const birthDate = String(form.get("birthDate") || "").trim();
+          const avatarUrl = String(form.get("avatarUrl") || "").trim();
           const experience = String(form.get("experience") || "").trim();
           const description = String(form.get("description") || "").trim();
           const availability = String(form.get("availability") || "").trim();
           const maxDistanceKm = Number(form.get("maxDistanceKm") || 0);
           const functionLevels = selectedFunctions.map((item) => ({
             function: item,
-            level: String(form.get(`level-${item}`) || "Iniciante")
+            level: String(form.get(`level-${item}`) || "Iniciante"),
+            months: Math.max(0, Number(form.get(`months-${item}`) || 0)),
+            acceptsAssistant: form.get(`assistant-${item}`) === "on"
           }));
 
           if (selectedFunctions.length === 0) {
@@ -120,6 +139,7 @@ export function WorkerSignupPage() {
                 experience,
                 description,
                 availability,
+                avatarUrl,
                 hasTransport: form.get("hasTransport") === "Sim",
                 maxDistanceKm,
                 functions: selectedFunctions,
@@ -145,18 +165,28 @@ export function WorkerSignupPage() {
           <div className="flex items-center gap-2 text-sm font-black text-navy-950">
             <ClipboardList size={17} /> Dados obrigatórios do cadastro
           </div>
-          <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">{companyRequiredFields.join(", ")}.</p>
+          <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">{workerRequiredFields.join(", ")}.</p>
         </section>
+        <SignupStep number="1" title="Acesso e contato" />
         <div className="grid gap-3 md:grid-cols-2">
           <label className="label">Nome completo<input name="name" className="input" required /></label>
           <label className="label">Telefone<input name="phone" className="input" required placeholder="(48) 99999-9999" /></label>
           <label className="label">E-mail<input name="email" className="input" type="email" required /></label>
           <label className="label">Senha<input name="password" className="input" type="password" required /></label>
-          <label className="label">Foto de perfil<span className="secondary justify-start"><Camera size={17} /> Selecionar foto</span></label>
+        </div>
+        <SignupStep number="2" title="Localização e foto" />
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="label">Foto de perfil<input name="avatarUrl" className="input" placeholder="Cole um link da foto ou envie depois no perfil" /></label>
           <label className="label">Data de nascimento<input name="birthDate" className="input" type="date" required /></label>
           <label className="label">Cidade<input name="city" className="input" defaultValue="Florianópolis" required /></label>
-          <label className="label">Bairro<input name="neighborhood" className="input" required placeholder="Campeche" /></label>
+          <label className="label">
+            Bairro
+            <select name="neighborhood" className="input" required defaultValue="Centro">
+              {neighborhoods.map((item) => <option key={item}>{item}</option>)}
+            </select>
+          </label>
         </div>
+        <SignupStep number="3" title="Profissões e experiência" />
         <fieldset className="rounded-lg border border-slate-200 p-3">
           <legend className="px-1 text-sm font-black text-slate-600">Profissões e nível de experiência</legend>
           <div className="mt-2 grid gap-2 md:grid-cols-2">
@@ -189,8 +219,12 @@ export function WorkerSignupPage() {
                         ))}
                       </select>
                     </label>
+                    <label className="label">
+                      Meses de experiência
+                      <input name={`months-${item}`} type="number" min="0" className="input" defaultValue={0} />
+                    </label>
                     <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                      <input type="checkbox" defaultChecked className="h-4 w-4 accent-aqua-500" />
+                      <input name={`assistant-${item}`} type="checkbox" defaultChecked className="h-4 w-4 accent-aqua-500" />
                       Aceito começar como auxiliar nessa função
                     </label>
                   </div>
@@ -202,12 +236,13 @@ export function WorkerSignupPage() {
             Informe com sinceridade. Avaliações ruins podem limitar novas vagas nessa função.
           </p>
         </fieldset>
+        <SignupStep number="4" title="Disponibilidade" />
         <label className="label">Experiência profissional<textarea name="experience" className="input min-h-20 py-3" required /></label>
         <label className="label">Pequena descrição<textarea name="description" className="input min-h-20 py-3" required /></label>
         <div className="grid gap-3 md:grid-cols-3">
-          <label className="label">Disponibilidade<input name="availability" className="input" placeholder="Noites e fins de semana" /></label>
+          <label className="label">Disponibilidade<input name="availability" className="input" required placeholder="Noites e fins de semana" /></label>
           <label className="label">Transporte próprio<select name="hasTransport" className="input"><option>Sim</option><option>Não</option></select></label>
-          <label className="label">Distância máxima<input name="maxDistanceKm" className="input" type="number" min="1" placeholder="20 km" /></label>
+          <label className="label">Distância máxima<input name="maxDistanceKm" className="input" type="number" min="1" required placeholder="20 km" /></label>
         </div>
         <button type="submit" disabled={pending} className="primary"><UserRound size={17} /> {pending ? "Criando..." : "Criar perfil"}</button>
       </form>
@@ -232,6 +267,7 @@ export function CompanySignupPage() {
           const form = new FormData(event.currentTarget);
           const email = String(form.get("email") || "").trim();
           const password = String(form.get("password") || "");
+          const logoUrl = String(form.get("logoUrl") || "").trim();
 
           try {
             setPending(true);
@@ -249,7 +285,8 @@ export function CompanySignupPage() {
                 category: String(form.get("category") || "").trim(),
                 neighborhood: String(form.get("neighborhood") || "").trim(),
                 address: String(form.get("address") || "").trim(),
-                description: String(form.get("description") || "").trim()
+                description: String(form.get("description") || "").trim(),
+                logoUrl
               }
             });
             setRole("empresa");
@@ -267,6 +304,13 @@ export function CompanySignupPage() {
       >
         {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
         {message && <div className="rounded-lg bg-aqua-100 p-3 text-sm font-bold text-navy-950">{message}</div>}
+        <section className="rounded-lg border border-aqua-100 bg-aqua-100 p-3">
+          <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+            <ClipboardList size={17} /> Dados obrigatórios da empresa
+          </div>
+          <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">{companyRequiredFields.join(", ")}.</p>
+        </section>
+        <SignupStep number="1" title="Acesso e responsável" />
         <div className="grid gap-3 md:grid-cols-2">
           <label className="label">Nome do estabelecimento<input name="establishmentName" className="input" required /></label>
           <label className="label">Nome do responsável<input name="responsibleName" className="input" required /></label>
@@ -274,12 +318,21 @@ export function CompanySignupPage() {
           <label className="label">Telefone<input name="phone" className="input" required placeholder="(48) 99999-9999" /></label>
           <label className="label">E-mail<input name="email" className="input" type="email" required /></label>
           <label className="label">Senha<input name="password" className="input" type="password" required /></label>
+        </div>
+        <SignupStep number="2" title="Estabelecimento" />
+        <div className="grid gap-3 md:grid-cols-2">
           <label className="label">Categoria<select name="category" className="input" required><option>Restaurante</option><option>Bar</option><option>Beach club</option><option>Hotel</option><option>Casa noturna</option><option>Buffet</option><option>Agência de eventos</option><option>Outro</option></select></label>
-          <label className="label">Bairro<input name="neighborhood" className="input" required placeholder="Jurerê" /></label>
+          <label className="label">
+            Bairro
+            <select name="neighborhood" className="input" required defaultValue="Centro">
+              {neighborhoods.map((item) => <option key={item}>{item}</option>)}
+            </select>
+          </label>
         </div>
         <label className="label">Endereço<input name="address" className="input" required /></label>
         <label className="label">Descrição<textarea name="description" className="input min-h-20 py-3" required /></label>
-        <label className="label">Foto ou logotipo<span className="secondary justify-start"><Camera size={17} /> Selecionar arquivo</span></label>
+        <SignupStep number="3" title="Imagem da empresa" />
+        <label className="label">Foto ou logotipo<input name="logoUrl" className="input" placeholder="Cole um link do logotipo ou envie depois no perfil" /></label>
         <button type="submit" disabled={pending} className="primary"><Building2 size={17} /> {pending ? "Criando..." : "Criar conta da empresa"}</button>
       </form>
     </AuthShell>
@@ -307,6 +360,15 @@ function AuthShell({ title, description, children }: { title: string; descriptio
           {children}
         </section>
       </main>
+    </div>
+  );
+}
+
+function SignupStep({ number, title }: { number: string; title: string }) {
+  return (
+    <div className="mt-2 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+      <span className="grid h-7 w-7 place-items-center rounded-full bg-navy-950 text-xs font-black text-white">{number}</span>
+      <strong className="text-sm text-navy-950">{title}</strong>
     </div>
   );
 }
