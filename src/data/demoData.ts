@@ -392,6 +392,7 @@ export const initialState: AppState = {
   workers,
   companies,
   jobs,
+  companySchedules: [],
   applications: [
     { id: "application-1", jobId: "job-1", workerId: "worker-1", status: "Em análise", createdAt: "2026-01-01T14:00:00.000Z" },
     { id: "application-2", jobId: "job-2", workerId: "worker-2", status: "Aprovada", createdAt: "2026-01-01T16:30:00.000Z" },

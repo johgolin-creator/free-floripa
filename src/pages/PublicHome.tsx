@@ -4,6 +4,7 @@ import {
   BriefcaseBusiness,
   CheckCircle2,
   ClipboardCheck,
+  LogIn,
   ShieldCheck,
   Smartphone,
   UsersRound,
@@ -31,9 +32,9 @@ export function PublicHome() {
           <div className="flex shrink-0 gap-2">
             <Link
               to="/login"
-              className="hidden min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-navy-900 shadow-sm transition hover:bg-slate-50 sm:inline-flex"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-navy-900 shadow-sm transition hover:bg-slate-50"
             >
-              Login
+              <LogIn size={17} /> Entrar
             </Link>
             <Link
               to="/cadastro-trabalhador"
@@ -73,6 +74,12 @@ export function PublicHome() {
                 </Link>
                 <Link to="/cadastro-trabalhador" onClick={() => setRole("trabalhador")} className="secondary bg-white/95">
                   Quero trabalhar
+                </Link>
+                <Link
+                  to="/login"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/15"
+                >
+                  <LogIn size={17} /> Entrar na minha conta
                 </Link>
               </div>
             </div>

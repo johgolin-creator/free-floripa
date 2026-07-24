@@ -1,7 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CheckCircle2, Clock3, Heart, Lock, Mail, MessageCircle, Phone, UserCheck, UserX } from "lucide-react";
+import {
+  CheckCircle2,
+  ClipboardCheck,
+  Clock3,
+  Heart,
+  Lock,
+  Mail,
+  MessageCircle,
+  Phone,
+  Star,
+  UserCheck,
+  UserX
+} from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
+import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
 import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
@@ -11,10 +24,21 @@ import type { Application, Job, WorkShift } from "../lib/types";
 
 const terminalStatuses = ["Recusada", "Cancelada", "Trabalho concluído", "Falta registrada"];
 
+type ReviewTarget = {
+  application: Application;
+  job: Job;
+  workerId: string;
+  workerName: string;
+};
+
 export function CandidatesPage() {
-  const { state, currentCompany, toggleFavorite, updateApplicationStatus, checkIn, checkOut } = useAppStore();
+  const { state, currentCompany, toggleFavorite, updateApplicationStatus, checkIn, checkOut, addReview } = useAppStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [message, setMessage] = useState("");
+  const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewError, setReviewError] = useState("");
   const companyJobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const selectedJobId = searchParams.get("vaga") || companyJobs[0]?.id || "";
   const selectedJob = companyJobs.find((job) => job.id === selectedJobId) ?? companyJobs[0];
@@ -34,12 +58,41 @@ export function CandidatesPage() {
     return result.ok;
   }
 
+  function openReview(application: Application, job: Job, workerId: string, workerName: string) {
+    setReviewTarget({ application, job, workerId, workerName });
+    setReviewRating(5);
+    setReviewComment("");
+    setReviewError("");
+  }
+
+  function submitReview(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!reviewTarget) return;
+
+    const comment = reviewComment.trim();
+    if (comment.length < 10) {
+      setReviewError("Escreva uma avaliação com pelo menos 10 caracteres.");
+      return;
+    }
+
+    addReview(reviewTarget.workerId, {
+      authorName: currentCompany.establishmentName,
+      rating: reviewRating,
+      comment: `${reviewTarget.job.title}: ${comment}`,
+      jobId: reviewTarget.job.id,
+      applicationId: reviewTarget.application.id,
+      createdAt: new Date().toISOString()
+    });
+    setMessage(`Avaliação registrada para ${reviewTarget.workerName}.`);
+    setReviewTarget(null);
+  }
+
   return (
     <div>
       <SectionHeader
         eyebrow="Candidatos"
         title="Gerenciar candidatos"
-        description="Filtre por vaga, aprove profissionais, registre presença e finalize o turno."
+        description="Aprove profissionais, acompanhe presença, finalize turnos e registre a avaliação do serviço."
       />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       {companyJobs.length === 0 ? (
@@ -103,6 +156,9 @@ export function CandidatesPage() {
                 const favorite = state.favoriteWorkerIds.includes(worker.id);
                 const approved = application.status === "Aprovada";
                 const completed = application.status === "Trabalho concluído";
+                const reviewed = worker.reviews.some(
+                  (review) => review.jobId === selectedJob.id && review.applicationId === application.id
+                );
                 const contactUnlocked = approved || completed;
                 const refused = terminalStatuses.includes(application.status) && !approved;
                 const noSlots = getOpenSlots(selectedJob) === 0 && !approved && !completed;
@@ -121,6 +177,8 @@ export function CandidatesPage() {
                           <Heart size={17} fill={favorite ? "currentColor" : "none"} /> {favorite ? "Favorito" : "Favoritar"}
                         </button>
                       </div>
+
+                      <HiringFlow application={application} shift={shift} reviewed={reviewed} />
 
                       <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-6">
                         <button
@@ -202,6 +260,29 @@ export function CandidatesPage() {
                           <Lock size={17} /> Contato protegido até a aprovação.
                         </div>
                       )}
+
+                      {completed && (
+                        <div className="grid gap-2 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-[1fr_auto] md:items-center">
+                          <div>
+                            <strong className="text-sm text-navy-950">
+                              {reviewed ? "Avaliação registrada" : "Avaliação pendente"}
+                            </strong>
+                            <p className="mt-1 text-sm font-semibold text-slate-500">
+                              {reviewed
+                                ? "Esse trabalho já entrou no histórico do profissional."
+                                : "Avalie presença, postura e qualidade antes de encerrar o ciclo."}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => openReview(application, selectedJob, worker.id, worker.name)}
+                            disabled={reviewed}
+                            className={reviewed ? "secondary" : "primary"}
+                          >
+                            <Star size={17} /> {reviewed ? "Avaliado" : "Avaliar"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </article>
                 );
@@ -209,6 +290,41 @@ export function CandidatesPage() {
             </div>
           )}
         </div>
+      )}
+
+      {reviewTarget && (
+        <Modal title={`Avaliar ${reviewTarget.workerName}`} onClose={() => setReviewTarget(null)}>
+          <form className="grid gap-3" onSubmit={submitReview}>
+            {reviewError && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{reviewError}</div>}
+            <div className="grid gap-2">
+              <span className="text-sm font-black text-navy-950">Nota</span>
+              <div className="flex flex-wrap gap-2">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <button
+                    key={rating}
+                    type="button"
+                    onClick={() => setReviewRating(rating)}
+                    className={reviewRating === rating ? "primary" : "secondary"}
+                  >
+                    <Star size={16} fill={reviewRating >= rating ? "currentColor" : "none"} /> {rating}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <label className="label">
+              Comentário
+              <textarea
+                className="input min-h-28 py-3"
+                value={reviewComment}
+                onChange={(event) => setReviewComment(event.target.value)}
+                placeholder="Ex.: chegou no horário, atendeu bem e trabalhou com postura profissional."
+              />
+            </label>
+            <button type="submit" className="primary">
+              <ClipboardCheck size={17} /> Salvar avaliação
+            </button>
+          </form>
+        </Modal>
       )}
     </div>
   );
@@ -231,6 +347,89 @@ function getShiftLabel(application: Application, shift: WorkShift | undefined) {
   if (application.status === "Em análise") return "Em análise";
   if (application.status === "Recusada") return "Recusado";
   if (application.status === "Cancelada") return "Cancelado";
+  return "Novo candidato";
+}
+
+type StepState = "done" | "current" | "pending" | "blocked";
+type HiringStep = { kicker: string; label: string; state: StepState };
+
+function HiringFlow({
+  application,
+  shift,
+  reviewed
+}: {
+  application: Application;
+  shift?: WorkShift;
+  reviewed: boolean;
+}) {
+  const steps = getHiringSteps(application, shift, reviewed);
+
+  return (
+    <div className="grid gap-2 rounded-lg bg-slate-50 p-3">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <strong className="text-sm text-navy-950">Fluxo da contratação</strong>
+        <span className="text-xs font-black uppercase text-slate-500">{getNextAction(application, shift, reviewed)}</span>
+      </div>
+      <div className="grid gap-2 md:grid-cols-5">
+        {steps.map((step) => (
+          <span key={step.label} className={`rounded-lg border p-2 text-xs font-bold ${getStepClass(step.state)}`}>
+            <span className="block text-[0.65rem] uppercase text-slate-500">{step.kicker}</span>
+            {step.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function getHiringSteps(application: Application, shift: WorkShift | undefined, reviewed: boolean): HiringStep[] {
+  const approved = application.status === "Aprovada" || application.status === "Trabalho concluído";
+  const completed = application.status === "Trabalho concluído";
+  const absence = application.status === "Falta registrada";
+  const rejected = application.status === "Recusada" || application.status === "Cancelada";
+  const checkedIn = shift?.status === "Fez check-in" || shift?.status === "Finalizou o turno" || completed;
+
+  return [
+    { kicker: "1", label: "Candidatura", state: "done" },
+    {
+      kicker: "2",
+      label: approved ? "Aprovado" : rejected ? "Encerrado" : "Aprovar",
+      state: approved ? "done" : rejected ? "blocked" : "current"
+    },
+    {
+      kicker: "3",
+      label: checkedIn ? "Presença registrada" : absence ? "Falta" : "Check-in",
+      state: checkedIn ? "done" : absence ? "blocked" : approved ? "current" : "pending"
+    },
+    {
+      kicker: "4",
+      label: completed ? "Trabalho concluído" : "Concluir turno",
+      state: completed ? "done" : checkedIn ? "current" : "pending"
+    },
+    {
+      kicker: "5",
+      label: reviewed ? "Avaliado" : "Avaliar",
+      state: reviewed ? "done" : completed ? "current" : "pending"
+    }
+  ];
+}
+
+function getStepClass(state: StepState) {
+  if (state === "done") return "border-aqua-200 bg-aqua-100 text-aqua-700";
+  if (state === "current") return "border-navy-200 bg-white text-navy-950";
+  if (state === "blocked") return "border-red-100 bg-red-50 text-alert";
+  return "border-slate-200 bg-white text-slate-500";
+}
+
+function getNextAction(application: Application, shift: WorkShift | undefined, reviewed: boolean) {
+  if (application.status === "Recusada" || application.status === "Cancelada") return "Ciclo encerrado";
+  if (application.status === "Falta registrada") return "Falta registrada";
+  if (application.status === "Trabalho concluído") return reviewed ? "Contratação concluída" : "Avaliar profissional";
+  if (application.status === "Aprovada") {
+    if (shift?.status === "Fez check-in") return "Concluir turno";
+    return "Aguardar presença";
+  }
+  if (application.status === "Em análise") return "Decidir aprovação";
   return "Novo candidato";
 }
 
