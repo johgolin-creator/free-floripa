@@ -15,6 +15,7 @@ import { CompanyDashboard } from "./pages/CompanyDashboard";
 import { CompanyJobsPage } from "./pages/CompanyJobsPage";
 import { CandidatesPage } from "./pages/CandidatesPage";
 import { CompanySchedulePage } from "./pages/CompanySchedulePage";
+import { ProfessionalBankPage } from "./pages/ProfessionalBankPage";
 import { TeamPage } from "./pages/TeamPage";
 import { CompanyProfilePage } from "./pages/CompanyProfilePage";
 import { NotificationsPage } from "./pages/NotificationsPage";
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="perfil-trabalhador" element={<RoleRoute role="trabalhador"><WorkerProfilePage /></RoleRoute>} />
         <Route path="empresa" element={<RoleRoute role="empresa"><CompanyDashboard /></RoleRoute>} />
         <Route path="minhas-vagas" element={<RoleRoute role="empresa"><CompanyJobsPage /></RoleRoute>} />
+        <Route path="profissionais" element={<RoleRoute role="empresa"><ProfessionalBankPage /></RoleRoute>} />
         <Route path="candidatos" element={<RoleRoute role="empresa"><CandidatesPage /></RoleRoute>} />
         <Route path="escala" element={<RoleRoute role="empresa"><CompanySchedulePage /></RoleRoute>} />
         <Route path="equipe" element={<RoleRoute role="empresa"><TeamPage /></RoleRoute>} />

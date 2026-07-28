@@ -32,6 +32,7 @@ const workerLinks = [
 const companyLinks = [
   { to: "/app/empresa", label: "Painel", icon: Home },
   { to: "/app/minhas-vagas", label: "Minhas vagas", icon: BriefcaseBusiness },
+  { to: "/app/profissionais", label: "Banco", icon: Search },
   { to: "/app/candidatos", label: "Candidatos", icon: UsersRound },
   { to: "/app/escala", label: "Escala", icon: CalendarDays },
   { to: "/app/equipe", label: "Minha equipe", icon: Star },
