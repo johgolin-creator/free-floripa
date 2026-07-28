@@ -33,7 +33,6 @@ export function ProfessionalBankPage() {
     const matchesSearch =
       !search ||
       worker.name.toLowerCase().includes(search) ||
-      worker.email.toLowerCase().includes(search) ||
       worker.functions.some((item) => item.toLowerCase().includes(search));
     const matchesFunction = functionFilter === "Todas" || Boolean(getFunctionExperience(worker, functionFilter));
     const matchesNeighborhood = neighborhoodFilter === "Todos" || worker.neighborhood === neighborhoodFilter;

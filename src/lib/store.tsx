@@ -3,6 +3,7 @@ import type { User } from "@supabase/supabase-js";
 import { initialState } from "../data/demoData";
 import { useAuth } from "./auth";
 import { canApply, getOpenSlots } from "./rules";
+import { loadPublicWorkerProfiles, publishWorkerProfile, supabaseMarketplaceEnabled } from "./supabaseMarketplace";
 import { getSupabaseStateKey, loadSupabaseState, saveSupabaseState, supabaseStateEnabled } from "./supabaseState";
 import type { AppState, Application, ApplicationStatus, CompanyProfile, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, UserRole, WorkerProfile } from "./types";
 
@@ -301,6 +302,19 @@ function removeDemoWorkers(state: AppState) {
   };
 }
 
+function mergePublicWorkers(state: AppState, publicWorkers: WorkerProfile[]) {
+  if (publicWorkers.length === 0) return removeDemoWorkers(state);
+
+  const publicIds = new Set(publicWorkers.map((worker) => worker.id));
+  return {
+    ...removeDemoWorkers(state),
+    workers: [
+      ...publicWorkers,
+      ...state.workers.filter((worker) => !DEMO_WORKER_IDS.has(worker.id) && !publicIds.has(worker.id))
+    ]
+  };
+}
+
 function sanitizeAccountState(state: AppState, user: User, role: UserRole): AppState {
   const withoutDemoWorkers = removeDemoWorkers(state);
 
@@ -435,6 +449,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const currentWorker = state.workers.find((worker) => worker.id === state.selectedWorkerId) ?? state.workers[0];
   const currentCompany = state.companies.find((company) => company.id === state.selectedCompanyId) ?? state.companies[0];
+
+  useEffect(() => {
+    if (authLoading || role !== "empresa" || !supabaseMarketplaceEnabled) return;
+
+    let active = true;
+    loadPublicWorkerProfiles(user?.id)
+      .then((publicWorkers) => {
+        if (!active) return;
+        setState((current) => mergePublicWorkers(current, publicWorkers));
+        setSyncError("");
+      })
+      .catch((error) => {
+        if (!active) return;
+        setSyncError(error instanceof Error ? error.message : "Falha ao carregar o banco de profissionais.");
+        setSyncStatus("erro");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authLoading, role, user?.id]);
+
+  useEffect(() => {
+    if (authLoading || role !== "trabalhador" || !user || !currentWorker || !supabaseMarketplaceEnabled) return;
+
+    publishWorkerProfile(user, currentWorker).catch((error) => {
+      setSyncError(error instanceof Error ? error.message : "Falha ao publicar o perfil no banco de profissionais.");
+      setSyncStatus("erro");
+    });
+  }, [authLoading, currentWorker, role, user]);
 
   const createJobHandler = (input: CreateJobInput) => {
     const id = crypto.randomUUID();

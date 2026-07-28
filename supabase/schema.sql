@@ -28,6 +28,7 @@ create table public.job_categories (
 create table public.worker_profiles (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null unique references public.users(id) on delete cascade,
+  display_name text not null default 'Profissional Free Floripa',
   avatar_url text,
   birth_date date,
   city text not null default 'Florianópolis',
@@ -240,6 +241,7 @@ alter table public.notifications enable row level security;
 alter table public.app_state_snapshots enable row level security;
 
 create policy "users read own" on public.users for select using (auth.uid() = id);
+create policy "users insert own" on public.users for insert with check (auth.uid() = id);
 create policy "users update own" on public.users for update using (auth.uid() = id);
 
 create policy "categories are public" on public.job_categories for select using (true);
