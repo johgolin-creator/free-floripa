@@ -9,6 +9,10 @@ import type { AppState, Application, ApplicationStatus, CompanyProfile, CompanyS
 const STORAGE_KEY = "free-floripa:state";
 const DEFAULT_WORKER_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
 const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=500&q=80";
+const DEMO_WORKER_IDS = new Set(["worker-1", "worker-2", "worker-3", "worker-4"]);
+const DEMO_COMPANY_IDS = new Set(["company-1", "company-2", "company-3"]);
+const DEMO_APPLICATION_IDS = new Set(["application-1", "application-2", "application-3"]);
+const DEMO_SHIFT_IDS = new Set(["shift-1"]);
 
 export interface CreateJobInput {
   title: string;
@@ -255,8 +259,16 @@ function createStateForUser(user: User | null, role: UserRole | null): AppState 
     return {
       ...initialState,
       activeRole: "empresa",
+      selectedWorkerId: "",
       selectedCompanyId: company.id,
-      companies: [company, ...initialState.companies.filter((item) => item.id !== company.id)]
+      workers: [],
+      companies: [company],
+      jobs: [],
+      companySchedules: [],
+      applications: [],
+      shifts: [],
+      favoriteWorkerIds: [],
+      notifications: []
     };
   }
 
@@ -265,7 +277,57 @@ function createStateForUser(user: User | null, role: UserRole | null): AppState 
     ...initialState,
     activeRole: "trabalhador",
     selectedWorkerId: worker.id,
-    workers: [worker, ...initialState.workers.filter((item) => item.id !== worker.id)]
+    workers: [worker],
+    applications: [],
+    shifts: [],
+    favoriteWorkerIds: [],
+    notifications: []
+  };
+}
+
+function removeDemoWorkers(state: AppState) {
+  const applications = state.applications.filter(
+    (application) => !DEMO_APPLICATION_IDS.has(application.id) && !DEMO_WORKER_IDS.has(application.workerId)
+  );
+  return {
+    ...state,
+    workers: state.workers.filter((worker) => !DEMO_WORKER_IDS.has(worker.id)),
+    applications,
+    shifts: state.shifts.filter(
+      (shift) => !DEMO_SHIFT_IDS.has(shift.id) && !DEMO_WORKER_IDS.has(shift.workerId)
+    ),
+    favoriteWorkerIds: state.favoriteWorkerIds.filter((workerId) => !DEMO_WORKER_IDS.has(workerId)),
+    notifications: state.notifications.filter((notification) => !notification.id.startsWith("notification-"))
+  };
+}
+
+function sanitizeAccountState(state: AppState, user: User, role: UserRole): AppState {
+  const withoutDemoWorkers = removeDemoWorkers(state);
+
+  if (role === "empresa") {
+    const company = withoutDemoWorkers.companies.find((item) => item.id === user.id) ?? createCompanyForUser(user);
+    const companyJobs = withoutDemoWorkers.jobs.filter((job) => job.companyId === company.id);
+    return {
+      ...withoutDemoWorkers,
+      activeRole: "empresa",
+      selectedWorkerId: "",
+      selectedCompanyId: company.id,
+      companies: [company, ...withoutDemoWorkers.companies.filter((item) => item.id !== company.id && !DEMO_COMPANY_IDS.has(item.id))],
+      jobs: companyJobs,
+      applications: withoutDemoWorkers.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId)),
+      shifts: withoutDemoWorkers.shifts.filter((shift) => companyJobs.some((job) => job.id === shift.jobId))
+    };
+  }
+
+  const worker = withoutDemoWorkers.workers.find((item) => item.id === user.id) ?? createWorkerForUser(user);
+  return {
+    ...withoutDemoWorkers,
+    activeRole: "trabalhador",
+    selectedWorkerId: worker.id,
+    workers: [worker, ...withoutDemoWorkers.workers.filter((item) => item.id !== worker.id)],
+    applications: withoutDemoWorkers.applications.filter((application) => application.workerId === worker.id),
+    shifts: withoutDemoWorkers.shifts.filter((shift) => shift.workerId === worker.id),
+    favoriteWorkerIds: []
   };
 }
 
@@ -273,23 +335,25 @@ function ensureAccountProfile(state: AppState, user: User | null, role: UserRole
   if (!user || !role) return state;
 
   if (role === "empresa") {
-    const company = state.companies.find((item) => item.id === user.id) ?? createCompanyForUser(user);
+    const cleanState = sanitizeAccountState(state, user, role);
+    const company = cleanState.companies.find((item) => item.id === user.id) ?? createCompanyForUser(user);
     return {
-      ...state,
+      ...cleanState,
       activeRole: "empresa" as const,
       selectedCompanyId: company.id,
-      companies: state.companies.some((item) => item.id === company.id)
-        ? state.companies
-        : [company, ...state.companies]
+      companies: cleanState.companies.some((item) => item.id === company.id)
+        ? cleanState.companies
+        : [company, ...cleanState.companies]
     };
   }
 
-  const worker = state.workers.find((item) => item.id === user.id) ?? createWorkerForUser(user);
+  const cleanState = sanitizeAccountState(state, user, role);
+  const worker = cleanState.workers.find((item) => item.id === user.id) ?? createWorkerForUser(user);
   return {
-    ...state,
+    ...cleanState,
     activeRole: "trabalhador" as const,
     selectedWorkerId: worker.id,
-    workers: state.workers.some((item) => item.id === worker.id) ? state.workers : [worker, ...state.workers]
+    workers: cleanState.workers.some((item) => item.id === worker.id) ? cleanState.workers : [worker, ...cleanState.workers]
   };
 }
 
