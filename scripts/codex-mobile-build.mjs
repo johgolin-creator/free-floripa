@@ -68,19 +68,7 @@ const iconShim = {
     return `
       import React from "react";
       const Icon = React.forwardRef(function Icon(props, ref) {
-        const { size = 20, style, ...rest } = props;
-        return React.createElement("span", {
-          ref,
-          ...rest,
-          style: {
-            display: "inline-block",
-            width: size,
-            height: size,
-            border: "2px solid currentColor",
-            borderRadius: "4px",
-            ...style
-          }
-        });
+        return null;
       });
       ${exports}
     `;
