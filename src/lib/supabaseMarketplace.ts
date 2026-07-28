@@ -9,7 +9,9 @@ import type {
   JobFunction,
   JobStatus,
   Neighborhood,
+  NotificationItem,
   PaymentMethod,
+  UserRole,
   WorkerProfile,
   WorkShift
 } from "./types";
@@ -140,6 +142,15 @@ interface WorkShiftRow {
   status: WorkShift["status"];
   checkin_at?: string | null;
   checkout_at?: string | null;
+}
+
+interface NotificationRow {
+  id: string;
+  role: UserRole;
+  title: string;
+  body: string;
+  read: boolean;
+  created_at: string;
 }
 
 export interface MarketplaceJobsPayload {
@@ -289,6 +300,17 @@ function mapShift(row: WorkShiftRow): WorkShift {
     status: row.status,
     checkinAt: row.checkin_at ?? undefined,
     checkoutAt: row.checkout_at ?? undefined
+  };
+}
+
+function mapNotification(row: NotificationRow): NotificationItem {
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    role: row.role,
+    createdAt: row.created_at,
+    read: row.read
   };
 }
 
@@ -642,4 +664,51 @@ export async function publishInvitedApplication(jobId: string, workerId: string,
     { onConflict: "job_id,worker_id" }
   );
   if (shiftError) throw new Error(shiftError.message);
+}
+
+export async function loadRemoteNotifications(userId: string) {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("id,role,title,body,read,created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(80);
+
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as NotificationRow[]).map(mapNotification);
+}
+
+export async function publishNotification(userId: string, notification: NotificationItem) {
+  if (!supabase) return;
+
+  const { error } = await supabase.from("notifications").upsert(
+    {
+      id: notification.id,
+      user_id: userId,
+      role: notification.role,
+      title: notification.title,
+      body: notification.body,
+      read: notification.read,
+      created_at: notification.createdAt
+    },
+    { onConflict: "id" }
+  );
+
+  if (error) throw new Error(error.message);
+}
+
+export async function markRemoteNotificationRead(notificationId: string) {
+  if (!supabase) return;
+
+  const { error } = await supabase.from("notifications").update({ read: true }).eq("id", notificationId);
+  if (error) throw new Error(error.message);
+}
+
+export async function markRemoteRoleNotificationsRead(userId: string, role: UserRole) {
+  if (!supabase) return;
+
+  const { error } = await supabase.from("notifications").update({ read: true }).eq("user_id", userId).eq("role", role);
+  if (error) throw new Error(error.message);
 }

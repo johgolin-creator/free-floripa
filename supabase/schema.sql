@@ -341,6 +341,7 @@ create policy "companies manage favorites" on public.favorites for all using (
 create policy "users read own subscriptions" on public.subscriptions for select using (auth.uid() = user_id);
 create policy "users read own credits" on public.application_credits for select using (auth.uid() = user_id);
 create policy "users read own notifications" on public.notifications for select using (auth.uid() = user_id);
+create policy "authenticated users create notifications" on public.notifications for insert with check (auth.role() = 'authenticated');
 create policy "users update own notifications" on public.notifications for update using (auth.uid() = user_id);
 
 drop policy if exists "demo state public read" on public.app_state_snapshots;

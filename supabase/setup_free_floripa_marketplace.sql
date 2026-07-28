@@ -156,6 +156,16 @@ create table if not exists public.work_shifts (
   unique (job_id, worker_id)
 );
 
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.users(id) on delete cascade,
+  role public.user_role,
+  title text not null,
+  body text not null,
+  read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
 alter table public.users enable row level security;
 alter table public.worker_profiles enable row level security;
 alter table public.worker_function_experience enable row level security;
@@ -163,6 +173,7 @@ alter table public.company_profiles enable row level security;
 alter table public.jobs enable row level security;
 alter table public.applications enable row level security;
 alter table public.work_shifts enable row level security;
+alter table public.notifications enable row level security;
 
 drop policy if exists "users read own" on public.users;
 create policy "users read own" on public.users for select using (auth.uid() = id);
@@ -269,3 +280,12 @@ create policy "shift participants update" on public.work_shifts for update using
     where j.id = job_id and c.user_id = auth.uid()
   )
 );
+
+drop policy if exists "authenticated users create notifications" on public.notifications;
+create policy "authenticated users create notifications" on public.notifications for insert with check (auth.role() = 'authenticated');
+
+drop policy if exists "users read own notifications" on public.notifications;
+create policy "users read own notifications" on public.notifications for select using (auth.uid() = user_id);
+
+drop policy if exists "users update own notifications" on public.notifications;
+create policy "users update own notifications" on public.notifications for update using (auth.uid() = user_id);

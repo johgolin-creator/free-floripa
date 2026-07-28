@@ -6,11 +6,15 @@ import { canApply, getOpenSlots } from "./rules";
 import {
   loadCompanyMarketplace,
   loadPublicWorkerProfiles,
+  loadRemoteNotifications,
   loadWorkerMarketplace,
+  markRemoteNotificationRead,
+  markRemoteRoleNotificationsRead,
   publishApplication,
   publishCompanyProfile,
   publishInvitedApplication,
   publishJob,
+  publishNotification,
   publishWorkerProfile,
   supabaseMarketplaceEnabled,
   updateRemoteApplicationStatus,
@@ -394,6 +398,17 @@ function mergeWorkerMarketplaceState(state: AppState, workerId: string, payload:
   };
 }
 
+function mergeNotifications(state: AppState, notifications: AppState["notifications"]) {
+  const incomingIds = new Set(notifications.map((notification) => notification.id));
+  return {
+    ...state,
+    notifications: [
+      ...notifications,
+      ...state.notifications.filter((notification) => !incomingIds.has(notification.id))
+    ].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  };
+}
+
 function sanitizeAccountState(state: AppState, user: User, role: UserRole): AppState {
   const withoutDemoWorkers = removeDemoWorkers(state);
 
@@ -481,6 +496,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSyncError(error instanceof Error ? error.message : "Falha ao salvar no Supabase.");
       setSyncStatus("erro");
     }
+  }
+
+  function publishRemoteNotification(userId: string | undefined | null, notification: AppState["notifications"][number]) {
+    if (!userId || !supabaseMarketplaceEnabled) return;
+    publishNotification(userId, notification).catch((error) => {
+      setSyncError(error instanceof Error ? error.message : "Falha ao publicar notificação.");
+      setSyncStatus("erro");
+    });
   }
 
   useEffect(() => {
@@ -579,6 +602,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       active = false;
     };
   }, [authLoading, currentWorker?.id, role]);
+
+  useEffect(() => {
+    if (authLoading || !user || !supabaseMarketplaceEnabled) return;
+
+    let active = true;
+    loadRemoteNotifications(user.id)
+      .then((notifications) => {
+        if (!active) return;
+        setState((current) => mergeNotifications(current, notifications));
+        setSyncError("");
+      })
+      .catch((error) => {
+        if (!active) return;
+        setSyncError(error instanceof Error ? error.message : "Falha ao carregar notificações.");
+        setSyncStatus("erro");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authLoading, user?.id]);
 
   const createJobHandler = (input: CreateJobInput) => {
     const id = crypto.randomUUID();
@@ -865,6 +909,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           status: "Enviada",
           createdAt: new Date().toISOString()
         };
+        const companyNotification: AppState["notifications"][number] = {
+          id: crypto.randomUUID(),
+          title: "Um candidato se inscreveu na sua vaga",
+          body: `${currentWorker.name} enviou candidatura para ${job.title}.`,
+          role: "empresa",
+          createdAt: new Date().toISOString(),
+          read: false
+        };
 
         commit((current) => ({
           ...current,
@@ -875,14 +927,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               ? current.subscription
               : { ...current.subscription, creditsRemaining: current.subscription.creditsRemaining - 1 },
           notifications: [
-            {
-              id: crypto.randomUUID(),
-              title: "Um candidato se inscreveu na sua vaga",
-              body: `${currentWorker.name} enviou candidatura para ${job.title}.`,
-              role: "empresa",
-              createdAt: new Date().toISOString(),
-              read: false
-            },
+            companyNotification,
             ...current.notifications
           ]
         }));
@@ -891,6 +936,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setSyncError(error instanceof Error ? error.message : "Falha ao publicar candidatura no Supabase.");
             setSyncStatus("erro");
           });
+          publishRemoteNotification(job.companyId, companyNotification);
         }
 
         return { ok: true, message: "Candidatura enviada com sucesso." };
@@ -985,6 +1031,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setSyncError(error instanceof Error ? error.message : "Falha ao atualizar candidatura no Supabase.");
             setSyncStatus("erro");
           });
+          publishRemoteNotification(application.workerId, {
+            id: crypto.randomUUID(),
+            title: status === "Aprovada" ? "Sua candidatura foi aprovada" : "Sua candidatura foi atualizada",
+            body: `${job.title}: status ${status}.`,
+            role: "trabalhador",
+            createdAt: new Date().toISOString(),
+            read: false
+          });
         }
 
         return { ok: true, message: `Candidatura marcada como ${status}.` };
@@ -1023,6 +1077,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
               status: "Aprovada",
               createdAt: new Date().toISOString()
             };
+        const remoteInviteNotification: AppState["notifications"][number] = {
+          id: crypto.randomUUID(),
+          title: "Voce foi convidado para uma vaga",
+          body: `${currentCompany.establishmentName} confirmou voce em ${job.title}.`,
+          role: "trabalhador",
+          createdAt: new Date().toISOString(),
+          read: false
+        };
 
         commit((current) => {
           const nextApplications = existing
@@ -1071,11 +1133,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setSyncError(error instanceof Error ? error.message : "Falha ao publicar convite no Supabase.");
             setSyncStatus("erro");
           });
+          publishRemoteNotification(workerId, remoteInviteNotification);
         }
 
         return { ok: true, message: `${worker.name} foi confirmado em ${job.title}.` };
       },
       checkIn(jobId, workerId) {
+        const remoteCheckinNotification: AppState["notifications"][number] = {
+          id: crypto.randomUUID(),
+          title: "O profissional realizou check-in",
+          body: "O inicio do turno foi registrado.",
+          role: "empresa",
+          createdAt: new Date().toISOString(),
+          read: false
+        };
         commit((current) => ({
           ...current,
           shifts: current.shifts.map((shift) =>
@@ -1095,6 +1166,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...current.notifications
           ]
         }));
+        publishRemoteNotification(currentCompany.id, remoteCheckinNotification);
       },
       checkOut(jobId, workerId) {
         commit((current) => ({
@@ -1113,6 +1185,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             notification.id === notificationId ? { ...notification, read: true } : notification
           )
         }));
+        if (supabaseMarketplaceEnabled) {
+          markRemoteNotificationRead(notificationId).catch((error) => {
+            setSyncError(error instanceof Error ? error.message : "Falha ao marcar notificação como lida.");
+            setSyncStatus("erro");
+          });
+        }
       },
       markRoleNotificationsRead(role) {
         commit((current) => ({
@@ -1121,6 +1199,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             notification.role === role ? { ...notification, read: true } : notification
           )
         }));
+        if (supabaseMarketplaceEnabled && user) {
+          markRemoteRoleNotificationsRead(user.id, role).catch((error) => {
+            setSyncError(error instanceof Error ? error.message : "Falha ao marcar notificações como lidas.");
+            setSyncStatus("erro");
+          });
+        }
       },
       subscribeProfessional() {
         commit((current) => ({
