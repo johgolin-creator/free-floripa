@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { BadgeCheck, CalendarCheck, ClipboardList, CreditCard, Star, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -9,8 +8,7 @@ import { calculateReliability } from "../lib/rules";
 import { formatDate } from "../lib/format";
 
 export function WorkerDashboard() {
-  const { state, currentWorker, subscribeProfessional } = useAppStore();
-  const [message, setMessage] = useState("");
+  const { state, currentWorker } = useAppStore();
   const reliability = calculateReliability(currentWorker);
   const applications = state.applications.filter((application) => application.workerId === currentWorker.id);
   const urgentJobs = state.jobs.filter((job) => job.urgent).slice(0, 2);
@@ -32,8 +30,6 @@ export function WorkerDashboard() {
         <Metric icon={<BadgeCheck />} label="Índice de confiabilidade" value={`${reliability}%`} />
       </div>
 
-      {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
-
       <section className="card grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-center">
         <div>
           <h3 className="font-black text-navy-950">Acesso profissional</h3>
@@ -41,16 +37,7 @@ export function WorkerDashboard() {
             Renovação em {formatDate(state.subscription.renewalDate)}. O plano gratuito mostra prévias; o profissional libera vaga completa e candidaturas.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            subscribeProfessional();
-            setMessage("Plano profissional ativado. Candidaturas ilimitadas liberadas.");
-          }}
-          className="primary"
-        >
-          Assinar plano profissional
-        </button>
+        <Link to="/app/planos" className="primary">Ver planos</Link>
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">

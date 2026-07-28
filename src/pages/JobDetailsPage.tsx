@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { AlertTriangle, Building2, CheckCircle2, Lock, Mail, MapPin, MessageCircle, Phone, Star, Users } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
@@ -53,6 +53,9 @@ export function JobDetailsPage() {
           <strong className="block text-lg text-navy-950">Plano profissional</strong>
           <span className="mt-1 block text-sm text-slate-600">Libera vagas completas e candidaturas ilimitadas por R$ 14,90 por mês.</span>
         </button>
+        <Link to="/app/planos" onClick={() => setShowPlans(false)} className="secondary">
+          Comparar planos
+        </Link>
       </div>
     </Modal>
   ) : null;
@@ -99,9 +102,9 @@ export function JobDetailsPage() {
                 Assine o plano profissional para ver a vaga completa e se candidatar.
               </p>
             </div>
-            <button type="button" onClick={() => setShowPlans(true)} className="primary">
-              <Lock size={17} /> Assinar e liberar
-            </button>
+            <Link to="/app/planos" className="primary">
+              <Lock size={17} /> Ver planos
+            </Link>
           </aside>
         </section>
 

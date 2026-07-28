@@ -10,6 +10,7 @@ import { JobDetailsPage } from "./pages/JobDetailsPage";
 import { ApplicationsPage } from "./pages/ApplicationsPage";
 import { MyJobsPage } from "./pages/MyJobsPage";
 import { WorkerProfilePage } from "./pages/WorkerProfilePage";
+import { SubscriptionPage } from "./pages/SubscriptionPage";
 import { CompanyDashboard } from "./pages/CompanyDashboard";
 import { CompanyJobsPage } from "./pages/CompanyJobsPage";
 import { CandidatesPage } from "./pages/CandidatesPage";
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="vagas/:id" element={<RoleRoute role="trabalhador"><JobDetailsPage /></RoleRoute>} />
         <Route path="candidaturas" element={<RoleRoute role="trabalhador"><ApplicationsPage /></RoleRoute>} />
         <Route path="trabalhos" element={<RoleRoute role="trabalhador"><MyJobsPage /></RoleRoute>} />
+        <Route path="planos" element={<RoleRoute role="trabalhador"><SubscriptionPage /></RoleRoute>} />
         <Route path="perfil-trabalhador" element={<RoleRoute role="trabalhador"><WorkerProfilePage /></RoleRoute>} />
         <Route path="empresa" element={<RoleRoute role="empresa"><CompanyDashboard /></RoleRoute>} />
         <Route path="minhas-vagas" element={<RoleRoute role="empresa"><CompanyJobsPage /></RoleRoute>} />

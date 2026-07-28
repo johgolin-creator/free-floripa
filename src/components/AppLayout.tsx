@@ -6,6 +6,7 @@ import {
   CalendarDays,
   ClipboardList,
   Cloud,
+  CreditCard,
   Home,
   Search,
   Star,
@@ -24,6 +25,7 @@ const workerLinks = [
   { to: "/app/vagas", label: "Vagas", icon: Search },
   { to: "/app/candidaturas", label: "Candidaturas", icon: ClipboardList },
   { to: "/app/trabalhos", label: "Meus trabalhos", icon: CalendarCheck },
+  { to: "/app/planos", label: "Planos", icon: CreditCard },
   { to: "/app/perfil-trabalhador", label: "Perfil", icon: UserRound }
 ];
 

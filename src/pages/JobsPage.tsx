@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Filter, Lock, RotateCcw } from "lucide-react";
+import { Link } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { JobCard } from "../components/JobCard";
 import { SectionHeader } from "../components/SectionHeader";
@@ -75,7 +76,10 @@ export function JobsPage() {
                 No plano gratuito você vê uma prévia. Descrição completa, requisitos, benefícios e candidatura ficam disponíveis no plano profissional.
               </p>
             </div>
-            <span className="badge bg-white text-aqua-700">Plano atual: {state.subscription.plan}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="badge bg-white text-aqua-700">Plano atual: {state.subscription.plan}</span>
+              <Link to="/app/planos" className="primary">Ver planos</Link>
+            </div>
           </div>
         </section>
       )}
