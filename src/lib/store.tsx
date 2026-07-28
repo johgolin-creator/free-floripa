@@ -3,7 +3,19 @@ import type { User } from "@supabase/supabase-js";
 import { initialState } from "../data/demoData";
 import { useAuth } from "./auth";
 import { canApply, getOpenSlots } from "./rules";
-import { loadPublicWorkerProfiles, publishWorkerProfile, supabaseMarketplaceEnabled } from "./supabaseMarketplace";
+import {
+  loadCompanyMarketplace,
+  loadPublicWorkerProfiles,
+  loadWorkerMarketplace,
+  publishApplication,
+  publishCompanyProfile,
+  publishInvitedApplication,
+  publishJob,
+  publishWorkerProfile,
+  supabaseMarketplaceEnabled,
+  updateRemoteApplicationStatus,
+  type MarketplaceJobsPayload
+} from "./supabaseMarketplace";
 import { getSupabaseStateKey, loadSupabaseState, saveSupabaseState, supabaseStateEnabled } from "./supabaseState";
 import type { AppState, Application, ApplicationStatus, CompanyProfile, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, UserRole, WorkerProfile } from "./types";
 
@@ -315,6 +327,73 @@ function mergePublicWorkers(state: AppState, publicWorkers: WorkerProfile[]) {
   };
 }
 
+function mergeCompanies(currentCompanies: CompanyProfile[], incomingCompanies: CompanyProfile[]) {
+  const incomingIds = new Set(incomingCompanies.map((company) => company.id));
+  return [...incomingCompanies, ...currentCompanies.filter((company) => !incomingIds.has(company.id))];
+}
+
+function applyApplicationCounts(jobs: Job[], applications: Application[]) {
+  return jobs.map((job) => ({
+    ...job,
+    candidates: applications.filter((application) => application.jobId === job.id).length,
+    filled: Math.min(job.quantity, countApproved(applications, job.id))
+  }));
+}
+
+function mergeCompanyMarketplaceState(state: AppState, companyId: string, payload: MarketplaceJobsPayload) {
+  const companyJobIds = new Set([
+    ...state.jobs.filter((job) => job.companyId === companyId).map((job) => job.id),
+    ...payload.jobs.map((job) => job.id)
+  ]);
+  const payloadApplicationIds = new Set(payload.applications.map((application) => application.id));
+  const payloadShiftIds = new Set(payload.shifts.map((shift) => shift.id));
+  const applications = [
+    ...payload.applications,
+    ...state.applications.filter(
+      (application) => !companyJobIds.has(application.jobId) && !payloadApplicationIds.has(application.id)
+    )
+  ];
+
+  return {
+    ...state,
+    jobs: applyApplicationCounts(
+      [...payload.jobs, ...state.jobs.filter((job) => job.companyId !== companyId)],
+      applications
+    ),
+    applications,
+    shifts: [
+      ...payload.shifts,
+      ...state.shifts.filter((shift) => !companyJobIds.has(shift.jobId) && !payloadShiftIds.has(shift.id))
+    ]
+  };
+}
+
+function mergeWorkerMarketplaceState(state: AppState, workerId: string, payload: MarketplaceJobsPayload) {
+  const payloadJobIds = new Set(payload.jobs.map((job) => job.id));
+  const payloadApplicationIds = new Set(payload.applications.map((application) => application.id));
+  const payloadShiftIds = new Set(payload.shifts.map((shift) => shift.id));
+  const applications = [
+    ...payload.applications,
+    ...state.applications.filter(
+      (application) => application.workerId !== workerId && !payloadApplicationIds.has(application.id)
+    )
+  ];
+
+  return {
+    ...state,
+    companies: mergeCompanies(state.companies, payload.companies),
+    jobs: applyApplicationCounts(
+      [...payload.jobs, ...state.jobs.filter((job) => !payloadJobIds.has(job.id))],
+      applications
+    ),
+    applications,
+    shifts: [
+      ...payload.shifts,
+      ...state.shifts.filter((shift) => shift.workerId !== workerId && !payloadShiftIds.has(shift.id))
+    ]
+  };
+}
+
 function sanitizeAccountState(state: AppState, user: User, role: UserRole): AppState {
   const withoutDemoWorkers = removeDemoWorkers(state);
 
@@ -451,13 +530,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const currentCompany = state.companies.find((company) => company.id === state.selectedCompanyId) ?? state.companies[0];
 
   useEffect(() => {
-    if (authLoading || role !== "empresa" || !supabaseMarketplaceEnabled) return;
+    if (authLoading || role !== "empresa" || !currentCompany || !supabaseMarketplaceEnabled) return;
 
     let active = true;
-    loadPublicWorkerProfiles(user?.id)
-      .then((publicWorkers) => {
+    Promise.all([loadPublicWorkerProfiles(user?.id), loadCompanyMarketplace(currentCompany.id)])
+      .then(([publicWorkers, companyPayload]) => {
         if (!active) return;
-        setState((current) => mergePublicWorkers(current, publicWorkers));
+        setState((current) => mergeCompanyMarketplaceState(mergePublicWorkers(current, publicWorkers), currentCompany.id, companyPayload));
         setSyncError("");
       })
       .catch((error) => {
@@ -469,7 +548,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [authLoading, role, user?.id]);
+  }, [authLoading, currentCompany?.id, role, user?.id]);
 
   useEffect(() => {
     if (authLoading || role !== "trabalhador" || !user || !currentWorker || !supabaseMarketplaceEnabled) return;
@@ -479,6 +558,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSyncStatus("erro");
     });
   }, [authLoading, currentWorker, role, user]);
+
+  useEffect(() => {
+    if (authLoading || role !== "trabalhador" || !currentWorker || !supabaseMarketplaceEnabled) return;
+
+    let active = true;
+    loadWorkerMarketplace(currentWorker.id)
+      .then((payload) => {
+        if (!active) return;
+        setState((current) => mergeWorkerMarketplaceState(current, currentWorker.id, payload));
+        setSyncError("");
+      })
+      .catch((error) => {
+        if (!active) return;
+        setSyncError(error instanceof Error ? error.message : "Falha ao carregar vagas e candidaturas.");
+        setSyncStatus("erro");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authLoading, currentWorker?.id, role]);
 
   const createJobHandler = (input: CreateJobInput) => {
     const id = crypto.randomUUID();
@@ -510,6 +610,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...current.notifications
       ]
     }));
+    if (supabaseMarketplaceEnabled) {
+      setSyncStatus("salvando");
+      publishJob(user, currentCompany, job)
+        .then(() => {
+          setSyncError("");
+          setSyncStatus("sincronizado");
+        })
+        .catch((error) => {
+          setSyncError(error instanceof Error ? error.message : "Falha ao publicar vaga no Supabase.");
+          setSyncStatus("erro");
+        });
+    }
     return id;
   };
 
@@ -638,6 +750,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           };
         });
 
+        if (supabaseMarketplaceEnabled) {
+          publishJob(user, currentCompany, { ...job, status, urgent: status === "Cancelada" || status === "Concluída" ? false : job.urgent }).catch((error) => {
+            setSyncError(error instanceof Error ? error.message : "Falha ao atualizar vaga no Supabase.");
+            setSyncStatus("erro");
+          });
+        }
+
         return { ok: true, message: `Vaga marcada como ${status}.` };
       },
       duplicateJob(jobId) {
@@ -700,20 +819,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }));
       },
       updateCompanyProfile(input) {
+        const nextCompany = {
+          ...currentCompany,
+          ...input,
+          id: currentCompany.id,
+          rating: currentCompany.rating,
+          logoUrl: input.logoUrl ?? currentCompany.logoUrl
+        };
         commit((current) => ({
           ...current,
           companies: current.companies.map((company) =>
             company.id === currentCompany.id
-              ? {
-                  ...company,
-                  ...input,
-                  id: company.id,
-                  rating: company.rating,
-                  logoUrl: input.logoUrl ?? company.logoUrl
-                }
+              ? nextCompany
               : company
           )
         }));
+        if (supabaseMarketplaceEnabled && user) {
+          publishCompanyProfile(user, nextCompany).catch((error) => {
+            setSyncError(error instanceof Error ? error.message : "Falha ao publicar perfil da empresa.");
+            setSyncStatus("erro");
+          });
+        }
       },
       applyToJob(jobId) {
         const job = state.jobs.find((item) => item.id === jobId);
@@ -760,6 +886,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...current.notifications
           ]
         }));
+        if (supabaseMarketplaceEnabled) {
+          publishApplication(currentWorker, jobId, application.id).catch((error) => {
+            setSyncError(error instanceof Error ? error.message : "Falha ao publicar candidatura no Supabase.");
+            setSyncStatus("erro");
+          });
+        }
 
         return { ok: true, message: "Candidatura enviada com sucesso." };
       },
@@ -848,6 +980,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           };
         });
 
+        if (supabaseMarketplaceEnabled) {
+          updateRemoteApplicationStatus(application, status).catch((error) => {
+            setSyncError(error instanceof Error ? error.message : "Falha ao atualizar candidatura no Supabase.");
+            setSyncStatus("erro");
+          });
+        }
+
         return { ok: true, message: `Candidatura marcada como ${status}.` };
       },
       toggleFavorite(workerId) {
@@ -875,16 +1014,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return { ok: false, message: "Não há vagas restantes para confirmar este profissional." };
         }
 
+        const invitedApplication: Application = existing
+          ? { ...existing, status: "Aprovada" }
+          : {
+              id: crypto.randomUUID(),
+              jobId,
+              workerId,
+              status: "Aprovada",
+              createdAt: new Date().toISOString()
+            };
+
         commit((current) => {
-          const invitedApplication: Application = existing
-            ? { ...existing, status: "Aprovada" }
-            : {
-                id: crypto.randomUUID(),
-                jobId,
-                workerId,
-                status: "Aprovada",
-                createdAt: new Date().toISOString()
-              };
           const nextApplications = existing
             ? current.applications.map((item) => (item.id === existing.id ? invitedApplication : item))
             : [invitedApplication, ...current.applications];
@@ -926,6 +1066,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ]
           };
         });
+        if (supabaseMarketplaceEnabled) {
+          publishInvitedApplication(jobId, workerId, invitedApplication.id).catch((error) => {
+            setSyncError(error instanceof Error ? error.message : "Falha ao publicar convite no Supabase.");
+            setSyncStatus("erro");
+          });
+        }
 
         return { ok: true, message: `${worker.name} foi confirmado em ${job.title}.` };
       },

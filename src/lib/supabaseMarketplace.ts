@@ -1,6 +1,18 @@
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
-import type { FunctionExperience, JobFunction, Neighborhood, WorkerProfile } from "./types";
+import type {
+  Application,
+  ApplicationStatus,
+  CompanyProfile,
+  FunctionExperience,
+  Job,
+  JobFunction,
+  JobStatus,
+  Neighborhood,
+  PaymentMethod,
+  WorkerProfile,
+  WorkShift
+} from "./types";
 
 const DEFAULT_PUBLIC_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
 const VALID_FUNCTIONS = new Set<JobFunction>([
@@ -29,6 +41,17 @@ const VALID_LEVELS = new Set<FunctionExperience["level"]>([
   "Experiente",
   "Profissional experiente"
 ]);
+const VALID_PAYMENT_METHODS = new Set<PaymentMethod>(["Dinheiro", "Pix", "Transferência", "A combinar"]);
+const VALID_APPLICATION_STATUSES = new Set<ApplicationStatus>([
+  "Enviada",
+  "Em análise",
+  "Aprovada",
+  "Recusada",
+  "Cancelada",
+  "Trabalho concluído",
+  "Falta registrada"
+]);
+const VALID_JOB_STATUSES = new Set<JobStatus>(["Rascunho", "Publicada", "Em andamento", "Concluída", "Cancelada"]);
 
 interface WorkerProfileRow {
   id: string;
@@ -61,6 +84,71 @@ interface FunctionExperienceRow {
   verified: boolean | null;
 }
 
+interface CompanyProfileRow {
+  id: string;
+  user_id?: string | null;
+  establishment_name: string;
+  responsible_name: string;
+  cnpj: string;
+  phone: string;
+  email: string;
+  category: CompanyProfile["category"] | string;
+  address: string;
+  neighborhood: string;
+  description?: string | null;
+  logo_url?: string | null;
+  rating?: number | string | null;
+}
+
+interface JobRow {
+  id: string;
+  company_id: string;
+  title: string;
+  function_name: string;
+  quantity: number;
+  filled?: number | null;
+  shift_date: string;
+  starts_at: string;
+  ends_at?: string | null;
+  daily_value: number | string;
+  payment_method: string;
+  approximate_address: string;
+  full_address: string;
+  neighborhood: string;
+  uniform?: string | null;
+  required_experience?: string | null;
+  description: string;
+  benefits?: string[] | null;
+  contact_after_confirmation?: boolean | null;
+  urgent?: boolean | null;
+  status?: string | null;
+  company_profiles?: CompanyProfileRow | CompanyProfileRow[] | null;
+}
+
+interface ApplicationRow {
+  id: string;
+  job_id: string;
+  worker_id: string;
+  status: string;
+  created_at: string;
+}
+
+interface WorkShiftRow {
+  id: string;
+  job_id: string;
+  worker_id: string;
+  status: WorkShift["status"];
+  checkin_at?: string | null;
+  checkout_at?: string | null;
+}
+
+export interface MarketplaceJobsPayload {
+  jobs: Job[];
+  companies: CompanyProfile[];
+  applications: Application[];
+  shifts: WorkShift[];
+}
+
 export const supabaseMarketplaceEnabled = Boolean(supabase);
 
 function toJobFunction(value: string): JobFunction | null {
@@ -73,6 +161,19 @@ function toNeighborhood(value?: string | null): Neighborhood {
 
 function toExperienceLevel(value: string): FunctionExperience["level"] {
   return VALID_LEVELS.has(value as FunctionExperience["level"]) ? (value as FunctionExperience["level"]) : "Iniciante";
+}
+
+function toPaymentMethod(value: string): PaymentMethod {
+  return VALID_PAYMENT_METHODS.has(value as PaymentMethod) ? (value as PaymentMethod) : "A combinar";
+}
+
+function toApplicationStatus(value: string): ApplicationStatus {
+  return VALID_APPLICATION_STATUSES.has(value as ApplicationStatus) ? (value as ApplicationStatus) : "Enviada";
+}
+
+function toJobStatus(value?: string | null): JobStatus {
+  if (value === "Aberta") return "Publicada";
+  return VALID_JOB_STATUSES.has(value as JobStatus) ? (value as JobStatus) : "Publicada";
 }
 
 function toNumber(value: number | string | null | undefined, fallback: number) {
@@ -118,6 +219,111 @@ function mapPublicWorker(row: WorkerProfileRow, experiences: FunctionExperienceR
     reviews: [],
     verified: Boolean(row.verified)
   };
+}
+
+function normalizeTime(value?: string | null) {
+  if (!value) return "A combinar";
+  return value.slice(0, 5);
+}
+
+function mapCompany(row: CompanyProfileRow): CompanyProfile {
+  return {
+    id: row.id,
+    establishmentName: row.establishment_name || "Empresa Free Floripa",
+    responsibleName: row.responsible_name || "Responsável",
+    cnpj: row.cnpj || "",
+    phone: row.phone || "",
+    email: row.email || "",
+    category: (row.category || "Outro") as CompanyProfile["category"],
+    address: row.address || "",
+    neighborhood: toNeighborhood(row.neighborhood),
+    description: row.description || "",
+    logoUrl: row.logo_url || "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=500&q=80",
+    rating: toNumber(row.rating, 0)
+  };
+}
+
+function mapJob(row: JobRow): Job {
+  return {
+    id: row.id,
+    companyId: row.company_id,
+    status: toJobStatus(row.status),
+    title: row.title,
+    function: toJobFunction(row.function_name) ?? "Garçom",
+    quantity: Math.max(1, Number(row.quantity || 1)),
+    filled: Math.max(0, Number(row.filled ?? 0)),
+    date: row.shift_date,
+    startsAt: normalizeTime(row.starts_at),
+    endsAt: normalizeTime(row.ends_at),
+    dailyValue: toNumber(row.daily_value, 0),
+    paymentMethod: toPaymentMethod(row.payment_method),
+    approximateAddress: row.approximate_address,
+    fullAddress: row.full_address,
+    neighborhood: toNeighborhood(row.neighborhood),
+    uniform: row.uniform || "A combinar",
+    requiredExperience: row.required_experience || "A combinar",
+    description: row.description,
+    benefits: row.benefits ?? [],
+    contactAfterConfirmation: row.contact_after_confirmation ?? true,
+    urgent: Boolean(row.urgent),
+    candidates: 0,
+    distanceKm: 6
+  };
+}
+
+function mapApplication(row: ApplicationRow): Application {
+  return {
+    id: row.id,
+    jobId: row.job_id,
+    workerId: row.worker_id,
+    status: toApplicationStatus(row.status),
+    createdAt: row.created_at
+  };
+}
+
+function mapShift(row: WorkShiftRow): WorkShift {
+  return {
+    id: row.id,
+    jobId: row.job_id,
+    workerId: row.worker_id,
+    status: row.status,
+    checkinAt: row.checkin_at ?? undefined,
+    checkoutAt: row.checkout_at ?? undefined
+  };
+}
+
+function getNestedCompany(row: JobRow) {
+  const company = Array.isArray(row.company_profiles) ? row.company_profiles[0] : row.company_profiles;
+  return company ? mapCompany(company) : null;
+}
+
+function sqlTime(value: string) {
+  return /^\d{2}:\d{2}$/.test(value) ? value : null;
+}
+
+async function loadApplicationsForJobs(jobIds: string[]) {
+  if (!supabase || jobIds.length === 0) return [] as Application[];
+
+  const { data, error } = await supabase
+    .from("applications")
+    .select("id,job_id,worker_id,status,created_at")
+    .in("job_id", jobIds)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as ApplicationRow[]).map(mapApplication);
+}
+
+async function loadShiftsForJobs(jobIds: string[]) {
+  if (!supabase || jobIds.length === 0) return [] as WorkShift[];
+
+  const { data, error } = await supabase
+    .from("work_shifts")
+    .select("id,job_id,worker_id,status,checkin_at,checkout_at")
+    .in("job_id", jobIds);
+
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as WorkShiftRow[]).map(mapShift);
 }
 
 export async function loadPublicWorkerProfiles(excludeUserId?: string | null) {
@@ -216,4 +422,224 @@ export async function publishWorkerProfile(user: User, worker: WorkerProfile) {
   );
 
   if (insertError) throw new Error(insertError.message);
+}
+
+export async function publishCompanyProfile(user: User, company: CompanyProfile) {
+  if (!supabase) return;
+
+  const email = company.email || user.email || "";
+  const now = new Date().toISOString();
+
+  const { error: userError } = await supabase.from("users").upsert(
+    {
+      id: user.id,
+      role: "empresa",
+      full_name: company.responsibleName || company.establishmentName,
+      phone: company.phone,
+      email,
+      updated_at: now
+    },
+    { onConflict: "id" }
+  );
+  if (userError) throw new Error(userError.message);
+
+  const { error } = await supabase.from("company_profiles").upsert(
+    {
+      id: company.id,
+      user_id: user.id,
+      establishment_name: company.establishmentName,
+      responsible_name: company.responsibleName,
+      cnpj: company.cnpj || user.id,
+      phone: company.phone,
+      email,
+      category: company.category,
+      address: company.address,
+      neighborhood: company.neighborhood,
+      description: company.description,
+      logo_url: company.logoUrl,
+      rating: company.rating,
+      updated_at: now
+    },
+    { onConflict: "user_id" }
+  );
+
+  if (error) throw new Error(error.message);
+}
+
+export async function publishJob(user: User | null, company: CompanyProfile, job: Job) {
+  if (!supabase || !user) return;
+
+  await publishCompanyProfile(user, company);
+
+  const { error } = await supabase.from("jobs").upsert(
+    {
+      id: job.id,
+      company_id: company.id,
+      title: job.title,
+      function_name: job.function,
+      quantity: job.quantity,
+      filled: job.filled,
+      shift_date: job.date,
+      starts_at: sqlTime(job.startsAt) ?? "00:00",
+      ends_at: sqlTime(job.endsAt),
+      daily_value: job.dailyValue,
+      payment_method: job.paymentMethod,
+      approximate_address: job.approximateAddress,
+      full_address: job.fullAddress,
+      neighborhood: job.neighborhood,
+      uniform: job.uniform,
+      required_experience: job.requiredExperience,
+      description: job.description,
+      benefits: job.benefits,
+      contact_after_confirmation: job.contactAfterConfirmation,
+      urgent: job.urgent,
+      status: job.status ?? "Publicada",
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: "id" }
+  );
+
+  if (error) throw new Error(error.message);
+}
+
+export async function loadPublicJobs(): Promise<MarketplaceJobsPayload> {
+  if (!supabase) return { jobs: [], companies: [], applications: [], shifts: [] };
+
+  const { data, error } = await supabase
+    .from("jobs")
+    .select(
+      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status,company_profiles(id,user_id,establishment_name,responsible_name,cnpj,phone,email,category,address,neighborhood,description,logo_url,rating)"
+    )
+    .neq("status", "Cancelada")
+    .order("shift_date", { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  const rows = (data ?? []) as JobRow[];
+  const jobs = rows.map(mapJob);
+  const companies = rows.map(getNestedCompany).filter((item): item is CompanyProfile => Boolean(item));
+  const jobIds = jobs.map((job) => job.id);
+  const [applications, shifts] = await Promise.all([loadApplicationsForJobs(jobIds), loadShiftsForJobs(jobIds)]);
+
+  return { jobs, companies, applications, shifts };
+}
+
+export async function loadCompanyMarketplace(companyId: string): Promise<MarketplaceJobsPayload> {
+  if (!supabase) return { jobs: [], companies: [], applications: [], shifts: [] };
+
+  const { data, error } = await supabase
+    .from("jobs")
+    .select(
+      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status"
+    )
+    .eq("company_id", companyId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  const jobs = ((data ?? []) as JobRow[]).map(mapJob);
+  const jobIds = jobs.map((job) => job.id);
+  const [applications, shifts] = await Promise.all([loadApplicationsForJobs(jobIds), loadShiftsForJobs(jobIds)]);
+
+  return { jobs, companies: [], applications, shifts };
+}
+
+export async function loadWorkerMarketplace(workerId: string): Promise<MarketplaceJobsPayload> {
+  if (!supabase) return { jobs: [], companies: [], applications: [], shifts: [] };
+
+  const [{ data: appRows, error: appError }, jobsPayload] = await Promise.all([
+    supabase
+      .from("applications")
+      .select("id,job_id,worker_id,status,created_at")
+      .eq("worker_id", workerId)
+      .order("created_at", { ascending: false }),
+    loadPublicJobs()
+  ]);
+
+  if (appError) throw new Error(appError.message);
+
+  const applications = ((appRows ?? []) as ApplicationRow[]).map(mapApplication);
+  const { data: shiftRows, error: shiftError } = await supabase
+    .from("work_shifts")
+    .select("id,job_id,worker_id,status,checkin_at,checkout_at")
+    .eq("worker_id", workerId);
+
+  if (shiftError) throw new Error(shiftError.message);
+
+  return {
+    ...jobsPayload,
+    applications,
+    shifts: ((shiftRows ?? []) as WorkShiftRow[]).map(mapShift)
+  };
+}
+
+export async function publishApplication(worker: WorkerProfile, jobId: string, applicationId: string) {
+  if (!supabase) return;
+
+  const { error } = await supabase.from("applications").upsert(
+    {
+      id: applicationId,
+      job_id: jobId,
+      worker_id: worker.id,
+      status: "Enviada",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: "job_id,worker_id" }
+  );
+
+  if (error) throw new Error(error.message);
+}
+
+export async function updateRemoteApplicationStatus(application: Application, status: ApplicationStatus) {
+  if (!supabase) return;
+
+  const { error } = await supabase
+    .from("applications")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", application.id);
+
+  if (error) throw new Error(error.message);
+
+  if (status === "Aprovada" || status === "Trabalho concluído") {
+    const { error: shiftError } = await supabase.from("work_shifts").upsert(
+      {
+        job_id: application.jobId,
+        worker_id: application.workerId,
+        status: status === "Trabalho concluído" ? "Finalizou o turno" : "Ainda não chegou",
+        checkout_at: status === "Trabalho concluído" ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "job_id,worker_id" }
+    );
+    if (shiftError) throw new Error(shiftError.message);
+  }
+}
+
+export async function publishInvitedApplication(jobId: string, workerId: string, applicationId: string) {
+  if (!supabase) return;
+
+  const { error } = await supabase.from("applications").upsert(
+    {
+      id: applicationId,
+      job_id: jobId,
+      worker_id: workerId,
+      status: "Aprovada",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: "job_id,worker_id" }
+  );
+  if (error) throw new Error(error.message);
+
+  const { error: shiftError } = await supabase.from("work_shifts").upsert(
+    {
+      job_id: jobId,
+      worker_id: workerId,
+      status: "Ainda não chegou",
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: "job_id,worker_id" }
+  );
+  if (shiftError) throw new Error(shiftError.message);
 }

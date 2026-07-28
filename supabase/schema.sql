@@ -269,6 +269,14 @@ create policy "companies update own jobs" on public.jobs for update using (
 create policy "workers apply to jobs" on public.applications for insert with check (
   exists (select 1 from public.worker_profiles w where w.id = worker_id and w.user_id = auth.uid())
 );
+create policy "companies invite workers to own jobs" on public.applications for insert with check (
+  exists (
+    select 1
+    from public.jobs j
+    join public.company_profiles c on c.id = j.company_id
+    where j.id = job_id and c.user_id = auth.uid()
+  )
+);
 create policy "workers read own applications" on public.applications for select using (
   exists (select 1 from public.worker_profiles w where w.id = worker_id and w.user_id = auth.uid())
   or exists (
