@@ -9,7 +9,7 @@ import { calculateReliability } from "../lib/rules";
 import { formatDate } from "../lib/format";
 
 export function WorkerDashboard() {
-  const { state, currentWorker, subscribeProfessional, buyCredits } = useAppStore();
+  const { state, currentWorker, subscribeProfessional } = useAppStore();
   const [message, setMessage] = useState("");
   const reliability = calculateReliability(currentWorker);
   const applications = state.applications.filter((application) => application.workerId === currentWorker.id);
@@ -26,7 +26,7 @@ export function WorkerDashboard() {
       />
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Metric icon={<ClipboardList />} label="Candidaturas restantes" value={state.subscription.plan === "Profissional" ? "Ilimitadas" : state.subscription.creditsRemaining} />
+        <Metric icon={<ClipboardList />} label="Acesso a vagas" value={state.subscription.plan === "Profissional" ? "Completo" : "Prévia"} />
         <Metric icon={<CreditCard />} label="Plano atual" value={state.subscription.plan} />
         <Metric icon={<Star />} label="Avaliação" value={currentWorker.rating.toFixed(1)} />
         <Metric icon={<BadgeCheck />} label="Índice de confiabilidade" value={`${reliability}%`} />
@@ -34,11 +34,11 @@ export function WorkerDashboard() {
 
       {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
 
-      <section className="card grid gap-4 p-4 md:grid-cols-[1fr_auto_auto] md:items-center">
+      <section className="card grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-center">
         <div>
-          <h3 className="font-black text-navy-950">Candidaturas e plano</h3>
+          <h3 className="font-black text-navy-950">Acesso profissional</h3>
           <p className="text-sm text-slate-600">
-            Renovação em {formatDate(state.subscription.renewalDate)}. O plano gratuito inclui 5 candidaturas por mês.
+            Renovação em {formatDate(state.subscription.renewalDate)}. O plano gratuito mostra prévias; o profissional libera vaga completa e candidaturas.
           </p>
         </div>
         <button
@@ -50,16 +50,6 @@ export function WorkerDashboard() {
           className="primary"
         >
           Assinar plano profissional
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            buyCredits();
-            setMessage("Mais 5 candidaturas foram adicionadas ao seu saldo.");
-          }}
-          className="secondary"
-        >
-          Comprar candidaturas
         </button>
       </section>
 

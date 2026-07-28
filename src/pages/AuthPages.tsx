@@ -341,12 +341,14 @@ export function CompanySignupPage() {
 
 function AuthShell({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-6">
+    <div className="auth-bg min-h-screen px-4 py-6">
       <main className="mx-auto max-w-3xl">
-        <Link to="/" className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-navy-900">
+        <Link to="/" className="mb-5 inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-black text-navy-900 shadow-sm transition hover:bg-aqua-50">
           <ArrowLeft size={17} /> Voltar
         </Link>
-        <section className="card p-5">
+        <section className="card overflow-hidden p-0">
+          <div className="color-strip h-2" />
+          <div className="p-5 md:p-6">
           <div className="mb-5">
             <div className="mb-4">
               <BrandLogo />
@@ -358,6 +360,7 @@ function AuthShell({ title, description, children }: { title: string; descriptio
             </p>
           </div>
           {children}
+          </div>
         </section>
       </main>
     </div>
@@ -366,8 +369,8 @@ function AuthShell({ title, description, children }: { title: string; descriptio
 
 function SignupStep({ number, title }: { number: string; title: string }) {
   return (
-    <div className="mt-2 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
-      <span className="grid h-7 w-7 place-items-center rounded-full bg-navy-950 text-xs font-black text-white">{number}</span>
+    <div className="mt-2 flex items-center gap-2 rounded-lg border border-aqua-100 bg-aqua-50 px-3 py-2">
+      <span className="grid h-7 w-7 place-items-center rounded-full bg-navy-950 text-xs font-black text-aqua-300">{number}</span>
       <strong className="text-sm text-navy-950">{title}</strong>
     </div>
   );

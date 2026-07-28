@@ -1,7 +1,9 @@
 node_modules
 dist
+dist-codex
 android
 ios
 *.tsbuildinfo
+free-floripa-sites-version-*.tar.gz
 .env
 .env.local

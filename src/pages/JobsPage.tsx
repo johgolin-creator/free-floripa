@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Filter, RotateCcw } from "lucide-react";
+import { Filter, Lock, RotateCcw } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { JobCard } from "../components/JobCard";
 import { SectionHeader } from "../components/SectionHeader";
@@ -14,28 +14,45 @@ export function JobsPage() {
   const [neighborhoodFilter, setNeighborhoodFilter] = useState<Neighborhood | "Todos">("Todos");
   const [dateFilter, setDateFilter] = useState("");
   const [minValue, setMinValue] = useState("");
-  const [maxDistance, setMaxDistance] = useState("");
+  const [experienceFilter, setExperienceFilter] = useState("");
   const [urgentOnly, setUrgentOnly] = useState(false);
+  const canViewFullJobs = state.subscription.plan === "Profissional";
 
   const filteredJobs = useMemo(() => {
-    return state.jobs.filter((job) => {
-      if (!isJobOpenForApplications(job)) return false;
-      const byFunction = functionFilter === "Todas" || job.function === functionFilter;
-      const byNeighborhood = neighborhoodFilter === "Todos" || job.neighborhood === neighborhoodFilter;
-      const byDate = !dateFilter || job.date === dateFilter;
-      const byValue = !minValue || job.dailyValue >= Number(minValue);
-      const byDistance = !maxDistance || job.distanceKm <= Number(maxDistance);
-      const byUrgency = !urgentOnly || job.urgent;
-      return byFunction && byNeighborhood && byDate && byValue && byDistance && byUrgency;
-    });
-  }, [state.jobs, functionFilter, neighborhoodFilter, dateFilter, minValue, maxDistance, urgentOnly]);
+    const experience = normalizeSearch(experienceFilter);
+
+    return state.jobs
+      .filter((job) => {
+        if (!isJobOpenForApplications(job)) return false;
+        const byFunction = functionFilter === "Todas" || job.function === functionFilter;
+        const byNeighborhood = neighborhoodFilter === "Todos" || job.neighborhood === neighborhoodFilter;
+        const byDate = !dateFilter || job.date === dateFilter;
+        const byValue = !minValue || job.dailyValue >= Number(minValue);
+        const byExperience = !experience || normalizeSearch(job.requiredExperience).includes(experience);
+        const byUrgency = !urgentOnly || job.urgent;
+        return byFunction && byNeighborhood && byDate && byValue && byExperience && byUrgency;
+      })
+      .sort((a, b) => {
+        if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
+        return `${a.date} ${a.startsAt}`.localeCompare(`${b.date} ${b.startsAt}`);
+      });
+  }, [state.jobs, functionFilter, neighborhoodFilter, dateFilter, minValue, experienceFilter, urgentOnly]);
+
+  const activeFilters = [
+    functionFilter !== "Todas" && `Função: ${functionFilter}`,
+    neighborhoodFilter !== "Todos" && `Bairro: ${neighborhoodFilter}`,
+    dateFilter && `Data: ${dateFilter}`,
+    minValue && `Mínimo: R$ ${minValue}`,
+    experienceFilter.trim() && `Experiência: ${experienceFilter.trim()}`,
+    urgentOnly && "Somente urgentes"
+  ].filter((item): item is string => Boolean(item));
 
   function clearFilters() {
     setFunctionFilter("Todas");
     setNeighborhoodFilter("Todos");
     setDateFilter("");
     setMinValue("");
-    setMaxDistance("");
+    setExperienceFilter("");
     setUrgentOnly(false);
   }
 
@@ -44,8 +61,24 @@ export function JobsPage() {
       <SectionHeader
         eyebrow="Vagas"
         title="Turnos e diárias disponíveis"
-        description="Filtre por função, bairro, data, valor mínimo, distância e vagas urgentes."
+        description="Filtre por função, bairro, data, urgência, valor mínimo e experiência exigida."
       />
+
+      {!canViewFullJobs && (
+        <section className="mb-5 rounded-lg border border-aqua-200 bg-aqua-50 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="flex items-center gap-2 font-black text-navy-950">
+                <Lock size={18} /> Vaga completa liberada para assinantes
+              </h3>
+              <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
+                No plano gratuito você vê uma prévia. Descrição completa, requisitos, benefícios e candidatura ficam disponíveis no plano profissional.
+              </p>
+            </div>
+            <span className="badge bg-white text-aqua-700">Plano atual: {state.subscription.plan}</span>
+          </div>
+        </section>
+      )}
 
       <section className="card mb-5 grid gap-3 p-4 md:grid-cols-6">
         <label className="label md:col-span-2">
@@ -74,9 +107,14 @@ export function JobsPage() {
           Valor mínimo
           <input className="input" type="number" min="0" value={minValue} onChange={(event) => setMinValue(event.target.value)} placeholder="R$" />
         </label>
-        <label className="label">
-          Distância
-          <input className="input" type="number" min="0" value={maxDistance} onChange={(event) => setMaxDistance(event.target.value)} placeholder="km" />
+        <label className="label md:col-span-2">
+          Experiência exigida
+          <input
+            className="input"
+            value={experienceFilter}
+            onChange={(event) => setExperienceFilter(event.target.value)}
+            placeholder="Ex.: alto fluxo, drinks, limpeza"
+          />
         </label>
         <label className="flex min-h-11 items-center gap-2 text-sm font-bold text-slate-600 md:col-span-2">
           <input type="checkbox" checked={urgentOnly} onChange={(event) => setUrgentOnly(event.target.checked)} className="h-5 w-5 accent-aqua-500" />
@@ -90,6 +128,15 @@ export function JobsPage() {
             <Filter size={17} /> {filteredJobs.length} resultados
           </span>
         </div>
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3 md:col-span-6">
+            {activeFilters.map((item) => (
+              <span key={item} className="badge bg-aqua-100 text-aqua-700">
+                {item}
+              </span>
+            ))}
+          </div>
+        )}
       </section>
 
       {filteredJobs.length === 0 ? (
@@ -103,4 +150,12 @@ export function JobsPage() {
       )}
     </div>
   );
+}
+
+function normalizeSearch(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
 }

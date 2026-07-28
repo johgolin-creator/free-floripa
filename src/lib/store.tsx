@@ -611,6 +611,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const job = state.jobs.find((item) => item.id === jobId);
         if (!job) return { ok: false, message: "Vaga não encontrada." };
 
+        if (state.subscription.plan !== "Profissional") {
+          return {
+            ok: false,
+            message: "Assine o plano profissional para ver a vaga completa e enviar candidatura.",
+            requiresPlan: true
+          };
+        }
+
         const result = canApply(job, state.applications, currentWorker, state.subscription.creditsRemaining);
         if (!result.allowed) {
           return { ok: false, message: result.reason, requiresPlan: state.subscription.creditsRemaining <= 0 };

@@ -3,7 +3,7 @@ import logoUrl from "../assets/free-floripa-logo.jpg?inline";
 export function BrandLogo({ compact = false, inverted = false }: { compact?: boolean; inverted?: boolean }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <div className={`grid shrink-0 place-items-center overflow-hidden rounded-lg bg-white ${compact ? "h-10 w-20" : "h-12 w-24"}`}>
+      <div className={`grid shrink-0 place-items-center overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-900/10 ${compact ? "h-10 w-20" : "h-12 w-24"}`}>
         <img src={logoUrl} alt="Free Floripa" className="h-full w-full scale-125 object-contain" />
       </div>
       <div className="hidden min-w-0 sm:block">

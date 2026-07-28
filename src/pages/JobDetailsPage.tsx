@@ -10,7 +10,7 @@ import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getJo
 
 export function JobDetailsPage() {
   const { id } = useParams();
-  const { state, currentWorker, applyToJob, subscribeProfessional, buyCredits } = useAppStore();
+  const { state, currentWorker, applyToJob, subscribeProfessional } = useAppStore();
   const [message, setMessage] = useState("");
   const [showPlans, setShowPlans] = useState(false);
   const job = state.jobs.find((item) => item.id === id);
@@ -23,11 +23,91 @@ export function JobDetailsPage() {
   const confirmed = application?.status === "Aprovada" || application?.status === "Trabalho concluído";
   const workerExperience = getFunctionExperience(currentWorker, currentJob.function);
   const jobStatus = getJobStatus(currentJob);
+  const isProfessional = state.subscription.plan === "Profissional";
+  const canViewFullJob = isProfessional || confirmed;
 
   function handleApply() {
+    if (!isProfessional) {
+      setMessage("Assine o plano profissional para ver a vaga completa e enviar candidatura.");
+      setShowPlans(true);
+      return;
+    }
+
     const result = applyToJob(currentJob.id);
     setMessage(result.message);
     if (result.requiresPlan) setShowPlans(true);
+  }
+
+  const plansModal = showPlans ? (
+    <Modal title="Liberar vaga completa" onClose={() => setShowPlans(false)}>
+      <div className="grid gap-3">
+        <button
+          type="button"
+          className="card p-4 text-left"
+          onClick={() => {
+            subscribeProfessional();
+            setShowPlans(false);
+            setMessage("Plano profissional ativado. Vaga completa e candidaturas liberadas.");
+          }}
+        >
+          <strong className="block text-lg text-navy-950">Plano profissional</strong>
+          <span className="mt-1 block text-sm text-slate-600">Libera vagas completas e candidaturas ilimitadas por R$ 14,90 por mês.</span>
+        </button>
+      </div>
+    </Modal>
+  ) : null;
+
+  if (!canViewFullJob) {
+    return (
+      <div className="grid gap-5">
+        <SectionHeader
+          eyebrow="Vaga bloqueada"
+          title={currentJob.function}
+          description="Você está vendo apenas uma prévia. Assine para liberar a vaga completa."
+        />
+
+        {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+
+        <section className="card grid gap-5 p-5 lg:grid-cols-[1fr_320px]">
+          <div>
+            <div className="mb-3 flex flex-wrap gap-2">
+              {currentJob.urgent && <span className="badge urgent"><AlertTriangle size={14} /> URGENTE</span>}
+              <span className="badge">{currentJob.function}</span>
+              <span className="badge">{currentJob.paymentMethod}</span>
+            </div>
+            <h2 className="text-2xl font-black text-navy-950">{currentJob.title}</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Descrição completa, requisitos, benefícios, dados da empresa e candidatura ficam disponíveis para assinantes.
+            </p>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <Info label="Empresa" value="Empresa verificada" />
+              <Info label="Data" value={formatDate(currentJob.date)} />
+              <Info label="Horário" value={`${currentJob.startsAt} às ${currentJob.endsAt}`} />
+              <Info label="Valor" value={formatCurrency(currentJob.dailyValue)} />
+              <Info label="Bairro" value={currentJob.neighborhood} />
+              <Info label="Vagas restantes" value={`${getOpenSlots(currentJob)} disponíveis`} />
+            </div>
+          </div>
+
+          <aside className="grid content-start gap-3 rounded-lg bg-slate-50 p-4">
+            <div className="rounded-lg border border-aqua-100 bg-white p-4">
+              <span className="flex items-center gap-2 text-sm font-black uppercase text-aqua-700">
+                <Lock size={17} /> Conteúdo protegido
+              </span>
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+                Assine o plano profissional para ver a vaga completa e se candidatar.
+              </p>
+            </div>
+            <button type="button" onClick={() => setShowPlans(true)} className="primary">
+              <Lock size={17} /> Assinar e liberar
+            </button>
+          </aside>
+        </section>
+
+        {plansModal}
+      </div>
+    );
   }
 
   return (
@@ -118,42 +198,13 @@ export function JobDetailsPage() {
               {application ? `Status: ${application.status}` : isJobOpenForApplications(currentJob) ? "Candidatar-se" : `Vaga ${jobStatus}`}
             </button>
             <p className="text-xs leading-5 text-slate-500">
-              Cadastro gratuito, visualização gratuita e 5 candidaturas gratuitas por mês.
+              Cadastro gratuito com prévia das vagas. A vaga completa e as candidaturas ficam no plano profissional.
             </p>
           </aside>
         </div>
       </section>
 
-      {showPlans && (
-        <Modal title="Escolha uma opção para continuar" onClose={() => setShowPlans(false)}>
-          <div className="grid gap-3 md:grid-cols-2">
-            <button
-              type="button"
-              className="card p-4 text-left"
-              onClick={() => {
-                subscribeProfessional();
-                setShowPlans(false);
-                setMessage("Plano profissional ativado. Candidaturas ilimitadas liberadas.");
-              }}
-            >
-              <strong className="block text-lg text-navy-950">Plano profissional</strong>
-              <span className="mt-1 block text-sm text-slate-600">R$ 14,90 por mês para candidaturas ilimitadas.</span>
-            </button>
-            <button
-              type="button"
-              className="card p-4 text-left"
-              onClick={() => {
-                buyCredits();
-                setShowPlans(false);
-                setMessage("Mais 5 candidaturas adicionadas por R$ 4,90.");
-              }}
-            >
-              <strong className="block text-lg text-navy-950">Comprar créditos</strong>
-              <span className="mt-1 block text-sm text-slate-600">Mais 5 candidaturas por R$ 4,90.</span>
-            </button>
-          </div>
-        </Modal>
-      )}
+      {plansModal}
     </div>
   );
 }

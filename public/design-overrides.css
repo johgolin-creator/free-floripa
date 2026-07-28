@@ -1,0 +1,124 @@
+:root {
+  color: #08263d;
+  background: #f6fafb;
+}
+
+body {
+  background: linear-gradient(180deg, #f7fbfc 0%, #eef6f7 46%, #f8fafc 100%);
+}
+
+::selection {
+  background: rgba(22, 199, 167, 0.22);
+  color: #061827;
+}
+
+.bg-ice {
+  background-color: #f6fafb;
+}
+
+.bg-aqua-50 {
+  background-color: #effef9;
+}
+
+.bg-white\/85 {
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+.bg-white\/80 {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.border-white\/80 {
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.border-aqua-200 {
+  border-color: #a7f4e5;
+}
+
+.text-aqua-300 {
+  color: #73ead2;
+}
+
+.shadow-lift {
+  box-shadow: 0 24px 70px rgba(8, 38, 61, 0.16);
+}
+
+.shadow-glow {
+  box-shadow: 0 18px 45px rgba(22, 199, 167, 0.22);
+}
+
+.backdrop-blur-xl {
+  backdrop-filter: blur(24px);
+}
+
+.app-sidebar {
+  background: linear-gradient(180deg, #061827 0%, #08263d 52%, #0d866f 150%);
+}
+
+.hero-overlay {
+  background: linear-gradient(90deg, rgba(6, 24, 39, 0.94) 0%, rgba(8, 38, 61, 0.78) 48%, rgba(6, 24, 39, 0.42) 100%);
+}
+
+.cta-section {
+  background: linear-gradient(135deg, #061827 0%, #08263d 62%, #0d866f 150%);
+}
+
+.auth-bg {
+  background: linear-gradient(180deg, #f6fafb 0%, #eef7f6 100%);
+}
+
+.color-strip {
+  background: linear-gradient(90deg, #16c7a7 0%, #f4b740 52%, #ff6b57 100%);
+}
+
+.card {
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 45px rgba(8, 38, 61, 0.11);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.input {
+  font-weight: 650;
+  color: #08263d;
+}
+
+.primary,
+.secondary,
+.danger {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.primary {
+  box-shadow: 0 14px 36px rgba(22, 199, 167, 0.24);
+}
+
+.primary:hover,
+.secondary:hover,
+.danger:hover,
+.hover\:-translate-y-0\.5:hover {
+  transform: translateY(-2px);
+}
+
+.primary:hover,
+.hover\:shadow-lift:hover {
+  box-shadow: 0 24px 70px rgba(8, 38, 61, 0.16);
+}
+
+.hover\:bg-aqua-50:hover {
+  background-color: #effef9;
+}
+
+.hover\:border-aqua-200:hover {
+  border-color: #a7f4e5;
+}
+
+.hover\:shadow-lift:hover {
+  box-shadow: 0 24px 70px rgba(8, 38, 61, 0.16);
+}
+
+.badge {
+  font-weight: 850;
+  box-shadow: 0 8px 18px rgba(8, 38, 61, 0.06);
+}
