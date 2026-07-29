@@ -925,3 +925,95 @@ a {
 .profile-edit-note p {
   @apply mt-1 font-semibold leading-5 text-slate-600;
 }
+
+.job-wizard {
+  @apply grid max-h-[72vh] gap-3 overflow-auto pr-1;
+}
+
+.job-wizard-steps {
+  @apply grid grid-cols-2 gap-2 md:grid-cols-5;
+}
+
+.job-wizard-step {
+  @apply grid min-h-16 content-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-center text-xs font-black text-slate-500 transition hover:border-aqua-200 hover:bg-aqua-50;
+}
+
+.job-wizard-step span {
+  @apply mx-auto grid h-6 w-6 place-items-center rounded-full bg-slate-100 text-[0.7rem] text-navy-950;
+}
+
+.job-wizard-step.is-active {
+  @apply border-navy-950 bg-navy-950 text-white;
+}
+
+.job-wizard-step.is-active span {
+  @apply bg-aqua-300 text-navy-950;
+}
+
+.job-wizard-step.is-done {
+  @apply border-aqua-200 bg-aqua-50 text-aqua-700;
+}
+
+.job-wizard-panel {
+  @apply grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-sm;
+}
+
+.job-wizard-panel h3 {
+  @apply mt-1 text-xl font-black text-navy-950;
+}
+
+.job-wizard-note {
+  @apply flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-600;
+}
+
+.job-wizard-note svg {
+  @apply mt-0.5 shrink-0 text-aqua-700;
+}
+
+.job-wizard-actions {
+  @apply sticky bottom-0 grid gap-2 border-t border-slate-200 bg-white/95 py-3 backdrop-blur sm:grid-cols-2;
+}
+
+.job-review-card {
+  @apply grid gap-4 rounded-lg border border-aqua-100 bg-aqua-50 p-4;
+}
+
+.job-review-card h4 {
+  @apply mt-2 text-xl font-black text-navy-950;
+}
+
+.job-review-card p {
+  @apply mt-1 text-sm font-semibold leading-6 text-slate-600;
+}
+
+.job-review-grid {
+  @apply grid gap-2 md:grid-cols-2;
+}
+
+.job-review-item {
+  @apply rounded-lg border border-white bg-white p-3;
+}
+
+.job-review-item span {
+  @apply flex items-center gap-1.5 text-xs font-black uppercase text-slate-500;
+}
+
+.job-review-item strong {
+  @apply mt-1 block text-sm text-navy-950;
+}
+
+.urgent-form-hero {
+  @apply grid gap-3 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-slate-600 sm:grid-cols-[auto_1fr];
+}
+
+.urgent-form-hero > span {
+  @apply inline-flex h-10 w-10 items-center justify-center rounded-lg bg-alert text-white;
+}
+
+.urgent-form-hero strong {
+  @apply block font-black text-navy-950;
+}
+
+.urgent-form-hero p {
+  @apply mt-1 font-semibold leading-5 text-slate-600;
+}
