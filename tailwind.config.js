@@ -19,7 +19,8 @@ export default {
           200: "#aefbea",
           300: "#73ead2",
           500: "#16c7a7",
-          700: "#0d866f"
+          700: "#0d866f",
+          800: "#096c5b"
         },
         coral: "#ff6b57",
         amber: {
