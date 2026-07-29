@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Edit3, Save, Star } from "lucide-react";
+import { Building2, Edit3, ImageUp, Save, Star } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
@@ -35,18 +35,26 @@ export function CompanyProfilePage() {
       />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       <ProfileCompletionAlert complete={completion.complete} missing={completion.missing} onEdit={() => setEditing(true)} />
-      <section className="card overflow-hidden">
+      <section className="profile-card">
         <div className="h-36 bg-[url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
         <div className="p-5">
-          <div className="-mt-16 flex flex-col gap-4 md:flex-row md:items-end">
+          <div className="profile-main-row">
             <img src={currentCompany.logoUrl} alt="" className="h-28 w-28 rounded-lg border-4 border-white object-cover shadow-soft" />
-            <div>
+            <div className="flex-1">
               <h2 className="text-2xl font-black text-navy-950">{currentCompany.establishmentName}</h2>
               <p className="text-sm font-semibold text-slate-600">{currentCompany.category} - {currentCompany.neighborhood}</p>
               <p className="mt-1 flex items-center gap-1 text-sm text-slate-600"><Star size={15} /> {currentCompany.rating.toFixed(1)} de avaliação</p>
+              <div className="profile-quick-actions">
+                <button type="button" onClick={() => setEditing(true)} className="company-action company-action-primary">
+                  <Edit3 size={17} /> Alterar dados
+                </button>
+                <button type="button" onClick={() => setEditing(true)} className="company-action">
+                  <ImageUp size={17} /> Trocar logo
+                </button>
+              </div>
             </div>
           </div>
-          <div className="mt-6 grid gap-3 md:grid-cols-3">
+          <div className="profile-info-grid company-profile-info-grid">
             <Info label="Responsável" value={currentCompany.responsibleName} />
             <Info label="CNPJ" value={currentCompany.cnpj} />
             <Info label="Telefone protegido" value={currentCompany.phone} />
@@ -54,7 +62,10 @@ export function CompanyProfilePage() {
             <Info label="Endereço" value={currentCompany.address} />
             <Info label="Bairro" value={currentCompany.neighborhood} />
           </div>
-          <p className="mt-5 text-sm leading-6 text-slate-600">{currentCompany.description}</p>
+          <div className="profile-panel mt-5">
+            <h3 className="font-black text-navy-950">Sobre a empresa</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{currentCompany.description}</p>
+          </div>
         </div>
       </section>
 
@@ -119,6 +130,14 @@ function CompanyProfileForm({
       }}
     >
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
+      <div className="profile-edit-note">
+        <Building2 size={18} />
+        <div>
+          <strong>Atualize nome, responsável, telefone, endereço e logotipo.</strong>
+          <p>Esses dados aparecem para freelancers depois da confirmação da vaga.</p>
+        </div>
+      </div>
+      <SignupLikeTitle number="1" title="Identificação e contato" />
       <div className="grid gap-3 md:grid-cols-2">
         <label className="label">Nome do estabelecimento<input name="establishmentName" className="input" defaultValue={company.establishmentName} required /></label>
         <label className="label">Responsável<input name="responsibleName" className="input" defaultValue={company.responsibleName} required /></label>
@@ -128,6 +147,7 @@ function CompanyProfileForm({
         <label className="label">Categoria<select name="category" className="input" defaultValue={company.category} required>{companyCategories.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="label md:col-span-2">Bairro<select name="neighborhood" className="input" defaultValue={company.neighborhood} required>{neighborhoods.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
+      <SignupLikeTitle number="2" title="Imagem da empresa" />
       <ProfileImageUploader
         label="Foto ou logotipo"
         value={logoUrl}
@@ -135,6 +155,7 @@ function CompanyProfileForm({
         previewAlt="Foto da empresa"
         onChange={setLogoUrl}
       />
+      <SignupLikeTitle number="3" title="Endereço e apresentação" />
       <label className="label">Endereço<input name="address" className="input" defaultValue={company.address} required /></label>
       <label className="label">Descrição<textarea name="description" className="input min-h-24 py-3" defaultValue={company.description} required /></label>
       <button type="submit" className="primary">
@@ -146,9 +167,18 @@ function CompanyProfileForm({
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-slate-50 p-3">
+    <div className="profile-info-tile">
       <span className="text-xs font-black uppercase text-slate-500">{label}</span>
       <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
+    </div>
+  );
+}
+
+function SignupLikeTitle({ number, title }: { number: string; title: string }) {
+  return (
+    <div className="signup-step flex items-center gap-2 rounded-lg border border-aqua-100 bg-aqua-50 px-3 py-2 md:col-span-2">
+      <span className="grid h-7 w-7 place-items-center rounded-full bg-navy-950 text-xs font-black text-aqua-300">{number}</span>
+      <strong className="text-sm text-navy-950">{title}</strong>
     </div>
   );
 }

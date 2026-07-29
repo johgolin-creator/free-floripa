@@ -69,20 +69,48 @@ export function PublicHome() {
                 A plataforma para empresas encontrarem mão de obra temporária com mais organização, histórico e nível de experiência por função.
               </p>
               <div className="hero-actions mt-6 grid gap-3 sm:flex">
+                <Link
+                  to="/login"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/15"
+                >
+                  <LogIn size={17} /> Entrar
+                </Link>
                 <Link to="/cadastro-empresa" onClick={() => setRole("empresa")} className="primary">
                   Publicar vaga <ArrowRight size={18} />
                 </Link>
                 <Link to="/cadastro-trabalhador" onClick={() => setRole("trabalhador")} className="secondary bg-white/95">
                   Quero trabalhar
                 </Link>
-                <Link
-                  to="/login"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/15"
-                >
-                  <LogIn size={17} /> Entrar na minha conta
-                </Link>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="home-entry-section">
+          <div className="mx-auto grid max-w-7xl gap-3 px-4 py-5 md:grid-cols-3">
+            <EntryCard
+              icon={<LogIn size={20} />}
+              title="Já tenho conta"
+              text="Entrar como freelancer ou empresa usando e-mail e senha."
+              to="/login"
+              label="Entrar"
+            />
+            <EntryCard
+              icon={<UsersRound size={20} />}
+              title="Sou freelancer"
+              text="Criar perfil com profissão, nível de experiência, bairro e disponibilidade."
+              to="/cadastro-trabalhador"
+              label="Criar perfil"
+              onClick={() => setRole("trabalhador")}
+            />
+            <EntryCard
+              icon={<BriefcaseBusiness size={20} />}
+              title="Sou empresa"
+              text="Cadastrar estabelecimento para publicar vagas, montar escala e aprovar candidatos."
+              to="/cadastro-empresa"
+              label="Cadastrar empresa"
+              onClick={() => setRole("empresa")}
+            />
           </div>
         </section>
 
@@ -165,6 +193,31 @@ export function PublicHome() {
         </section>
       </main>
     </div>
+  );
+}
+
+function EntryCard({
+  icon,
+  title,
+  text,
+  to,
+  label,
+  onClick
+}: {
+  icon: ReactNode;
+  title: string;
+  text: string;
+  to: string;
+  label: string;
+  onClick?: () => void;
+}) {
+  return (
+    <Link to={to} onClick={onClick} className="home-entry-card">
+      <span>{icon}</span>
+      <strong>{title}</strong>
+      <p>{text}</p>
+      <em>{label} <ArrowRight size={15} /></em>
+    </Link>
   );
 }
 
