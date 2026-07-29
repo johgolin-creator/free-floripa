@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
+  BriefcaseBusiness,
+  CalendarCheck,
   CheckCircle2,
   ClipboardCheck,
   Clock3,
@@ -11,7 +13,8 @@ import {
   Phone,
   Star,
   UserCheck,
-  UserX
+  UserX,
+  UsersRound
 } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
@@ -45,6 +48,7 @@ export function CandidatesPage() {
   const applications = state.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId));
   const selectedApplications = selectedJob ? applications.filter((application) => application.jobId === selectedJob.id) : [];
   const stats = useMemo(() => getJobStats(selectedJob, selectedApplications), [selectedApplications, selectedJob]);
+  const generalStats = useMemo(() => getCompanyCandidateStats(applications), [applications]);
 
   useEffect(() => {
     if (companyJobs.length > 0 && !companyJobs.some((job) => job.id === selectedJobId)) {
@@ -99,7 +103,23 @@ export function CandidatesPage() {
         <EmptyState title="Nenhuma vaga publicada" text="Crie uma vaga para começar a receber candidatos." />
       ) : (
         <div className="grid gap-4">
-          <section className="card grid gap-3 p-4 lg:grid-cols-[1fr_auto] lg:items-end">
+          <section className="candidate-board-hero">
+            <div>
+              <span className="section-eyebrow">Central de candidatos</span>
+              <h2>Decida rápido e mantenha o turno sob controle</h2>
+              <p>
+                Acompanhe quem está aguardando resposta, quem já foi aprovado, quem compareceu e quem precisa de avaliação.
+              </p>
+            </div>
+            <div className="candidate-hero-metrics">
+              <HeroMetric icon={<BriefcaseBusiness size={19} />} label="vagas" value={String(companyJobs.length)} />
+              <HeroMetric icon={<UsersRound size={19} />} label="candidatos" value={String(generalStats.total)} />
+              <HeroMetric icon={<Clock3 size={19} />} label="em análise" value={String(generalStats.pending)} />
+              <HeroMetric icon={<CalendarCheck size={19} />} label="aprovados" value={String(generalStats.approved)} />
+            </div>
+          </section>
+
+          <section className="candidate-selector-panel">
             <label className="label">
               Vaga
               <select
@@ -115,7 +135,7 @@ export function CandidatesPage() {
               </select>
             </label>
             {selectedJob && (
-              <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+              <div className="candidate-stat-grid">
                 <Stat label="candidatos" value={String(stats.total)} />
                 <Stat label="em análise" value={String(stats.pending)} />
                 <Stat label="confirmados" value={`${selectedJob.filled}/${selectedJob.quantity}`} />
@@ -125,8 +145,8 @@ export function CandidatesPage() {
           </section>
 
           {selectedJob && (
-            <section className="card p-4">
-              <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <section className="candidate-job-summary">
+              <div className="candidate-job-main">
                 <div>
                   <div className="mb-2 flex flex-wrap gap-2">
                     {selectedJob.urgent && <span className="badge urgent">URGENTE</span>}
@@ -138,8 +158,11 @@ export function CandidatesPage() {
                     {selectedJob.neighborhood} - {formatDate(selectedJob.date)} - {selectedJob.startsAt} até {selectedJob.endsAt}
                   </p>
                 </div>
-                <div className="rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-600">
-                  {stats.completed} concluído{stats.completed === 1 ? "" : "s"} - {stats.noShow} falta{stats.noShow === 1 ? "" : "s"}
+                <div className="candidate-job-result">
+                  <strong>{stats.completed}</strong>
+                  <span>concluído{stats.completed === 1 ? "" : "s"}</span>
+                  <strong>{stats.noShow}</strong>
+                  <span>falta{stats.noShow === 1 ? "" : "s"}</span>
                 </div>
               </div>
             </section>
@@ -164,9 +187,9 @@ export function CandidatesPage() {
                 const noSlots = getOpenSlots(selectedJob) === 0 && !approved && !completed;
 
                 return (
-                  <article key={application.id} className="grid gap-2">
+                  <article key={application.id} className="candidate-card">
                     <WorkerCard worker={worker} functionFocus={selectedJob.function} showActions={false} />
-                    <div className="card grid gap-3 p-3">
+                    <div className="candidate-control-panel">
                       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                         <div className="flex flex-wrap gap-2">
                           <span className="badge bg-aqua-100 text-aqua-700">{application.status}</span>
@@ -180,7 +203,7 @@ export function CandidatesPage() {
 
                       <HiringFlow application={application} shift={shift} reviewed={reviewed} />
 
-                      <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-6">
+                      <div className="candidate-action-grid">
                         <button
                           type="button"
                           onClick={() => runStatus(application.id, "Em análise")}
@@ -238,7 +261,7 @@ export function CandidatesPage() {
                       </div>
 
                       {contactUnlocked ? (
-                        <div className="grid gap-2 rounded-lg bg-aqua-100 p-3 md:grid-cols-[1fr_auto] md:items-center">
+                        <div className="candidate-contact-card">
                           <div>
                             <strong className="text-sm text-navy-950">Contato liberado</strong>
                             <div className="mt-1 flex flex-wrap gap-3 text-sm font-semibold text-slate-600">
@@ -256,13 +279,13 @@ export function CandidatesPage() {
                           </a>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-500">
+                        <div className="candidate-locked-note">
                           <Lock size={17} /> Contato protegido até a aprovação.
                         </div>
                       )}
 
                       {completed && (
-                        <div className="grid gap-2 rounded-lg border border-slate-200 bg-white p-3 md:grid-cols-[1fr_auto] md:items-center">
+                        <div className="candidate-review-panel">
                           <div>
                             <strong className="text-sm text-navy-950">
                               {reviewed ? "Avaliação registrada" : "Avaliação pendente"}
@@ -340,6 +363,15 @@ function getJobStats(job: Job | undefined, applications: Application[]) {
   };
 }
 
+function getCompanyCandidateStats(applications: Application[]) {
+  return {
+    total: applications.length,
+    pending: applications.filter((item) => item.status === "Enviada" || item.status === "Em análise").length,
+    approved: applications.filter((item) => item.status === "Aprovada").length,
+    completed: applications.filter((item) => item.status === "Trabalho concluído").length
+  };
+}
+
 function getShiftLabel(application: Application, shift: WorkShift | undefined) {
   if (application.status === "Trabalho concluído") return "Turno finalizado";
   if (application.status === "Falta registrada") return "Falta registrada";
@@ -365,14 +397,14 @@ function HiringFlow({
   const steps = getHiringSteps(application, shift, reviewed);
 
   return (
-    <div className="grid gap-2 rounded-lg bg-slate-50 p-3">
+    <div className="hiring-flow">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <strong className="text-sm text-navy-950">Fluxo da contratação</strong>
         <span className="text-xs font-black uppercase text-slate-500">{getNextAction(application, shift, reviewed)}</span>
       </div>
-      <div className="grid gap-2 md:grid-cols-5">
+      <div className="hiring-step-grid">
         {steps.map((step) => (
-          <span key={step.label} className={`rounded-lg border p-2 text-xs font-bold ${getStepClass(step.state)}`}>
+          <span key={step.label} className={`hiring-step ${getStepClass(step.state)}`}>
             <span className="block text-[0.65rem] uppercase text-slate-500">{step.kicker}</span>
             {step.label}
           </span>
@@ -435,9 +467,19 @@ function getNextAction(application: Application, shift: WorkShift | undefined, r
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <span className="rounded-lg bg-slate-50 p-3">
-      <strong className="block text-lg font-black text-navy-950">{value}</strong>
-      <span className="text-xs font-black uppercase text-slate-500">{label}</span>
+    <span className="candidate-stat-tile">
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <span className="candidate-hero-metric">
+      <span>{icon}</span>
+      <strong>{value}</strong>
+      <small>{label}</small>
     </span>
   );
 }
