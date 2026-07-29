@@ -44,6 +44,7 @@ a {
   color: #061827;
 }
 
+@layer components {
 .card {
   @apply rounded-lg border border-slate-200/70 bg-white/95 shadow-soft ring-1 ring-white/70 transition duration-200;
 }
@@ -1160,4 +1161,5 @@ a {
 
 .smart-empty-text {
   @apply rounded-lg bg-slate-50 p-3 text-sm font-semibold leading-6 text-slate-500;
+}
 }
