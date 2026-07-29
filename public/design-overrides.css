@@ -348,3 +348,133 @@ body {
     font-size: 1.125rem;
   }
 }
+
+.auth-card {
+  overflow: hidden;
+}
+
+.auth-shell-grid {
+  display: grid;
+}
+
+@media (min-width: 768px) {
+  .auth-shell-grid {
+    grid-template-columns: 0.9fr 1.1fr;
+  }
+}
+
+.auth-side-panel {
+  display: none;
+  min-height: 100%;
+  align-content: space-between;
+  gap: 2rem;
+  background: linear-gradient(180deg, #061827 0%, #08263d 68%, #0d866f 150%);
+  color: #fff;
+  padding: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .auth-side-panel {
+    display: grid;
+  }
+}
+
+.auth-side-list {
+  display: grid;
+  gap: 0.75rem;
+  color: #cbd5e1;
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.auth-side-list span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 0.75rem;
+}
+
+.auth-content-panel {
+  background: #fff;
+  padding: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .auth-content-panel {
+    padding: 1.5rem;
+  }
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.auth-alert {
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.auth-alert-error {
+  background: #fff1f0;
+  color: #ff6b57;
+}
+
+.auth-alert-info {
+  background: #a7f4e5;
+  color: #08263d;
+}
+
+.auth-required-panel {
+  border: 1px solid #a7f4e5;
+  border-radius: 8px;
+  background: #effef9;
+  padding: 0.75rem;
+}
+
+.role-choice {
+  cursor: pointer;
+}
+
+.role-choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.role-choice span {
+  display: flex;
+  min-height: 3rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 0.75rem;
+  color: #08263d;
+  font-size: 0.875rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(8, 38, 61, 0.06);
+  transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease, color 180ms ease;
+}
+
+.role-choice input:checked + span {
+  border-color: #73ead2;
+  background: #effef9;
+  color: #0d866f;
+  box-shadow: 0 12px 26px rgba(22, 199, 167, 0.18);
+}
+
+.signup-step {
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(8, 38, 61, 0.06);
+}

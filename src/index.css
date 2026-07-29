@@ -150,3 +150,67 @@ a {
 .hero-actions {
   @apply mt-6 grid gap-3 sm:flex;
 }
+
+.auth-card {
+  @apply overflow-hidden;
+}
+
+.auth-shell-grid {
+  @apply grid md:grid-cols-[0.9fr_1.1fr];
+}
+
+.auth-side-panel {
+  @apply hidden min-h-full content-between gap-8 bg-navy-950 p-6 text-white md:grid;
+}
+
+.auth-side-list {
+  @apply grid gap-3 text-sm font-semibold text-slate-300;
+}
+
+.auth-side-list span {
+  @apply flex items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-3 py-2;
+}
+
+.auth-content-panel {
+  @apply bg-white p-5 md:p-6;
+}
+
+.auth-form {
+  @apply grid gap-3;
+}
+
+.auth-alert {
+  @apply rounded-lg p-3 text-sm font-bold;
+}
+
+.auth-alert-error {
+  @apply bg-red-50 text-alert;
+}
+
+.auth-alert-info {
+  @apply bg-aqua-100 text-navy-950;
+}
+
+.auth-required-panel {
+  @apply rounded-lg border border-aqua-100 bg-aqua-50 p-3;
+}
+
+.role-choice {
+  @apply cursor-pointer;
+}
+
+.role-choice input {
+  @apply sr-only;
+}
+
+.role-choice span {
+  @apply flex min-h-12 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-navy-900 shadow-sm transition;
+}
+
+.role-choice input:checked + span {
+  @apply border-aqua-300 bg-aqua-50 text-aqua-700 shadow-glow;
+}
+
+.signup-step {
+  @apply bg-white shadow-sm;
+}

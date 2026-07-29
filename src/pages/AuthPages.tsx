@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, Building2, CheckCircle2, ClipboardList, LogIn, UserRound } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, Building2, CheckCircle2, ClipboardList, LogIn, ShieldCheck, UserRound, UsersRound } from "lucide-react";
 import { BrandLogo } from "../components/BrandLogo";
 import { experienceLevels, functions, neighborhoods } from "../data/demoData";
 import { useAuth } from "../lib/auth";
@@ -46,7 +46,7 @@ export function LoginPage() {
   return (
     <AuthShell title="Entrar no Free Floripa" description="Acesse com e-mail e senha para entrar na sua área.">
       <form
-        className="grid gap-3"
+        className="auth-form"
         onSubmit={async (event) => {
           event.preventDefault();
           const form = new FormData(event.currentTarget);
@@ -67,11 +67,23 @@ export function LoginPage() {
           }
         }}
       >
-        {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
-        {!authEnabled && <div className="rounded-lg bg-aqua-100 p-3 text-sm font-bold text-navy-950">Modo local: Supabase não configurado neste ambiente.</div>}
+        {error && <div className="auth-alert auth-alert-error">{error}</div>}
+        {!authEnabled && <div className="auth-alert auth-alert-info">Modo local: Supabase não configurado neste ambiente.</div>}
         <label className="label">E-mail<input name="email" className="input" type="email" required placeholder="seu@email.com" /></label>
         <label className="label">Senha<input name="password" className="input" type="password" required placeholder="••••••••" /></label>
-        <label className="label">Tipo de acesso<select name="role" className="input"><option value="trabalhador">Trabalhador</option><option value="empresa">Empresa</option></select></label>
+        <fieldset className="grid gap-2">
+          <legend className="text-sm font-bold text-slate-600">Tipo de acesso</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="role-choice">
+              <input type="radio" name="role" value="trabalhador" defaultChecked />
+              <span><UserRound size={18} /> Trabalhador</span>
+            </label>
+            <label className="role-choice">
+              <input type="radio" name="role" value="empresa" />
+              <span><Building2 size={18} /> Empresa</span>
+            </label>
+          </div>
+        </fieldset>
         <button type="submit" disabled={pending} className="primary"><LogIn size={17} /> {pending ? "Entrando..." : "Entrar"}</button>
         <div className="grid gap-2 text-sm font-semibold text-slate-600 sm:grid-cols-2">
           <Link to="/cadastro-trabalhador" className="secondary">Criar conta trabalhador</Link>
@@ -94,7 +106,7 @@ export function WorkerSignupPage() {
   return (
     <AuthShell title="Cadastro do trabalhador" description="Crie seu perfil para receber vagas de turnos, diárias e eventos.">
       <form
-        className="grid gap-3"
+        className="auth-form"
         onSubmit={async (event) => {
           event.preventDefault();
           const form = new FormData(event.currentTarget);
@@ -159,9 +171,9 @@ export function WorkerSignupPage() {
           }
         }}
       >
-        {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
-        {message && <div className="rounded-lg bg-aqua-100 p-3 text-sm font-bold text-navy-950">{message}</div>}
-        <section className="rounded-lg border border-aqua-100 bg-aqua-100 p-3">
+        {error && <div className="auth-alert auth-alert-error">{error}</div>}
+        {message && <div className="auth-alert auth-alert-info">{message}</div>}
+        <section className="auth-required-panel">
           <div className="flex items-center gap-2 text-sm font-black text-navy-950">
             <ClipboardList size={17} /> Dados obrigatórios do cadastro
           </div>
@@ -187,11 +199,11 @@ export function WorkerSignupPage() {
           </label>
         </div>
         <SignupStep number="3" title="Profissões e experiência" />
-        <fieldset className="rounded-lg border border-slate-200 p-3">
+        <fieldset className="rounded-lg border border-slate-200 bg-white/75 p-3">
           <legend className="px-1 text-sm font-black text-slate-600">Profissões e nível de experiência</legend>
           <div className="mt-2 grid gap-2 md:grid-cols-2">
             {functions.map((item) => (
-              <div key={item} className="rounded-lg border border-slate-200 bg-white p-3">
+              <div key={item} className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
                   <input
                     type="checkbox"
@@ -261,7 +273,7 @@ export function CompanySignupPage() {
   return (
     <AuthShell title="Cadastro da empresa" description="Cadastre seu estabelecimento para publicar vagas temporárias em poucos minutos.">
       <form
-        className="grid gap-3"
+        className="auth-form"
         onSubmit={async (event) => {
           event.preventDefault();
           const form = new FormData(event.currentTarget);
@@ -302,9 +314,9 @@ export function CompanySignupPage() {
           }
         }}
       >
-        {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
-        {message && <div className="rounded-lg bg-aqua-100 p-3 text-sm font-bold text-navy-950">{message}</div>}
-        <section className="rounded-lg border border-aqua-100 bg-aqua-100 p-3">
+        {error && <div className="auth-alert auth-alert-error">{error}</div>}
+        {message && <div className="auth-alert auth-alert-info">{message}</div>}
+        <section className="auth-required-panel">
           <div className="flex items-center gap-2 text-sm font-black text-navy-950">
             <ClipboardList size={17} /> Dados obrigatórios da empresa
           </div>
@@ -342,24 +354,41 @@ export function CompanySignupPage() {
 function AuthShell({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
     <div className="auth-bg min-h-screen px-4 py-6">
-      <main className="mx-auto max-w-3xl">
+      <main className="mx-auto max-w-6xl">
         <Link to="/" className="mb-5 inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-black text-navy-900 shadow-sm transition hover:bg-aqua-50">
           <ArrowLeft size={17} /> Voltar
         </Link>
-        <section className="card overflow-hidden p-0">
+        <section className="auth-card card overflow-hidden p-0">
           <div className="color-strip h-2" />
-          <div className="p-5 md:p-6">
-          <div className="mb-5">
-            <div className="mb-4">
-              <BrandLogo />
+          <div className="auth-shell-grid">
+            <aside className="auth-side-panel">
+              <BrandLogo inverted />
+              <div>
+                <p className="text-xs font-black uppercase text-aqua-300">Free Floripa</p>
+                <h2 className="mt-2 text-3xl font-black leading-tight text-white">Acesse, publique e acompanhe turnos com mais controle.</h2>
+                <p className="mt-3 text-sm font-semibold leading-6 text-slate-300">
+                  Uma entrada mais simples para empresas e trabalhadores seguirem para a área certa.
+                </p>
+              </div>
+              <div className="auth-side-list">
+                <span><ShieldCheck size={17} /> Login conectado ao Supabase</span>
+                <span><BriefcaseBusiness size={17} /> Vagas e escalas organizadas</span>
+                <span><UsersRound size={17} /> Perfis com experiência por função</span>
+              </div>
+            </aside>
+            <div className="auth-content-panel">
+              <div className="mb-5">
+                <div className="mb-4 md:hidden">
+                  <BrandLogo />
+                </div>
+                <h1 className="text-2xl font-black text-navy-950">{title}</h1>
+                <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+                <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-aqua-700">
+                  <CheckCircle2 size={17} /> Login real com Supabase Auth quando configurado.
+                </p>
+              </div>
+              {children}
             </div>
-            <h1 className="text-2xl font-black text-navy-950">{title}</h1>
-            <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
-            <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-aqua-700">
-              <CheckCircle2 size={17} /> Login real com Supabase Auth quando configurado.
-            </p>
-          </div>
-          {children}
           </div>
         </section>
       </main>
@@ -369,7 +398,7 @@ function AuthShell({ title, description, children }: { title: string; descriptio
 
 function SignupStep({ number, title }: { number: string; title: string }) {
   return (
-    <div className="mt-2 flex items-center gap-2 rounded-lg border border-aqua-100 bg-aqua-50 px-3 py-2">
+    <div className="signup-step mt-2 flex items-center gap-2 rounded-lg border border-aqua-100 bg-aqua-50 px-3 py-2">
       <span className="grid h-7 w-7 place-items-center rounded-full bg-navy-950 text-xs font-black text-aqua-300">{number}</span>
       <strong className="text-sm text-navy-950">{title}</strong>
     </div>

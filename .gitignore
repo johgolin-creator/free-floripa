@@ -5,5 +5,6 @@ android
 ios
 *.tsbuildinfo
 free-floripa-sites-version-*.tar.gz
+.openai/*.tgz
 .env
 .env.local
