@@ -1,7 +1,26 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import { AlertTriangle, Building2, CheckCircle2, Lock, Mail, MapPin, MessageCircle, Phone, Star, Users } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  BadgeCheck,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  CreditCard,
+  Lock,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Phone,
+  ShieldCheck,
+  Star,
+  Users,
+  WalletCards,
+  Zap
+} from "lucide-react";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
 import { useAppStore } from "../lib/store";
@@ -25,6 +44,7 @@ export function JobDetailsPage() {
   const jobStatus = getJobStatus(currentJob);
   const isProfessional = state.subscription.plan === "Profissional";
   const canViewFullJob = isProfessional || confirmed;
+  const unlockItems = ["Descrição completa", "Requisitos e benefícios", "Candidatura liberada", "Dados protegidos no momento certo"];
 
   function handleApply() {
     if (!isProfessional) {
@@ -40,21 +60,31 @@ export function JobDetailsPage() {
 
   const plansModal = showPlans ? (
     <Modal title="Liberar vaga completa" onClose={() => setShowPlans(false)}>
-      <div className="grid gap-3">
+      <div className="job-plan-modal">
+        <div>
+          <span className="badge bg-aqua-50 text-aqua-700">
+            <CreditCard size={15} /> Profissional
+          </span>
+          <h3>Desbloqueie esta vaga</h3>
+          <p>Veja todos os detalhes antes de se candidatar e libere candidaturas sem limite.</p>
+        </div>
         <button
           type="button"
-          className="card p-4 text-left"
+          className="job-plan-option"
           onClick={() => {
             subscribeProfessional();
             setShowPlans(false);
             setMessage("Plano profissional ativado. Vaga completa e candidaturas liberadas.");
           }}
         >
-          <strong className="block text-lg text-navy-950">Plano profissional</strong>
-          <span className="mt-1 block text-sm text-slate-600">Libera vagas completas e candidaturas ilimitadas por R$ 14,90 por mês.</span>
+          <span>
+            <strong>R$ 14,90</strong>
+            <small>/mês</small>
+          </span>
+          <em>Ativar plano agora</em>
         </button>
         <Link to="/app/planos" onClick={() => setShowPlans(false)} className="secondary">
-          Comparar planos
+          Comparar planos <ArrowRight size={17} />
         </Link>
       </div>
     </Modal>
@@ -71,40 +101,45 @@ export function JobDetailsPage() {
 
         {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
 
-        <section className="card grid gap-5 p-5 lg:grid-cols-[1fr_320px]">
-          <div>
+        <section className="job-preview-card">
+          <div className="job-preview-main">
             <div className="mb-3 flex flex-wrap gap-2">
               {currentJob.urgent && <span className="badge urgent"><AlertTriangle size={14} /> URGENTE</span>}
               <span className="badge">{currentJob.function}</span>
               <span className="badge">{currentJob.paymentMethod}</span>
             </div>
-            <h2 className="text-2xl font-black text-navy-950">{currentJob.title}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Descrição completa, requisitos, benefícios, dados da empresa e candidatura ficam disponíveis para assinantes.
-            </p>
+            <h2>{currentJob.title}</h2>
+            <p>Você está vendo uma prévia. Assine para liberar descrição completa, requisitos, benefícios e candidatura.</p>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <Info label="Empresa" value="Empresa verificada" />
-              <Info label="Data" value={formatDate(currentJob.date)} />
-              <Info label="Horário" value={`${currentJob.startsAt} às ${currentJob.endsAt}`} />
-              <Info label="Valor" value={formatCurrency(currentJob.dailyValue)} />
-              <Info label="Bairro" value={currentJob.neighborhood} />
-              <Info label="Vagas restantes" value={`${getOpenSlots(currentJob)} disponíveis`} />
+            <div className="job-preview-grid">
+              <Info label="Empresa" value="Empresa verificada" icon={<Building2 size={17} />} />
+              <Info label="Data" value={formatDate(currentJob.date)} icon={<CalendarDays size={17} />} />
+              <Info label="Horário" value={`${currentJob.startsAt} às ${currentJob.endsAt}`} icon={<Clock size={17} />} />
+              <Info label="Valor" value={formatCurrency(currentJob.dailyValue)} icon={<WalletCards size={17} />} />
+              <Info label="Bairro" value={currentJob.neighborhood} icon={<MapPin size={17} />} />
+              <Info label="Vagas restantes" value={`${getOpenSlots(currentJob)} disponíveis`} icon={<Users size={17} />} />
             </div>
           </div>
 
-          <aside className="grid content-start gap-3 rounded-lg bg-slate-50 p-4">
-            <div className="rounded-lg border border-aqua-100 bg-white p-4">
-              <span className="flex items-center gap-2 text-sm font-black uppercase text-aqua-700">
-                <Lock size={17} /> Conteúdo protegido
-              </span>
-              <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-                Assine o plano profissional para ver a vaga completa e se candidatar.
-              </p>
+          <aside className="job-lock-panel">
+            <span className="job-lock-icon">
+              <Lock size={24} />
+            </span>
+            <h3>Vaga completa bloqueada</h3>
+            <p>O plano profissional libera os detalhes que ajudam você a decidir com segurança.</p>
+            <div className="job-unlock-list">
+              {unlockItems.map((item) => (
+                <span key={item}>
+                  <CheckCircle2 size={16} /> {item}
+                </span>
+              ))}
             </div>
             <Link to="/app/planos" className="primary">
               <Lock size={17} /> Ver planos
             </Link>
+            <button type="button" onClick={() => setShowPlans(true)} className="secondary">
+              Liberar agora <Zap size={17} />
+            </button>
           </aside>
         </section>
 
@@ -123,8 +158,8 @@ export function JobDetailsPage() {
 
       {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
 
-      <section className="card overflow-hidden">
-        <div className="grid gap-4 p-5 lg:grid-cols-[1fr_340px]">
+      <section className="job-detail-card">
+        <div className="job-detail-grid">
           <div>
             <div className="mb-3 flex flex-wrap gap-2">
               {currentJob.urgent && <span className="badge urgent"><AlertTriangle size={14} /> URGENTE</span>}
@@ -133,23 +168,23 @@ export function JobDetailsPage() {
               <span className="badge">{currentJob.paymentMethod}</span>
             </div>
 
-            <h2 className="text-2xl font-black text-navy-950">{currentJob.function}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">{currentJob.description}</p>
+            <h2>{currentJob.function}</h2>
+            <p>{currentJob.description}</p>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <Info label="Empresa" value={company?.establishmentName ?? "Empresa"} />
-              <Info label="Avaliação da empresa" value={`${company?.rating.toFixed(1) ?? "0.0"} estrelas`} />
-              <Info label="Quantidade" value={`${currentJob.quantity} profissionais`} />
-              <Info label="Vagas restantes" value={`${getOpenSlots(currentJob)} disponíveis`} />
-              <Info label="Data" value={formatDate(currentJob.date)} />
-              <Info label="Horário" value={`${currentJob.startsAt} às ${currentJob.endsAt}`} />
-              <Info label="Valor" value={formatCurrency(currentJob.dailyValue)} />
-              <Info label="Forma de pagamento" value={currentJob.paymentMethod} />
-              <Info label="Bairro" value={currentJob.neighborhood} />
-              <Info label="Distância aproximada" value={`${currentJob.distanceKm} km`} />
+            <div className="job-info-grid">
+              <Info label="Empresa" value={company?.establishmentName ?? "Empresa"} icon={<Building2 size={17} />} />
+              <Info label="Avaliação da empresa" value={`${company?.rating.toFixed(1) ?? "0.0"} estrelas`} icon={<Star size={17} />} />
+              <Info label="Quantidade" value={`${currentJob.quantity} profissionais`} icon={<Users size={17} />} />
+              <Info label="Vagas restantes" value={`${getOpenSlots(currentJob)} disponíveis`} icon={<BadgeCheck size={17} />} />
+              <Info label="Data" value={formatDate(currentJob.date)} icon={<CalendarDays size={17} />} />
+              <Info label="Horário" value={`${currentJob.startsAt} às ${currentJob.endsAt}`} icon={<Clock size={17} />} />
+              <Info label="Valor" value={formatCurrency(currentJob.dailyValue)} icon={<WalletCards size={17} />} />
+              <Info label="Forma de pagamento" value={currentJob.paymentMethod} icon={<CreditCard size={17} />} />
+              <Info label="Bairro" value={currentJob.neighborhood} icon={<MapPin size={17} />} />
+              <Info label="Distância aproximada" value={`${currentJob.distanceKm} km`} icon={<MapPin size={17} />} />
             </div>
 
-            <div className="mt-5 grid gap-3">
+            <div className="job-requirements">
               <Info label="Endereço aproximado" value={currentJob.approximateAddress} icon={<MapPin size={17} />} />
               <Info label="Endereço completo" value={confirmed ? currentJob.fullAddress : "Liberado somente após confirmação"} icon={<Lock size={17} />} />
               <Info label="Requisitos" value={currentJob.requiredExperience} />
@@ -158,7 +193,7 @@ export function JobDetailsPage() {
             </div>
           </div>
 
-          <aside className="grid content-start gap-3 rounded-lg bg-slate-50 p-4">
+          <aside className="job-action-panel">
             <div className="flex items-center gap-3">
               <img src={company?.logoUrl} alt="" className="h-16 w-16 rounded-lg object-cover" />
               <div>
@@ -169,10 +204,10 @@ export function JobDetailsPage() {
             <div className="grid gap-2 text-sm text-slate-600">
               <span className="flex items-center gap-2"><Users size={17} /> {currentJob.candidates} candidatos</span>
               <span className="flex items-center gap-2"><Building2 size={17} /> {company?.category}</span>
-              <span className="flex items-center gap-2"><CheckCircle2 size={17} /> Contato após confirmação</span>
+              <span className="flex items-center gap-2"><ShieldCheck size={17} /> Contato após confirmação</span>
             </div>
             {confirmed && company ? (
-              <div className="grid gap-2 rounded-lg border border-aqua-100 bg-white p-3">
+              <div className="contact-card">
                 <strong className="text-sm text-navy-950">Contato liberado</strong>
                 <span className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Phone size={16} /> {company.phone}</span>
                 <span className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Mail size={16} /> {company.email}</span>
@@ -186,11 +221,11 @@ export function JobDetailsPage() {
                 </a>
               </div>
             ) : (
-              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 text-sm font-bold text-slate-500">
+              <div className="contact-locked">
                 <Lock size={16} /> Contato protegido até aprovação.
               </div>
             )}
-            <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <div className="worker-match-card">
               <span className="text-xs font-black uppercase text-slate-500">Seu nível nesta função</span>
               <strong className="mt-1 block text-sm text-navy-950">
                 {workerExperience ? getExperienceLabel(workerExperience.level) : "Função não declarada"}
@@ -214,7 +249,7 @@ export function JobDetailsPage() {
 
 function Info({ label, value, icon }: { label: string; value: string; icon?: ReactNode }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
+    <div className="job-info-tile">
       <span className="flex items-center gap-1.5 text-xs font-black uppercase text-slate-500">
         {icon} {label}
       </span>

@@ -731,3 +731,240 @@ body {
   font-weight: 650;
   line-height: 1.5;
 }
+
+.job-plan-modal {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.job-plan-modal h3 {
+  margin-top: 0.75rem;
+  color: #08263d;
+  font-size: 1.5rem;
+  font-weight: 950;
+}
+
+.job-plan-modal p {
+  margin-top: 0.25rem;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.job-plan-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid #a7f4e5;
+  border-radius: 8px;
+  background: #effef9;
+  padding: 1rem;
+  text-align: left;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.job-plan-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 70px rgba(8, 38, 61, 0.16);
+}
+
+.job-plan-option strong {
+  color: #08263d;
+  font-size: 1.5rem;
+  font-weight: 950;
+}
+
+.job-plan-option small {
+  margin-left: 0.25rem;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 900;
+}
+
+.job-plan-option em {
+  color: #0d866f;
+  font-size: 0.875rem;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.job-preview-card {
+  display: grid;
+  gap: 1.25rem;
+  border: 1px solid rgba(215, 228, 232, 0.88);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 1.25rem;
+  box-shadow: 0 14px 34px rgba(8, 38, 61, 0.08);
+}
+
+@media (min-width: 1024px) {
+  .job-preview-card {
+    grid-template-columns: 1fr 340px;
+  }
+}
+
+.job-preview-main h2,
+.job-detail-card h2 {
+  color: #08263d;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  font-weight: 950;
+}
+
+@media (min-width: 768px) {
+  .job-preview-main h2,
+  .job-detail-card h2 {
+    font-size: 1.875rem;
+  }
+}
+
+.job-preview-main p,
+.job-detail-card p {
+  margin-top: 0.5rem;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.job-preview-grid,
+.job-info-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .job-preview-grid,
+  .job-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.job-lock-panel {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  border: 1px solid #a7f4e5;
+  border-radius: 8px;
+  background: #effef9;
+  padding: 1rem;
+}
+
+.job-lock-icon {
+  display: inline-flex;
+  width: 3rem;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #061827;
+  color: #73ead2;
+}
+
+.job-lock-panel h3 {
+  color: #08263d;
+  font-size: 1.25rem;
+  font-weight: 950;
+}
+
+.job-lock-panel p {
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.job-unlock-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.job-unlock-list span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #fff;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.5rem;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.job-detail-card {
+  overflow: hidden;
+  border: 1px solid rgba(215, 228, 232, 0.88);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 34px rgba(8, 38, 61, 0.08);
+}
+
+.job-detail-grid {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+  .job-detail-grid {
+    grid-template-columns: 1fr 340px;
+  }
+}
+
+.job-requirements {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.job-action-panel {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 1rem;
+}
+
+.contact-card {
+  display: grid;
+  gap: 0.5rem;
+  border: 1px solid #a7f4e5;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.75rem;
+}
+
+.contact-locked {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.75rem;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.worker-match-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.75rem;
+}
+
+.job-info-tile {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.75rem;
+  box-shadow: 0 8px 18px rgba(8, 38, 61, 0.06);
+}

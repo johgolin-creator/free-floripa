@@ -322,3 +322,106 @@ a {
 .plan-mini-feature p {
   @apply mt-1 text-xs font-semibold leading-5 text-slate-600;
 }
+
+.job-plan-modal {
+  @apply grid gap-3;
+}
+
+.job-plan-modal h3 {
+  @apply mt-3 text-2xl font-black text-navy-950;
+}
+
+.job-plan-modal p {
+  @apply mt-1 text-sm font-semibold leading-6 text-slate-600;
+}
+
+.job-plan-option {
+  @apply flex items-center justify-between gap-3 rounded-lg border border-aqua-200 bg-aqua-50 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lift;
+}
+
+.job-plan-option strong {
+  @apply text-2xl font-black text-navy-950;
+}
+
+.job-plan-option small {
+  @apply ml-1 text-sm font-black text-slate-500;
+}
+
+.job-plan-option em {
+  @apply not-italic text-sm font-black text-aqua-700;
+}
+
+.job-preview-card {
+  @apply grid gap-5 rounded-lg border border-slate-200/70 bg-white/95 p-5 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_340px];
+}
+
+.job-preview-main h2,
+.job-detail-card h2 {
+  @apply text-2xl font-black leading-tight text-navy-950 md:text-3xl;
+}
+
+.job-preview-main p,
+.job-detail-card p {
+  @apply mt-2 text-sm font-semibold leading-6 text-slate-600;
+}
+
+.job-preview-grid,
+.job-info-grid {
+  @apply mt-5 grid gap-3 sm:grid-cols-2;
+}
+
+.job-lock-panel {
+  @apply grid content-start gap-3 rounded-lg border border-aqua-100 bg-aqua-50 p-4;
+}
+
+.job-lock-icon {
+  @apply inline-flex h-12 w-12 items-center justify-center rounded-lg bg-navy-950 text-aqua-300;
+}
+
+.job-lock-panel h3 {
+  @apply text-xl font-black text-navy-950;
+}
+
+.job-lock-panel p {
+  @apply text-sm font-semibold leading-6 text-slate-600;
+}
+
+.job-unlock-list {
+  @apply grid gap-2;
+}
+
+.job-unlock-list span {
+  @apply flex items-center gap-2 rounded-lg border border-white bg-white p-2 text-sm font-bold text-slate-600;
+}
+
+.job-detail-card {
+  @apply overflow-hidden rounded-lg border border-slate-200/70 bg-white/95 shadow-soft ring-1 ring-white/70;
+}
+
+.job-detail-grid {
+  @apply grid gap-4 p-5 lg:grid-cols-[1fr_340px];
+}
+
+.job-requirements {
+  @apply mt-5 grid gap-3;
+}
+
+.job-action-panel {
+  @apply grid content-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4;
+}
+
+.contact-card {
+  @apply grid gap-2 rounded-lg border border-aqua-100 bg-white p-3;
+}
+
+.contact-locked {
+  @apply flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 text-sm font-bold text-slate-500;
+}
+
+.worker-match-card {
+  @apply rounded-lg border border-slate-200 bg-white p-3;
+}
+
+.job-info-tile {
+  @apply rounded-lg border border-slate-200 bg-white p-3 shadow-sm;
+}
