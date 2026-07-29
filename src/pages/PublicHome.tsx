@@ -37,6 +37,12 @@ export function PublicHome() {
               <LogIn size={17} /> Entrar
             </Link>
             <Link
+              to="/app"
+              className="hidden min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-4 text-sm font-black text-aqua-700 shadow-sm transition hover:bg-aqua-100 lg:inline-flex"
+            >
+              <Smartphone size={17} /> Abrir app
+            </Link>
+            <Link
               to="/cadastro-trabalhador"
               onClick={() => setRole("trabalhador")}
               className="hidden min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-navy-900 shadow-sm transition hover:bg-slate-50 md:inline-flex"
@@ -87,13 +93,20 @@ export function PublicHome() {
         </section>
 
         <section className="home-entry-section">
-          <div className="mx-auto grid max-w-7xl gap-3 px-4 py-5 md:grid-cols-3">
+          <div className="mx-auto grid max-w-7xl gap-3 px-4 py-5 md:grid-cols-4">
             <EntryCard
               icon={<LogIn size={20} />}
               title="Já tenho conta"
               text="Entrar como freelancer ou empresa usando e-mail e senha."
               to="/login"
               label="Entrar"
+            />
+            <EntryCard
+              icon={<Smartphone size={20} />}
+              title="Abrir meu painel"
+              text="Ir direto para o app instalado ou para a área logada no navegador."
+              to="/app"
+              label="Continuar"
             />
             <EntryCard
               icon={<UsersRound size={20} />}

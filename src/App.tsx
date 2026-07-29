@@ -19,6 +19,8 @@ import { ProfessionalBankPage } from "./pages/ProfessionalBankPage";
 import { TeamPage } from "./pages/TeamPage";
 import { CompanyProfilePage } from "./pages/CompanyProfilePage";
 import { NotificationsPage } from "./pages/NotificationsPage";
+import { MessagesPage } from "./pages/MessagesPage";
+import { FinancialPage } from "./pages/FinancialPage";
 import { useAuth } from "./lib/auth";
 import { useAppStore } from "./lib/store";
 import type { UserRole } from "./lib/types";
@@ -55,6 +57,8 @@ export default function App() {
         <Route path="escala" element={<RoleRoute role="empresa"><CompanySchedulePage /></RoleRoute>} />
         <Route path="equipe" element={<RoleRoute role="empresa"><TeamPage /></RoleRoute>} />
         <Route path="perfil-empresa" element={<RoleRoute role="empresa"><CompanyProfilePage /></RoleRoute>} />
+        <Route path="mensagens" element={<MessagesPage />} />
+        <Route path="financeiro" element={<FinancialPage />} />
         <Route path="notificacoes" element={<NotificationsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

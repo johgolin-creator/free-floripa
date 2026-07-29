@@ -8,10 +8,12 @@ import {
   Cloud,
   CreditCard,
   Home,
+  MessageCircle,
   Search,
   Star,
   UserRound,
-  UsersRound
+  UsersRound,
+  WalletCards
 } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { Navigate } from "react-router-dom";
@@ -25,6 +27,8 @@ const workerLinks = [
   { to: "/app/vagas", label: "Vagas", mobileLabel: "Vagas", icon: Search },
   { to: "/app/candidaturas", label: "Candidaturas", mobileLabel: "Candid.", icon: ClipboardList },
   { to: "/app/trabalhos", label: "Meus trabalhos", mobileLabel: "Trabalhos", icon: CalendarCheck },
+  { to: "/app/mensagens", label: "Mensagens", mobileLabel: "Chat", icon: MessageCircle },
+  { to: "/app/financeiro", label: "Financeiro", mobileLabel: "R$", icon: WalletCards },
   { to: "/app/planos", label: "Planos", mobileLabel: "Planos", icon: CreditCard },
   { to: "/app/perfil-trabalhador", label: "Perfil", mobileLabel: "Perfil", icon: UserRound }
 ];
@@ -35,6 +39,8 @@ const companyLinks = [
   { to: "/app/profissionais", label: "Banco", mobileLabel: "Banco", icon: Search },
   { to: "/app/candidatos", label: "Candidatos", mobileLabel: "Cand.", icon: UsersRound },
   { to: "/app/escala", label: "Escala", mobileLabel: "Escala", icon: CalendarDays },
+  { to: "/app/mensagens", label: "Mensagens", mobileLabel: "Chat", icon: MessageCircle },
+  { to: "/app/financeiro", label: "Financeiro", mobileLabel: "R$", icon: WalletCards },
   { to: "/app/equipe", label: "Minha equipe", mobileLabel: "Equipe", icon: Star },
   { to: "/app/perfil-empresa", label: "Perfil", mobileLabel: "Perfil", icon: Building2 }
 ];

@@ -165,6 +165,20 @@ export interface NotificationItem {
   read: boolean;
 }
 
+export interface ChatMessage {
+  id: string;
+  applicationId: string;
+  jobId: string;
+  workerId: string;
+  companyId: string;
+  senderRole: UserRole;
+  senderName: string;
+  body: string;
+  createdAt: string;
+  readByWorker: boolean;
+  readByCompany: boolean;
+}
+
 export interface SubscriptionState {
   plan: "Gratuito" | "Profissional";
   creditsRemaining: number;
@@ -183,5 +197,6 @@ export interface AppState {
   shifts: WorkShift[];
   favoriteWorkerIds: string[];
   notifications: NotificationItem[];
+  chatMessages: ChatMessage[];
   subscription: SubscriptionState;
 }

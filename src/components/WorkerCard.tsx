@@ -3,6 +3,7 @@ import { Award, CheckCircle2, Heart, MapPin, Star } from "lucide-react";
 import { Modal } from "./Modal";
 import { useAppStore } from "../lib/store";
 import { calculateReliability, getCompatibilityLabel, getExperienceLabel, getFunctionExperience } from "../lib/rules";
+import { getTrustBadges } from "../lib/trust";
 import type { JobFunction, WorkerProfile } from "../lib/types";
 
 export function WorkerCard({
@@ -19,6 +20,7 @@ export function WorkerCard({
   const [message, setMessage] = useState("");
   const favorite = state.favoriteWorkerIds.includes(worker.id);
   const reliability = calculateReliability(worker);
+  const trustBadges = getTrustBadges(worker);
   const pendingApplication = state.applications.find((application) => application.workerId === worker.id && application.status !== "Aprovada");
   const focusedExperience = functionFocus ? getFunctionExperience(worker, functionFocus) : null;
   const visibleExperiences = functionFocus
@@ -61,6 +63,15 @@ export function WorkerCard({
             </span>
           ))}
         </div>
+        {trustBadges.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {trustBadges.map((badge) => (
+              <span key={badge.label} className={`badge ${badge.tone}`}>
+                <Award size={14} /> {badge.label}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <p className="text-sm leading-6 text-slate-600">{worker.description}</p>

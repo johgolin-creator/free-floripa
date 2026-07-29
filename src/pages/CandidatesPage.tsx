@@ -19,6 +19,7 @@ import {
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
+import { ShiftReceipt } from "../components/ShiftReceipt";
 import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
@@ -40,6 +41,13 @@ type PendingReview = {
   worker: WorkerProfile;
 };
 
+type ReceiptTarget = {
+  application: Application;
+  job: Job;
+  worker: WorkerProfile;
+  shift?: WorkShift;
+};
+
 export function CandidatesPage() {
   const { state, currentCompany, toggleFavorite, updateApplicationStatus, checkIn, checkOut, addReview } = useAppStore();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -48,6 +56,7 @@ export function CandidatesPage() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewError, setReviewError] = useState("");
+  const [receiptTarget, setReceiptTarget] = useState<ReceiptTarget | null>(null);
   const companyJobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const selectedJobId = searchParams.get("vaga") || companyJobs[0]?.id || "";
   const selectedJob = companyJobs.find((job) => job.id === selectedJobId) ?? companyJobs[0];
@@ -355,6 +364,13 @@ export function CandidatesPage() {
                           >
                             <Star size={17} /> {reviewed ? "Avaliado" : "Avaliar"}
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => setReceiptTarget({ application, job: selectedJob, worker, shift })}
+                            className="secondary"
+                          >
+                            <ClipboardCheck size={17} /> Comprovante
+                          </button>
                         </div>
                       )}
                     </div>
@@ -398,6 +414,23 @@ export function CandidatesPage() {
               <ClipboardCheck size={17} /> Salvar avaliação
             </button>
           </form>
+        </Modal>
+      )}
+
+      {receiptTarget && (
+        <Modal title="Comprovante do turno" onClose={() => setReceiptTarget(null)}>
+          <ShiftReceipt
+            application={receiptTarget.application}
+            job={receiptTarget.job}
+            worker={receiptTarget.worker}
+            company={currentCompany}
+            shift={receiptTarget.shift}
+            review={receiptTarget.worker.reviews.find(
+              (review) =>
+                review.jobId === receiptTarget.job.id &&
+                review.applicationId === receiptTarget.application.id
+            )}
+          />
         </Modal>
       )}
     </div>

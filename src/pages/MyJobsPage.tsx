@@ -17,9 +17,10 @@ import {
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
+import { ShiftReceipt } from "../components/ShiftReceipt";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, formatDateTime, getWhatsAppUrl } from "../lib/format";
-import type { Application, Job, WorkShift } from "../lib/types";
+import type { Application, CompanyProfile, Job, WorkShift } from "../lib/types";
 
 const tabs = ["Próximos", "Em andamento", "Concluídos", "Ocorrências"] as const;
 
@@ -29,10 +30,15 @@ type WorkItem = {
   shift: WorkShift | undefined;
 };
 
+type ReceiptItem = WorkItem & {
+  company: CompanyProfile;
+};
+
 export function MyJobsPage() {
   const { state, currentWorker, checkIn, checkOut } = useAppStore();
   const [tab, setTab] = useState<(typeof tabs)[number]>("Próximos");
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
+  const [receiptItem, setReceiptItem] = useState<ReceiptItem | null>(null);
   const [message, setMessage] = useState("");
 
   const workItems = useMemo(
@@ -149,6 +155,11 @@ export function MyJobsPage() {
                     <button type="button" onClick={() => setSelectedItem(item)} className="company-action">
                       <Clock size={17} /> Detalhes
                     </button>
+                    {done && company && (
+                      <button type="button" onClick={() => setReceiptItem({ ...item, company })} className="company-action">
+                        <ClipboardCheck size={17} /> Comprovante
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -197,6 +208,21 @@ export function MyJobsPage() {
             <Info label="Benefícios" value={selectedItem.job.benefits.join(", ")} />
             <Info label="Status" value={getWorkStatus(selectedItem.application, selectedItem.shift)} icon={<CheckCircle2 size={16} />} />
           </div>
+        </Modal>
+      )}
+
+      {receiptItem && (
+        <Modal title="Comprovante do turno" onClose={() => setReceiptItem(null)}>
+          <ShiftReceipt
+            application={receiptItem.application}
+            job={receiptItem.job}
+            worker={currentWorker}
+            company={receiptItem.company}
+            shift={receiptItem.shift}
+            review={currentWorker.reviews.find(
+              (review) => review.jobId === receiptItem.job.id && review.applicationId === receiptItem.application.id
+            )}
+          />
         </Modal>
       )}
     </div>

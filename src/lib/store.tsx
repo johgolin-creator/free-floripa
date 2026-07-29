@@ -21,7 +21,7 @@ import {
   type MarketplaceJobsPayload
 } from "./supabaseMarketplace";
 import { getSupabaseStateKey, loadSupabaseState, saveSupabaseState, supabaseStateEnabled } from "./supabaseState";
-import type { AppState, Application, ApplicationStatus, CompanyProfile, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, UserRole, WorkerProfile } from "./types";
+import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyProfile, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, UserRole, WorkerProfile } from "./types";
 
 const STORAGE_KEY = "free-floripa:state";
 const DEFAULT_WORKER_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
@@ -98,6 +98,8 @@ interface AppContextValue {
   checkOut: (jobId: string, workerId: string) => void;
   markNotificationRead: (notificationId: string) => void;
   markRoleNotificationsRead: (role: AppState["activeRole"]) => void;
+  markChatConversationRead: (applicationId: string) => void;
+  sendChatMessage: (applicationId: string, body: string) => { ok: boolean; message: string };
   subscribeProfessional: () => void;
   buyCredits: () => void;
   addReview: (workerId: string, review: Omit<Review, "id">) => void;
@@ -138,9 +140,10 @@ function mergeSeedUpdates(savedState: AppState): AppState {
   const seededWorker = initialState.workers.find((worker) => worker.id === "worker-3");
   const normalizedState = {
     ...savedState,
-    companySchedules: Array.isArray(savedState.companySchedules) ? savedState.companySchedules : []
+    companySchedules: Array.isArray(savedState.companySchedules) ? savedState.companySchedules : [],
+    chatMessages: Array.isArray(savedState.chatMessages) ? savedState.chatMessages : []
   };
-  let changed = !Array.isArray(savedState.companySchedules);
+  let changed = !Array.isArray(savedState.companySchedules) || !Array.isArray(savedState.chatMessages);
 
   const jobs =
     securityJob && !normalizedState.jobs.some((job) => job.id === securityJob.id)
@@ -285,7 +288,8 @@ function createStateForUser(user: User | null, role: UserRole | null): AppState 
       applications: [],
       shifts: [],
       favoriteWorkerIds: [],
-      notifications: []
+      notifications: [],
+      chatMessages: []
     };
   }
 
@@ -298,7 +302,8 @@ function createStateForUser(user: User | null, role: UserRole | null): AppState 
     applications: [],
     shifts: [],
     favoriteWorkerIds: [],
-    notifications: []
+    notifications: [],
+    chatMessages: []
   };
 }
 
@@ -314,7 +319,10 @@ function removeDemoWorkers(state: AppState) {
       (shift) => !DEMO_SHIFT_IDS.has(shift.id) && !DEMO_WORKER_IDS.has(shift.workerId)
     ),
     favoriteWorkerIds: state.favoriteWorkerIds.filter((workerId) => !DEMO_WORKER_IDS.has(workerId)),
-    notifications: state.notifications.filter((notification) => !notification.id.startsWith("notification-"))
+    notifications: state.notifications.filter((notification) => !notification.id.startsWith("notification-")),
+    chatMessages: (state.chatMessages ?? []).filter(
+      (message) => !DEMO_APPLICATION_IDS.has(message.applicationId) && !DEMO_WORKER_IDS.has(message.workerId)
+    )
   };
 }
 
@@ -423,7 +431,8 @@ function sanitizeAccountState(state: AppState, user: User, role: UserRole): AppS
       companies: [company, ...withoutDemoWorkers.companies.filter((item) => item.id !== company.id && !DEMO_COMPANY_IDS.has(item.id))],
       jobs: companyJobs,
       applications: withoutDemoWorkers.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId)),
-      shifts: withoutDemoWorkers.shifts.filter((shift) => companyJobs.some((job) => job.id === shift.jobId))
+      shifts: withoutDemoWorkers.shifts.filter((shift) => companyJobs.some((job) => job.id === shift.jobId)),
+      chatMessages: (withoutDemoWorkers.chatMessages ?? []).filter((message) => companyJobs.some((job) => job.id === message.jobId))
     };
   }
 
@@ -435,7 +444,8 @@ function sanitizeAccountState(state: AppState, user: User, role: UserRole): AppS
     workers: [worker, ...withoutDemoWorkers.workers.filter((item) => item.id !== worker.id)],
     applications: withoutDemoWorkers.applications.filter((application) => application.workerId === worker.id),
     shifts: withoutDemoWorkers.shifts.filter((shift) => shift.workerId === worker.id),
-    favoriteWorkerIds: []
+    favoriteWorkerIds: [],
+    chatMessages: (withoutDemoWorkers.chatMessages ?? []).filter((message) => message.workerId === worker.id)
   };
 }
 
@@ -1205,6 +1215,78 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setSyncStatus("erro");
           });
         }
+      },
+      markChatConversationRead(applicationId) {
+        commit((current) => {
+          let changed = false;
+          const chatMessages = (current.chatMessages ?? []).map((message) => {
+            if (message.applicationId !== applicationId) return message;
+            if (state.activeRole === "trabalhador" && !message.readByWorker) {
+              changed = true;
+              return { ...message, readByWorker: true };
+            }
+            if (state.activeRole === "empresa" && !message.readByCompany) {
+              changed = true;
+              return { ...message, readByCompany: true };
+            }
+            return message;
+          });
+          return changed ? { ...current, chatMessages } : current;
+        });
+      },
+      sendChatMessage(applicationId, body) {
+        const text = body.trim();
+        if (text.length < 2) return { ok: false, message: "Escreva uma mensagem antes de enviar." };
+
+        const application = state.applications.find((item) => item.id === applicationId);
+        if (!application) return { ok: false, message: "Conversa não encontrada." };
+
+        const job = state.jobs.find((item) => item.id === application.jobId);
+        if (!job) return { ok: false, message: "Vaga não encontrada para esta conversa." };
+
+        const worker = state.workers.find((item) => item.id === application.workerId);
+        const company = state.companies.find((item) => item.id === job.companyId);
+        if (!worker || !company) return { ok: false, message: "Participante da conversa não encontrado." };
+
+        const allowedStatus = application.status === "Aprovada" || application.status === "Trabalho concluído";
+        if (!allowedStatus) return { ok: false, message: "O chat libera somente após a aprovação da candidatura." };
+
+        const senderRole = state.activeRole;
+        const chatMessage: ChatMessage = {
+          id: crypto.randomUUID(),
+          applicationId: application.id,
+          jobId: job.id,
+          workerId: worker.id,
+          companyId: company.id,
+          senderRole,
+          senderName: senderRole === "empresa" ? company.establishmentName : worker.name,
+          body: text,
+          createdAt: new Date().toISOString(),
+          readByWorker: senderRole === "trabalhador",
+          readByCompany: senderRole === "empresa"
+        };
+        const targetRole: UserRole = senderRole === "empresa" ? "trabalhador" : "empresa";
+        const notification = {
+          id: crypto.randomUUID(),
+          title: "Nova mensagem no chat",
+          body: `${chatMessage.senderName}: ${text.slice(0, 80)}${text.length > 80 ? "..." : ""}`,
+          role: targetRole,
+          createdAt: chatMessage.createdAt,
+          read: false
+        };
+
+        commit((current) => ({
+          ...current,
+          chatMessages: [chatMessage, ...(current.chatMessages ?? [])],
+          notifications: [notification, ...current.notifications]
+        }));
+
+        if (supabaseMarketplaceEnabled) {
+          const userId = targetRole === "empresa" ? company.id : worker.id;
+          publishRemoteNotification(userId, notification);
+        }
+
+        return { ok: true, message: "Mensagem enviada." };
       },
       subscribeProfessional() {
         commit((current) => ({

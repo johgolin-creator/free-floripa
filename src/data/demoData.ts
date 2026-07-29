@@ -403,6 +403,7 @@ export const initialState: AppState = {
   ],
   favoriteWorkerIds: ["worker-1", "worker-2"],
   notifications,
+  chatMessages: [],
   subscription: {
     plan: "Gratuito",
     creditsRemaining: 4,
