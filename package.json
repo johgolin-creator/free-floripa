@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.24.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/prepare-sites-build.mjs",
@@ -27,12 +28,12 @@
     "@capacitor/cli": "8.4.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.20",
+    "@vitejs/plugin-react": "4.7.0",
+    "autoprefixer": "10.5.4",
     "eslint": "^9.16.0",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.16",
-    "typescript": "^5.6.3",
-    "vite": "^6.0.3"
+    "postcss": "8.5.20",
+    "tailwindcss": "3.4.19",
+    "typescript": "5.9.3",
+    "vite": "6.4.3"
   }
 }
