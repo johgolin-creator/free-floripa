@@ -1,11 +1,21 @@
-import { CalendarDays, Clock, Lock, MapPin, Users } from "lucide-react";
+import { CalendarDays, Clock, Lock, MapPin, Star, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, pluralize } from "../lib/format";
 import { getOpenSlots } from "../lib/rules";
 import type { Job } from "../lib/types";
 
-export function JobCard({ job, compact = false }: { job: Job; compact?: boolean }) {
+export function JobCard({
+  job,
+  compact = false,
+  matchLabel,
+  matchScore
+}: {
+  job: Job;
+  compact?: boolean;
+  matchLabel?: string;
+  matchScore?: number;
+}) {
   const { state } = useAppStore();
   const company = state.companies.find((item) => item.id === job.companyId);
   const openSlots = getOpenSlots(job);
@@ -20,6 +30,7 @@ export function JobCard({ job, compact = false }: { job: Job; compact?: boolean 
             {job.urgent && <span className="badge urgent">URGENTE</span>}
             <span className="badge">{job.function}</span>
             <span className="badge">{job.paymentMethod}</span>
+            {matchLabel && <span className={matchScore && matchScore >= 62 ? "badge bg-aqua-100 text-aqua-700" : "badge bg-slate-100 text-slate-600"}><Star size={14} /> {matchLabel}</span>}
           </div>
           <h3 className="text-lg font-black leading-snug text-navy-950">{job.title}</h3>
           <p className="text-sm font-semibold text-slate-600">{canViewFullJob ? company?.establishmentName : "Empresa verificada"}</p>
@@ -52,6 +63,18 @@ export function JobCard({ job, compact = false }: { job: Job; compact?: boolean 
           <Users size={16} /> {pluralize(openSlots, "vaga", "vagas")}
         </span>
       </div>
+
+      {typeof matchScore === "number" && !compact && (
+        <div className="job-match-bar">
+          <div>
+            <span>Combinação com seu perfil</span>
+            <strong>{Math.min(100, matchScore)}%</strong>
+          </div>
+          <div>
+            <span style={{ width: `${Math.min(100, matchScore)}%` }} />
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
         <span className="text-sm font-semibold text-slate-600">{job.candidates} candidatos</span>

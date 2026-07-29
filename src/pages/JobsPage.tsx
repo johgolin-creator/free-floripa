@@ -1,43 +1,72 @@
-import { useMemo, useState } from "react";
-import { Filter, Lock, RotateCcw } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { BriefcaseBusiness, CalendarDays, Filter, Lock, MapPin, RotateCcw, Search, Star, WalletCards, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { JobCard } from "../components/JobCard";
 import { SectionHeader } from "../components/SectionHeader";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
-import { isJobOpenForApplications } from "../lib/rules";
-import type { JobFunction, Neighborhood } from "../lib/types";
+import { getFunctionExperience, isJobOpenForApplications } from "../lib/rules";
+import type { Job, JobFunction, Neighborhood, WorkerProfile } from "../lib/types";
+
+type SortOption = "Melhor combinação" | "Mais recentes" | "Maior diária" | "Mais próximas" | "Urgentes";
+
+const sortOptions: SortOption[] = ["Melhor combinação", "Mais recentes", "Maior diária", "Mais próximas", "Urgentes"];
 
 export function JobsPage() {
-  const { state } = useAppStore();
+  const { state, currentWorker } = useAppStore();
   const [functionFilter, setFunctionFilter] = useState<JobFunction | "Todas">("Todas");
   const [neighborhoodFilter, setNeighborhoodFilter] = useState<Neighborhood | "Todos">("Todos");
   const [dateFilter, setDateFilter] = useState("");
   const [minValue, setMinValue] = useState("");
   const [experienceFilter, setExperienceFilter] = useState("");
   const [urgentOnly, setUrgentOnly] = useState(false);
+  const [compatibleOnly, setCompatibleOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>("Melhor combinação");
   const canViewFullJobs = state.subscription.plan === "Profissional";
 
-  const filteredJobs = useMemo(() => {
+  const scoredJobs = useMemo(() => {
     const experience = normalizeSearch(experienceFilter);
 
     return state.jobs
+      .map((job) => ({
+        job,
+        match: getJobMatch(job, currentWorker)
+      }))
       .filter((job) => {
-        if (!isJobOpenForApplications(job)) return false;
-        const byFunction = functionFilter === "Todas" || job.function === functionFilter;
-        const byNeighborhood = neighborhoodFilter === "Todos" || job.neighborhood === neighborhoodFilter;
-        const byDate = !dateFilter || job.date === dateFilter;
-        const byValue = !minValue || job.dailyValue >= Number(minValue);
-        const byExperience = !experience || normalizeSearch(job.requiredExperience).includes(experience);
-        const byUrgency = !urgentOnly || job.urgent;
-        return byFunction && byNeighborhood && byDate && byValue && byExperience && byUrgency;
+        if (!isJobOpenForApplications(job.job)) return false;
+        const byFunction = functionFilter === "Todas" || job.job.function === functionFilter;
+        const byNeighborhood = neighborhoodFilter === "Todos" || job.job.neighborhood === neighborhoodFilter;
+        const byDate = !dateFilter || job.job.date === dateFilter;
+        const byValue = !minValue || job.job.dailyValue >= Number(minValue);
+        const byExperience = !experience || normalizeSearch(job.job.requiredExperience).includes(experience);
+        const byUrgency = !urgentOnly || job.job.urgent;
+        const byCompatibility = !compatibleOnly || job.match.compatible;
+        return byFunction && byNeighborhood && byDate && byValue && byExperience && byUrgency && byCompatibility;
       })
       .sort((a, b) => {
-        if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
-        return `${a.date} ${a.startsAt}`.localeCompare(`${b.date} ${b.startsAt}`);
+        if (sortBy === "Maior diária") return b.job.dailyValue - a.job.dailyValue;
+        if (sortBy === "Mais próximas") return a.job.distanceKm - b.job.distanceKm;
+        if (sortBy === "Urgentes") {
+          if (a.job.urgent !== b.job.urgent) return a.job.urgent ? -1 : 1;
+          return `${a.job.date} ${a.job.startsAt}`.localeCompare(`${b.job.date} ${b.job.startsAt}`);
+        }
+        if (sortBy === "Melhor combinação") {
+          if (a.match.score !== b.match.score) return b.match.score - a.match.score;
+          if (a.job.urgent !== b.job.urgent) return a.job.urgent ? -1 : 1;
+        }
+        return `${a.job.date} ${a.job.startsAt}`.localeCompare(`${b.job.date} ${b.job.startsAt}`);
       });
-  }, [state.jobs, functionFilter, neighborhoodFilter, dateFilter, minValue, experienceFilter, urgentOnly]);
+  }, [state.jobs, currentWorker, functionFilter, neighborhoodFilter, dateFilter, minValue, experienceFilter, urgentOnly, compatibleOnly, sortBy]);
+
+  const filteredJobs = scoredJobs.map((item) => item.job);
+  const openJobs = state.jobs.filter(isJobOpenForApplications);
+  const dashboard = {
+    open: openJobs.length,
+    compatible: openJobs.filter((job) => getJobMatch(job, currentWorker).compatible).length,
+    urgent: openJobs.filter((job) => job.urgent).length,
+    bestDaily: openJobs.reduce((max, job) => Math.max(max, job.dailyValue), 0)
+  };
 
   const activeFilters = [
     functionFilter !== "Todas" && `Função: ${functionFilter}`,
@@ -45,7 +74,9 @@ export function JobsPage() {
     dateFilter && `Data: ${dateFilter}`,
     minValue && `Mínimo: R$ ${minValue}`,
     experienceFilter.trim() && `Experiência: ${experienceFilter.trim()}`,
-    urgentOnly && "Somente urgentes"
+    urgentOnly && "Somente urgentes",
+    compatibleOnly && "Boa combinação",
+    sortBy !== "Melhor combinação" && `Ordem: ${sortBy}`
   ].filter((item): item is string => Boolean(item));
 
   function clearFilters() {
@@ -55,6 +86,8 @@ export function JobsPage() {
     setMinValue("");
     setExperienceFilter("");
     setUrgentOnly(false);
+    setCompatibleOnly(false);
+    setSortBy("Melhor combinação");
   }
 
   return (
@@ -64,6 +97,22 @@ export function JobsPage() {
         title="Turnos e diárias disponíveis"
         description="Filtre por função, bairro, data, urgência, valor mínimo e experiência exigida."
       />
+
+      <section className="jobs-hero">
+        <div>
+          <span className="section-eyebrow">Busca inteligente</span>
+          <h2>Encontre vagas que combinam com o seu perfil</h2>
+          <p>
+            O Free Floripa cruza profissão, distância, urgência e valor da diária para colocar as melhores oportunidades no topo.
+          </p>
+        </div>
+        <div className="jobs-hero-metrics">
+          <HeroMetric icon={<BriefcaseBusiness size={19} />} label="abertas" value={String(dashboard.open)} />
+          <HeroMetric icon={<Star size={19} />} label="boas combinações" value={String(dashboard.compatible)} />
+          <HeroMetric icon={<Zap size={19} />} label="urgentes" value={String(dashboard.urgent)} />
+          <HeroMetric icon={<WalletCards size={19} />} label="maior diária" value={dashboard.bestDaily > 0 ? `R$ ${dashboard.bestDaily}` : "R$ 0"} />
+        </div>
+      </section>
 
       {!canViewFullJobs && (
         <section className="mb-5 rounded-lg border border-aqua-200 bg-aqua-50 p-4">
@@ -84,7 +133,17 @@ export function JobsPage() {
         </section>
       )}
 
-      <section className="soft-panel mb-5 grid gap-3 p-4 md:grid-cols-6">
+      <section className="jobs-filter-panel">
+        <div className="jobs-filter-title">
+          <div>
+            <h3><Search size={18} /> Buscar oportunidades</h3>
+            <p>Use os filtros para encontrar turnos compatíveis e evitar candidaturas fora do seu perfil.</p>
+          </div>
+          <span className="badge min-h-11 px-4">
+            <Filter size={17} /> {filteredJobs.length} resultado{filteredJobs.length === 1 ? "" : "s"}
+          </span>
+        </div>
+        <div className="jobs-filter-grid">
         <label className="label md:col-span-2">
           Função
           <select className="input" value={functionFilter} onChange={(event) => setFunctionFilter(event.target.value as JobFunction | "Todas")}>
@@ -120,20 +179,30 @@ export function JobsPage() {
             placeholder="Ex.: alto fluxo, drinks, limpeza"
           />
         </label>
+        <label className="label">
+          Ordenar
+          <select className="input" value={sortBy} onChange={(event) => setSortBy(event.target.value as SortOption)}>
+            {sortOptions.map((item) => (
+              <option key={item}>{item}</option>
+            ))}
+          </select>
+        </label>
         <label className="flex min-h-11 items-center gap-2 text-sm font-bold text-slate-600 md:col-span-2">
           <input type="checkbox" checked={urgentOnly} onChange={(event) => setUrgentOnly(event.target.checked)} className="h-5 w-5 accent-aqua-500" />
           Mostrar somente vagas urgentes
         </label>
-        <div className="flex flex-wrap items-center gap-2 md:col-span-4 md:justify-end">
+        <label className="flex min-h-11 items-center gap-2 text-sm font-bold text-slate-600 md:col-span-2">
+          <input type="checkbox" checked={compatibleOnly} onChange={(event) => setCompatibleOnly(event.target.checked)} className="h-5 w-5 accent-aqua-500" />
+          Mostrar apenas boa combinação
+        </label>
+        <div className="flex flex-wrap items-center gap-2 md:col-span-2 md:justify-end">
           <button type="button" onClick={clearFilters} className="secondary">
             <RotateCcw size={17} /> Limpar
           </button>
-          <span className="badge min-h-11 px-4">
-            <Filter size={17} /> {filteredJobs.length} resultados
-          </span>
+        </div>
         </div>
         {activeFilters.length > 0 && (
-          <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3 md:col-span-6">
+          <div className="jobs-active-filters">
             {activeFilters.map((item) => (
               <span key={item} className="badge bg-aqua-100 text-aqua-700">
                 {item}
@@ -144,11 +213,11 @@ export function JobsPage() {
       </section>
 
       {filteredJobs.length === 0 ? (
-        <EmptyState title="Nenhuma vaga encontrada" text="Ajuste os filtros para visualizar mais oportunidades em Florianópolis." />
+        <EmptyState title="Nenhuma vaga encontrada" text="Tente remover um filtro, reduzir o valor mínimo ou desmarcar boa combinação para visualizar mais oportunidades." />
       ) : (
         <div className="grid gap-4">
-          {filteredJobs.map((job) => (
-            <JobCard key={job.id} job={job} />
+          {scoredJobs.map(({ job, match }) => (
+            <JobCard key={job.id} job={job} matchLabel={match.label} matchScore={match.score} />
           ))}
         </div>
       )}
@@ -162,4 +231,36 @@ function normalizeSearch(value: string) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
+}
+
+function getJobMatch(job: Job, worker: WorkerProfile) {
+  const functionExperience = getFunctionExperience(worker, job.function);
+  const declaredFunction = Boolean(functionExperience);
+  const distanceOk = job.distanceKm <= worker.maxDistanceKm;
+  const sameNeighborhood = job.neighborhood === worker.neighborhood;
+  const highReliability = worker.attendanceRate >= 90 && worker.punctualityRate >= 90;
+  const score =
+    (declaredFunction ? 45 : 0) +
+    (sameNeighborhood ? 18 : distanceOk ? 10 : 0) +
+    (job.urgent ? 8 : 0) +
+    (job.dailyValue >= 250 ? 8 : 0) +
+    (highReliability ? 6 : 0) +
+    (functionExperience?.verified ? 10 : 0) +
+    (functionExperience && functionExperience.level !== "Iniciante" ? 5 : 0);
+
+  if (!declaredFunction) return { compatible: false, score, label: "Adicione esta função ao perfil" };
+  if (!distanceOk) return { compatible: false, score, label: "Fora da distância definida" };
+  if (score >= 80) return { compatible: true, score, label: "Ótima combinação" };
+  if (score >= 62) return { compatible: true, score, label: "Boa combinação" };
+  return { compatible: true, score, label: "Compatível" };
+}
+
+function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <span className="jobs-hero-metric">
+      <span>{icon}</span>
+      <strong>{value}</strong>
+      <small>{label}</small>
+    </span>
+  );
 }

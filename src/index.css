@@ -1017,3 +1017,79 @@ a {
 .urgent-form-hero p {
   @apply mt-1 font-semibold leading-5 text-slate-600;
 }
+
+.jobs-hero {
+  @apply mb-5 grid gap-5 rounded-lg border border-slate-200/70 bg-white/95 p-5 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_520px] lg:items-center;
+}
+
+.jobs-hero h2 {
+  @apply mt-2 text-2xl font-black leading-tight text-navy-950 md:text-3xl;
+}
+
+.jobs-hero p {
+  @apply mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600;
+}
+
+.jobs-hero-metrics {
+  @apply grid grid-cols-2 gap-2;
+}
+
+.jobs-hero-metric {
+  @apply grid min-h-28 gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3;
+}
+
+.jobs-hero-metric > span {
+  @apply inline-flex h-9 w-9 items-center justify-center rounded-lg bg-navy-950 text-aqua-300;
+}
+
+.jobs-hero-metric strong {
+  @apply text-2xl font-black text-navy-950;
+}
+
+.jobs-hero-metric small {
+  @apply text-xs font-black uppercase text-slate-500;
+}
+
+.jobs-filter-panel {
+  @apply mb-5 grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+}
+
+.jobs-filter-title {
+  @apply grid gap-3 border-b border-slate-100 pb-3 md:grid-cols-[1fr_auto] md:items-start;
+}
+
+.jobs-filter-title h3 {
+  @apply flex items-center gap-2 font-black text-navy-950;
+}
+
+.jobs-filter-title p {
+  @apply mt-1 text-sm font-semibold leading-6 text-slate-600;
+}
+
+.jobs-filter-grid {
+  @apply grid gap-3 md:grid-cols-6;
+}
+
+.jobs-active-filters {
+  @apply flex flex-wrap gap-2 border-t border-slate-100 pt-3;
+}
+
+.job-match-bar {
+  @apply grid gap-2 rounded-lg bg-slate-50 p-3;
+}
+
+.job-match-bar > div:first-child {
+  @apply flex items-center justify-between gap-3 text-xs font-black uppercase text-slate-500;
+}
+
+.job-match-bar strong {
+  @apply text-sm text-navy-950;
+}
+
+.job-match-bar > div:last-child {
+  @apply h-2 overflow-hidden rounded-lg bg-white;
+}
+
+.job-match-bar > div:last-child span {
+  @apply block h-full rounded-lg bg-aqua-500;
+}
