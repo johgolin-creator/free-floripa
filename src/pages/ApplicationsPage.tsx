@@ -1,6 +1,17 @@
 import { Link } from "react-router-dom";
 import { useState, type ReactNode } from "react";
-import { BriefcaseBusiness, CalendarDays, Lock, MapPin, MessageCircle, Phone, XCircle } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  CalendarDays,
+  ClipboardCheck,
+  Clock3,
+  Lock,
+  MapPin,
+  MessageCircle,
+  Phone,
+  UserCheck,
+  XCircle
+} from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
 import { useAppStore } from "../lib/store";
@@ -8,11 +19,20 @@ import { formatCurrency, formatDate, formatDateTime, getWhatsAppUrl } from "../l
 import type { Application, Job, WorkShift } from "../lib/types";
 
 const cancelableStatuses: Application["status"][] = ["Enviada", "Em análise"];
+const filters = ["Todas", "Aguardando", "Aprovadas", "Histórico"] as const;
 
 export function ApplicationsPage() {
   const { state, currentWorker, updateApplicationStatus } = useAppStore();
   const [message, setMessage] = useState("");
+  const [filter, setFilter] = useState<(typeof filters)[number]>("Todas");
   const applications = state.applications.filter((application) => application.workerId === currentWorker.id);
+  const filteredApplications = applications.filter((application) => matchesFilter(application, filter));
+  const stats = {
+    total: applications.length,
+    waiting: applications.filter((application) => application.status === "Enviada" || application.status === "Em análise").length,
+    approved: applications.filter((application) => application.status === "Aprovada").length,
+    completed: applications.filter((application) => application.status === "Trabalho concluído").length
+  };
 
   function cancelApplication(application: Application) {
     const result = updateApplicationStatus(application.id, "Cancelada");
@@ -30,8 +50,41 @@ export function ApplicationsPage() {
       {applications.length === 0 ? (
         <EmptyState title="Nenhuma candidatura enviada" text="Busque vagas disponíveis e envie sua primeira candidatura." />
       ) : (
-        <div className="grid gap-3">
-          {applications.map((application) => {
+        <div className="grid gap-4">
+          <section className="worker-hero">
+            <div>
+              <span className="section-eyebrow">Sua busca por trabalho</span>
+              <h2>Cada candidatura com status e próximo passo claro</h2>
+              <p>
+                Veja quais empresas ainda estão analisando, quais turnos foram aprovados e onde o contato já está liberado.
+              </p>
+            </div>
+            <div className="worker-hero-metrics">
+              <HeroMetric icon={<ClipboardCheck size={19} />} label="enviadas" value={String(stats.total)} />
+              <HeroMetric icon={<Clock3 size={19} />} label="aguardando" value={String(stats.waiting)} />
+              <HeroMetric icon={<UserCheck size={19} />} label="aprovadas" value={String(stats.approved)} />
+              <HeroMetric icon={<BriefcaseBusiness size={19} />} label="concluídas" value={String(stats.completed)} />
+            </div>
+          </section>
+
+          <section className="worker-filter-panel">
+            <div className="worker-filter-buttons">
+              {filters.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setFilter(item)}
+                  className={`worker-filter-button ${filter === item ? "is-active" : ""}`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {filteredApplications.length === 0 ? (
+            <EmptyState title="Nada neste filtro" text="Troque o filtro para acompanhar outras candidaturas." />
+          ) : filteredApplications.map((application) => {
             const job = state.jobs.find((item) => item.id === application.jobId);
             const company = state.companies.find((item) => item.id === job?.companyId);
             const shift = state.shifts.find((item) => item.jobId === job?.id && item.workerId === currentWorker.id);
@@ -40,26 +93,26 @@ export function ApplicationsPage() {
             if (!job) return null;
 
             return (
-              <article key={application.id} className="card grid gap-3 p-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <article key={application.id} className="worker-application-card">
+                <div className="worker-card-head">
                   <div>
                     <div className="mb-2 flex flex-wrap gap-2">
                       <span className={getStatusClass(application.status)}>{application.status}</span>
                       <span className="badge">{job.function}</span>
                       <span className="badge">{formatCurrency(job.dailyValue)}</span>
                     </div>
-                    <h3 className="font-black text-navy-950">{job.title}</h3>
+                    <h3>{job.title}</h3>
                     <p className="text-sm text-slate-600">
                       {company?.establishmentName} - {job.neighborhood} - {formatDate(job.date)}
                     </p>
                     <p className="mt-1 text-xs font-semibold text-slate-500">Enviada em {formatDateTime(application.createdAt)}</p>
                   </div>
-                  <strong className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-navy-950">{getNextStep(application, shift)}</strong>
+                  <strong className="worker-next-step">{getNextStep(application, shift)}</strong>
                 </div>
 
                 <ApplicationFlow application={application} shift={shift} />
 
-                <div className="grid gap-2 md:grid-cols-3">
+                <div className="worker-info-grid">
                   <Info icon={<CalendarDays size={16} />} label="Horário" value={`${job.startsAt} às ${job.endsAt}`} />
                   <Info icon={<MapPin size={16} />} label="Local" value={contactUnlocked ? job.fullAddress : job.approximateAddress} />
                   <Info icon={<BriefcaseBusiness size={16} />} label="Pagamento" value={job.paymentMethod} />
@@ -67,7 +120,7 @@ export function ApplicationsPage() {
 
                 <div className="grid gap-2 md:grid-cols-[1fr_auto] md:items-center">
                   {contactUnlocked && company ? (
-                    <div className="flex flex-wrap gap-3 rounded-lg bg-aqua-100 p-3 text-sm font-semibold text-slate-600">
+                    <div className="worker-contact-panel">
                       <span className="flex items-center gap-1.5"><Phone size={15} /> {company.phone}</span>
                       <a
                         className="inline-flex items-center gap-1.5 font-black text-aqua-700"
@@ -79,19 +132,19 @@ export function ApplicationsPage() {
                       </a>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-500">
+                    <div className="worker-locked-note">
                       <Lock size={16} /> Contato liberado após aprovação.
                     </div>
                   )}
-                  <div className="grid gap-2 sm:grid-cols-2 md:flex">
-                    <Link to={`/app/vagas/${job.id}`} className="secondary">
+                  <div className="worker-action-row">
+                    <Link to={`/app/vagas/${job.id}`} className="company-action">
                       Ver detalhes
                     </Link>
                     <button
                       type="button"
                       onClick={() => cancelApplication(application)}
                       disabled={!canCancel}
-                      className="danger"
+                      className="company-action company-action-danger"
                     >
                       <XCircle size={17} /> Cancelar
                     </button>
@@ -110,10 +163,10 @@ function ApplicationFlow({ application, shift }: { application: Application; shi
   const steps = getApplicationSteps(application, shift);
 
   return (
-    <div className="grid gap-2 rounded-lg bg-slate-50 p-3">
-      <div className="grid gap-2 md:grid-cols-5">
+    <div className="worker-flow">
+      <div className="worker-step-grid">
         {steps.map((step) => (
-          <span key={step.label} className={`rounded-lg border p-2 text-xs font-bold ${getStepClass(step.state)}`}>
+          <span key={step.label} className={`worker-step ${getStepClass(step.state)}`}>
             <span className="block text-[0.65rem] uppercase text-slate-500">{step.kicker}</span>
             {step.label}
           </span>
@@ -171,6 +224,15 @@ function getNextStep(application: Application, shift: WorkShift | undefined) {
   return "Candidatura recusada";
 }
 
+function matchesFilter(application: Application, filter: (typeof filters)[number]) {
+  if (filter === "Aguardando") return application.status === "Enviada" || application.status === "Em análise";
+  if (filter === "Aprovadas") return application.status === "Aprovada";
+  if (filter === "Histórico") {
+    return ["Trabalho concluído", "Recusada", "Cancelada", "Falta registrada"].includes(application.status);
+  }
+  return true;
+}
+
 function getStatusClass(status: Application["status"]) {
   if (status === "Aprovada" || status === "Trabalho concluído") return "badge bg-aqua-100 text-aqua-700";
   if (status === "Recusada" || status === "Cancelada" || status === "Falta registrada") return "badge bg-red-50 text-alert";
@@ -186,11 +248,21 @@ function getStepClass(state: StepState) {
 
 function Info({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
+    <div className="worker-info-tile">
       <span className="flex items-center gap-1.5 text-xs font-black uppercase text-slate-500">
         {icon} {label}
       </span>
       <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
     </div>
+  );
+}
+
+function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <span className="worker-hero-metric">
+      <span>{icon}</span>
+      <strong>{value}</strong>
+      <small>{label}</small>
+    </span>
   );
 }

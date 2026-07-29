@@ -753,3 +753,99 @@ a {
 .schedule-worker-actions {
   @apply grid gap-2 sm:grid-cols-3 lg:w-[420px];
 }
+
+.worker-hero {
+  @apply mb-4 grid gap-5 rounded-lg border border-slate-200/70 bg-white/95 p-5 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_520px] lg:items-center;
+}
+
+.worker-hero h2 {
+  @apply mt-2 text-2xl font-black leading-tight text-navy-950 md:text-3xl;
+}
+
+.worker-hero p {
+  @apply mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600;
+}
+
+.worker-hero-metrics {
+  @apply grid grid-cols-2 gap-2;
+}
+
+.worker-hero-metric {
+  @apply grid min-h-28 gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3;
+}
+
+.worker-hero-metric > span {
+  @apply inline-flex h-9 w-9 items-center justify-center rounded-lg bg-navy-950 text-aqua-300;
+}
+
+.worker-hero-metric strong {
+  @apply text-2xl font-black text-navy-950;
+}
+
+.worker-hero-metric small {
+  @apply text-xs font-black uppercase text-slate-500;
+}
+
+.worker-filter-panel {
+  @apply rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+}
+
+.worker-filter-buttons {
+  @apply grid grid-cols-2 gap-2 md:flex md:flex-wrap;
+}
+
+.worker-filter-button {
+  @apply min-h-10 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700;
+}
+
+.worker-filter-button.is-active {
+  @apply border-navy-950 bg-navy-950 text-white shadow-soft;
+}
+
+.worker-application-card {
+  @apply grid gap-4 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+}
+
+.worker-card-head {
+  @apply grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start;
+}
+
+.worker-card-head h3 {
+  @apply text-xl font-black text-navy-950;
+}
+
+.worker-next-step {
+  @apply rounded-lg bg-slate-50 px-3 py-2 text-sm text-navy-950;
+}
+
+.worker-flow {
+  @apply grid gap-2 rounded-lg bg-slate-50 p-3;
+}
+
+.worker-step-grid {
+  @apply grid gap-2 md:grid-cols-5;
+}
+
+.worker-step {
+  @apply rounded-lg border p-2 text-xs font-bold;
+}
+
+.worker-info-grid {
+  @apply grid gap-2 md:grid-cols-3;
+}
+
+.worker-info-tile {
+  @apply rounded-lg border border-slate-200 bg-white p-3 shadow-sm;
+}
+
+.worker-contact-panel {
+  @apply grid gap-2 rounded-lg border border-aqua-100 bg-aqua-50 p-3 text-sm font-semibold text-slate-600 md:items-center;
+}
+
+.worker-locked-note {
+  @apply flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-500;
+}
+
+.worker-action-row {
+  @apply grid gap-2 sm:grid-cols-2 lg:flex;
+}

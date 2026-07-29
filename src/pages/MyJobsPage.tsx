@@ -3,6 +3,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock,
+  ClipboardCheck,
   LogIn,
   LogOut,
   Mail,
@@ -10,6 +11,7 @@ import {
   MessageCircle,
   Phone,
   Shirt,
+  UserCheck,
   WalletCards
 } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
@@ -57,6 +59,12 @@ export function MyJobsPage() {
     if (tab === "Concluídos") return item.application.status === "Trabalho concluído" || item.shift?.status === "Finalizou o turno";
     return item.application.status === "Cancelada" || item.application.status === "Falta registrada";
   });
+  const agendaStats = {
+    next: workItems.filter((item) => item.application.status === "Aprovada" && item.shift?.status === "Ainda não chegou").length,
+    active: workItems.filter((item) => item.shift?.status === "Fez check-in").length,
+    done: workItems.filter((item) => item.application.status === "Trabalho concluído" || item.shift?.status === "Finalizou o turno").length,
+    issues: workItems.filter((item) => item.application.status === "Cancelada" || item.application.status === "Falta registrada").length
+  };
 
   function doCheckIn(item: WorkItem) {
     checkIn(item.job.id, currentWorker.id);
@@ -77,16 +85,25 @@ export function MyJobsPage() {
       />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
 
-      <section className="mb-4 grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-4">
-        <Mini label="próximos" value={String(workItems.filter((item) => item.application.status === "Aprovada" && item.shift?.status === "Ainda não chegou").length)} />
-        <Mini label="em andamento" value={String(workItems.filter((item) => item.shift?.status === "Fez check-in").length)} />
-        <Mini label="concluídos" value={String(workItems.filter((item) => item.application.status === "Trabalho concluído" || item.shift?.status === "Finalizou o turno").length)} />
-        <Mini label="ocorrências" value={String(workItems.filter((item) => item.application.status === "Cancelada" || item.application.status === "Falta registrada").length)} />
+      <section className="worker-hero">
+        <div>
+          <span className="section-eyebrow">Agenda do freelancer</span>
+          <h2>Turnos confirmados com ação rápida no dia do serviço</h2>
+          <p>
+            Veja próximos trabalhos, faça check-in, registre check-out e consulte endereço, uniforme e contato da empresa.
+          </p>
+        </div>
+        <div className="worker-hero-metrics">
+          <HeroMetric icon={<CalendarDays size={19} />} label="próximos" value={String(agendaStats.next)} />
+          <HeroMetric icon={<Clock size={19} />} label="em andamento" value={String(agendaStats.active)} />
+          <HeroMetric icon={<ClipboardCheck size={19} />} label="concluídos" value={String(agendaStats.done)} />
+          <HeroMetric icon={<UserCheck size={19} />} label="ocorrências" value={String(agendaStats.issues)} />
+        </div>
       </section>
 
-      <div className="mb-4 grid grid-cols-2 gap-2 md:flex">
+      <div className="worker-filter-buttons mb-4">
         {tabs.map((item) => (
-          <button key={item} type="button" onClick={() => setTab(item)} className={tab === item ? "primary" : "secondary"}>
+          <button key={item} type="button" onClick={() => setTab(item)} className={`worker-filter-button ${tab === item ? "is-active" : ""}`}>
             {item}
           </button>
         ))}
@@ -104,51 +121,51 @@ export function MyJobsPage() {
             const done = application.status === "Trabalho concluído" || shift?.status === "Finalizou o turno";
 
             return (
-              <article key={application.id} className="card grid gap-4 p-4">
-                <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
+              <article key={application.id} className="worker-application-card">
+                <div className="worker-card-head">
                   <div>
                     <div className="mb-2 flex flex-wrap gap-2">
                       <span className={getStatusClass(application, shift)}>{getWorkStatus(application, shift)}</span>
                       <span className="badge">{job.function}</span>
                       <span className="badge">{formatCurrency(job.dailyValue)}</span>
                     </div>
-                    <h3 className="font-black text-navy-950">{job.title}</h3>
+                    <h3>{job.title}</h3>
                     <p className="text-sm font-semibold text-slate-600">
                       {company?.establishmentName ?? "Empresa"} - {job.neighborhood} - {formatDate(job.date)}
                     </p>
                     <p className="mt-1 text-xs font-semibold text-slate-500">{getGuidance(application, shift)}</p>
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-2 lg:flex">
+                  <div className="worker-action-row">
                     {waiting && (
-                      <button type="button" onClick={() => doCheckIn(item)} className="primary">
+                      <button type="button" onClick={() => doCheckIn(item)} className="company-action company-action-primary">
                         <LogIn size={17} /> Check-in
                       </button>
                     )}
                     {checkedIn && (
-                      <button type="button" onClick={() => doCheckOut(item)} className="primary">
+                      <button type="button" onClick={() => doCheckOut(item)} className="company-action company-action-primary">
                         <LogOut size={17} /> Check-out
                       </button>
                     )}
-                    <button type="button" onClick={() => setSelectedItem(item)} className="secondary">
+                    <button type="button" onClick={() => setSelectedItem(item)} className="company-action">
                       <Clock size={17} /> Detalhes
                     </button>
                   </div>
                 </div>
 
-                <div className="grid gap-2 md:grid-cols-3">
+                <div className="worker-info-grid">
                   <Info icon={<CalendarDays size={16} />} label="Horário" value={`${job.startsAt} às ${job.endsAt}`} />
                   <Info icon={<MapPin size={16} />} label="Endereço" value={waiting ? job.approximateAddress : job.fullAddress} />
                   <Info icon={<Shirt size={16} />} label="Uniforme" value={job.uniform} />
                 </div>
 
                 {company && application.status !== "Cancelada" && (
-                  <div className="grid gap-2 rounded-lg bg-aqua-100 p-3 md:grid-cols-[1fr_auto] md:items-center">
+                  <div className="worker-contact-panel md:grid-cols-[1fr_auto]">
                     <div className="flex flex-wrap gap-3 text-sm font-semibold text-slate-600">
                       <span className="flex items-center gap-1.5"><Phone size={15} /> {company.phone}</span>
                       <span className="flex items-center gap-1.5"><Mail size={15} /> {company.email}</span>
                     </div>
                     <a
-                      className="primary"
+                      className="company-action company-action-primary"
                       href={getWhatsAppUrl(company.phone, `Olá, sou ${currentWorker.name}. Estou confirmado no turno ${job.title}.`)}
                       target="_blank"
                       rel="noreferrer"
@@ -211,22 +228,23 @@ function getStatusClass(application: Application, shift: WorkShift | undefined) 
   return "badge";
 }
 
-function Mini({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="rounded-lg bg-white p-3">
-      <strong className="block text-lg font-black text-navy-950">{value}</strong>
-      <span className="text-xs font-black uppercase text-slate-500">{label}</span>
-    </span>
-  );
-}
-
 function Info({ label, value, icon }: { label: string; value: string; icon?: ReactNode }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
+    <div className="worker-info-tile">
       <span className="flex items-center gap-1.5 text-xs font-black uppercase text-slate-500">
         {icon} {label}
       </span>
       <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
     </div>
+  );
+}
+
+function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <span className="worker-hero-metric">
+      <span>{icon}</span>
+      <strong>{value}</strong>
+      <small>{label}</small>
+    </span>
   );
 }
