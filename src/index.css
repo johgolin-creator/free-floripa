@@ -1093,3 +1093,71 @@ a {
 .job-match-bar > div:last-child span {
   @apply block h-full rounded-lg bg-aqua-500;
 }
+
+.smart-dashboard-hero {
+  @apply grid gap-5 rounded-lg border border-slate-200/70 bg-white/95 p-5 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_520px] lg:items-center;
+}
+
+.smart-dashboard-hero h2 {
+  @apply mt-2 text-2xl font-black leading-tight text-navy-950 md:text-3xl;
+}
+
+.smart-dashboard-hero p {
+  @apply mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600;
+}
+
+.smart-dashboard-actions {
+  @apply mt-4 grid gap-2 sm:grid-cols-2 md:flex;
+}
+
+.smart-dashboard-metrics {
+  @apply grid grid-cols-2 gap-2;
+}
+
+.smart-dashboard-metric {
+  @apply grid min-h-28 gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3;
+}
+
+.smart-dashboard-metric > span {
+  @apply inline-flex h-9 w-9 items-center justify-center rounded-lg bg-navy-950 text-aqua-300;
+}
+
+.smart-dashboard-metric.is-alert > span {
+  @apply bg-alert text-white;
+}
+
+.smart-dashboard-metric strong {
+  @apply text-2xl font-black text-navy-950;
+}
+
+.smart-dashboard-metric small {
+  @apply text-xs font-black uppercase text-slate-500;
+}
+
+.smart-panel {
+  @apply grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+}
+
+.smart-panel-head {
+  @apply flex items-center justify-between gap-3;
+}
+
+.smart-panel-head h3 {
+  @apply font-black text-navy-950;
+}
+
+.smart-panel-head span {
+  @apply grid h-8 min-w-8 place-items-center rounded-lg bg-aqua-50 px-2 text-sm font-black text-aqua-700;
+}
+
+.smart-action-item {
+  @apply flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm font-bold text-slate-600 transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700;
+}
+
+.smart-action-item svg {
+  @apply shrink-0 text-aqua-700;
+}
+
+.smart-empty-text {
+  @apply rounded-lg bg-slate-50 p-3 text-sm font-semibold leading-6 text-slate-500;
+}

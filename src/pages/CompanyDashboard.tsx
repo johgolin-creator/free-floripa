@@ -2,10 +2,13 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import {
   AlertTriangle,
+  Bell,
   BriefcaseBusiness,
+  CalendarCheck,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
+  Clock3,
   MapPin,
   Plus,
   Search,
@@ -21,8 +24,8 @@ import { SectionHeader } from "../components/SectionHeader";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 import type { CreateJobInput, UrgentReplacementInput } from "../lib/store";
-import { formatCurrency } from "../lib/format";
-import { getJobStatus } from "../lib/rules";
+import { formatCurrency, formatDate } from "../lib/format";
+import { getJobStatus, getOpenSlots } from "../lib/rules";
 import type { JobFunction, Neighborhood, PaymentMethod } from "../lib/types";
 
 const requiredJobFieldGroups = [
@@ -65,6 +68,18 @@ export function CompanyDashboard() {
   });
   const confirmed = companyApplications.filter((application) => application.status === "Aprovada").length;
   const absences = companyApplications.filter((application) => application.status === "Falta registrada").length;
+  const today = new Date().toISOString().slice(0, 10);
+  const pendingApplications = companyApplications.filter((application) => application.status === "Enviada" || application.status === "Em análise");
+  const todayJobs = companyJobs
+    .filter((job) => job.date === today && getJobStatus(job) !== "Cancelada" && getJobStatus(job) !== "Rascunho")
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  const todaySchedules = (state.companySchedules ?? [])
+    .filter((schedule) => schedule.companyId === currentCompany.id && schedule.date === today && schedule.status !== "Cancelada")
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  const incompleteJobs = openJobs
+    .filter((job) => getOpenSlots(job) > 0)
+    .sort((a, b) => getOpenSlots(b) - getOpenSlots(a));
+  const nextJob = todayJobs[0] ?? [...openJobs].sort((a, b) => `${a.date} ${a.startsAt}`.localeCompare(`${b.date} ${b.startsAt}`))[0];
 
   return (
     <div className="grid gap-5">
@@ -93,6 +108,28 @@ export function CompanyDashboard() {
 
       {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
 
+      <section className="smart-dashboard-hero">
+        <div>
+          <span className="section-eyebrow">Central de hoje</span>
+          <h2>{nextJob ? `Próximo foco: ${nextJob.title}` : "Nenhuma operação ativa hoje"}</h2>
+          <p>
+            {nextJob
+              ? `${formatDate(nextJob.date)} - ${nextJob.startsAt} às ${nextJob.endsAt}, ${nextJob.neighborhood}.`
+              : "Crie uma vaga ou monte uma escala para começar a organizar a equipe."}
+          </p>
+          <div className="smart-dashboard-actions">
+            <Link to="/app/candidatos" className="company-action company-action-primary"><UsersRound size={17} /> Ver candidatos</Link>
+            <Link to="/app/escala" className="company-action"><CalendarCheck size={17} /> Ver escala</Link>
+          </div>
+        </div>
+        <div className="smart-dashboard-metrics">
+          <SmartMetric icon={<Bell size={19} />} label="pendentes" value={String(pendingApplications.length)} tone={pendingApplications.length > 0 ? "alert" : "normal"} />
+          <SmartMetric icon={<CalendarDays size={19} />} label="vagas hoje" value={String(todayJobs.length)} />
+          <SmartMetric icon={<Clock3 size={19} />} label="escalas hoje" value={String(todaySchedules.length)} />
+          <SmartMetric icon={<AlertTriangle size={19} />} label="a preencher" value={String(incompleteJobs.reduce((total, job) => total + getOpenSlots(job), 0))} tone={incompleteJobs.length > 0 ? "alert" : "normal"} />
+        </div>
+      </section>
+
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="card p-4">
           <h3 className="mb-3 font-black text-navy-950">Vagas abertas</h3>
@@ -120,16 +157,53 @@ export function CompanyDashboard() {
           )}
         </div>
 
-        <div className="soft-panel p-4">
-          <h3 className="mb-3 font-black text-navy-950">Operação</h3>
-          <div className="grid gap-2 text-sm font-semibold">
-            <Link to="/app/candidatos" className="secondary justify-start"><UsersRound size={17} /> Candidatos recebidos</Link>
-            <Link to="/app/profissionais" className="secondary justify-start"><Search size={17} /> Banco de profissionais</Link>
-            <Link to="/app/minhas-vagas" className="secondary justify-start"><BriefcaseBusiness size={17} /> Vagas publicadas</Link>
-            <Link to="/app/equipe" className="secondary justify-start"><CheckCircle2 size={17} /> Favoritos e contratados</Link>
-            <Link to="/app/equipe" className="secondary justify-start"><ClipboardList size={17} /> Histórico de contratações</Link>
-          </div>
-        </div>
+        <aside className="grid content-start gap-4">
+          <section className="smart-panel">
+            <div className="smart-panel-head">
+              <h3>Pendências rápidas</h3>
+              <span>{pendingApplications.length}</span>
+            </div>
+            <div className="grid gap-2">
+              {pendingApplications.slice(0, 3).map((application) => {
+                const job = companyJobs.find((item) => item.id === application.jobId);
+                return (
+                  <Link key={application.id} to={`/app/candidatos?vaga=${application.jobId}`} className="smart-action-item">
+                    <ClipboardList size={16} />
+                    <span>{job?.title ?? "Vaga"}: {application.status}</span>
+                  </Link>
+                );
+              })}
+              {pendingApplications.length === 0 && <p className="smart-empty-text">Nenhum candidato aguardando decisão agora.</p>}
+            </div>
+          </section>
+
+          <section className="smart-panel">
+            <div className="smart-panel-head">
+              <h3>Vagas a completar</h3>
+              <span>{incompleteJobs.length}</span>
+            </div>
+            <div className="grid gap-2">
+              {incompleteJobs.slice(0, 3).map((job) => (
+                <Link key={job.id} to={`/app/candidatos?vaga=${job.id}`} className="smart-action-item">
+                  <UsersRound size={16} />
+                  <span>{job.title}: faltam {getOpenSlots(job)}</span>
+                </Link>
+              ))}
+              {incompleteJobs.length === 0 && <p className="smart-empty-text">Todas as vagas abertas estão completas ou sem pendência.</p>}
+            </div>
+          </section>
+
+          <section className="soft-panel p-4">
+            <h3 className="mb-3 font-black text-navy-950">Operação</h3>
+            <div className="grid gap-2 text-sm font-semibold">
+              <Link to="/app/candidatos" className="secondary justify-start"><UsersRound size={17} /> Candidatos recebidos</Link>
+              <Link to="/app/profissionais" className="secondary justify-start"><Search size={17} /> Banco de profissionais</Link>
+              <Link to="/app/minhas-vagas" className="secondary justify-start"><BriefcaseBusiness size={17} /> Vagas publicadas</Link>
+              <Link to="/app/equipe" className="secondary justify-start"><CheckCircle2 size={17} /> Favoritos e contratados</Link>
+              <Link to="/app/equipe" className="secondary justify-start"><ClipboardList size={17} /> Histórico de contratações</Link>
+            </div>
+          </section>
+        </aside>
       </section>
 
       {showJobForm && (
@@ -164,6 +238,26 @@ function Metric({ icon, label, value }: { icon: ReactNode; label: string; value:
       <strong className="block text-2xl font-black text-navy-950">{value}</strong>
       <span className="text-sm font-semibold text-slate-500">{label}</span>
     </article>
+  );
+}
+
+function SmartMetric({
+  icon,
+  label,
+  value,
+  tone = "normal"
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  tone?: "normal" | "alert";
+}) {
+  return (
+    <span className={`smart-dashboard-metric ${tone === "alert" ? "is-alert" : ""}`}>
+      <span>{icon}</span>
+      <strong>{value}</strong>
+      <small>{label}</small>
+    </span>
   );
 }
 
