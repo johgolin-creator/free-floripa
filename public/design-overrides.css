@@ -478,3 +478,256 @@ body {
   background: #fff;
   box-shadow: 0 8px 18px rgba(8, 38, 61, 0.06);
 }
+
+.plan-hero {
+  display: grid;
+  gap: 1.25rem;
+  border: 1px solid rgba(167, 244, 229, 0.45);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #061827 0%, #08263d 62%, #0d866f 150%);
+  color: #fff;
+  padding: 1.25rem;
+  box-shadow: 0 24px 70px rgba(8, 38, 61, 0.16);
+}
+
+@media (min-width: 1024px) {
+  .plan-hero {
+    grid-template-columns: 1.15fr 0.85fr;
+    align-items: center;
+  }
+}
+
+.plan-hero-copy h2 {
+  max-width: 48rem;
+  margin-top: 1rem;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1.08;
+  font-weight: 950;
+}
+
+@media (min-width: 768px) {
+  .plan-hero-copy h2 {
+    font-size: 3rem;
+  }
+}
+
+.plan-hero-copy p {
+  max-width: 42rem;
+  margin-top: 0.75rem;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.6;
+}
+
+@media (min-width: 768px) {
+  .plan-hero-copy p {
+    font-size: 1rem;
+  }
+}
+
+.plan-unlock-grid {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .plan-unlock-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.plan-unlock-grid span {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0 0.75rem;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 900;
+}
+
+.plan-price-card {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: #fff;
+  color: #08263d;
+  padding: 1.25rem;
+  box-shadow: 0 24px 70px rgba(8, 38, 61, 0.16);
+}
+
+.plan-star {
+  display: inline-flex;
+  width: 3rem;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #061827;
+  color: #73ead2;
+}
+
+.plan-price-card h3 {
+  margin-top: 1rem;
+  color: #08263d;
+  font-size: 1.5rem;
+  font-weight: 950;
+}
+
+.plan-price {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.plan-price strong {
+  color: #08263d;
+  font-size: 2.25rem;
+  font-weight: 950;
+}
+
+.plan-price span {
+  padding-bottom: 0.25rem;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 900;
+}
+
+.plan-price-card p {
+  margin-top: 0.5rem;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.plan-card {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid rgba(215, 228, 232, 0.88);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 1.25rem;
+  box-shadow: 0 14px 34px rgba(8, 38, 61, 0.08);
+}
+
+.plan-card-featured {
+  border-color: #a7f4e5;
+  background: #effef9;
+}
+
+.plan-card h3 {
+  margin-top: 0.75rem;
+  color: #08263d;
+  font-size: 1.5rem;
+  font-weight: 950;
+}
+
+.plan-card p {
+  margin-top: 0.25rem;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.plan-card-price {
+  border-radius: 8px;
+  background: #fff;
+  color: #08263d;
+  padding: 0.5rem 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 950;
+  box-shadow: 0 8px 18px rgba(8, 38, 61, 0.06);
+}
+
+.plan-benefit {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.plan-benefit svg {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: #0d866f;
+}
+
+.plan-note {
+  display: grid;
+  gap: 1.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 1.25rem;
+  box-shadow: 0 14px 34px rgba(8, 38, 61, 0.08);
+}
+
+@media (min-width: 1024px) {
+  .plan-note {
+    grid-template-columns: 0.9fr 1.1fr;
+    align-items: flex-start;
+  }
+}
+
+.plan-note h3 {
+  margin-top: 0.75rem;
+  color: #08263d;
+  font-size: 1.5rem;
+  font-weight: 950;
+}
+
+.plan-note p {
+  margin-top: 0.5rem;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.plan-note-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .plan-note-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.plan-mini-feature {
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 1rem;
+}
+
+.plan-mini-feature div {
+  margin-bottom: 0.75rem;
+  color: #0d866f;
+}
+
+.plan-mini-feature strong {
+  color: #08263d;
+  font-size: 0.875rem;
+  font-weight: 950;
+}
+
+.plan-mini-feature p {
+  margin-top: 0.25rem;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
