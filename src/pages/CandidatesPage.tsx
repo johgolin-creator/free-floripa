@@ -23,7 +23,7 @@ import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
 import { getOpenSlots } from "../lib/rules";
-import type { Application, Job, WorkShift } from "../lib/types";
+import type { Application, Job, WorkShift, WorkerProfile } from "../lib/types";
 
 const terminalStatuses = ["Recusada", "Cancelada", "Trabalho concluído", "Falta registrada"];
 
@@ -32,6 +32,12 @@ type ReviewTarget = {
   job: Job;
   workerId: string;
   workerName: string;
+};
+
+type PendingReview = {
+  application: Application;
+  job: Job;
+  worker: WorkerProfile;
 };
 
 export function CandidatesPage() {
@@ -49,6 +55,10 @@ export function CandidatesPage() {
   const selectedApplications = selectedJob ? applications.filter((application) => application.jobId === selectedJob.id) : [];
   const stats = useMemo(() => getJobStats(selectedJob, selectedApplications), [selectedApplications, selectedJob]);
   const generalStats = useMemo(() => getCompanyCandidateStats(applications), [applications]);
+  const pendingReviews = useMemo(
+    () => getPendingReviews(applications, state.jobs, state.workers),
+    [applications, state.jobs, state.workers]
+  );
 
   useEffect(() => {
     if (companyJobs.length > 0 && !companyJobs.some((job) => job.id === selectedJobId)) {
@@ -118,6 +128,47 @@ export function CandidatesPage() {
               <HeroMetric icon={<CalendarCheck size={19} />} label="aprovados" value={String(generalStats.approved)} />
             </div>
           </section>
+
+          {pendingReviews.length > 0 && (
+            <section className="candidate-selector-panel border-aqua-200 bg-aqua-50/70">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+                  <Star size={18} /> Avaliações pendentes
+                </div>
+                <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
+                  Finalize o pós-turno avaliando quem já concluiu o trabalho. Isso melhora a reputação do profissional e deixa o histórico da empresa organizado.
+                </p>
+              </div>
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {pendingReviews.slice(0, 6).map(({ application, job, worker }) => (
+                  <article key={application.id} className="rounded-lg border border-white bg-white p-3 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <strong className="block truncate text-sm text-navy-950">{worker.name}</strong>
+                        <p className="mt-1 truncate text-xs font-bold text-slate-500">{job.title}</p>
+                        <span className="mt-2 inline-flex rounded-full bg-aqua-50 px-2 py-1 text-[0.7rem] font-black uppercase text-aqua-700">
+                          Trabalho concluído
+                        </span>
+                      </div>
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-navy-950 text-aqua-300">
+                        <ClipboardCheck size={17} />
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchParams({ vaga: job.id });
+                        openReview(application, job, worker.id, worker.name);
+                      }}
+                      className="primary mt-3 w-full"
+                    >
+                      <Star size={16} /> Avaliar agora
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="candidate-selector-panel">
             <label className="label">
@@ -370,6 +421,24 @@ function getCompanyCandidateStats(applications: Application[]) {
     approved: applications.filter((item) => item.status === "Aprovada").length,
     completed: applications.filter((item) => item.status === "Trabalho concluído").length
   };
+}
+
+function getPendingReviews(applications: Application[], jobs: Job[], workers: WorkerProfile[]): PendingReview[] {
+  return applications
+    .filter((application) => application.status === "Trabalho concluído")
+    .map((application) => {
+      const job = jobs.find((item) => item.id === application.jobId);
+      const worker = workers.find((item) => item.id === application.workerId);
+      if (!job || !worker) return null;
+
+      const reviewed = worker.reviews.some(
+        (review) => review.jobId === job.id && review.applicationId === application.id
+      );
+
+      return reviewed ? null : { application, job, worker };
+    })
+    .filter((item): item is PendingReview => Boolean(item))
+    .sort((a, b) => b.application.createdAt.localeCompare(a.application.createdAt));
 }
 
 function getShiftLabel(application: Application, shift: WorkShift | undefined) {
