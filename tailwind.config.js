@@ -13,13 +13,20 @@ export default {
           950: "#061827"
         },
         aqua: {
+          50: "#ecfffb",
           100: "#d8fff4",
+          200: "#aefbea",
           300: "#73ead2",
           500: "#16c7a7",
           700: "#0d866f"
         },
         coral: "#ff6b57",
-        amber: "#f4b740",
+        amber: {
+          50: "#fff8e7",
+          100: "#ffefc1",
+          200: "#ffdf88",
+          DEFAULT: "#f4b740"
+        },
         ice: "#f6fafb",
         alert: "#d83b3b"
       },
