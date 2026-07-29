@@ -21,22 +21,22 @@ import { useAppStore } from "../lib/store";
 import { getCompanyProfileCompletion, getWorkerProfileCompletion } from "../lib/profileCompletion";
 
 const workerLinks = [
-  { to: "/app/trabalhador", label: "Início", icon: Home },
-  { to: "/app/vagas", label: "Vagas", icon: Search },
-  { to: "/app/candidaturas", label: "Candidaturas", icon: ClipboardList },
-  { to: "/app/trabalhos", label: "Meus trabalhos", icon: CalendarCheck },
-  { to: "/app/planos", label: "Planos", icon: CreditCard },
-  { to: "/app/perfil-trabalhador", label: "Perfil", icon: UserRound }
+  { to: "/app/trabalhador", label: "Início", mobileLabel: "Início", icon: Home },
+  { to: "/app/vagas", label: "Vagas", mobileLabel: "Vagas", icon: Search },
+  { to: "/app/candidaturas", label: "Candidaturas", mobileLabel: "Candid.", icon: ClipboardList },
+  { to: "/app/trabalhos", label: "Meus trabalhos", mobileLabel: "Trabalhos", icon: CalendarCheck },
+  { to: "/app/planos", label: "Planos", mobileLabel: "Planos", icon: CreditCard },
+  { to: "/app/perfil-trabalhador", label: "Perfil", mobileLabel: "Perfil", icon: UserRound }
 ];
 
 const companyLinks = [
-  { to: "/app/empresa", label: "Painel", icon: Home },
-  { to: "/app/minhas-vagas", label: "Minhas vagas", icon: BriefcaseBusiness },
-  { to: "/app/profissionais", label: "Banco", icon: Search },
-  { to: "/app/candidatos", label: "Candidatos", icon: UsersRound },
-  { to: "/app/escala", label: "Escala", icon: CalendarDays },
-  { to: "/app/equipe", label: "Minha equipe", icon: Star },
-  { to: "/app/perfil-empresa", label: "Perfil", icon: Building2 }
+  { to: "/app/empresa", label: "Painel", mobileLabel: "Painel", icon: Home },
+  { to: "/app/minhas-vagas", label: "Minhas vagas", mobileLabel: "Vagas", icon: BriefcaseBusiness },
+  { to: "/app/profissionais", label: "Banco", mobileLabel: "Banco", icon: Search },
+  { to: "/app/candidatos", label: "Candidatos", mobileLabel: "Cand.", icon: UsersRound },
+  { to: "/app/escala", label: "Escala", mobileLabel: "Escala", icon: CalendarDays },
+  { to: "/app/equipe", label: "Minha equipe", mobileLabel: "Equipe", icon: Star },
+  { to: "/app/perfil-empresa", label: "Perfil", mobileLabel: "Perfil", icon: Building2 }
 ];
 
 export function AppLayout() {
@@ -59,6 +59,8 @@ export function AppLayout() {
           : syncStatus === "salvando"
             ? "Salvando"
             : "Supabase";
+  const areaLabel = state.activeRole === "trabalhador" ? "Área do trabalhador" : "Área da empresa";
+  const identityName = state.activeRole === "trabalhador" ? currentWorker.name : currentCompany.establishmentName;
 
   if (!completion.complete && location.pathname !== profilePath) {
     return <Navigate to={profilePath} replace />;
@@ -110,9 +112,7 @@ export function AppLayout() {
             </NavLink>
             <div className="hidden md:block">
               <p className="text-xs font-bold uppercase text-aqua-700">A equipe que você precisa, quando você precisa.</p>
-              <h1 className="text-xl font-black text-navy-950">
-                {state.activeRole === "trabalhador" ? "Área do trabalhador" : "Área da empresa"}
-              </h1>
+              <h1 className="text-xl font-black text-navy-950">{identityName || areaLabel}</h1>
             </div>
             <div className="flex items-center gap-2">
               <span
@@ -146,12 +146,14 @@ export function AppLayout() {
             <NavLink
               key={link.to}
               to={link.to}
-              className={`grid min-h-16 place-items-center gap-1 px-0.5 text-center text-[0.62rem] font-black ${
-                active ? "bg-aqua-50 text-aqua-700" : "text-slate-500"
+              className={`grid min-h-16 place-items-center gap-1 border-t-2 px-0.5 text-center text-[0.62rem] font-black leading-tight transition ${
+                active ? "border-aqua-500 text-aqua-700" : "border-transparent text-slate-500"
               }`}
             >
-              <Icon size={19} />
-              <span>{link.label}</span>
+              <span className={`mobile-nav-icon ${active ? "bg-aqua-50" : "bg-transparent"}`}>
+                <Icon size={18} />
+              </span>
+              <span className="w-full truncate px-0.5">{link.mobileLabel}</span>
             </NavLink>
           );
         })}

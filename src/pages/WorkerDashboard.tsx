@@ -30,7 +30,7 @@ export function WorkerDashboard() {
         <Metric icon={<BadgeCheck />} label="Índice de confiabilidade" value={`${reliability}%`} />
       </div>
 
-      <section className="card grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-center">
+      <section className="soft-panel grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-center">
         <div>
           <h3 className="font-black text-navy-950">Acesso profissional</h3>
           <p className="text-sm text-slate-600">
@@ -77,7 +77,7 @@ export function WorkerDashboard() {
 
 function Metric({ icon, label, value }: { icon: ReactNode; label: string; value: string | number }) {
   return (
-    <article className="card p-4">
+    <article className="metric-card">
       <div className="mb-3 text-aqua-700">{icon}</div>
       <strong className="block text-2xl font-black text-navy-950">{value}</strong>
       <span className="text-sm font-semibold text-slate-500">{label}</span>

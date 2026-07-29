@@ -68,7 +68,7 @@ export function CompanyDashboard() {
           ) : (
           <div className="grid gap-3">
             {companyJobs.map((job) => (
-              <article key={job.id} className="rounded-lg border border-slate-200 p-3">
+              <article key={job.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <span className={job.urgent ? "badge urgent" : "badge"}>{job.urgent ? "URGENTE" : job.function}</span>
@@ -87,7 +87,7 @@ export function CompanyDashboard() {
           )}
         </div>
 
-        <div className="card p-4">
+        <div className="soft-panel p-4">
           <h3 className="mb-3 font-black text-navy-950">Operação</h3>
           <div className="grid gap-2 text-sm font-semibold">
             <Link to="/app/candidatos" className="secondary justify-start"><UsersRound size={17} /> Candidatos recebidos</Link>
@@ -126,7 +126,7 @@ export function CompanyDashboard() {
 
 function Metric({ icon, label, value }: { icon: ReactNode; label: string; value: string | number }) {
   return (
-    <article className="card p-4">
+    <article className="metric-card">
       <div className="mb-3 text-aqua-700">{icon}</div>
       <strong className="block text-2xl font-black text-navy-950">{value}</strong>
       <span className="text-sm font-semibold text-slate-500">{label}</span>

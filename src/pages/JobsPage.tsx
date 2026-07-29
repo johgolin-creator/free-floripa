@@ -84,7 +84,7 @@ export function JobsPage() {
         </section>
       )}
 
-      <section className="card mb-5 grid gap-3 p-4 md:grid-cols-6">
+      <section className="soft-panel mb-5 grid gap-3 p-4 md:grid-cols-6">
         <label className="label md:col-span-2">
           Função
           <select className="input" value={functionFilter} onChange={(event) => setFunctionFilter(event.target.value as JobFunction | "Todas")}>

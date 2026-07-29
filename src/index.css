@@ -45,7 +45,11 @@ a {
 }
 
 .card {
-  @apply rounded-lg border border-white/80 bg-white/95 shadow-soft ring-1 ring-slate-900/5 transition duration-200;
+  @apply rounded-lg border border-slate-200/70 bg-white/95 shadow-soft ring-1 ring-white/70 transition duration-200;
+}
+
+.soft-panel {
+  @apply rounded-lg border border-aqua-100/80 bg-gradient-to-r from-white to-aqua-50/70 shadow-soft ring-1 ring-white/80;
 }
 
 .input {
@@ -74,4 +78,75 @@ a {
 
 .urgent {
   @apply border-alert bg-alert text-white;
+}
+
+.section-heading {
+  @apply relative mb-6 flex flex-col gap-3 border-b border-slate-200/70 pb-4 md:flex-row md:items-end md:justify-between;
+}
+
+.section-heading::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 76px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #16c7a7 0%, #f4b740 58%, #ff6b57 100%);
+}
+
+.section-eyebrow {
+  @apply mb-2 inline-flex min-h-7 items-center rounded-full border border-aqua-200 bg-aqua-50 px-3 text-xs font-black uppercase text-aqua-700;
+}
+
+.metric-card {
+  @apply relative overflow-hidden rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70 transition duration-200;
+}
+
+.metric-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, #16c7a7, #f4b740);
+}
+
+.metric-tile {
+  @apply rounded-lg border border-slate-100 bg-slate-50/80 p-3;
+}
+
+.meta-pill {
+  @apply flex min-h-10 min-w-0 items-center gap-1.5 rounded-lg border border-slate-100 bg-slate-50/80 px-2.5 text-sm font-semibold text-slate-600;
+}
+
+.mobile-nav-icon {
+  @apply grid h-8 w-8 place-items-center rounded-lg transition;
+}
+
+.hero-brand-logo {
+  @apply h-auto w-full max-w-[210px] rounded-lg bg-white p-3 shadow-lift md:max-w-[230px];
+}
+
+.hero-section {
+  @apply relative overflow-hidden bg-navy-950 text-white;
+}
+
+.hero-bg {
+  @apply absolute inset-0 h-full w-full object-cover opacity-40;
+}
+
+.hero-content {
+  @apply relative mx-auto grid min-h-[500px] max-w-7xl content-center gap-5 px-4 py-10;
+}
+
+.hero-title {
+  @apply max-w-3xl text-5xl font-black leading-tight md:text-7xl;
+}
+
+.hero-copy {
+  @apply mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-200 md:text-lg;
+}
+
+.hero-actions {
+  @apply mt-6 grid gap-3 sm:flex;
 }

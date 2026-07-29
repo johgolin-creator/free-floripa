@@ -12,21 +12,21 @@ export function JobCard({ job, compact = false }: { job: Job; compact?: boolean 
   const canViewFullJob = state.subscription.plan === "Profissional";
 
   return (
-    <article className="card relative grid gap-4 overflow-hidden p-4 hover:-translate-y-0.5 hover:shadow-lift">
-      <div className="absolute inset-y-0 left-0 w-1 bg-aqua-500" />
-      <div className="flex items-start justify-between gap-3">
-        <div>
+    <article className="card relative grid gap-4 overflow-hidden p-4 pl-5 hover:-translate-y-0.5 hover:border-aqua-200 hover:shadow-lift">
+      <div className="absolute bottom-4 left-0 top-4 w-1 rounded-r-full bg-aqua-500" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <div className="mb-2 flex flex-wrap gap-2">
             {job.urgent && <span className="badge urgent">URGENTE</span>}
             <span className="badge">{job.function}</span>
             <span className="badge">{job.paymentMethod}</span>
           </div>
-          <h3 className="text-lg font-black text-navy-950">{job.title}</h3>
+          <h3 className="text-lg font-black leading-snug text-navy-950">{job.title}</h3>
           <p className="text-sm font-semibold text-slate-600">{canViewFullJob ? company?.establishmentName : "Empresa verificada"}</p>
         </div>
-        <div className="rounded-lg border border-aqua-100 bg-aqua-50 px-3 py-2 text-right">
-          <strong className="block text-lg text-navy-950">{formatCurrency(job.dailyValue)}</strong>
-          <span className="text-xs font-black uppercase text-aqua-700">diária</span>
+        <div className="w-fit rounded-lg bg-navy-950 px-3 py-2 text-left text-white shadow-soft sm:text-right">
+          <strong className="block text-lg text-white">{formatCurrency(job.dailyValue)}</strong>
+          <span className="text-xs font-black uppercase text-aqua-300">diária</span>
         </div>
       </div>
 
@@ -38,24 +38,24 @@ export function JobCard({ job, compact = false }: { job: Job; compact?: boolean 
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-2 text-sm font-semibold text-slate-600 md:grid-cols-4">
-        <span className="flex min-h-10 items-center gap-1.5 rounded-lg bg-slate-50 px-2">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        <span className="meta-pill">
           <MapPin size={16} /> {job.neighborhood}
         </span>
-        <span className="flex min-h-10 items-center gap-1.5 rounded-lg bg-slate-50 px-2">
+        <span className="meta-pill">
           <CalendarDays size={16} /> {formatDate(job.date)}
         </span>
-        <span className="flex min-h-10 items-center gap-1.5 rounded-lg bg-slate-50 px-2">
+        <span className="meta-pill">
           <Clock size={16} /> {job.startsAt} às {job.endsAt}
         </span>
-        <span className="flex min-h-10 items-center gap-1.5 rounded-lg bg-slate-50 px-2">
+        <span className="meta-pill">
           <Users size={16} /> {pluralize(openSlots, "vaga", "vagas")}
         </span>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
         <span className="text-sm font-semibold text-slate-600">{job.candidates} candidatos</span>
-        <Link to={`/app/vagas/${job.id}`} className="primary">
+        <Link to={`/app/vagas/${job.id}`} className="primary w-full sm:w-auto">
           {!canViewFullJob && <Lock size={17} />}
           {canViewFullJob ? "Ver vaga" : "Liberar vaga completa"}
         </Link>

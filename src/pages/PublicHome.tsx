@@ -51,24 +51,24 @@ export function PublicHome() {
       </header>
 
       <main>
-        <section className="relative overflow-hidden bg-navy-950 text-white">
+        <section className="hero-section relative overflow-hidden bg-navy-950 text-white">
           <img
             src="https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1900&q=80"
             alt=""
-            className="absolute inset-0 h-full w-full object-cover opacity-40"
+            className="hero-bg absolute inset-0 h-full w-full object-cover opacity-40"
           />
           <div className="hero-overlay absolute inset-0" />
-          <div className="relative mx-auto grid min-h-[560px] max-w-7xl content-center gap-5 px-4 py-10">
-            <img src={logoUrl} alt="Free Floripa" className="h-auto w-full max-w-[220px] rounded-lg bg-white p-3 shadow-lift md:max-w-[260px]" />
-            <div className="max-w-4xl">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-sm font-black text-aqua-100 shadow-soft backdrop-blur">
+          <div className="hero-content relative mx-auto grid min-h-[560px] max-w-7xl content-center gap-5 px-4 py-10">
+            <img src={logoUrl} alt="Free Floripa" className="hero-brand-logo" />
+            <div className="hero-text max-w-4xl">
+              <div className="hero-badge mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-sm font-black text-aqua-100 shadow-soft backdrop-blur">
                 <Waves size={17} /> Florianópolis pronta para turnos, diárias e eventos
               </div>
-              <h1 className="max-w-3xl text-5xl font-black leading-tight md:text-7xl">Free Floripa</h1>
-              <p className="mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-200 md:text-lg">
+              <h1 className="hero-title max-w-3xl text-5xl font-black leading-tight md:text-7xl">Free Floripa</h1>
+              <p className="hero-copy mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-200 md:text-lg">
                 A plataforma para empresas encontrarem mão de obra temporária com mais organização, histórico e nível de experiência por função.
               </p>
-              <div className="mt-6 grid gap-3 sm:flex">
+              <div className="hero-actions mt-6 grid gap-3 sm:flex">
                 <Link to="/cadastro-empresa" onClick={() => setRole("empresa")} className="primary">
                   Publicar vaga <ArrowRight size={18} />
                 </Link>

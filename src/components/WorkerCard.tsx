@@ -28,12 +28,12 @@ export function WorkerCard({
     : worker.functions.map((item) => getFunctionExperience(worker, item)).filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   return (
-    <article className="card grid gap-4 p-4">
-      <div className="flex gap-3">
-        <img src={worker.avatarUrl} alt="" className="h-16 w-16 rounded-lg object-cover" />
-        <div className="min-w-0">
+    <article className="card grid gap-4 p-4 hover:border-aqua-200 hover:shadow-lift">
+      <div className="flex items-start gap-3">
+        <img src={worker.avatarUrl} alt="" className="h-16 w-16 rounded-lg object-cover ring-4 ring-aqua-50" />
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-black text-navy-950">{worker.name}</h3>
+            <h3 className="truncate font-black text-navy-950">{worker.name}</h3>
             {worker.verified && (
               <span className="inline-flex items-center gap-1 text-xs font-bold text-aqua-700">
                 <CheckCircle2 size={14} /> Verificado
@@ -68,21 +68,21 @@ export function WorkerCard({
       {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
 
       <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
-        <span className="rounded-lg bg-slate-50 p-2">
+        <span className="metric-tile">
           <strong className="block text-navy-950">{worker.rating.toFixed(1)}</strong>
           <span className="flex items-center gap-1 text-slate-500">
             <Star size={14} /> nota
           </span>
         </span>
-        <span className="rounded-lg bg-slate-50 p-2">
+        <span className="metric-tile">
           <strong className="block text-navy-950">{worker.completedJobs}</strong>
           <span className="text-slate-500">trabalhos</span>
         </span>
-        <span className="rounded-lg bg-slate-50 p-2">
+        <span className="metric-tile">
           <strong className="block text-navy-950">{worker.attendanceRate}%</strong>
           <span className="text-slate-500">comparecimento</span>
         </span>
-        <span className="rounded-lg bg-aqua-100 p-2">
+        <span className="metric-tile bg-aqua-50">
           <strong className="block text-navy-950">{reliability}%</strong>
           <span className="text-slate-600">confiabilidade</span>
         </span>
@@ -91,6 +91,7 @@ export function WorkerCard({
       {showActions && (
         <div className="grid gap-2 sm:grid-cols-3">
           <button type="button" onClick={() => setShowProfile(true)} className="secondary">
+            <Award size={17} />
             Ver perfil
           </button>
           <button
@@ -105,6 +106,7 @@ export function WorkerCard({
             }}
             className="primary"
           >
+            <CheckCircle2 size={17} />
             Aprovar
           </button>
           <button type="button" onClick={() => toggleFavorite(worker.id)} className="secondary">
