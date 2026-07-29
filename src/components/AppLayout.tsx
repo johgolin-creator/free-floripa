@@ -111,7 +111,7 @@ export function AppLayout() {
       </aside>
 
       <main className="min-w-0">
-        <header className="sticky top-0 z-20 border-b border-white/80 bg-white/85 px-4 py-3 shadow-sm backdrop-blur-xl md:px-8">
+        <header className="border-b border-white/80 bg-white/85 px-4 py-2 shadow-sm backdrop-blur-xl md:px-8">
           <div className="flex items-center justify-between gap-3">
             <NavLink to="/" className="flex items-center gap-2 md:hidden">
               <BrandLogo compact />
@@ -120,7 +120,7 @@ export function AppLayout() {
               <p className="text-xs font-bold uppercase text-aqua-700">A equipe que você precisa, quando você precisa.</p>
               <h1 className="text-xl font-black text-navy-950">{identityName || areaLabel}</h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <span
                 className={`hidden min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-black md:inline-flex ${
                   syncStatus === "erro" ? "bg-red-50 text-alert" : storageMode === "supabase" ? "bg-aqua-100 text-aqua-700" : "bg-slate-100 text-slate-500"
@@ -129,8 +129,8 @@ export function AppLayout() {
               >
                 <Cloud size={16} /> {syncLabel}
               </span>
-              <div className="w-52 max-w-full">
-                <RoleSwitcher />
+              <div className="max-w-full">
+                <RoleSwitcher compact />
               </div>
             </div>
           </div>
