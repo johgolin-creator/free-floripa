@@ -1,6 +1,21 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Edit3, Mail, MessageCircle, Phone, Plus, Save, Trash2, UserCheck, UserX } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardList,
+  Clock3,
+  Edit3,
+  Mail,
+  MessageCircle,
+  Phone,
+  Plus,
+  Save,
+  Trash2,
+  UserCheck,
+  UserX
+} from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
@@ -57,6 +72,15 @@ export function CompanySchedulePage() {
   const completedCount =
     scheduleApplications.filter((application) => application.status === "Trabalho concluído").length +
     companySchedules.filter((schedule) => schedule.companyId === currentCompany.id && schedule.status === "Concluída").length;
+  const manualTotal = companySchedules.filter((schedule) => schedule.companyId === currentCompany.id).length;
+  const todayTotal =
+    companySchedules.filter((schedule) => schedule.companyId === currentCompany.id && schedule.date === today).length +
+    companyJobs.filter((job) => job.date === today).length;
+  const openDemand =
+    companySchedules
+      .filter((schedule) => schedule.companyId === currentCompany.id && schedule.status !== "Concluída" && schedule.status !== "Cancelada")
+      .reduce((total, schedule) => total + schedule.quantity, 0) +
+    companyJobs.reduce((total, job) => total + getOpenSlots(job), 0);
 
   function runStatus(applicationId: string, status: Application["status"]) {
     const result = updateApplicationStatus(applicationId, status);
@@ -92,21 +116,37 @@ export function CompanySchedulePage() {
       />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
 
-      <section className="card mb-4 grid gap-3 p-4 xl:grid-cols-[1fr_auto] xl:items-end">
-        <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
-          <Stat label="escalas criadas" value={String(companySchedules.filter((schedule) => schedule.companyId === currentCompany.id).length)} />
+      <section className="schedule-hero">
+        <div>
+          <span className="section-eyebrow">Planejamento da operação</span>
+          <h2>Monte a equipe antes, acompanhe durante e feche depois</h2>
+          <p>
+            Separe escalas planejadas pela empresa das escalas automáticas das vagas, com check-in, conclusão e faltas no mesmo lugar.
+          </p>
+        </div>
+        <div className="schedule-hero-metrics">
+          <HeroMetric icon={<ClipboardList size={19} />} label="manuais" value={String(manualTotal)} />
+          <HeroMetric icon={<CalendarDays size={19} />} label="hoje" value={String(todayTotal)} />
+          <HeroMetric icon={<Clock3 size={19} />} label="em turno" value={String(checkedInCount)} />
+          <HeroMetric icon={<AlertTriangle size={19} />} label="a preencher" value={String(openDemand)} />
+        </div>
+      </section>
+
+      <section className="schedule-filter-panel">
+        <div className="schedule-stat-grid">
+          <Stat label="escalas criadas" value={String(manualTotal)} />
           <Stat label="confirmados" value={String(confirmedCount)} />
           <Stat label="em turno" value={String(checkedInCount)} />
           <Stat label="concluídos" value={String(completedCount)} />
         </div>
-        <div className="grid gap-2 md:grid-cols-[180px_1fr]">
+        <div className="schedule-filter-controls">
           <label className="label">
             Data
             <input className="input" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
           </label>
-          <div className="flex flex-wrap items-end gap-2">
+          <div className="schedule-filter-buttons">
             {filters.map((item) => (
-              <button key={item} type="button" onClick={() => setFilter(item)} className={filter === item ? "primary" : "secondary"}>
+              <button key={item} type="button" onClick={() => setFilter(item)} className={`schedule-filter-button ${filter === item ? "is-active" : ""}`}>
                 {item}
               </button>
             ))}
@@ -114,13 +154,13 @@ export function CompanySchedulePage() {
         </div>
       </section>
 
-      <section className="mb-5 grid gap-3">
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+      <section className="schedule-section">
+        <div className="schedule-section-heading">
           <div>
             <h3 className="text-lg font-black text-navy-950">Escalas criadas pelo contratante</h3>
             <p className="text-sm font-semibold text-slate-600">Use para planejar equipe antes de publicar vaga ou antes de alguém se candidatar.</p>
           </div>
-          <button type="button" onClick={() => setCreating(true)} className="secondary"><Plus size={17} /> Nova escala</button>
+          <button type="button" onClick={() => setCreating(true)} className="company-action"><Plus size={17} /> Nova escala</button>
         </div>
         {manualSchedules.length === 0 ? (
           <EmptyState title="Nenhuma escala criada" text="Clique em Criar escala para montar uma escala manual da empresa." />
@@ -138,7 +178,7 @@ export function CompanySchedulePage() {
         )}
       </section>
 
-      <section className="grid gap-3">
+      <section className="schedule-section">
         <div>
           <h3 className="text-lg font-black text-navy-950">Escala das vagas aprovadas</h3>
           <p className="text-sm font-semibold text-slate-600">Preenchida automaticamente quando candidatos forem aprovados em vagas.</p>
@@ -155,8 +195,8 @@ export function CompanySchedulePage() {
               const shifts = state.shifts.filter((shift) => shift.jobId === job.id);
 
               return (
-                <section key={job.id} className="card grid gap-4 p-4">
-                  <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
+                <section key={job.id} className="schedule-job-card">
+                  <div className="schedule-job-head">
                     <div>
                       <div className="mb-2 flex flex-wrap gap-2">
                         {job.urgent && <span className="badge urgent">URGENTE</span>}
@@ -164,12 +204,12 @@ export function CompanySchedulePage() {
                         <span className="badge">{job.function}</span>
                         <span className="badge">{formatCurrency(job.dailyValue)}</span>
                       </div>
-                      <h3 className="text-lg font-black text-navy-950">{job.title}</h3>
+                      <h3>{job.title}</h3>
                       <p className="text-sm font-semibold text-slate-600">
                         {formatDate(job.date)} - {job.startsAt} às {job.endsAt} - {job.neighborhood}
                       </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4 lg:w-[520px]">
+                    <div className="schedule-mini-grid">
                       <Mini label="confirmados" value={`${confirmed}/${job.quantity}`} />
                       <Mini label="em aberto" value={String(getOpenSlots(job))} />
                       <Mini label="check-in" value={String(shifts.filter((shift) => shift.status === "Fez check-in").length)} />
@@ -178,7 +218,7 @@ export function CompanySchedulePage() {
                   </div>
 
                   {getOpenSlots(job) > 0 && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-slate-700">
+                    <div className="schedule-alert">
                       Faltam {getOpenSlots(job)} profissional{getOpenSlots(job) === 1 ? "" : "is"} para completar esta escala.
                       <Link to={`/app/candidatos?vaga=${job.id}`} className="ml-2 font-black text-aqua-700">Ver candidatos</Link>
                     </div>
@@ -239,8 +279,8 @@ function ManualScheduleCard({
   onDelete: () => void;
 }) {
   return (
-    <article className="card grid gap-3 p-4">
-      <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
+    <article className="schedule-manual-card">
+      <div className="schedule-job-head">
         <div>
           <div className="mb-2 flex flex-wrap gap-2">
             <span className={getManualStatusClass(schedule.status)}>{schedule.status}</span>
@@ -254,12 +294,12 @@ function ManualScheduleCard({
           <p className="mt-1 text-sm text-slate-600">{schedule.location}</p>
           {schedule.notes && <p className="mt-2 text-sm leading-6 text-slate-600">{schedule.notes}</p>}
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:w-[260px]">
-          <button type="button" onClick={onEdit} className="primary"><Edit3 size={17} /> Editar</button>
-          <button type="button" onClick={onDelete} className="danger"><Trash2 size={17} /> Excluir</button>
+        <div className="schedule-card-actions">
+          <button type="button" onClick={onEdit} className="company-action company-action-primary"><Edit3 size={17} /> Editar</button>
+          <button type="button" onClick={onDelete} className="company-action company-action-danger"><Trash2 size={17} /> Excluir</button>
         </div>
       </div>
-      <div className="rounded-lg bg-slate-50 p-3">
+      <div className="schedule-team-box">
         <span className="text-xs font-black uppercase text-slate-500">Equipe prevista</span>
         {schedule.workerNames.length === 0 ? (
           <p className="mt-1 text-sm font-semibold text-slate-500">Nenhum nome adicionado ainda.</p>
@@ -372,7 +412,7 @@ function ScheduleWorker({
   const absence = application.status === "Falta registrada";
 
   return (
-    <article className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 lg:grid-cols-[1fr_auto] lg:items-center">
+    <article className="schedule-worker-card">
       <div className="flex min-w-0 gap-3">
         <img src={worker.avatarUrl} alt="" className="h-14 w-14 rounded-lg object-cover" />
         <div className="min-w-0">
@@ -398,7 +438,7 @@ function ScheduleWorker({
           </div>
         </div>
       </div>
-      <div className="grid gap-2 sm:grid-cols-3 lg:w-[420px]">
+      <div className="schedule-worker-actions">
         <button
           type="button"
           onClick={onCheckIn}
@@ -461,18 +501,28 @@ function getManualStatusClass(status: CompanyScheduleStatus) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <span className="rounded-lg bg-slate-50 p-3">
-      <strong className="block text-lg font-black text-navy-950">{value}</strong>
-      <span className="text-xs font-black uppercase text-slate-500">{label}</span>
+    <span className="schedule-stat-tile">
+      <strong>{value}</strong>
+      <span>{label}</span>
     </span>
   );
 }
 
 function Mini({ label, value }: { label: string; value: string }) {
   return (
-    <span className="rounded-lg bg-slate-50 p-2">
-      <strong className="block truncate text-sm font-black text-navy-950">{value}</strong>
-      <span className="text-[0.68rem] font-black uppercase text-slate-500">{label}</span>
+    <span className="schedule-mini-tile">
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <span className="schedule-hero-metric">
+      <span>{icon}</span>
+      <strong>{value}</strong>
+      <small>{label}</small>
     </span>
   );
 }

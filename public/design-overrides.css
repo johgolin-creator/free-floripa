@@ -1481,3 +1481,338 @@ body {
   font-size: 0.875rem;
   font-weight: 800;
 }
+
+.schedule-hero {
+  display: grid;
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(215, 228, 232, 0.88);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 1.25rem;
+  box-shadow: 0 14px 34px rgba(8, 38, 61, 0.08);
+}
+
+@media (min-width: 1024px) {
+  .schedule-hero {
+    grid-template-columns: 1fr 520px;
+    align-items: center;
+  }
+}
+
+.schedule-hero h2 {
+  margin-top: 0.5rem;
+  color: #08263d;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  font-weight: 950;
+}
+
+@media (min-width: 768px) {
+  .schedule-hero h2 {
+    font-size: 1.875rem;
+  }
+}
+
+.schedule-hero p {
+  margin-top: 0.5rem;
+  max-width: 42rem;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.schedule-hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.schedule-hero-metric {
+  display: grid;
+  min-height: 7rem;
+  gap: 0.25rem;
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 0.75rem;
+}
+
+.schedule-hero-metric > span {
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #061827;
+  color: #73ead2;
+}
+
+.schedule-hero-metric strong {
+  color: #08263d;
+  font-size: 1.5rem;
+  font-weight: 950;
+}
+
+.schedule-hero-metric small {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.schedule-filter-panel {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid rgba(215, 228, 232, 0.88);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 1rem;
+  box-shadow: 0 14px 34px rgba(8, 38, 61, 0.08);
+}
+
+@media (min-width: 1280px) {
+  .schedule-filter-panel {
+    grid-template-columns: 1fr auto;
+    align-items: end;
+  }
+}
+
+.schedule-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 768px) {
+  .schedule-stat-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.schedule-stat-tile {
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 0.75rem;
+}
+
+.schedule-stat-tile strong {
+  display: block;
+  color: #08263d;
+  font-size: 1.125rem;
+  font-weight: 950;
+}
+
+.schedule-stat-tile span {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.schedule-filter-controls {
+  display: grid;
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .schedule-filter-controls {
+    grid-template-columns: 180px 1fr;
+  }
+}
+
+.schedule-filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem;
+}
+
+.schedule-filter-button {
+  min-height: 2.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 1rem;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 950;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.schedule-filter-button:hover {
+  border-color: #a7f4e5;
+  background: #effef9;
+  color: #0d866f;
+}
+
+.schedule-filter-button.is-active {
+  border-color: #061827;
+  background: #061827;
+  color: #fff;
+  box-shadow: 0 14px 34px rgba(8, 38, 61, 0.08);
+}
+
+.schedule-section {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.schedule-section-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .schedule-section-heading {
+    flex-direction: row;
+    align-items: end;
+    justify-content: space-between;
+  }
+}
+
+.schedule-manual-card,
+.schedule-job-card {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid rgba(215, 228, 232, 0.88);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 1rem;
+  box-shadow: 0 14px 34px rgba(8, 38, 61, 0.08);
+}
+
+.schedule-job-head {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .schedule-job-head {
+    grid-template-columns: 1fr auto;
+    align-items: start;
+  }
+}
+
+.schedule-job-head h3 {
+  color: #08263d;
+  font-size: 1.125rem;
+  font-weight: 950;
+}
+
+.schedule-card-actions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .schedule-card-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .schedule-card-actions {
+    width: 260px;
+  }
+}
+
+.schedule-team-box {
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 0.75rem;
+}
+
+.schedule-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .schedule-mini-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .schedule-mini-grid {
+    width: 520px;
+  }
+}
+
+.schedule-mini-tile {
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 0.5rem;
+}
+
+.schedule-mini-tile strong {
+  display: block;
+  overflow: hidden;
+  color: #08263d;
+  font-size: 0.875rem;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-mini-tile span {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.schedule-alert {
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  background: #fffbeb;
+  padding: 0.75rem;
+  color: #334155;
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.schedule-worker-card {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.75rem;
+  box-shadow: 0 8px 18px rgba(8, 38, 61, 0.06);
+}
+
+@media (min-width: 1024px) {
+  .schedule-worker-card {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+}
+
+.schedule-worker-actions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .schedule-worker-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .schedule-worker-actions {
+    width: 420px;
+  }
+}
