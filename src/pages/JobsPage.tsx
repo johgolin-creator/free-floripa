@@ -23,7 +23,7 @@ export function JobsPage() {
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [compatibleOnly, setCompatibleOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("Melhor combinação");
-  const canViewFullJobs = state.subscription.plan === "Profissional";
+  const canViewFullJobs = state.subscription.plan !== "Gratuito";
 
   const scoredJobs = useMemo(() => {
     const experience = normalizeSearch(experienceFilter);

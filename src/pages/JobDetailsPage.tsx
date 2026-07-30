@@ -42,12 +42,12 @@ export function JobDetailsPage() {
   const confirmed = application?.status === "Aprovada" || application?.status === "Trabalho concluído";
   const workerExperience = getFunctionExperience(currentWorker, currentJob.function);
   const jobStatus = getJobStatus(currentJob);
-  const isProfessional = state.subscription.plan === "Profissional";
-  const canViewFullJob = isProfessional || confirmed;
+  const hasFullAccess = state.subscription.plan !== "Gratuito";
+  const canViewFullJob = hasFullAccess || confirmed;
   const unlockItems = ["Descrição completa", "Requisitos e benefícios", "Candidatura liberada", "Dados protegidos no momento certo"];
 
   function handleApply() {
-    if (!isProfessional) {
+    if (!hasFullAccess) {
       setMessage("Assine o plano profissional para ver a vaga completa e enviar candidatura.");
       setShowPlans(true);
       return;
@@ -78,7 +78,7 @@ export function JobDetailsPage() {
           }}
         >
           <span>
-            <strong>R$ 14,90</strong>
+            <strong>R$ 19,90</strong>
             <small>/mês</small>
           </span>
           <em>Ativar plano agora</em>

@@ -33,6 +33,14 @@ const professionalBenefits = [
   "Mais clareza antes de aceitar um turno"
 ];
 
+const plusBenefits = [
+  "Tudo do plano Profissional",
+  "Destaque de perfil para empresas",
+  "Mais prioridade em vagas urgentes",
+  "Visão completa de histórico e confiança",
+  "Preparado para recursos premium do app"
+];
+
 const unlockItems = [
   "Endereço e detalhes completos",
   "Requisitos e benefícios",
@@ -41,13 +49,20 @@ const unlockItems = [
 ];
 
 export function SubscriptionPage() {
-  const { state, subscribeProfessional } = useAppStore();
+  const { state, subscribeProfessional, subscribePlus } = useAppStore();
   const [message, setMessage] = useState("");
   const isProfessional = state.subscription.plan === "Profissional";
+  const isPlus = state.subscription.plan === "Plus";
+  const hasFullAccess = state.subscription.plan !== "Gratuito";
 
   function handleSubscribe() {
     subscribeProfessional();
     setMessage("Plano profissional ativado. As vagas completas foram liberadas.");
+  }
+
+  function handleSubscribePlus() {
+    subscribePlus();
+    setMessage("Plano Plus ativado. Você está com o acesso mais completo do Free Floripa.");
   }
 
   return (
@@ -70,9 +85,9 @@ export function SubscriptionPage() {
           <span className="badge bg-aqua-50 text-aqua-700">
             <CreditCard size={15} /> Plano atual: {state.subscription.plan}
           </span>
-          <h2>{isProfessional ? "Você já está com acesso completo" : "Trabalhe com mais informação e menos surpresa"}</h2>
+          <h2>{hasFullAccess ? "Você já está com acesso completo" : "Trabalhe com mais informação e menos surpresa"}</h2>
           <p>
-            O plano gratuito deixa você conhecer as oportunidades. O profissional mostra a vaga inteira e libera a candidatura para você escolher melhor onde vale a pena ir.
+            O plano gratuito deixa você conhecer as oportunidades. O Profissional libera a vaga inteira por R$ 19,90 e o Plus amplia o acesso por R$ 29,90.
           </p>
           <div className="plan-unlock-grid">
             {unlockItems.map((item) => (
@@ -89,29 +104,29 @@ export function SubscriptionPage() {
           </span>
           <h3>Profissional</h3>
           <div className="plan-price">
-            <strong>R$ 14,90</strong>
+            <strong>R$ 19,90</strong>
             <span>/mês</span>
           </div>
           <p>Ideal para quem quer se candidatar com segurança e acompanhar tudo pelo celular.</p>
-          <button type="button" onClick={handleSubscribe} disabled={isProfessional} className="primary w-full">
-            {isProfessional ? <CheckCircle2 size={17} /> : <Zap size={17} />}
-            {isProfessional ? "Plano ativo" : "Assinar agora"}
+          <button type="button" onClick={handleSubscribe} disabled={hasFullAccess} className="primary w-full">
+            {hasFullAccess ? <CheckCircle2 size={17} /> : <Zap size={17} />}
+            {hasFullAccess ? "Plano ativo" : "Assinar agora"}
           </button>
         </div>
       </section>
 
       <div className="grid gap-3 md:grid-cols-3">
-        <PlanStat icon={<Lock size={18} />} label="Vaga completa" value={isProfessional ? "Liberada" : "Bloqueada"} />
-        <PlanStat icon={<WalletCards size={18} />} label="Candidaturas" value={isProfessional ? "Sem limite" : `${state.subscription.creditsRemaining} crédito(s)`} />
+        <PlanStat icon={<Lock size={18} />} label="Vaga completa" value={hasFullAccess ? "Liberada" : "Bloqueada"} />
+        <PlanStat icon={<WalletCards size={18} />} label="Candidaturas" value={hasFullAccess ? "Sem limite" : `${state.subscription.creditsRemaining} crédito(s)`} />
         <PlanStat icon={<Clock3 size={18} />} label="Renovação" value={formatDate(state.subscription.renewalDate)} />
       </div>
 
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-4 lg:grid-cols-3">
         <PlanCard
           title="Gratuito"
           price="R$ 0"
           description="Para criar perfil, conhecer o app e ver prévias."
-          current={!isProfessional}
+          current={!hasFullAccess}
           benefits={freeBenefits}
           action={
             <Link to="/app/vagas" className="secondary w-full">
@@ -122,18 +137,36 @@ export function SubscriptionPage() {
         <PlanCard
           featured
           title="Profissional"
-          price="R$ 14,90"
+          price="R$ 19,90"
           description="Para ver vagas completas e se candidatar com mais confiança."
           current={isProfessional}
           benefits={professionalBenefits}
           action={
-            isProfessional ? (
+            hasFullAccess ? (
               <Link to="/app/vagas" className="primary w-full">
                 Buscar vagas completas <ArrowRight size={17} />
               </Link>
             ) : (
               <button type="button" onClick={handleSubscribe} className="primary w-full">
                 Assinar profissional <ArrowRight size={17} />
+              </button>
+            )
+          }
+        />
+        <PlanCard
+          title="Plus"
+          price="R$ 29,90"
+          description="Para quem quer o acesso mais completo e preparado para recursos premium."
+          current={isPlus}
+          benefits={plusBenefits}
+          action={
+            isPlus ? (
+              <Link to="/app/vagas" className="primary w-full">
+                Buscar vagas completas <ArrowRight size={17} />
+              </Link>
+            ) : (
+              <button type="button" onClick={handleSubscribePlus} className="primary w-full">
+                Assinar Plus <ArrowRight size={17} />
               </button>
             )
           }

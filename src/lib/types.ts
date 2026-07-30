@@ -180,7 +180,7 @@ export interface ChatMessage {
 }
 
 export interface SubscriptionState {
-  plan: "Gratuito" | "Profissional";
+  plan: "Gratuito" | "Profissional" | "Plus";
   creditsRemaining: number;
   renewalDate: string;
 }

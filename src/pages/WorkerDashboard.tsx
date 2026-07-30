@@ -54,7 +54,7 @@ export function WorkerDashboard() {
       />
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Metric icon={<ClipboardList />} label="Acesso a vagas" value={state.subscription.plan === "Profissional" ? "Completo" : "Prévia"} />
+        <Metric icon={<ClipboardList />} label="Acesso a vagas" value={state.subscription.plan !== "Gratuito" ? "Completo" : "Prévia"} />
         <Metric icon={<CreditCard />} label="Plano atual" value={state.subscription.plan} />
         <Metric icon={<Star />} label="Avaliação" value={currentWorker.rating.toFixed(1)} />
         <Metric icon={<BadgeCheck />} label="Índice de confiabilidade" value={`${reliability}%`} />

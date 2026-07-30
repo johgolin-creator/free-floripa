@@ -101,6 +101,7 @@ interface AppContextValue {
   markChatConversationRead: (applicationId: string) => void;
   sendChatMessage: (applicationId: string, body: string) => { ok: boolean; message: string };
   subscribeProfessional: () => void;
+  subscribePlus: () => void;
   buyCredits: () => void;
   addReview: (workerId: string, review: Omit<Review, "id">) => void;
 }
@@ -899,7 +900,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const job = state.jobs.find((item) => item.id === jobId);
         if (!job) return { ok: false, message: "Vaga não encontrada." };
 
-        if (state.subscription.plan !== "Profissional") {
+        if (state.subscription.plan === "Gratuito") {
           return {
             ok: false,
             message: "Assine o plano profissional para ver a vaga completa e enviar candidatura.",
@@ -933,7 +934,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           applications: [application, ...current.applications],
           jobs: current.jobs.map((item) => (item.id === jobId ? { ...item, candidates: item.candidates + 1 } : item)),
           subscription:
-            current.subscription.plan === "Profissional"
+            current.subscription.plan !== "Gratuito"
               ? current.subscription
               : { ...current.subscription, creditsRemaining: current.subscription.creditsRemaining - 1 },
           notifications: [
@@ -1292,6 +1293,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         commit((current) => ({
           ...current,
           subscription: { ...current.subscription, plan: "Profissional", creditsRemaining: 999 }
+        }));
+      },
+      subscribePlus() {
+        commit((current) => ({
+          ...current,
+          subscription: { ...current.subscription, plan: "Plus", creditsRemaining: 999 }
         }));
       },
       buyCredits() {
