@@ -22,9 +22,9 @@ import {
 } from "./supabaseMarketplace";
 import { getSupabaseStateKey, loadSupabaseState, saveSupabaseState, supabaseStateEnabled } from "./supabaseState";
 import {
+  applyRemoteToJobWithCoin,
   grantRemoteCoins,
   loadRemoteCoinAccount,
-  spendRemoteCoinForApplication,
   supabaseCoinsEnabled,
   unlockRemoteJobWithCoin,
   type CoinAccount
@@ -1017,18 +1017,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...current.notifications
           ]
         }));
-        if (supabaseMarketplaceEnabled) {
+        if (supabaseCoinsEnabled && user) {
+          setSyncStatus("salvando");
+          applyRemoteToJobWithCoin(user.id, currentWorker.id, jobId, application.id)
+            .then((account) => {
+              applyCoinAccount(account);
+              publishRemoteNotification(job.companyId, companyNotification);
+              setSyncError("");
+              setSyncStatus("sincronizado");
+            })
+            .catch((error) => {
+              commit((current) => ({
+                ...current,
+                applications: current.applications.filter((item) => item.id !== application.id),
+                jobs: current.jobs.map((item) =>
+                  item.id === jobId ? { ...item, candidates: Math.max(0, item.candidates - 1) } : item
+                ),
+                subscription: {
+                  ...current.subscription,
+                  creditsRemaining: current.subscription.creditsRemaining + 1
+                },
+                notifications: current.notifications.filter((item) => item.id !== companyNotification.id)
+              }));
+              setSyncError(error instanceof Error ? error.message : "Falha ao enviar candidatura com moeda.");
+              setSyncStatus("erro");
+            });
+        } else if (supabaseMarketplaceEnabled) {
           publishApplication(currentWorker, jobId, application.id).catch((error) => {
             setSyncError(error instanceof Error ? error.message : "Falha ao publicar candidatura no Supabase.");
             setSyncStatus("erro");
           });
           publishRemoteNotification(job.companyId, companyNotification);
-        }
-        if (supabaseCoinsEnabled && user) {
-          trackCoinSync(
-            spendRemoteCoinForApplication(user.id, jobId, application.id),
-            "Falha ao descontar moeda da candidatura."
-          );
         }
 
         return { ok: true, message: "Candidatura enviada com sucesso. 1 moeda foi utilizada." };

@@ -5,6 +5,10 @@ export interface CoinAccount {
   unlockedJobIds: string[];
 }
 
+interface ApplyWithCoinRow {
+  wallet_balance?: number | string | null;
+}
+
 interface CoinWalletRow {
   user_id: string;
   balance: number | string | null;
@@ -114,6 +118,31 @@ export async function spendRemoteCoinForApplication(
 
   return {
     balance: toBalance(mapWallet(data)),
+    unlockedJobIds: await loadUnlockedJobIds(userId)
+  };
+}
+
+export async function applyRemoteToJobWithCoin(
+  userId: string,
+  workerId: string,
+  jobId: string,
+  applicationId: string
+): Promise<CoinAccount | null> {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc("apply_to_job_with_coin", {
+    target_job_id: jobId,
+    target_worker_id: workerId,
+    target_application_id: applicationId
+  });
+
+  if (error) throw new Error(error.message);
+
+  const row = (Array.isArray(data) ? data[0] : data) as ApplyWithCoinRow | null;
+  const balance = Number(row?.wallet_balance ?? 0);
+
+  return {
+    balance: Number.isFinite(balance) ? balance : 0,
     unlockedJobIds: await loadUnlockedJobIds(userId)
   };
 }
