@@ -100,9 +100,10 @@ interface AppContextValue {
   markRoleNotificationsRead: (role: AppState["activeRole"]) => void;
   markChatConversationRead: (applicationId: string) => void;
   sendChatMessage: (applicationId: string, body: string) => { ok: boolean; message: string };
+  unlockJobWithCoins: (jobId: string) => { ok: boolean; message: string };
   subscribeProfessional: () => void;
   subscribePlus: () => void;
-  buyCredits: () => void;
+  buyCredits: (amount?: number) => void;
   addReview: (workerId: string, review: Omit<Review, "id">) => void;
 }
 
@@ -141,10 +142,19 @@ function mergeSeedUpdates(savedState: AppState): AppState {
   const seededWorker = initialState.workers.find((worker) => worker.id === "worker-3");
   const normalizedState = {
     ...savedState,
+    subscription: {
+      ...savedState.subscription,
+      unlockedJobIds: Array.isArray(savedState.subscription?.unlockedJobIds)
+        ? savedState.subscription.unlockedJobIds
+        : []
+    },
     companySchedules: Array.isArray(savedState.companySchedules) ? savedState.companySchedules : [],
     chatMessages: Array.isArray(savedState.chatMessages) ? savedState.chatMessages : []
   };
-  let changed = !Array.isArray(savedState.companySchedules) || !Array.isArray(savedState.chatMessages);
+  let changed =
+    !Array.isArray(savedState.companySchedules) ||
+    !Array.isArray(savedState.chatMessages) ||
+    !Array.isArray(savedState.subscription?.unlockedJobIds);
 
   const jobs =
     securityJob && !normalizedState.jobs.some((job) => job.id === securityJob.id)
@@ -900,10 +910,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const job = state.jobs.find((item) => item.id === jobId);
         if (!job) return { ok: false, message: "Vaga não encontrada." };
 
-        if (state.subscription.plan === "Gratuito") {
+        if (!state.subscription.unlockedJobIds.includes(jobId)) {
           return {
             ok: false,
-            message: "Assine o plano profissional para ver a vaga completa e enviar candidatura.",
+            message: "Use 1 moeda para liberar a vaga completa antes de enviar candidatura.",
             requiresPlan: true
           };
         }
@@ -933,10 +943,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ...current,
           applications: [application, ...current.applications],
           jobs: current.jobs.map((item) => (item.id === jobId ? { ...item, candidates: item.candidates + 1 } : item)),
-          subscription:
-            current.subscription.plan !== "Gratuito"
-              ? current.subscription
-              : { ...current.subscription, creditsRemaining: current.subscription.creditsRemaining - 1 },
+          subscription: {
+            ...current.subscription,
+            creditsRemaining: Math.max(0, current.subscription.creditsRemaining - 1)
+          },
           notifications: [
             companyNotification,
             ...current.notifications
@@ -950,7 +960,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           publishRemoteNotification(job.companyId, companyNotification);
         }
 
-        return { ok: true, message: "Candidatura enviada com sucesso." };
+        return { ok: true, message: "Candidatura enviada com sucesso. 1 moeda foi utilizada." };
       },
       updateApplicationStatus(applicationId, status) {
         const application = state.applications.find((item) => item.id === applicationId);
@@ -1289,24 +1299,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         return { ok: true, message: "Mensagem enviada." };
       },
+      unlockJobWithCoins(jobId) {
+        const job = state.jobs.find((item) => item.id === jobId);
+        if (!job) return { ok: false, message: "Vaga não encontrada." };
+        if (state.subscription.unlockedJobIds.includes(jobId)) {
+          return { ok: true, message: "Esta vaga já está liberada." };
+        }
+        if (state.subscription.creditsRemaining <= 0) {
+          return { ok: false, message: "Você não possui moedas suficientes para liberar esta vaga." };
+        }
+
+        commit((current) => ({
+          ...current,
+          subscription: {
+            ...current.subscription,
+            creditsRemaining: Math.max(0, current.subscription.creditsRemaining - 1),
+            unlockedJobIds: [...current.subscription.unlockedJobIds, jobId]
+          }
+        }));
+
+        return { ok: true, message: "Vaga completa liberada. 1 moeda foi utilizada." };
+      },
       subscribeProfessional() {
         commit((current) => ({
           ...current,
-          subscription: { ...current.subscription, plan: "Profissional", creditsRemaining: 999 }
+          subscription: {
+            ...current.subscription,
+            plan: "Profissional",
+            creditsRemaining: current.subscription.creditsRemaining + 20
+          }
         }));
       },
       subscribePlus() {
         commit((current) => ({
           ...current,
-          subscription: { ...current.subscription, plan: "Plus", creditsRemaining: 999 }
+          subscription: {
+            ...current.subscription,
+            plan: "Plus",
+            creditsRemaining: current.subscription.creditsRemaining + 35
+          }
         }));
       },
-      buyCredits() {
+      buyCredits(amount = 5) {
         commit((current) => ({
           ...current,
           subscription: {
             ...current.subscription,
-            creditsRemaining: current.subscription.creditsRemaining + 5
+            creditsRemaining: current.subscription.creditsRemaining + amount
           }
         }));
       },

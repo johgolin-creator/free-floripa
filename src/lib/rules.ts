@@ -88,7 +88,7 @@ export function canApply(job: Job, applications: Application[], worker: WorkerPr
   }
 
   if (creditsRemaining <= 0) {
-    return { allowed: false, reason: "Você não possui candidaturas disponíveis." };
+    return { allowed: false, reason: "Você não possui moedas suficientes para enviar candidatura." };
   }
 
   return { allowed: true, reason: "" };

@@ -5,7 +5,6 @@ import {
   ArrowRight,
   BadgeCheck,
   CheckCircle2,
-  Clock3,
   CreditCard,
   Lock,
   Search,
@@ -16,29 +15,28 @@ import {
 } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { useAppStore } from "../lib/store";
-import { formatDate } from "../lib/format";
 
 const freeBenefits = [
   "Criar perfil e manter histórico",
   "Ver prévias das vagas abertas",
-  "Acompanhar candidaturas já enviadas",
+  "Receber moedas iniciais para testar",
   "Receber avaliações no perfil"
 ];
 
 const professionalBenefits = [
-  "Ver descrição completa da vaga",
-  "Liberar requisitos, benefícios e dados protegidos",
-  "Enviar candidaturas sem limite",
-  "Acessar contato após aprovação",
-  "Mais clareza antes de aceitar um turno"
+  "20 moedas no saldo",
+  "Liberar vagas completas conforme usar",
+  "Enviar candidaturas com controle de saldo",
+  "Pagar somente quando precisar",
+  "Bom para quem pega diárias aos poucos"
 ];
 
 const plusBenefits = [
-  "Tudo do plano Profissional",
-  "Destaque de perfil para empresas",
-  "Mais prioridade em vagas urgentes",
-  "Visão completa de histórico e confiança",
-  "Preparado para recursos premium do app"
+  "35 moedas no saldo",
+  "Mais custo-benefício por pacote",
+  "Ideal para quem se candidata com frequência",
+  "Preparado para destaques e recursos premium",
+  "Mais fôlego para vagas urgentes"
 ];
 
 const unlockItems = [
@@ -53,24 +51,23 @@ export function SubscriptionPage() {
   const [message, setMessage] = useState("");
   const isProfessional = state.subscription.plan === "Profissional";
   const isPlus = state.subscription.plan === "Plus";
-  const hasFullAccess = state.subscription.plan !== "Gratuito";
 
   function handleSubscribe() {
     subscribeProfessional();
-    setMessage("Plano profissional ativado. As vagas completas foram liberadas.");
+    setMessage("Pacote Profissional comprado. 20 moedas foram adicionadas ao seu saldo.");
   }
 
   function handleSubscribePlus() {
     subscribePlus();
-    setMessage("Plano Plus ativado. Você está com o acesso mais completo do Free Floripa.");
+    setMessage("Pacote Plus comprado. 35 moedas foram adicionadas ao seu saldo.");
   }
 
   return (
     <div className="grid gap-5">
       <SectionHeader
-        eyebrow="Planos"
-        title="Desbloqueie as vagas completas"
-        description="Veja tudo antes de se candidatar: descrição, requisitos, benefícios, dados protegidos e candidatura."
+        eyebrow="Moedas"
+        title="Compre moedas e use quando precisar"
+        description="Use moedas para liberar vagas completas e enviar candidaturas sem mensalidade fixa."
         action={
           <Link to="/app/vagas" className="secondary">
             <Search size={17} /> Ver vagas
@@ -83,11 +80,11 @@ export function SubscriptionPage() {
       <section className="plan-hero">
         <div className="plan-hero-copy">
           <span className="badge bg-aqua-50 text-aqua-700">
-            <CreditCard size={15} /> Plano atual: {state.subscription.plan}
+            <CreditCard size={15} /> Saldo: {state.subscription.creditsRemaining} moeda(s)
           </span>
-          <h2>{hasFullAccess ? "Você já está com acesso completo" : "Trabalhe com mais informação e menos surpresa"}</h2>
+          <h2>Pague por uso, sem travar em mensalidade</h2>
           <p>
-            O plano gratuito deixa você conhecer as oportunidades. O Profissional libera a vaga inteira por R$ 19,90 e o Plus amplia o acesso por R$ 29,90.
+            O gratuito deixa você conhecer as oportunidades. As moedas liberam a vaga inteira e a candidatura apenas quando você decidir usar.
           </p>
           <div className="plan-unlock-grid">
             {unlockItems.map((item) => (
@@ -105,20 +102,20 @@ export function SubscriptionPage() {
           <h3>Profissional</h3>
           <div className="plan-price">
             <strong>R$ 19,90</strong>
-            <span>/mês</span>
+            <span>20 moedas</span>
           </div>
-          <p>Ideal para quem quer se candidatar com segurança e acompanhar tudo pelo celular.</p>
-          <button type="button" onClick={handleSubscribe} disabled={hasFullAccess} className="primary w-full">
-            {hasFullAccess ? <CheckCircle2 size={17} /> : <Zap size={17} />}
-            {hasFullAccess ? "Plano ativo" : "Assinar agora"}
+          <p>Ideal para quem quer testar o fluxo e se candidatar com mais segurança.</p>
+          <button type="button" onClick={handleSubscribe} className="primary w-full">
+            <Zap size={17} />
+            Comprar 20 moedas
           </button>
         </div>
       </section>
 
       <div className="grid gap-3 md:grid-cols-3">
-        <PlanStat icon={<Lock size={18} />} label="Vaga completa" value={hasFullAccess ? "Liberada" : "Bloqueada"} />
-        <PlanStat icon={<WalletCards size={18} />} label="Candidaturas" value={hasFullAccess ? "Sem limite" : `${state.subscription.creditsRemaining} crédito(s)`} />
-        <PlanStat icon={<Clock3 size={18} />} label="Renovação" value={formatDate(state.subscription.renewalDate)} />
+        <PlanStat icon={<WalletCards size={18} />} label="Saldo atual" value={`${state.subscription.creditsRemaining} moeda(s)`} />
+        <PlanStat icon={<Lock size={18} />} label="Desbloqueio de vaga" value="1 moeda" />
+        <PlanStat icon={<CreditCard size={18} />} label="Candidatura" value="1 moeda" />
       </div>
 
       <section className="grid gap-4 lg:grid-cols-3">
@@ -126,7 +123,7 @@ export function SubscriptionPage() {
           title="Gratuito"
           price="R$ 0"
           description="Para criar perfil, conhecer o app e ver prévias."
-          current={!hasFullAccess}
+          current={state.subscription.plan === "Gratuito"}
           benefits={freeBenefits}
           action={
             <Link to="/app/vagas" className="secondary w-full">
@@ -138,17 +135,17 @@ export function SubscriptionPage() {
           featured
           title="Profissional"
           price="R$ 19,90"
-          description="Para ver vagas completas e se candidatar com mais confiança."
+          description="Pacote com 20 moedas para liberar vagas e candidaturas."
           current={isProfessional}
           benefits={professionalBenefits}
           action={
-            hasFullAccess ? (
+            isProfessional ? (
               <Link to="/app/vagas" className="primary w-full">
-                Buscar vagas completas <ArrowRight size={17} />
+                Usar moedas <ArrowRight size={17} />
               </Link>
             ) : (
               <button type="button" onClick={handleSubscribe} className="primary w-full">
-                Assinar profissional <ArrowRight size={17} />
+                Comprar 20 moedas <ArrowRight size={17} />
               </button>
             )
           }
@@ -156,17 +153,17 @@ export function SubscriptionPage() {
         <PlanCard
           title="Plus"
           price="R$ 29,90"
-          description="Para quem quer o acesso mais completo e preparado para recursos premium."
+          description="Pacote com 35 moedas para quem usa o app com mais frequência."
           current={isPlus}
           benefits={plusBenefits}
           action={
             isPlus ? (
               <Link to="/app/vagas" className="primary w-full">
-                Buscar vagas completas <ArrowRight size={17} />
+                Usar moedas <ArrowRight size={17} />
               </Link>
             ) : (
               <button type="button" onClick={handleSubscribePlus} className="primary w-full">
-                Assinar Plus <ArrowRight size={17} />
+                Comprar 35 moedas <ArrowRight size={17} />
               </button>
             )
           }
@@ -180,13 +177,13 @@ export function SubscriptionPage() {
           </span>
           <h3>Pagamento real entra depois</h3>
           <p>
-            Nesta fase, o botão ativa o plano dentro do app para teste. Depois conectamos Mercado Pago, Stripe ou outro provedor de pagamento.
+            Nesta fase, o botão adiciona moedas dentro do app para teste. Depois conectamos Mercado Pago, Stripe ou outro provedor de pagamento.
           </p>
         </div>
         <div className="plan-note-list">
           <Feature icon={<ShieldCheck />} title="Dados protegidos" text="Detalhes sensíveis aparecem só quando o fluxo permite." />
-          <Feature icon={<BadgeCheck />} title="Decisão melhor" text="O trabalhador entende a vaga antes de se candidatar." />
-          <Feature icon={<Zap />} title="Conversão clara" text="A pessoa sabe exatamente o que está desbloqueando." />
+          <Feature icon={<BadgeCheck />} title="Decisão melhor" text="O trabalhador paga para ver detalhes quando a vaga fizer sentido." />
+          <Feature icon={<Zap />} title="Sem mensalidade" text="A pessoa compra moedas e usa conforme a necessidade." />
         </div>
       </section>
     </div>
@@ -224,7 +221,7 @@ function PlanCard({
     <article className={`plan-card ${featured ? "plan-card-featured" : ""}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <span className="badge">{current ? "Plano atual" : "Opção"}</span>
+          <span className="badge">{current ? "Pacote atual" : "Opção"}</span>
           <h3>{title}</h3>
           <p>{description}</p>
         </div>

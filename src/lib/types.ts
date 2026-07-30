@@ -183,6 +183,7 @@ export interface SubscriptionState {
   plan: "Gratuito" | "Profissional" | "Plus";
   creditsRemaining: number;
   renewalDate: string;
+  unlockedJobIds: string[];
 }
 
 export interface AppState {

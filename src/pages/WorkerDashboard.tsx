@@ -54,8 +54,8 @@ export function WorkerDashboard() {
       />
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Metric icon={<ClipboardList />} label="Acesso a vagas" value={state.subscription.plan !== "Gratuito" ? "Completo" : "Prévia"} />
-        <Metric icon={<CreditCard />} label="Plano atual" value={state.subscription.plan} />
+        <Metric icon={<ClipboardList />} label="Acesso a vagas" value={state.subscription.creditsRemaining > 0 ? "Com moedas" : "Prévia"} />
+        <Metric icon={<CreditCard />} label="Moedas" value={state.subscription.creditsRemaining} />
         <Metric icon={<Star />} label="Avaliação" value={currentWorker.rating.toFixed(1)} />
         <Metric icon={<BadgeCheck />} label="Índice de confiabilidade" value={`${reliability}%`} />
       </div>
@@ -86,10 +86,10 @@ export function WorkerDashboard() {
         <div>
           <h3 className="font-black text-navy-950">Acesso profissional</h3>
           <p className="text-sm text-slate-600">
-            Renovação em {formatDate(state.subscription.renewalDate)}. O plano gratuito mostra prévias; o profissional libera vaga completa e candidaturas.
+            Saldo atual: {state.subscription.creditsRemaining} moeda(s). O gratuito mostra prévias; as moedas liberam vaga completa e candidaturas conforme o uso.
           </p>
         </div>
-        <Link to="/app/planos" className="primary">Ver planos</Link>
+        <Link to="/app/planos" className="primary">Comprar moedas</Link>
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">

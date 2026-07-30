@@ -18,8 +18,10 @@ export function JobCard({
 }) {
   const { state } = useAppStore();
   const company = state.companies.find((item) => item.id === job.companyId);
+  const application = state.applications.find((item) => item.jobId === job.id && item.workerId === state.selectedWorkerId);
+  const confirmed = application?.status === "Aprovada" || application?.status === "Trabalho concluído";
   const openSlots = getOpenSlots(job);
-  const canViewFullJob = state.subscription.plan === "Profissional";
+  const canViewFullJob = confirmed || state.subscription.unlockedJobIds.includes(job.id);
 
   return (
     <article className="card relative grid gap-4 overflow-hidden p-4 pl-5 hover:-translate-y-0.5 hover:border-aqua-200 hover:shadow-lift">
@@ -45,7 +47,7 @@ export function JobCard({
         <p className="text-sm leading-6 text-slate-600">
           {canViewFullJob
             ? job.description
-            : "Prévia da vaga disponível. Assine o plano profissional para ver descrição completa, requisitos, benefícios e dados protegidos."}
+            : "Prévia da vaga disponível. Use 1 moeda para ver descrição completa, requisitos, benefícios e dados protegidos."}
         </p>
       )}
 
@@ -80,7 +82,7 @@ export function JobCard({
         <span className="text-sm font-semibold text-slate-600">{job.candidates} candidatos</span>
         <Link to={`/app/vagas/${job.id}`} className="primary w-full sm:w-auto">
           {!canViewFullJob && <Lock size={17} />}
-          {canViewFullJob ? "Ver vaga" : "Liberar vaga completa"}
+          {canViewFullJob ? "Ver vaga" : "Liberar por 1 moeda"}
         </Link>
       </div>
     </article>

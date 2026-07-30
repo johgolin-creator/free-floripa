@@ -29,7 +29,7 @@ import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getJo
 
 export function JobDetailsPage() {
   const { id } = useParams();
-  const { state, currentWorker, applyToJob, subscribeProfessional } = useAppStore();
+  const { state, currentWorker, applyToJob, unlockJobWithCoins, subscribeProfessional, subscribePlus } = useAppStore();
   const [message, setMessage] = useState("");
   const [showPlans, setShowPlans] = useState(false);
   const job = state.jobs.find((item) => item.id === id);
@@ -42,13 +42,13 @@ export function JobDetailsPage() {
   const confirmed = application?.status === "Aprovada" || application?.status === "Trabalho concluído";
   const workerExperience = getFunctionExperience(currentWorker, currentJob.function);
   const jobStatus = getJobStatus(currentJob);
-  const hasFullAccess = state.subscription.plan !== "Gratuito";
-  const canViewFullJob = hasFullAccess || confirmed;
+  const hasUnlockedJob = state.subscription.unlockedJobIds.includes(currentJob.id);
+  const canViewFullJob = hasUnlockedJob || confirmed;
   const unlockItems = ["Descrição completa", "Requisitos e benefícios", "Candidatura liberada", "Dados protegidos no momento certo"];
 
   function handleApply() {
-    if (!hasFullAccess) {
-      setMessage("Assine o plano profissional para ver a vaga completa e enviar candidatura.");
+    if (!hasUnlockedJob) {
+      setMessage("Use 1 moeda para liberar a vaga completa antes de enviar candidatura.");
       setShowPlans(true);
       return;
     }
@@ -58,15 +58,21 @@ export function JobDetailsPage() {
     if (result.requiresPlan) setShowPlans(true);
   }
 
+  function handleUnlockJob() {
+    const result = unlockJobWithCoins(currentJob.id);
+    setMessage(result.message);
+    if (!result.ok) setShowPlans(true);
+  }
+
   const plansModal = showPlans ? (
-    <Modal title="Liberar vaga completa" onClose={() => setShowPlans(false)}>
+    <Modal title="Comprar moedas" onClose={() => setShowPlans(false)}>
       <div className="job-plan-modal">
         <div>
           <span className="badge bg-aqua-50 text-aqua-700">
-            <CreditCard size={15} /> Profissional
+            <CreditCard size={15} /> Saldo: {state.subscription.creditsRemaining} moeda(s)
           </span>
-          <h3>Desbloqueie esta vaga</h3>
-          <p>Veja todos os detalhes antes de se candidatar e libere candidaturas sem limite.</p>
+          <h3>Escolha um pacote de moedas</h3>
+          <p>Use moedas para liberar vagas completas e enviar candidaturas conforme precisar.</p>
         </div>
         <button
           type="button"
@@ -74,17 +80,32 @@ export function JobDetailsPage() {
           onClick={() => {
             subscribeProfessional();
             setShowPlans(false);
-            setMessage("Plano profissional ativado. Vaga completa e candidaturas liberadas.");
+            setMessage("Pacote Profissional ativado. 20 moedas foram adicionadas.");
           }}
         >
           <span>
             <strong>R$ 19,90</strong>
-            <small>/mês</small>
+            <small>20 moedas</small>
           </span>
-          <em>Ativar plano agora</em>
+          <em>Comprar pacote</em>
+        </button>
+        <button
+          type="button"
+          className="job-plan-option"
+          onClick={() => {
+            subscribePlus();
+            setShowPlans(false);
+            setMessage("Pacote Plus ativado. 35 moedas foram adicionadas.");
+          }}
+        >
+          <span>
+            <strong>R$ 29,90</strong>
+            <small>35 moedas</small>
+          </span>
+          <em>Comprar Plus</em>
         </button>
         <Link to="/app/planos" onClick={() => setShowPlans(false)} className="secondary">
-          Comparar planos <ArrowRight size={17} />
+          Ver todos os pacotes <ArrowRight size={17} />
         </Link>
       </div>
     </Modal>
@@ -96,7 +117,7 @@ export function JobDetailsPage() {
         <SectionHeader
           eyebrow="Vaga bloqueada"
           title={currentJob.function}
-          description="Você está vendo apenas uma prévia. Assine para liberar a vaga completa."
+          description="Você está vendo apenas uma prévia. Use moedas para liberar a vaga completa."
         />
 
         {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
@@ -109,7 +130,7 @@ export function JobDetailsPage() {
               <span className="badge">{currentJob.paymentMethod}</span>
             </div>
             <h2>{currentJob.title}</h2>
-            <p>Você está vendo uma prévia. Assine para liberar descrição completa, requisitos, benefícios e candidatura.</p>
+            <p>Você está vendo uma prévia. Use 1 moeda para liberar descrição completa, requisitos, benefícios e candidatura.</p>
 
             <div className="job-preview-grid">
               <Info label="Empresa" value="Empresa verificada" icon={<Building2 size={17} />} />
@@ -126,7 +147,7 @@ export function JobDetailsPage() {
               <Lock size={24} />
             </span>
             <h3>Vaga completa bloqueada</h3>
-            <p>O plano profissional libera os detalhes que ajudam você a decidir com segurança.</p>
+            <p>As moedas liberam os detalhes que ajudam você a decidir com segurança.</p>
             <div className="job-unlock-list">
               {unlockItems.map((item) => (
                 <span key={item}>
@@ -134,11 +155,11 @@ export function JobDetailsPage() {
                 </span>
               ))}
             </div>
-            <Link to="/app/planos" className="primary">
-              <Lock size={17} /> Ver planos
-            </Link>
+            <button type="button" onClick={handleUnlockJob} className="primary">
+              <Lock size={17} /> Liberar por 1 moeda
+            </button>
             <button type="button" onClick={() => setShowPlans(true)} className="secondary">
-              Liberar agora <Zap size={17} />
+              Comprar moedas <Zap size={17} />
             </button>
           </aside>
         </section>
@@ -236,7 +257,7 @@ export function JobDetailsPage() {
               {application ? `Status: ${application.status}` : isJobOpenForApplications(currentJob) ? "Candidatar-se" : `Vaga ${jobStatus}`}
             </button>
             <p className="text-xs leading-5 text-slate-500">
-              Cadastro gratuito com prévia das vagas. A vaga completa e as candidaturas ficam no plano profissional.
+              Cadastro gratuito com prévia das vagas. Use moedas para liberar vaga completa e enviar candidaturas.
             </p>
           </aside>
         </div>

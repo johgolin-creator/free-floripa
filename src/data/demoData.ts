@@ -407,6 +407,7 @@ export const initialState: AppState = {
   subscription: {
     plan: "Gratuito",
     creditsRemaining: 4,
-    renewalDate: "2026-02-01"
+    renewalDate: "2026-02-01",
+    unlockedJobIds: []
   }
 };

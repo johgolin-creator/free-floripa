@@ -23,7 +23,7 @@ export function JobsPage() {
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [compatibleOnly, setCompatibleOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("Melhor combinação");
-  const canViewFullJobs = state.subscription.plan !== "Gratuito";
+  const hasCoins = state.subscription.creditsRemaining > 0;
 
   const scoredJobs = useMemo(() => {
     const experience = normalizeSearch(experienceFilter);
@@ -114,20 +114,20 @@ export function JobsPage() {
         </div>
       </section>
 
-      {!canViewFullJobs && (
+      {!hasCoins && (
         <section className="mb-5 rounded-lg border border-aqua-200 bg-aqua-50 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="flex items-center gap-2 font-black text-navy-950">
-                <Lock size={18} /> Vaga completa liberada para assinantes
+                <Lock size={18} /> Use moedas para liberar vagas completas
               </h3>
               <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
-                No plano gratuito você vê uma prévia. Descrição completa, requisitos, benefícios e candidatura ficam disponíveis no plano profissional.
+                No gratuito você vê uma prévia. Com moedas, você libera detalhes completos e envia candidaturas conforme usa.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="badge bg-white text-aqua-700">Plano atual: {state.subscription.plan}</span>
-              <Link to="/app/planos" className="primary">Ver planos</Link>
+              <span className="badge bg-white text-aqua-700">Saldo: {state.subscription.creditsRemaining} moeda(s)</span>
+              <Link to="/app/planos" className="primary">Comprar moedas</Link>
             </div>
           </div>
         </section>

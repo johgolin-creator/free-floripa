@@ -94,7 +94,7 @@ function getMeta(notification: NotificationItem, role: UserRole): NotificationMe
       Icon: CreditCard,
       href: role === "empresa" ? "/app/empresa" : "/app/planos",
       actionLabel: role === "empresa" ? "Ver painel" : "Ver planos",
-      helper: "Resolva pendências de plano, créditos ou liberação de recursos."
+      helper: "Resolva pendências de moedas, pagamento ou liberação de recursos."
     };
   }
 
