@@ -21,6 +21,14 @@ import {
   type MarketplaceJobsPayload
 } from "./supabaseMarketplace";
 import { getSupabaseStateKey, loadSupabaseState, saveSupabaseState, supabaseStateEnabled } from "./supabaseState";
+import {
+  grantRemoteCoins,
+  loadRemoteCoinAccount,
+  spendRemoteCoinForApplication,
+  supabaseCoinsEnabled,
+  unlockRemoteJobWithCoin,
+  type CoinAccount
+} from "./supabaseCoins";
 import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyProfile, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, UserRole, WorkerProfile } from "./types";
 
 const STORAGE_KEY = "free-floripa:state";
@@ -527,6 +535,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  function applyCoinAccount(account: CoinAccount | null) {
+    if (!account) return;
+
+    setState((current) => {
+      const unlockedJobIds = Array.from(
+        new Set([...current.subscription.unlockedJobIds, ...account.unlockedJobIds])
+      );
+      const next = {
+        ...current,
+        subscription: {
+          ...current.subscription,
+          creditsRemaining: account.balance,
+          unlockedJobIds
+        }
+      };
+      persist(next, localStorageKey);
+      return next;
+    });
+  }
+
+  function trackCoinSync(action: Promise<CoinAccount | null>, fallbackMessage: string) {
+    if (!supabaseCoinsEnabled) return;
+
+    setSyncStatus("salvando");
+    action
+      .then((account) => {
+        applyCoinAccount(account);
+        setSyncError("");
+        setSyncStatus("sincronizado");
+      })
+      .catch((error) => {
+        setSyncError(error instanceof Error ? error.message : fallbackMessage);
+        setSyncStatus("erro");
+      });
+  }
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -644,6 +688,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       active = false;
     };
   }, [authLoading, user?.id]);
+
+  useEffect(() => {
+    if (authLoading || !user || !supabaseCoinsEnabled) return;
+
+    let active = true;
+    loadRemoteCoinAccount(user.id)
+      .then((account) => {
+        if (!active) return;
+        applyCoinAccount(account);
+        setSyncError("");
+      })
+      .catch((error) => {
+        if (!active) return;
+        setSyncError(error instanceof Error ? error.message : "Falha ao carregar carteira de moedas.");
+        setSyncStatus("erro");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authLoading, user?.id, localStorageKey]);
 
   const createJobHandler = (input: CreateJobInput) => {
     const id = crypto.randomUUID();
@@ -958,6 +1023,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setSyncStatus("erro");
           });
           publishRemoteNotification(job.companyId, companyNotification);
+        }
+        if (supabaseCoinsEnabled && user) {
+          trackCoinSync(
+            spendRemoteCoinForApplication(user.id, jobId, application.id),
+            "Falha ao descontar moeda da candidatura."
+          );
         }
 
         return { ok: true, message: "Candidatura enviada com sucesso. 1 moeda foi utilizada." };
@@ -1317,6 +1388,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             unlockedJobIds: [...current.subscription.unlockedJobIds, jobId]
           }
         }));
+        if (supabaseCoinsEnabled && user) {
+          trackCoinSync(unlockRemoteJobWithCoin(user.id, jobId), "Falha ao liberar vaga com moeda.");
+        }
 
         return { ok: true, message: "Vaga completa liberada. 1 moeda foi utilizada." };
       },
@@ -1329,6 +1403,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             creditsRemaining: current.subscription.creditsRemaining + 20
           }
         }));
+        if (supabaseCoinsEnabled && user) {
+          trackCoinSync(grantRemoteCoins(user.id, 20, "package_professional"), "Falha ao adicionar moedas.");
+        }
       },
       subscribePlus() {
         commit((current) => ({
@@ -1339,6 +1416,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             creditsRemaining: current.subscription.creditsRemaining + 35
           }
         }));
+        if (supabaseCoinsEnabled && user) {
+          trackCoinSync(grantRemoteCoins(user.id, 35, "package_plus"), "Falha ao adicionar moedas.");
+        }
       },
       buyCredits(amount = 5) {
         commit((current) => ({
@@ -1348,6 +1428,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             creditsRemaining: current.subscription.creditsRemaining + amount
           }
         }));
+        if (supabaseCoinsEnabled && user) {
+          trackCoinSync(grantRemoteCoins(user.id, amount, "coin_pack"), "Falha ao adicionar moedas.");
+        }
       },
       addReview(workerId, review) {
         commit((current) => ({
@@ -1374,7 +1457,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }));
       }
     }),
-    [state, syncStatus, syncError, currentWorker, currentCompany]
+    [state, syncStatus, syncError, currentWorker, currentCompany, user, localStorageKey]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
