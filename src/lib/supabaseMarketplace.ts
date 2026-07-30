@@ -54,6 +54,10 @@ const VALID_APPLICATION_STATUSES = new Set<ApplicationStatus>([
   "Falta registrada"
 ]);
 const VALID_JOB_STATUSES = new Set<JobStatus>(["Rascunho", "Publicada", "Em andamento", "Concluída", "Cancelada"]);
+const PUBLIC_JOBS_LIMIT = 120;
+const COMPANY_JOBS_LIMIT = 200;
+const PUBLIC_WORKERS_LIMIT = 120;
+const USER_APPLICATIONS_LIMIT = 200;
 
 interface WorkerProfileRow {
   id: string;
@@ -356,7 +360,8 @@ export async function loadPublicWorkerProfiles(excludeUserId?: string | null) {
     .select(
       "id,user_id,display_name,avatar_url,birth_date,city,neighborhood,professions,experience,description,availability,has_transport,max_distance_km,rating,completed_jobs,attendance_rate,punctuality_rate,cancellations,verified"
     )
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .limit(PUBLIC_WORKERS_LIMIT);
 
   if (error) throw new Error(error.message);
 
@@ -533,7 +538,8 @@ export async function loadPublicJobs(): Promise<MarketplaceJobsPayload> {
       "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status,company_profiles(id,user_id,establishment_name,responsible_name,cnpj,phone,email,category,address,neighborhood,description,logo_url,rating)"
     )
     .neq("status", "Cancelada")
-    .order("shift_date", { ascending: true });
+    .order("shift_date", { ascending: true })
+    .limit(PUBLIC_JOBS_LIMIT);
 
   if (error) throw new Error(error.message);
 
@@ -555,7 +561,8 @@ export async function loadCompanyMarketplace(companyId: string): Promise<Marketp
       "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status"
     )
     .eq("company_id", companyId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(COMPANY_JOBS_LIMIT);
 
   if (error) throw new Error(error.message);
 
@@ -574,7 +581,8 @@ export async function loadWorkerMarketplace(workerId: string): Promise<Marketpla
       .from("applications")
       .select("id,job_id,worker_id,status,created_at")
       .eq("worker_id", workerId)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(USER_APPLICATIONS_LIMIT),
     loadPublicJobs()
   ]);
 

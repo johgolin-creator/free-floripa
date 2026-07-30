@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { BriefcaseBusiness, CalendarDays, Filter, Lock, MapPin, RotateCcw, Search, Star, WalletCards, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
@@ -12,6 +12,7 @@ import type { Job, JobFunction, Neighborhood, WorkerProfile } from "../lib/types
 type SortOption = "Melhor combinação" | "Mais recentes" | "Maior diária" | "Mais próximas" | "Urgentes";
 
 const sortOptions: SortOption[] = ["Melhor combinação", "Mais recentes", "Maior diária", "Mais próximas", "Urgentes"];
+const JOBS_PAGE_SIZE = 20;
 
 export function JobsPage() {
   const { state, currentWorker } = useAppStore();
@@ -23,6 +24,7 @@ export function JobsPage() {
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [compatibleOnly, setCompatibleOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("Melhor combinação");
+  const [visibleCount, setVisibleCount] = useState(JOBS_PAGE_SIZE);
   const hasCoins = state.subscription.creditsRemaining > 0;
 
   const scoredJobs = useMemo(() => {
@@ -60,6 +62,8 @@ export function JobsPage() {
   }, [state.jobs, currentWorker, functionFilter, neighborhoodFilter, dateFilter, minValue, experienceFilter, urgentOnly, compatibleOnly, sortBy]);
 
   const filteredJobs = scoredJobs.map((item) => item.job);
+  const visibleScoredJobs = scoredJobs.slice(0, visibleCount);
+  const hasMoreJobs = visibleCount < scoredJobs.length;
   const openJobs = state.jobs.filter(isJobOpenForApplications);
   const dashboard = {
     open: openJobs.length,
@@ -78,6 +82,10 @@ export function JobsPage() {
     compatibleOnly && "Boa combinação",
     sortBy !== "Melhor combinação" && `Ordem: ${sortBy}`
   ].filter((item): item is string => Boolean(item));
+
+  useEffect(() => {
+    setVisibleCount(JOBS_PAGE_SIZE);
+  }, [functionFilter, neighborhoodFilter, dateFilter, minValue, experienceFilter, urgentOnly, compatibleOnly, sortBy]);
 
   function clearFilters() {
     setFunctionFilter("Todas");
@@ -216,9 +224,23 @@ export function JobsPage() {
         <EmptyState title="Nenhuma vaga encontrada" text="Tente remover um filtro, reduzir o valor mínimo ou desmarcar boa combinação para visualizar mais oportunidades." />
       ) : (
         <div className="grid gap-4">
-          {scoredJobs.map(({ job, match }) => (
+          {visibleScoredJobs.map(({ job, match }) => (
             <JobCard key={job.id} job={job} matchLabel={match.label} matchScore={match.score} />
           ))}
+          {hasMoreJobs && (
+            <div className="flex flex-col items-center gap-2 pt-2 text-center">
+              <button
+                type="button"
+                onClick={() => setVisibleCount((current) => Math.min(current + JOBS_PAGE_SIZE, scoredJobs.length))}
+                className="secondary min-h-11 px-5"
+              >
+                Carregar mais vagas
+              </button>
+              <span className="text-xs font-bold text-slate-500">
+                Mostrando {visibleScoredJobs.length} de {scoredJobs.length} vagas encontradas.
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>

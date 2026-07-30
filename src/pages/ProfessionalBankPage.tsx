@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BriefcaseBusiness, Filter, Heart, MapPin, Search, Star, UserCheck, UsersRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
@@ -13,6 +13,7 @@ import type { Job, JobFunction, Neighborhood, WorkerProfile } from "../lib/types
 
 const demoWorkerIds = new Set(["worker-1", "worker-2", "worker-3", "worker-4"]);
 const ratingOptions = [4.8, 4.5, 4, 3.5];
+const WORKERS_PAGE_SIZE = 20;
 
 export function ProfessionalBankPage() {
   const { state, currentCompany, toggleFavorite, inviteWorkerToJob } = useAppStore();
@@ -21,6 +22,7 @@ export function ProfessionalBankPage() {
   const [neighborhoodFilter, setNeighborhoodFilter] = useState<Neighborhood | "Todos">("Todos");
   const [minRating, setMinRating] = useState("Todas");
   const [workerToInvite, setWorkerToInvite] = useState<WorkerProfile | null>(null);
+  const [visibleCount, setVisibleCount] = useState(WORKERS_PAGE_SIZE);
   const [message, setMessage] = useState("");
 
   const realWorkers = useMemo(() => state.workers.filter((worker) => !demoWorkerIds.has(worker.id)), [state.workers]);
@@ -40,6 +42,12 @@ export function ProfessionalBankPage() {
 
     return matchesSearch && matchesFunction && matchesNeighborhood && matchesRating;
   });
+  const visibleWorkers = filteredWorkers.slice(0, visibleCount);
+  const hasMoreWorkers = visibleCount < filteredWorkers.length;
+
+  useEffect(() => {
+    setVisibleCount(WORKERS_PAGE_SIZE);
+  }, [searchTerm, functionFilter, neighborhoodFilter, minRating]);
 
   return (
     <div className="grid gap-5">
@@ -119,27 +127,43 @@ export function ProfessionalBankPage() {
       ) : filteredWorkers.length === 0 ? (
         <EmptyState title="Nenhum profissional encontrado" text="Ajuste os filtros para ampliar a busca no banco de profissionais." />
       ) : (
-        <section className="grid gap-4 xl:grid-cols-2">
-          {filteredWorkers.map((worker) => {
-            const favorite = state.favoriteWorkerIds.includes(worker.id);
-            return (
-              <div key={worker.id} className="grid gap-2">
-                <WorkerCard worker={worker} showActions={false} functionFocus={functionFilter === "Todas" ? undefined : functionFilter} />
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <button type="button" onClick={() => toggleFavorite(worker.id)} className="secondary">
-                    <Heart size={17} fill={favorite ? "currentColor" : "none"} /> {favorite ? "Remover favorito" : "Salvar favorito"}
-                  </button>
-                  <button type="button" onClick={() => setWorkerToInvite(worker)} disabled={openJobs.length === 0} className="primary">
-                    <UserCheck size={17} /> Convidar para vaga
-                  </button>
+        <div className="grid gap-4">
+          <section className="grid gap-4 xl:grid-cols-2">
+            {visibleWorkers.map((worker) => {
+              const favorite = state.favoriteWorkerIds.includes(worker.id);
+              return (
+                <div key={worker.id} className="grid gap-2">
+                  <WorkerCard worker={worker} showActions={false} functionFocus={functionFilter === "Todas" ? undefined : functionFilter} />
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button type="button" onClick={() => toggleFavorite(worker.id)} className="secondary">
+                      <Heart size={17} fill={favorite ? "currentColor" : "none"} /> {favorite ? "Remover favorito" : "Salvar favorito"}
+                    </button>
+                    <button type="button" onClick={() => setWorkerToInvite(worker)} disabled={openJobs.length === 0} className="primary">
+                      <UserCheck size={17} /> Convidar para vaga
+                    </button>
+                  </div>
+                  {openJobs.length === 0 && (
+                    <p className="text-xs font-semibold text-slate-500">Crie uma vaga publicada com saldo disponível para convidar profissionais.</p>
+                  )}
                 </div>
-                {openJobs.length === 0 && (
-                  <p className="text-xs font-semibold text-slate-500">Crie uma vaga publicada com saldo disponível para convidar profissionais.</p>
-                )}
-              </div>
-            );
-          })}
-        </section>
+              );
+            })}
+          </section>
+          {hasMoreWorkers && (
+            <div className="flex flex-col items-center gap-2 pt-2 text-center">
+              <button
+                type="button"
+                onClick={() => setVisibleCount((current) => Math.min(current + WORKERS_PAGE_SIZE, filteredWorkers.length))}
+                className="secondary min-h-11 px-5"
+              >
+                Carregar mais profissionais
+              </button>
+              <span className="text-xs font-bold text-slate-500">
+                Mostrando {visibleWorkers.length} de {filteredWorkers.length} profissionais encontrados.
+              </span>
+            </div>
+          )}
+        </div>
       )}
 
       {workerToInvite && (
