@@ -29,6 +29,7 @@ import {
   unlockRemoteJobWithCoin,
   type CoinAccount
 } from "./supabaseCoins";
+import { emailNotificationsEnabled, enqueueEmailNotification, type EmailNotificationInput } from "./emailNotifications";
 import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyProfile, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, UserRole, WorkerProfile } from "./types";
 
 const STORAGE_KEY = "free-floripa:state";
@@ -547,6 +548,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  function queueEmail(input: EmailNotificationInput) {
+    if (!emailNotificationsEnabled) return;
+    enqueueEmailNotification(input).catch((error) => {
+      console.warn("Falha ao enfileirar email do Free Floripa.", error);
+    });
+  }
+
+  function queueLowCoinsEmail(nextBalance: number) {
+    if (nextBalance > 2 || !currentWorker?.email) return;
+    queueEmail({
+      recipientUserId: user?.id ?? currentWorker.id,
+      recipientEmail: currentWorker.email,
+      recipientName: currentWorker.name,
+      subject: "Suas moedas Free Floripa estao acabando",
+      preview: `Voce tem ${nextBalance} moeda${nextBalance === 1 ? "" : "s"} disponivel${nextBalance === 1 ? "" : "is"}.`,
+      body: `Oi, ${currentWorker.name}. Seu saldo atual e de ${nextBalance} moeda${nextBalance === 1 ? "" : "s"}. Recarregue para continuar liberando vagas e enviando candidaturas.`,
+      eventType: "low_coins",
+      metadata: { balance: nextBalance }
+    });
+  }
+
   function applyCoinAccount(account: CoinAccount | null) {
     if (!account) return;
 
@@ -764,6 +786,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setSyncStatus("erro");
         });
     }
+    if (input.urgent) {
+      state.workers
+        .filter((worker) => worker.email && worker.functions.includes(input.function))
+        .slice(0, 30)
+        .forEach((worker) => {
+          queueEmail({
+            recipientUserId: worker.id,
+            recipientEmail: worker.email,
+            recipientName: worker.name,
+            subject: `Vaga urgente para ${input.function}`,
+            preview: `${currentCompany.establishmentName} precisa de ${input.function} em ${input.neighborhood}.`,
+            body: `${currentCompany.establishmentName} publicou uma vaga urgente para ${input.function} em ${input.neighborhood}, com diaria de ${input.dailyValue.toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL"
+            })}. Entre no Free Floripa para ver os detalhes e se candidatar.`,
+            eventType: "urgent_job",
+            metadata: { jobId: id, companyId: currentCompany.id, function: input.function, neighborhood: input.neighborhood }
+          });
+        });
+    }
     return id;
   };
 
@@ -837,9 +879,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateJobStatus(jobId, status) {
         const job = state.jobs.find((item) => item.id === jobId && item.companyId === currentCompany.id);
         if (!job) return { ok: false, message: "Vaga não encontrada para esta empresa." };
+        const affectedApplications = state.applications.filter((application) => application.jobId === jobId);
 
         commit((current) => {
-          const affectedApplications = current.applications.filter((application) => application.jobId === jobId);
           const nextApplications = current.applications.map((application) => {
             if (application.jobId !== jobId) return application;
             if (status === "Cancelada" && application.status !== "Trabalho concluído" && application.status !== "Falta registrada") {
@@ -891,6 +933,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 : current.notifications
           };
         });
+        if (status === "Cancelada" || status === "Concluída") {
+          affectedApplications.slice(0, 100).forEach((application) => {
+            const worker = state.workers.find((item) => item.id === application.workerId);
+            if (!worker?.email) return;
+            queueEmail({
+              recipientUserId: worker.id,
+              recipientEmail: worker.email,
+              recipientName: worker.name,
+              subject: status === "Cancelada" ? "Uma vaga foi cancelada" : "Uma vaga foi encerrada",
+              preview: `${job.title}: ${status}.`,
+              body: `${worker.name}, a vaga ${job.title} foi marcada como ${status}. Entre no Free Floripa para acompanhar seus proximos turnos e candidaturas.`,
+              eventType: "application_status",
+              metadata: { jobId, applicationId: application.id, workerId: worker.id, status }
+            });
+          });
+        }
 
         if (supabaseMarketplaceEnabled) {
           publishJob(user, currentCompany, { ...job, status, urgent: status === "Cancelada" || status === "Concluída" ? false : job.urgent }).catch((error) => {
@@ -986,6 +1044,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       applyToJob(jobId) {
         const job = state.jobs.find((item) => item.id === jobId);
         if (!job) return { ok: false, message: "Vaga não encontrada." };
+        const company = state.companies.find((item) => item.id === job.companyId);
 
         if (!state.subscription.unlockedJobIds.includes(jobId)) {
           return {
@@ -1029,6 +1088,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...current.notifications
           ]
         }));
+        if (company?.email) {
+          queueEmail({
+            recipientUserId: company.id,
+            recipientEmail: company.email,
+            recipientName: company.establishmentName,
+            subject: "Nova candidatura recebida",
+            preview: `${currentWorker.name} se candidatou para ${job.title}.`,
+            body: `${currentWorker.name} enviou candidatura para ${job.title}. Entre no Free Floripa para analisar o perfil, aprovar ou recusar.`,
+            eventType: "application_status",
+            metadata: { jobId, applicationId: application.id, workerId: currentWorker.id, companyId: company.id }
+          });
+        }
+        queueLowCoinsEmail(Math.max(0, state.subscription.creditsRemaining - 1));
         if (supabaseCoinsEnabled && user) {
           setSyncStatus("salvando");
           applyRemoteToJobWithCoin(user.id, currentWorker.id, jobId, application.id)
@@ -1069,6 +1141,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (!application) return { ok: false, message: "Candidatura não encontrada." };
         const job = state.jobs.find((item) => item.id === application.jobId);
         if (!job) return { ok: false, message: "Vaga não encontrada." };
+        const worker = state.workers.find((item) => item.id === application.workerId);
 
         if (application.status === status) {
           return { ok: true, message: `Candidatura já está marcada como ${status}.` };
@@ -1148,6 +1221,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ]
           };
         });
+        if (worker?.email) {
+          const approved = status === "Aprovada";
+          queueEmail({
+            recipientUserId: worker.id,
+            recipientEmail: worker.email,
+            recipientName: worker.name,
+            subject: approved ? "Sua candidatura foi aprovada" : "Sua candidatura foi atualizada",
+            preview: `${job.title}: status ${status}.`,
+            body: approved
+              ? `Boa noticia, ${worker.name}. Sua candidatura para ${job.title} foi aprovada. Entre no Free Floripa para ver os proximos passos e falar com a empresa.`
+              : `${worker.name}, sua candidatura para ${job.title} foi atualizada para ${status}. Entre no Free Floripa para acompanhar os detalhes.`,
+            eventType: "application_status",
+            metadata: { jobId: job.id, applicationId, workerId: worker.id, status }
+          });
+        }
 
         if (supabaseMarketplaceEnabled) {
           updateRemoteApplicationStatus(application, status).catch((error) => {
@@ -1257,6 +1345,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setSyncStatus("erro");
           });
           publishRemoteNotification(workerId, remoteInviteNotification);
+        }
+        if (worker.email) {
+          queueEmail({
+            recipientUserId: worker.id,
+            recipientEmail: worker.email,
+            recipientName: worker.name,
+            subject: "Voce foi convidado para uma vaga",
+            preview: `${currentCompany.establishmentName} confirmou voce em ${job.title}.`,
+            body: `${currentCompany.establishmentName} confirmou voce em ${job.title}. Entre no Free Floripa para ver horario, local e detalhes do turno.`,
+            eventType: "application_status",
+            metadata: { jobId, applicationId: invitedApplication.id, workerId, companyId: currentCompany.id, status: "Aprovada" }
+          });
         }
 
         return { ok: true, message: `${worker.name} foi confirmado em ${job.title}.` };
@@ -1398,6 +1498,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const userId = targetRole === "empresa" ? company.id : worker.id;
           publishRemoteNotification(userId, notification);
         }
+        const recipient = targetRole === "empresa"
+          ? { id: company.id, email: company.email, name: company.establishmentName }
+          : { id: worker.id, email: worker.email, name: worker.name };
+        if (recipient.email) {
+          queueEmail({
+            recipientUserId: recipient.id,
+            recipientEmail: recipient.email,
+            recipientName: recipient.name,
+            subject: "Nova mensagem no Free Floripa",
+            preview: `${chatMessage.senderName}: ${text.slice(0, 90)}${text.length > 90 ? "..." : ""}`,
+            body: `${chatMessage.senderName} enviou uma mensagem sobre ${job.title}: "${text}". Entre no Free Floripa para responder.`,
+            eventType: "chat_message",
+            metadata: { applicationId: application.id, jobId: job.id, senderRole, targetRole }
+          });
+        }
 
         return { ok: true, message: "Mensagem enviada." };
       },
@@ -1422,6 +1537,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (supabaseCoinsEnabled && user) {
           trackCoinSync(unlockRemoteJobWithCoin(user.id, jobId), "Falha ao liberar vaga com moeda.");
         }
+        queueLowCoinsEmail(Math.max(0, state.subscription.creditsRemaining - 1));
 
         return { ok: true, message: "Vaga completa liberada. 1 moeda foi utilizada." };
       },
