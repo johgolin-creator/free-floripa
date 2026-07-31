@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { useAppStore } from "../lib/store";
+import { useAuth } from "../lib/auth";
+import { formatDateTime } from "../lib/format";
+import { loadRemoteCoinTransactions, supabaseCoinsEnabled, type CoinTransaction } from "../lib/supabaseCoins";
 
 const freeBenefits = [
   "Criar perfil e manter histórico",
@@ -48,9 +51,37 @@ const unlockItems = [
 
 export function SubscriptionPage() {
   const { state, subscribeProfessional, subscribePlus } = useAppStore();
+  const { user } = useAuth();
   const [message, setMessage] = useState("");
+  const [transactions, setTransactions] = useState<CoinTransaction[]>([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
+  const [transactionsError, setTransactionsError] = useState("");
   const isProfessional = state.subscription.plan === "Profissional";
   const isPlus = state.subscription.plan === "Plus";
+
+  useEffect(() => {
+    if (!user || !supabaseCoinsEnabled) return;
+
+    let active = true;
+    setTransactionsLoading(true);
+    loadRemoteCoinTransactions(user.id, 30)
+      .then((items) => {
+        if (!active) return;
+        setTransactions(items);
+        setTransactionsError("");
+      })
+      .catch((error) => {
+        if (!active) return;
+        setTransactionsError(error instanceof Error ? error.message : "Não foi possível carregar o extrato de moedas.");
+      })
+      .finally(() => {
+        if (active) setTransactionsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [state.subscription.creditsRemaining, user]);
 
   function handleSubscribe() {
     subscribeProfessional();
@@ -117,6 +148,13 @@ export function SubscriptionPage() {
         <PlanStat icon={<Lock size={18} />} label="Desbloqueio de vaga" value="1 moeda" />
         <PlanStat icon={<CreditCard size={18} />} label="Candidatura" value="1 moeda" />
       </div>
+
+      <CoinStatement
+        transactions={transactions}
+        loading={transactionsLoading}
+        error={transactionsError}
+        localBalance={state.subscription.creditsRemaining}
+      />
 
       <section className="grid gap-4 lg:grid-cols-3">
         <PlanCard
@@ -188,6 +226,101 @@ export function SubscriptionPage() {
       </section>
     </div>
   );
+}
+
+function CoinStatement({
+  transactions,
+  loading,
+  error,
+  localBalance
+}: {
+  transactions: CoinTransaction[];
+  loading: boolean;
+  error: string;
+  localBalance: number;
+}) {
+  return (
+    <section className="card p-4">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <span className="section-eyebrow">Extrato</span>
+          <h3 className="text-xl font-black text-navy-950">Histórico de moedas</h3>
+          <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
+            Acompanhe compras, vagas liberadas e candidaturas enviadas.
+          </p>
+        </div>
+        <span className="badge bg-aqua-50 text-aqua-700">
+          <WalletCards size={15} /> Saldo atual: {localBalance}
+        </span>
+      </div>
+
+      {loading ? (
+        <div className="rounded-lg bg-slate-50 p-4 text-sm font-bold text-slate-600">Carregando extrato de moedas...</div>
+      ) : error ? (
+        <div className="rounded-lg bg-red-50 p-4 text-sm font-bold text-alert">{error}</div>
+      ) : transactions.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5">
+          <strong className="text-navy-950">Nenhuma movimentação registrada ainda.</strong>
+          <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+            Quando você comprar moedas, liberar uma vaga ou enviar candidatura, o histórico aparecerá aqui.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {transactions.map((transaction) => (
+            <CoinTransactionRow key={transaction.id} transaction={transaction} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CoinTransactionRow({ transaction }: { transaction: CoinTransaction }) {
+  const positive = transaction.amount > 0;
+  return (
+    <article className="worker-application-card">
+      <div className="worker-card-head">
+        <div className="flex min-w-0 gap-3">
+          <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-lg ${positive ? "bg-aqua-50 text-aqua-700" : "bg-slate-100 text-slate-600"}`}>
+            {positive ? <WalletCards size={19} /> : <Lock size={19} />}
+          </span>
+          <div className="min-w-0">
+            <div className="mb-2 flex flex-wrap gap-2">
+              <span className={`badge ${positive ? "bg-aqua-50 text-aqua-700" : ""}`}>{positive ? "Entrada" : "Uso"}</span>
+              <span className="badge">{formatDateTime(transaction.createdAt)}</span>
+            </div>
+            <h4 className="font-black text-navy-950">{getTransactionTitle(transaction)}</h4>
+            <p className="text-sm font-semibold leading-6 text-slate-600">{getTransactionDescription(transaction)}</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <strong className={`block text-lg font-black ${positive ? "text-aqua-700" : "text-navy-950"}`}>
+            {positive ? "+" : ""}{transaction.amount} moeda{Math.abs(transaction.amount) === 1 ? "" : "s"}
+          </strong>
+          <span className="text-xs font-black uppercase text-slate-500">Saldo: {transaction.balanceAfter}</span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function getTransactionTitle(transaction: CoinTransaction) {
+  if (transaction.reason === "package_professional") return "Pacote Profissional comprado";
+  if (transaction.reason === "package_plus") return "Pacote Plus comprado";
+  if (transaction.reason === "coin_pack") return "Pacote de moedas comprado";
+  if (transaction.reason === "unlock_job") return "Vaga completa liberada";
+  if (transaction.reason === "apply_job") return "Candidatura enviada";
+  if (transaction.kind === "refund") return "Moedas estornadas";
+  if (transaction.kind === "bonus") return "Bônus de moedas";
+  return "Movimentação de moedas";
+}
+
+function getTransactionDescription(transaction: CoinTransaction) {
+  if (transaction.reason === "unlock_job" && transaction.jobId) return `Desbloqueio da vaga ${transaction.jobId}.`;
+  if (transaction.reason === "apply_job" && transaction.applicationId) return `Candidatura ${transaction.applicationId}.`;
+  if (transaction.amount > 0) return "Moedas adicionadas ao saldo da sua conta.";
+  return "Moedas utilizadas dentro do Free Floripa.";
 }
 
 function PlanStat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {

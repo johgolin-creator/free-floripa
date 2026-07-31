@@ -5,6 +5,17 @@ export interface CoinAccount {
   unlockedJobIds: string[];
 }
 
+export interface CoinTransaction {
+  id: string;
+  kind: "purchase" | "spend" | "bonus" | "refund" | "admin_adjustment";
+  reason: string;
+  amount: number;
+  balanceAfter: number;
+  jobId?: string;
+  applicationId?: string;
+  createdAt: string;
+}
+
 interface ApplyWithCoinRow {
   wallet_balance?: number | string | null;
 }
@@ -16,6 +27,17 @@ interface CoinWalletRow {
 
 interface UnlockedJobRow {
   job_id: string;
+}
+
+interface CoinTransactionRow {
+  id: string;
+  kind: CoinTransaction["kind"];
+  reason: string;
+  amount: number | string;
+  balance_after: number | string;
+  job_id?: string | null;
+  application_id?: string | null;
+  created_at: string;
 }
 
 export const supabaseCoinsEnabled = Boolean(supabase);
@@ -62,6 +84,30 @@ export async function loadRemoteCoinAccount(userId: string): Promise<CoinAccount
     balance: toBalance(wallet),
     unlockedJobIds
   };
+}
+
+export async function loadRemoteCoinTransactions(userId: string, limit = 20): Promise<CoinTransaction[]> {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("coin_transactions")
+    .select("id,kind,reason,amount,balance_after,job_id,application_id,created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw new Error(error.message);
+
+  return ((data ?? []) as CoinTransactionRow[]).map((row) => ({
+    id: row.id,
+    kind: row.kind,
+    reason: row.reason,
+    amount: Number(row.amount),
+    balanceAfter: Number(row.balance_after),
+    jobId: row.job_id ?? undefined,
+    applicationId: row.application_id ?? undefined,
+    createdAt: row.created_at
+  }));
 }
 
 export async function grantRemoteCoins(userId: string, amount: number, reason: string): Promise<CoinAccount | null> {
