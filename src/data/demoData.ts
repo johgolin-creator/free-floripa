@@ -409,5 +409,9 @@ export const initialState: AppState = {
     creditsRemaining: 4,
     renewalDate: "2026-02-01",
     unlockedJobIds: []
+  },
+  adminModeration: {
+    blockedWorkerIds: [],
+    blockedCompanyIds: []
   }
 };

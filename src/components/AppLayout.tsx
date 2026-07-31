@@ -10,6 +10,7 @@ import {
   Home,
   MessageCircle,
   Search,
+  ShieldCheck,
   Star,
   UserRound,
   UsersRound,
@@ -20,6 +21,7 @@ import { Navigate } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
 import { RoleSwitcher } from "./RoleSwitcher";
 import { useAppStore } from "../lib/store";
+import { useAuth } from "../lib/auth";
 import { getCompanyProfileCompletion, getWorkerProfileCompletion } from "../lib/profileCompletion";
 
 const workerLinks = [
@@ -47,8 +49,12 @@ const companyLinks = [
 
 export function AppLayout() {
   const { state, storageMode, syncStatus, syncError, currentWorker, currentCompany } = useAppStore();
+  const { isAdmin } = useAuth();
   const location = useLocation();
-  const links = state.activeRole === "trabalhador" ? workerLinks : companyLinks;
+  const links = [
+    ...(state.activeRole === "trabalhador" ? workerLinks : companyLinks),
+    ...(isAdmin ? [{ to: "/app/admin", label: "Admin", mobileLabel: "Admin", icon: ShieldCheck }] : [])
+  ];
   const profilePath = state.activeRole === "trabalhador" ? "/app/perfil-trabalhador" : "/app/perfil-empresa";
   const completion =
     state.activeRole === "trabalhador"
@@ -70,7 +76,7 @@ export function AppLayout() {
   const showWorkerCoins = state.activeRole === "trabalhador";
   const coinBalance = state.subscription.creditsRemaining;
 
-  if (!completion.complete && location.pathname !== profilePath) {
+  if (!completion.complete && location.pathname !== profilePath && !(isAdmin && location.pathname.startsWith("/app/admin"))) {
     return <Navigate to={profilePath} replace />;
   }
 

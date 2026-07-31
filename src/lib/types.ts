@@ -186,6 +186,11 @@ export interface SubscriptionState {
   unlockedJobIds: string[];
 }
 
+export interface AdminModerationState {
+  blockedWorkerIds: string[];
+  blockedCompanyIds: string[];
+}
+
 export interface AppState {
   activeRole: UserRole;
   selectedWorkerId: string;
@@ -200,4 +205,5 @@ export interface AppState {
   notifications: NotificationItem[];
   chatMessages: ChatMessage[];
   subscription: SubscriptionState;
+  adminModeration: AdminModerationState;
 }

@@ -113,6 +113,8 @@ interface AppContextValue {
   subscribePlus: () => void;
   buyCredits: (amount?: number) => void;
   addReview: (workerId: string, review: Omit<Review, "id">) => void;
+  toggleWorkerBlock: (workerId: string) => void;
+  toggleCompanyBlock: (companyId: string) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -157,12 +159,22 @@ function mergeSeedUpdates(savedState: AppState): AppState {
         : []
     },
     companySchedules: Array.isArray(savedState.companySchedules) ? savedState.companySchedules : [],
-    chatMessages: Array.isArray(savedState.chatMessages) ? savedState.chatMessages : []
+    chatMessages: Array.isArray(savedState.chatMessages) ? savedState.chatMessages : [],
+    adminModeration: {
+      blockedWorkerIds: Array.isArray(savedState.adminModeration?.blockedWorkerIds)
+        ? savedState.adminModeration.blockedWorkerIds
+        : [],
+      blockedCompanyIds: Array.isArray(savedState.adminModeration?.blockedCompanyIds)
+        ? savedState.adminModeration.blockedCompanyIds
+        : []
+    }
   };
   let changed =
     !Array.isArray(savedState.companySchedules) ||
     !Array.isArray(savedState.chatMessages) ||
-    !Array.isArray(savedState.subscription?.unlockedJobIds);
+    !Array.isArray(savedState.subscription?.unlockedJobIds) ||
+    !Array.isArray(savedState.adminModeration?.blockedWorkerIds) ||
+    !Array.isArray(savedState.adminModeration?.blockedCompanyIds);
 
   const jobs =
     securityJob && !normalizedState.jobs.some((job) => job.id === securityJob.id)
@@ -1474,6 +1486,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
               : worker
           )
         }));
+      },
+      toggleWorkerBlock(workerId) {
+        commit((current) => {
+          const blockedWorkerIds = current.adminModeration.blockedWorkerIds.includes(workerId)
+            ? current.adminModeration.blockedWorkerIds.filter((id) => id !== workerId)
+            : [...current.adminModeration.blockedWorkerIds, workerId];
+
+          return {
+            ...current,
+            adminModeration: {
+              ...current.adminModeration,
+              blockedWorkerIds
+            }
+          };
+        });
+      },
+      toggleCompanyBlock(companyId) {
+        commit((current) => {
+          const blockedCompanyIds = current.adminModeration.blockedCompanyIds.includes(companyId)
+            ? current.adminModeration.blockedCompanyIds.filter((id) => id !== companyId)
+            : [...current.adminModeration.blockedCompanyIds, companyId];
+
+          return {
+            ...current,
+            adminModeration: {
+              ...current.adminModeration,
+              blockedCompanyIds
+            }
+          };
+        });
       }
     }),
     [state, syncStatus, syncError, currentWorker, currentCompany, user, localStorageKey]

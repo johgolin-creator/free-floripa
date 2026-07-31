@@ -27,6 +27,7 @@ const CompanyProfilePage = lazy(() => import("./pages/CompanyProfilePage").then(
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage").then(({ NotificationsPage }) => ({ default: NotificationsPage })));
 const MessagesPage = lazy(() => import("./pages/MessagesPage").then(({ MessagesPage }) => ({ default: MessagesPage })));
 const FinancialPage = lazy(() => import("./pages/FinancialPage").then(({ FinancialPage }) => ({ default: FinancialPage })));
+const AdminPage = lazy(() => import("./pages/AdminPage").then(({ AdminPage }) => ({ default: AdminPage })));
 
 export default function App() {
   const { state, setRole } = useAppStore();
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="mensagens" element={<MessagesPage />} />
           <Route path="financeiro" element={<FinancialPage />} />
           <Route path="notificacoes" element={<NotificationsPage />} />
+          <Route path="admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -107,6 +109,16 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (authEnabled && !user) {
     return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+function AdminRoute({ children }: { children: ReactNode }) {
+  const { authEnabled, isAdmin } = useAuth();
+
+  if (authEnabled && !isAdmin) {
+    return <Navigate to="/app" replace />;
   }
 
   return children;

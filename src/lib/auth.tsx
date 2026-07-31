@@ -18,6 +18,7 @@ interface AuthContextValue {
   loading: boolean;
   user: User | null;
   role: UserRole | null;
+  isAdmin: boolean;
   email: string;
   signIn: (input: SignInInput) => Promise<{ role: UserRole }>;
   signUp: (input: SignUpInput) => Promise<{ role: UserRole; needsEmailConfirmation: boolean }>;
@@ -26,6 +27,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 const DEFAULT_PUBLIC_APP_URL = "https://free-floripa.onrender.com";
+const DEFAULT_ADMIN_EMAILS = ["jonathan.f@gmail.com"];
 
 function getAuthRedirectUrl() {
   const configuredUrl = import.meta.env.VITE_PUBLIC_APP_URL;
@@ -39,6 +41,22 @@ function getAuthRedirectUrl() {
 function getUserRole(user: User | null): UserRole | null {
   const role = user?.user_metadata?.role;
   return role === "empresa" ? "empresa" : role === "trabalhador" ? "trabalhador" : null;
+}
+
+function getAdminEmails() {
+  const configured = String(import.meta.env.VITE_ADMIN_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+
+  return configured.length > 0 ? configured : DEFAULT_ADMIN_EMAILS;
+}
+
+function getIsAdmin(user: User | null) {
+  if (!supabase) return true;
+  if (!user) return false;
+  const email = user.email?.toLowerCase();
+  return Boolean(user.user_metadata?.admin) || Boolean(email && getAdminEmails().includes(email));
 }
 
 function getAuthErrorMessage(message: string) {
@@ -98,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       user,
       role,
+      isAdmin: getIsAdmin(user),
       email: user?.email ?? "",
       async signIn({ email, password, fallbackRole }) {
         if (!supabase) return { role: fallbackRole };
