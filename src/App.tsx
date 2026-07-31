@@ -28,6 +28,7 @@ const NotificationsPage = lazy(() => import("./pages/NotificationsPage").then(({
 const MessagesPage = lazy(() => import("./pages/MessagesPage").then(({ MessagesPage }) => ({ default: MessagesPage })));
 const FinancialPage = lazy(() => import("./pages/FinancialPage").then(({ FinancialPage }) => ({ default: FinancialPage })));
 const AdminPage = lazy(() => import("./pages/AdminPage").then(({ AdminPage }) => ({ default: AdminPage })));
+const LegalPage = lazy(() => import("./pages/LegalPage").then(({ LegalPage }) => ({ default: LegalPage })));
 
 export default function App() {
   const { state, setRole } = useAppStore();
@@ -46,6 +47,8 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/cadastro-trabalhador" element={<WorkerSignupPage />} />
         <Route path="/cadastro-empresa" element={<CompanySignupPage />} />
+        <Route path="/termos" element={<LegalPage kind="terms" />} />
+        <Route path="/privacidade" element={<LegalPage kind="privacy" />} />
         <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to={state.activeRole === "empresa" ? "/app/empresa" : "/app/trabalhador"} replace />} />
           <Route path="trabalhador" element={<RoleRoute role="trabalhador"><WorkerDashboard /></RoleRoute>} />

@@ -256,6 +256,7 @@ export function WorkerSignupPage() {
           <label className="label">Transporte próprio<select name="hasTransport" className="input"><option>Sim</option><option>Não</option></select></label>
           <label className="label">Distância máxima<input name="maxDistanceKm" className="input" type="number" min="1" required placeholder="20 km" /></label>
         </div>
+        <LegalConsentText />
         <button type="submit" disabled={pending} className="primary"><UserRound size={17} /> {pending ? "Criando..." : "Criar perfil"}</button>
       </form>
     </AuthShell>
@@ -345,6 +346,7 @@ export function CompanySignupPage() {
         <label className="label">Descrição<textarea name="description" className="input min-h-20 py-3" required /></label>
         <SignupStep number="3" title="Imagem da empresa" />
         <label className="label">Foto ou logotipo<input name="logoUrl" className="input" placeholder="Cole um link do logotipo ou envie depois no perfil" /></label>
+        <LegalConsentText />
         <button type="submit" disabled={pending} className="primary"><Building2 size={17} /> {pending ? "Criando..." : "Criar conta da empresa"}</button>
       </form>
     </AuthShell>
@@ -388,11 +390,27 @@ function AuthShell({ title, description, children }: { title: string; descriptio
                 </p>
               </div>
               {children}
+              <div className="mt-5 flex flex-wrap gap-3 text-xs font-black text-slate-500">
+                <Link to="/termos" className="hover:text-aqua-700">Termos de Uso</Link>
+                <Link to="/privacidade" className="hover:text-aqua-700">Politica de Privacidade</Link>
+              </div>
             </div>
           </div>
         </section>
       </main>
     </div>
+  );
+}
+
+function LegalConsentText() {
+  return (
+    <p className="rounded-lg border border-slate-200 bg-white/80 p-3 text-xs font-semibold leading-5 text-slate-600">
+      Ao criar a conta, voce concorda com os{" "}
+      <Link to="/termos" className="font-black text-aqua-700 hover:text-aqua-800">Termos de Uso</Link>
+      {" "}e com a{" "}
+      <Link to="/privacidade" className="font-black text-aqua-700 hover:text-aqua-800">Politica de Privacidade</Link>
+      {" "}do Free Floripa.
+    </p>
   );
 }
 

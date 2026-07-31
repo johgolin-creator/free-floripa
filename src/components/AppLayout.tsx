@@ -133,6 +133,10 @@ export function AppLayout() {
           </div>
           <p className="mt-2 text-sm text-slate-300">Central interna de notificações pronta para push no futuro.</p>
         </NavLink>
+        <div className="mt-4 flex flex-wrap gap-3 text-xs font-black text-slate-400">
+          <Link to="/termos" className="hover:text-aqua-200">Termos</Link>
+          <Link to="/privacidade" className="hover:text-aqua-200">Privacidade</Link>
+        </div>
       </aside>
 
       <main className="min-w-0">
