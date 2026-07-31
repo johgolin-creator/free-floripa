@@ -15,7 +15,7 @@ import {
   UsersRound,
   WalletCards
 } from "lucide-react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
 import { RoleSwitcher } from "./RoleSwitcher";
@@ -67,6 +67,8 @@ export function AppLayout() {
             : "Supabase";
   const areaLabel = state.activeRole === "trabalhador" ? "Área do trabalhador" : "Área da empresa";
   const identityName = state.activeRole === "trabalhador" ? currentWorker.name : currentCompany.establishmentName;
+  const showWorkerCoins = state.activeRole === "trabalhador";
+  const coinBalance = state.subscription.creditsRemaining;
 
   if (!completion.complete && location.pathname !== profilePath) {
     return <Navigate to={profilePath} replace />;
@@ -80,6 +82,23 @@ export function AppLayout() {
         </NavLink>
 
         <RoleSwitcher />
+
+        {showWorkerCoins && (
+          <Link
+            to="/app/planos"
+            className="mt-4 rounded-lg border border-aqua-300/30 bg-aqua-300/10 p-4 text-white shadow-soft transition hover:bg-aqua-300/15"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-2 text-sm font-black text-aqua-200">
+                <WalletCards size={18} /> Moedas
+              </span>
+              <strong className="rounded-lg bg-aqua-300 px-3 py-1 text-lg font-black text-navy-950">{coinBalance}</strong>
+            </div>
+            <p className="mt-2 text-xs font-semibold leading-5 text-slate-300">
+              Use moedas para liberar vagas completas e enviar candidaturas.
+            </p>
+          </Link>
+        )}
 
         <nav className="mt-6 grid gap-2">
           {links.map((link) => {
@@ -121,6 +140,17 @@ export function AppLayout() {
               <h1 className="text-xl font-black text-navy-950">{identityName || areaLabel}</h1>
             </div>
             <div className="flex min-w-0 items-center gap-2">
+              {showWorkerCoins && (
+                <Link
+                  to="/app/planos"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-3 text-xs font-black text-aqua-800 shadow-soft transition hover:border-aqua-300 hover:bg-aqua-100"
+                  title="Saldo de moedas"
+                >
+                  <WalletCards size={16} />
+                  <span className="hidden sm:inline">Moedas:</span>
+                  <strong className="text-sm">{coinBalance}</strong>
+                </Link>
+              )}
               <span
                 className={`hidden min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-black md:inline-flex ${
                   syncStatus === "erro" ? "bg-red-50 text-alert" : storageMode === "supabase" ? "bg-aqua-100 text-aqua-700" : "bg-slate-100 text-slate-500"
