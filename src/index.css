@@ -121,7 +121,7 @@ a {
 }
 
 .mobile-nav-icon {
-  @apply grid h-8 w-8 place-items-center rounded-lg transition;
+  @apply grid h-7 w-7 place-items-center rounded-md transition;
 }
 
 .hero-brand-logo {

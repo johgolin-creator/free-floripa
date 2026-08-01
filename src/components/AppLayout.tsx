@@ -82,9 +82,9 @@ export function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-ice pb-20 md:grid md:grid-cols-[280px_1fr] md:pb-0">
-      <aside className="app-sidebar hidden border-r border-white/10 p-5 text-white shadow-lift md:flex md:flex-col">
-        <NavLink to="/" className="mb-7 flex items-center gap-3">
+    <div className="min-h-screen bg-ice pb-16 md:grid md:grid-cols-[264px_1fr] md:pb-0">
+      <aside className="app-sidebar hidden border-r border-white/10 p-4 text-white shadow-lift md:flex md:flex-col">
+        <NavLink to="/" className="mb-5 flex items-center gap-3">
           <BrandLogo inverted />
         </NavLink>
 
@@ -93,21 +93,21 @@ export function AppLayout() {
         {showWorkerCoins && (
           <Link
             to="/app/planos"
-            className="mt-4 rounded-lg border border-aqua-300/30 bg-aqua-300/10 p-4 text-white shadow-soft transition hover:bg-aqua-300/15"
+            className="mt-3 rounded-lg border border-aqua-300/25 bg-aqua-300/10 p-3 text-white shadow-soft transition hover:bg-aqua-300/15"
           >
             <div className="flex items-center justify-between gap-3">
-              <span className="flex items-center gap-2 text-sm font-black text-aqua-200">
-                <WalletCards size={18} /> Moedas
+              <span className="flex items-center gap-2 text-xs font-black text-aqua-200">
+                <WalletCards size={16} /> Moedas
               </span>
-              <strong className="rounded-lg bg-aqua-300 px-3 py-1 text-lg font-black text-navy-950">{coinBalance}</strong>
+              <strong className="rounded-md bg-aqua-300 px-2.5 py-1 text-base font-black text-navy-950">{coinBalance}</strong>
             </div>
-            <p className="mt-2 text-xs font-semibold leading-5 text-slate-300">
+            <p className="mt-1.5 text-[0.7rem] font-semibold leading-4 text-slate-300">
               Use moedas para liberar vagas completas e enviar candidaturas.
             </p>
           </Link>
         )}
 
-        <nav className="mt-6 grid gap-2">
+        <nav className="mt-4 grid gap-1.5">
           {links.map((link) => {
             const Icon = link.icon;
             return (
@@ -115,24 +115,24 @@ export function AppLayout() {
                 key={link.to}
                 to={link.to}
                 className={({ isActive }) =>
-                  `flex min-h-12 items-center gap-3 rounded-lg px-3 text-sm font-black transition duration-200 ${
+                  `flex min-h-10 items-center gap-2.5 rounded-lg px-2.5 text-xs font-black transition duration-200 ${
                     isActive ? "bg-white text-navy-950 shadow-glow" : "text-slate-300 hover:bg-white/10 hover:text-white"
                   }`
                 }
               >
-                <Icon size={18} />
+                <Icon size={16} />
                 {link.label}
               </NavLink>
             );
           })}
         </nav>
 
-        <NavLink to="/app/notificacoes" className="mt-auto rounded-lg border border-white/10 bg-white/10 p-4 shadow-soft transition hover:bg-white/15">
-          <div className="flex items-center gap-2 text-aqua-300">
-            <Bell size={18} />
+        <NavLink to="/app/notificacoes" className="mt-auto rounded-lg border border-white/10 bg-white/10 p-3 shadow-soft transition hover:bg-white/15">
+          <div className="flex items-center gap-2 text-sm text-aqua-300">
+            <Bell size={16} />
             <strong>{unread} novas</strong>
           </div>
-          <p className="mt-2 text-sm text-slate-300">Central de avisos pronta para acompanhar convites, vagas e avaliações.</p>
+          <p className="mt-1.5 text-xs leading-5 text-slate-300">Central de avisos para convites, vagas e avaliações.</p>
         </NavLink>
         <div className="mt-4 flex flex-wrap gap-3 text-xs font-black text-slate-400">
           <Link to="/termos" className="hover:text-aqua-200">Termos</Link>
@@ -182,7 +182,7 @@ export function AppLayout() {
         </div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-30 flex overflow-x-auto border-t border-white/80 bg-white/95 px-1 shadow-lift backdrop-blur-xl md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 flex gap-1 overflow-x-auto border-t border-white/80 bg-white/95 px-2 py-1 shadow-lift backdrop-blur-xl md:hidden">
         {links.map((link) => {
           const Icon = link.icon;
           const active = location.pathname === link.to;
@@ -190,12 +190,12 @@ export function AppLayout() {
             <NavLink
               key={link.to}
               to={link.to}
-              className={`grid min-h-16 min-w-[4.75rem] flex-1 place-items-center gap-1 border-t-2 px-1 text-center text-[0.62rem] font-black leading-tight transition ${
+              className={`grid min-h-14 min-w-[4.15rem] flex-1 place-items-center gap-0.5 rounded-lg border-t-2 px-1 text-center text-[0.58rem] font-black leading-tight transition ${
                 active ? "border-aqua-500 text-aqua-700" : "border-transparent text-slate-500"
               }`}
             >
               <span className={`mobile-nav-icon ${active ? "bg-aqua-50" : "bg-transparent"}`}>
-                <Icon size={18} />
+                <Icon size={16} />
               </span>
               <span className="w-full truncate px-0.5">{link.mobileLabel}</span>
             </NavLink>
