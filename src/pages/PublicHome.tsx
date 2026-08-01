@@ -207,10 +207,10 @@ export function PublicHome() {
       </main>
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 text-sm font-semibold text-slate-600 md:flex-row md:items-center md:justify-between">
-          <span>Free Floripa - plataforma para turnos, diarias e eventos.</span>
+          <span>Free Floripa - plataforma para turnos, diárias e eventos.</span>
           <div className="flex flex-wrap gap-3">
             <Link to="/termos" className="font-black text-navy-950 hover:text-aqua-700">Termos de Uso</Link>
-            <Link to="/privacidade" className="font-black text-navy-950 hover:text-aqua-700">Politica de Privacidade</Link>
+            <Link to="/privacidade" className="font-black text-navy-950 hover:text-aqua-700">Política de Privacidade</Link>
           </div>
         </div>
       </footer>

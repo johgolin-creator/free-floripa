@@ -392,7 +392,7 @@ function AuthShell({ title, description, children }: { title: string; descriptio
               {children}
               <div className="mt-5 flex flex-wrap gap-3 text-xs font-black text-slate-500">
                 <Link to="/termos" className="hover:text-aqua-700">Termos de Uso</Link>
-                <Link to="/privacidade" className="hover:text-aqua-700">Politica de Privacidade</Link>
+              <Link to="/privacidade" className="hover:text-aqua-700">Política de Privacidade</Link>
               </div>
             </div>
           </div>
@@ -405,10 +405,10 @@ function AuthShell({ title, description, children }: { title: string; descriptio
 function LegalConsentText() {
   return (
     <p className="rounded-lg border border-slate-200 bg-white/80 p-3 text-xs font-semibold leading-5 text-slate-600">
-      Ao criar a conta, voce concorda com os{" "}
+      Ao criar a conta, você concorda com os{" "}
       <Link to="/termos" className="font-black text-aqua-700 hover:text-aqua-800">Termos de Uso</Link>
       {" "}e com a{" "}
-      <Link to="/privacidade" className="font-black text-aqua-700 hover:text-aqua-800">Politica de Privacidade</Link>
+      <Link to="/privacidade" className="font-black text-aqua-700 hover:text-aqua-800">Política de Privacidade</Link>
       {" "}do Free Floripa.
     </p>
   );

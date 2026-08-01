@@ -561,9 +561,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       recipientUserId: user?.id ?? currentWorker.id,
       recipientEmail: currentWorker.email,
       recipientName: currentWorker.name,
-      subject: "Suas moedas Free Floripa estao acabando",
-      preview: `Voce tem ${nextBalance} moeda${nextBalance === 1 ? "" : "s"} disponivel${nextBalance === 1 ? "" : "is"}.`,
-      body: `Oi, ${currentWorker.name}. Seu saldo atual e de ${nextBalance} moeda${nextBalance === 1 ? "" : "s"}. Recarregue para continuar liberando vagas e enviando candidaturas.`,
+      subject: "Suas moedas Free Floripa estão acabando",
+      preview: `Você tem ${nextBalance} moeda${nextBalance === 1 ? "" : "s"} disponível${nextBalance === 1 ? "" : "is"}.`,
+      body: `Oi, ${currentWorker.name}. Seu saldo atual é de ${nextBalance} moeda${nextBalance === 1 ? "" : "s"}. Recarregue para continuar liberando vagas e enviando candidaturas.`,
       eventType: "low_coins",
       metadata: { balance: nextBalance }
     });
@@ -797,7 +797,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             recipientName: worker.name,
             subject: `Vaga urgente para ${input.function}`,
             preview: `${currentCompany.establishmentName} precisa de ${input.function} em ${input.neighborhood}.`,
-            body: `${currentCompany.establishmentName} publicou uma vaga urgente para ${input.function} em ${input.neighborhood}, com diaria de ${input.dailyValue.toLocaleString("pt-BR", {
+            body: `${currentCompany.establishmentName} publicou uma vaga urgente para ${input.function} em ${input.neighborhood}, com diária de ${input.dailyValue.toLocaleString("pt-BR", {
               style: "currency",
               currency: "BRL"
             })}. Entre no Free Floripa para ver os detalhes e se candidatar.`,
@@ -943,7 +943,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               recipientName: worker.name,
               subject: status === "Cancelada" ? "Uma vaga foi cancelada" : "Uma vaga foi encerrada",
               preview: `${job.title}: ${status}.`,
-              body: `${worker.name}, a vaga ${job.title} foi marcada como ${status}. Entre no Free Floripa para acompanhar seus proximos turnos e candidaturas.`,
+              body: `${worker.name}, a vaga ${job.title} foi marcada como ${status}. Entre no Free Floripa para acompanhar seus próximos turnos e candidaturas.`,
               eventType: "application_status",
               metadata: { jobId, applicationId: application.id, workerId: worker.id, status }
             });
@@ -1230,7 +1230,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             subject: approved ? "Sua candidatura foi aprovada" : "Sua candidatura foi atualizada",
             preview: `${job.title}: status ${status}.`,
             body: approved
-              ? `Boa noticia, ${worker.name}. Sua candidatura para ${job.title} foi aprovada. Entre no Free Floripa para ver os proximos passos e falar com a empresa.`
+              ? `Boa notícia, ${worker.name}. Sua candidatura para ${job.title} foi aprovada. Entre no Free Floripa para ver os próximos passos e falar com a empresa.`
               : `${worker.name}, sua candidatura para ${job.title} foi atualizada para ${status}. Entre no Free Floripa para acompanhar os detalhes.`,
             eventType: "application_status",
             metadata: { jobId: job.id, applicationId, workerId: worker.id, status }
@@ -1290,8 +1290,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             };
         const remoteInviteNotification: AppState["notifications"][number] = {
           id: crypto.randomUUID(),
-          title: "Voce foi convidado para uma vaga",
-          body: `${currentCompany.establishmentName} confirmou voce em ${job.title}.`,
+          title: "Você foi convidado para uma vaga",
+          body: `${currentCompany.establishmentName} confirmou você em ${job.title}.`,
           role: "trabalhador",
           createdAt: new Date().toISOString(),
           read: false
@@ -1351,9 +1351,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             recipientUserId: worker.id,
             recipientEmail: worker.email,
             recipientName: worker.name,
-            subject: "Voce foi convidado para uma vaga",
-            preview: `${currentCompany.establishmentName} confirmou voce em ${job.title}.`,
-            body: `${currentCompany.establishmentName} confirmou voce em ${job.title}. Entre no Free Floripa para ver horario, local e detalhes do turno.`,
+            subject: "Você foi convidado para uma vaga",
+            preview: `${currentCompany.establishmentName} confirmou você em ${job.title}.`,
+            body: `${currentCompany.establishmentName} confirmou você em ${job.title}. Entre no Free Floripa para ver horário, local e detalhes do turno.`,
             eventType: "application_status",
             metadata: { jobId, applicationId: invitedApplication.id, workerId, companyId: currentCompany.id, status: "Aprovada" }
           });

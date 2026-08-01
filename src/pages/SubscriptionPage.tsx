@@ -215,7 +215,7 @@ export function SubscriptionPage() {
           </span>
           <h3>Recargas em preparação</h3>
           <p>
-            As moedas organizam o acesso as vagas dentro do app. Por enquanto, as recargas ficam sob controle da administracao do Free Floripa.
+            As moedas organizam o acesso às vagas dentro do app. Por enquanto, as recargas ficam sob controle da administração do Free Floripa.
           </p>
         </div>
         <div className="plan-note-list">

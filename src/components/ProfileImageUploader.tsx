@@ -37,7 +37,7 @@ export function ProfileImageUploader({ label, value, kind, previewAlt, onChange 
                   const publicUrl = await uploadProfileImage(file, kind);
                   onChange(publicUrl);
                 } catch (error) {
-                  setUploadError(error instanceof Error ? error.message : "Nao foi possivel enviar a imagem.");
+                  setUploadError(error instanceof Error ? error.message : "Não foi possível enviar a imagem.");
                 } finally {
                   setUploading(false);
                   input.value = "";
@@ -46,7 +46,7 @@ export function ProfileImageUploader({ label, value, kind, previewAlt, onChange 
             />
           </label>
           <p className="mt-1 text-xs font-semibold text-slate-500">
-            {uploading ? "Enviando imagem..." : "JPG, PNG, WEBP ou GIF ate 5 MB."}
+            {uploading ? "Enviando imagem..." : "JPG, PNG, WEBP ou GIF até 5 MB."}
           </p>
         </div>
       </div>

@@ -219,13 +219,13 @@ export function CompanySchedulePage() {
 
                   {getOpenSlots(job) > 0 && (
                     <div className="schedule-alert">
-                      Faltam {getOpenSlots(job)} profissional{getOpenSlots(job) === 1 ? "" : "is"} para completar esta escala.
+                      {getOpenSlots(job) === 1 ? "Falta" : "Faltam"} {getOpenSlots(job)} profissional{getOpenSlots(job) === 1 ? "" : "is"} para completar esta escala.
                       <Link to={`/app/candidatos?vaga=${job.id}`} className="ml-2 font-black text-aqua-700">Ver candidatos</Link>
                     </div>
                   )}
 
                   {applications.length === 0 ? (
-                    <EmptyState title="Nenhum profissional confirmado" text="Aprove candidatos para preencher esta escala." />
+                    <EmptyState title="Nenhum profissional confirmado" text="Aprove candidatos na vaga para preencher esta escala." />
                   ) : (
                     <div className="grid gap-3">
                       {applications.map((application) => (

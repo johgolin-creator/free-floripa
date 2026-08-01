@@ -9,60 +9,60 @@ const lastUpdated = "31 de julho de 2026";
 const termsSections = [
   {
     title: "Uso da plataforma",
-    text: "O Free Floripa conecta empresas que precisam de mao de obra temporaria com trabalhadores freelancers. A plataforma organiza cadastro, vagas, candidaturas, escala, mensagens, moedas internas e historico de avaliacoes."
+    text: "O Free Floripa conecta empresas que precisam de mão de obra temporária com trabalhadores freelancers. A plataforma organiza cadastro, vagas, candidaturas, escalas, mensagens, moedas internas e histórico de avaliações."
   },
   {
     title: "Responsabilidade das empresas",
-    text: "A empresa deve publicar informacoes verdadeiras sobre funcao, valor, horario, bairro, endereco, uniforme, forma de pagamento e requisitos da vaga. A contratacao, pagamento do servico e cumprimento de regras trabalhistas, fiscais e de seguranca sao responsabilidade da empresa contratante."
+    text: "A empresa deve publicar informações verdadeiras sobre função, valor, horário, bairro, endereço, uniforme, forma de pagamento e requisitos da vaga. A contratação, o pagamento do serviço e o cumprimento de regras trabalhistas, fiscais e de segurança são responsabilidade da empresa contratante."
   },
   {
     title: "Responsabilidade dos trabalhadores",
-    text: "O trabalhador deve informar apenas profissoes que realmente conhece, manter dados de contato atualizados, comparecer aos turnos confirmados e agir com profissionalismo. Informacoes falsas, faltas recorrentes ou mau uso podem limitar o acesso a vagas."
+    text: "O trabalhador deve informar apenas profissões que realmente conhece, manter dados de contato atualizados, comparecer aos turnos confirmados e agir com profissionalismo. Informações falsas, faltas recorrentes ou mau uso podem limitar o acesso a vagas."
   },
   {
     title: "Moedas internas",
-    text: "As moedas do Free Floripa sao usadas para liberar detalhes de vagas e candidaturas dentro da plataforma. Nesta fase, nao representam saldo bancario, investimento, dinheiro eletronico ou promessa de saque."
+    text: "As moedas do Free Floripa são usadas para liberar detalhes de vagas e candidaturas dentro da plataforma. Nesta fase, elas não representam saldo bancário, investimento, dinheiro eletrônico ou promessa de saque."
   },
   {
-    title: "Avaliacoes e moderacao",
-    text: "Empresas podem avaliar colaboradores apos o turno, e a administracao pode bloquear contas ou conteudos que prejudiquem a seguranca, a confianca ou o funcionamento do aplicativo."
+    title: "Avaliações e moderação",
+    text: "Empresas podem avaliar colaboradores após o turno, e a administração pode bloquear contas ou conteúdos que prejudiquem a segurança, a confiança ou o funcionamento do aplicativo."
   },
   {
     title: "Limitacao de responsabilidade",
-    text: "O Free Floripa ajuda na organizacao e aproximacao entre as partes, mas nao garante contratacao, pagamento, disponibilidade de vagas, comparecimento, qualidade do servico ou ausencia de conflitos entre usuarios."
+    text: "O Free Floripa ajuda na organização e na aproximação entre as partes, mas não garante contratação, pagamento, disponibilidade de vagas, comparecimento, qualidade do serviço ou ausência de conflitos entre usuários."
   }
 ];
 
 const privacySections = [
   {
     title: "Dados que coletamos",
-    text: "Podemos coletar nome, e-mail, telefone, foto, cidade, bairro, profissoes, nivel de experiencia, disponibilidade, dados de empresa, CNPJ, vagas, candidaturas, mensagens, avaliacoes, saldo de moedas e registros de uso do aplicativo."
+    text: "Podemos coletar nome, e-mail, telefone, foto, cidade, bairro, profissões, nível de experiência, disponibilidade, dados da empresa, CNPJ, vagas, candidaturas, mensagens, avaliações, saldo de moedas e registros de uso do aplicativo."
   },
   {
     title: "Como usamos os dados",
-    text: "Usamos esses dados para criar contas, exibir perfis, publicar vagas, recomendar profissionais, permitir candidaturas, liberar contato apos confirmacao, manter historico, melhorar seguranca e enviar notificacoes importantes."
+    text: "Usamos esses dados para criar contas, exibir perfis, publicar vagas, recomendar profissionais, permitir candidaturas, liberar contato após confirmação, manter histórico, melhorar a segurança e enviar notificações importantes."
   },
   {
     title: "Compartilhamento dentro do app",
-    text: "Empresas podem ver dados profissionais dos trabalhadores quando isso for necessario para selecionar candidatos. Trabalhadores podem ver dados da vaga e, apos confirmacao, informacoes de contato e local combinadas pela empresa."
+    text: "Empresas podem ver dados profissionais dos trabalhadores quando isso for necessário para selecionar candidatos. Trabalhadores podem ver dados da vaga e, após confirmação, informações de contato e local combinadas pela empresa."
   },
   {
-    title: "Servicos de tecnologia",
-    text: "O aplicativo usa servicos de infraestrutura para autenticacao, banco de dados e armazenamento de informacoes. Futuramente poderemos usar provedores de e-mail, notificacao e pagamento, sempre para operar o proprio Free Floripa."
+    title: "Serviços de tecnologia",
+    text: "O aplicativo usa serviços de infraestrutura para autenticação, banco de dados e armazenamento de informações. Futuramente poderemos usar provedores de e-mail, notificação e pagamento, sempre para operar o próprio Free Floripa."
   },
   {
-    title: "Seguranca e retencao",
-    text: "Mantemos controles de acesso, regras no banco de dados e historico de operacoes para reduzir abuso. Os dados podem ser mantidos enquanto a conta existir ou pelo tempo necessario para seguranca, suporte, auditoria e obrigacoes legais."
+    title: "Segurança e retenção",
+    text: "Mantemos controles de acesso, regras no banco de dados e histórico de operações para reduzir abusos. Os dados podem ser mantidos enquanto a conta existir ou pelo tempo necessário para segurança, suporte, auditoria e obrigações legais."
   },
   {
-    title: "Direitos do usuario",
-    text: "O usuario pode solicitar correcao, acesso ou exclusao de dados. Alguns registros podem ser preservados quando forem necessarios para seguranca, prevencao de fraude, historico operacional ou cumprimento de obrigacoes legais."
+    title: "Direitos do usuário",
+    text: "O usuário pode solicitar correção, acesso ou exclusão de dados. Alguns registros podem ser preservados quando forem necessários para segurança, prevenção de fraude, histórico operacional ou cumprimento de obrigações legais."
   }
 ];
 
 export function LegalPage({ kind }: { kind: LegalKind }) {
   const isPrivacy = kind === "privacy";
-  const title = isPrivacy ? "Politica de Privacidade" : "Termos de Uso";
+  const title = isPrivacy ? "Política de Privacidade" : "Termos de Uso";
   const subtitle = isPrivacy
     ? "Como o Free Floripa trata dados de trabalhadores, empresas, vagas, mensagens e moedas internas."
     : "Regras principais para usar o Free Floripa com mais clareza entre empresas e trabalhadores.";
@@ -92,12 +92,12 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
               </p>
               <h1 className="mt-4 text-3xl font-black text-navy-950 md:text-5xl">{title}</h1>
               <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-slate-600 md:text-base">{subtitle}</p>
-              <p className="mt-4 text-xs font-black uppercase text-slate-500">Ultima atualizacao: {lastUpdated}</p>
+              <p className="mt-4 text-xs font-black uppercase text-slate-500">Última atualização: {lastUpdated}</p>
             </div>
             <aside className="rounded-lg border border-slate-100 bg-slate-50 p-4">
               <div className="flex items-center gap-2 text-navy-950">
                 <ShieldCheck size={20} />
-                <strong>Resumo rapido</strong>
+                <strong>Resumo rápido</strong>
               </div>
               <div className="mt-4 grid gap-3 text-sm font-semibold leading-6 text-slate-600">
                 <span className="flex gap-2"><CheckCircle2 size={17} className="mt-0.5 shrink-0 text-aqua-700" /> Dados usados para operar vagas, perfis, mensagens e moedas.</span>
@@ -129,7 +129,7 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
 
         <div className="mt-6 flex flex-wrap gap-3">
           <Link to="/termos" className="secondary">Termos de Uso</Link>
-          <Link to="/privacidade" className="secondary">Politica de Privacidade</Link>
+                <Link to="/privacidade" className="secondary">Política de Privacidade</Link>
           <Link to="/login" className="primary">Entrar no app</Link>
         </div>
       </main>

@@ -10,7 +10,7 @@ import { useAppStore } from "../lib/store";
 import type { JobFunction, Neighborhood, PaymentMethod, WorkerProfile } from "../lib/types";
 
 const demoWorkerIds = new Set(["worker-1", "worker-2", "worker-3", "worker-4"]);
-const eventTypes = ["Casamento", "Aniversario", "Evento corporativo", "Formatura", "Confraternizacao", "Outro"];
+const eventTypes = ["Casamento", "Aniversário", "Evento corporativo", "Formatura", "Confraternização", "Outro"];
 const eventFunctions = functions.filter((item) =>
   ["Garçom", "Bartender", "Segurança", "Recepcionista", "Auxiliar de cozinha", "Copeiro", "Limpeza", "Promotor"].includes(item)
 );
@@ -82,17 +82,17 @@ export function CompanyEventsPage() {
       suggested[item] = suggestCrewSize(guests, item);
     });
     setNeeds(suggested);
-    setMessage("Sugestao aplicada com base no tamanho do evento. Ajuste as quantidades se precisar.");
+    setMessage("Sugestão aplicada com base no tamanho do evento. Ajuste as quantidades se precisar.");
   }
 
   function createEventJobs() {
     if (!eventName.trim() || !date || !startsAt || !endsAt || !location.trim()) {
-      setMessage("Preencha nome, data, horario e local do evento antes de criar as vagas.");
+      setMessage("Preencha nome, data, horário e local do evento antes de criar as vagas.");
       return;
     }
 
     if (requestedFunctions.length === 0) {
-      setMessage("Informe pelo menos uma funcao com quantidade maior que zero.");
+      setMessage("Informe pelo menos uma função com quantidade maior que zero.");
       return;
     }
 
@@ -106,18 +106,18 @@ export function CompanyEventsPage() {
         endsAt,
         dailyValue,
         paymentMethod,
-        approximateAddress: `${neighborhood}, Florianopolis`,
+        approximateAddress: `${neighborhood}, Florianópolis`,
         fullAddress: location,
         neighborhood,
-        uniform: eventType === "Casamento" ? "Social preto ou conforme orientacao dos noivos" : "A combinar com a organizacao",
-        requiredExperience: "Experiencia compativel com evento social e atendimento ao publico",
+        uniform: eventType === "Casamento" ? "Social preto ou conforme orientação dos noivos" : "A combinar com a organização",
+        requiredExperience: "Experiência compatível com evento social e atendimento ao público",
         description: `${eventType} para aproximadamente ${guests} convidados. Equipe criada pela aba Eventos do Free Floripa.`,
-        benefits: ["Contato liberado apos confirmacao", "Equipe organizada por funcao"],
+        benefits: ["Contato liberado após confirmação", "Equipe organizada por função"],
         urgent: false
       });
     });
 
-    setMessage(`${requestedFunctions.length} vaga${requestedFunctions.length === 1 ? "" : "s"} criada${requestedFunctions.length === 1 ? "" : "s"} para ${eventName}. Agora voce pode acompanhar candidatos em Minhas vagas.`);
+    setMessage(`${requestedFunctions.length} vaga${requestedFunctions.length === 1 ? "" : "s"} criada${requestedFunctions.length === 1 ? "" : "s"} para ${eventName}. Agora você pode acompanhar os candidatos em Minhas vagas.`);
   }
 
   return (
@@ -125,7 +125,7 @@ export function CompanyEventsPage() {
       <SectionHeader
         eyebrow="Eventos"
         title="Monte a equipe do evento"
-        description="Ideal para casamento, aniversario, formatura ou evento corporativo. Defina a equipe desejada, veja profissionais disponiveis por funcao e crie as vagas em lote."
+        description="Ideal para casamento, aniversário, formatura ou evento corporativo. Defina a equipe desejada, veja profissionais disponíveis por função e crie as vagas em lote."
       />
 
       {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
@@ -173,12 +173,12 @@ export function CompanyEventsPage() {
               </select>
             </label>
             <label className="label">
-              Diaria base
+              Diária base
               <input value={dailyValue} onChange={(event) => setDailyValue(Number(event.target.value || 0))} className="input" min={1} type="number" />
             </label>
             <label className="label md:col-span-2">
               Local completo
-              <input value={location} onChange={(event) => setLocation(event.target.value)} className="input" placeholder="Endereco do salao, casa de eventos ou residencia" />
+              <input value={location} onChange={(event) => setLocation(event.target.value)} className="input" placeholder="Endereço do salão, casa de eventos ou residência" />
             </label>
             <label className="label">
               Pagamento
@@ -194,16 +194,16 @@ export function CompanyEventsPage() {
 
         <aside className="grid gap-3">
           <Metric icon={<UsersRound />} label="Profissionais na equipe" value={totalProfessionals} />
-          <Metric icon={<ClipboardList />} label="Funcoes com vagas" value={requestedFunctions.length} />
-          <Metric icon={<Star />} label="Diaria base" value={formatCurrency(dailyValue)} />
+          <Metric icon={<ClipboardList />} label="Funções com vagas" value={requestedFunctions.length} />
+          <Metric icon={<Star />} label="Diária base" value={formatCurrency(dailyValue)} />
         </aside>
       </section>
 
       <section className="card p-4">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="font-black text-navy-950">Equipe necessaria</h3>
-            <p className="mt-1 text-sm font-semibold text-slate-600">Ajuste quantas pessoas precisa em cada funcao.</p>
+            <h3 className="font-black text-navy-950">Equipe necessária</h3>
+            <p className="mt-1 text-sm font-semibold text-slate-600">Ajuste quantas pessoas você precisa em cada função.</p>
           </div>
           <button type="button" onClick={applySuggestion} className="secondary">
             <CheckCircle2 size={17} /> Sugerir equipe
@@ -222,7 +222,7 @@ export function CompanyEventsPage() {
                   type="number"
                 />
                 <small className="w-24 text-xs font-bold text-slate-500">
-                  {availableByFunction[item] ?? 0} disponivel{(availableByFunction[item] ?? 0) === 1 ? "" : "is"}
+                  {availableByFunction[item] ?? 0} disponível{(availableByFunction[item] ?? 0) === 1 ? "" : "is"}
                 </small>
               </span>
             </label>
@@ -238,7 +238,7 @@ export function CompanyEventsPage() {
       <section className="grid gap-4 xl:grid-cols-[320px_1fr]">
         <aside className="card p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-black text-navy-950">
-            <Search size={17} /> Ver profissionais por funcao
+            <Search size={17} /> Ver profissionais por função
           </div>
           <div className="grid gap-2">
             {eventFunctions.map((item) => (
@@ -268,7 +268,7 @@ export function CompanyEventsPage() {
             </p>
           </div>
           {selectedWorkers.length === 0 ? (
-            <EmptyState title="Nenhum profissional nesta funcao" text="Quando trabalhadores completarem o perfil com essa profissao, eles aparecem aqui." />
+            <EmptyState title="Nenhum profissional nesta função" text="Quando trabalhadores completarem o perfil com essa profissão, eles aparecerão aqui." />
           ) : (
             <div className="grid gap-4 2xl:grid-cols-2">
               {selectedWorkers.slice(0, 8).map((worker) => (

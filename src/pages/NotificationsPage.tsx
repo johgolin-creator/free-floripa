@@ -74,7 +74,7 @@ function getMeta(notification: NotificationItem, role: UserRole): NotificationMe
     };
   }
 
-  if (includesAny(text, ["vaga", "reposicao", "trabalho", "plantao", "diaria"])) {
+  if (includesAny(text, ["vaga", "reposição", "trabalho", "plantão", "diária"])) {
     return {
       kind: "Vagas",
       label: "Vaga",

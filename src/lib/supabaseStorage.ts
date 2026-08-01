@@ -16,24 +16,24 @@ function getStorageErrorMessage(message: string) {
   const normalized = message.toLowerCase();
 
   if (normalized.includes("bucket") || normalized.includes("not found")) {
-    return "O envio de fotos ainda nao foi configurado.";
+    return "O envio de fotos ainda não foi configurado.";
   }
   if (normalized.includes("policy") || normalized.includes("row-level") || normalized.includes("permission")) {
-    return "O envio de fotos foi bloqueado. Confira as permissoes de armazenamento.";
+    return "O envio de fotos foi bloqueado. Confira as permissões de armazenamento.";
   }
 
-  return message || "Nao foi possivel enviar a imagem.";
+  return message || "Não foi possível enviar a imagem.";
 }
 
 export async function uploadProfileImage(file: File, kind: ProfileImageKind) {
   if (!supabase) {
-    throw new Error("O envio de fotos ainda nao esta configurado no app.");
+    throw new Error("O envio de fotos ainda não está configurado no app.");
   }
   if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
     throw new Error("Use uma imagem JPG, PNG, WEBP ou GIF.");
   }
   if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
-    throw new Error(`A imagem precisa ter ate ${MAX_IMAGE_SIZE_MB} MB.`);
+    throw new Error(`A imagem precisa ter até ${MAX_IMAGE_SIZE_MB} MB.`);
   }
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
