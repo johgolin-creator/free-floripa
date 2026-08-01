@@ -16,10 +16,10 @@ function getStorageErrorMessage(message: string) {
   const normalized = message.toLowerCase();
 
   if (normalized.includes("bucket") || normalized.includes("not found")) {
-    return "O bucket avatars ainda nao foi criado no Supabase.";
+    return "O envio de fotos ainda nao foi configurado.";
   }
   if (normalized.includes("policy") || normalized.includes("row-level") || normalized.includes("permission")) {
-    return "O Supabase bloqueou o envio. Confira as politicas do bucket avatars.";
+    return "O envio de fotos foi bloqueado. Confira as permissoes de armazenamento.";
   }
 
   return message || "Nao foi possivel enviar a imagem.";
@@ -27,7 +27,7 @@ function getStorageErrorMessage(message: string) {
 
 export async function uploadProfileImage(file: File, kind: ProfileImageKind) {
   if (!supabase) {
-    throw new Error("Configure o Supabase para enviar fotos pelo app.");
+    throw new Error("O envio de fotos ainda nao esta configurado no app.");
   }
   if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
     throw new Error("Use uma imagem JPG, PNG, WEBP ou GIF.");

@@ -66,12 +66,12 @@ export function AppLayout() {
     storageMode === "local"
       ? "Local"
       : syncStatus === "erro"
-        ? "Erro Supabase"
+        ? "Falha ao salvar"
         : syncStatus === "carregando"
           ? "Carregando"
           : syncStatus === "salvando"
             ? "Salvando"
-            : "Supabase";
+            : "Sincronizado";
   const areaLabel = state.activeRole === "trabalhador" ? "Área do trabalhador" : "Área da empresa";
   const identityName = state.activeRole === "trabalhador" ? currentWorker.name : currentCompany.establishmentName;
   const showWorkerCoins = state.activeRole === "trabalhador";
@@ -132,7 +132,7 @@ export function AppLayout() {
             <Bell size={18} />
             <strong>{unread} novas</strong>
           </div>
-          <p className="mt-2 text-sm text-slate-300">Central interna de notificações pronta para push no futuro.</p>
+          <p className="mt-2 text-sm text-slate-300">Central de avisos pronta para acompanhar convites, vagas e avaliações.</p>
         </NavLink>
         <div className="mt-4 flex flex-wrap gap-3 text-xs font-black text-slate-400">
           <Link to="/termos" className="hover:text-aqua-200">Termos</Link>
@@ -166,7 +166,7 @@ export function AppLayout() {
                 className={`hidden min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-black md:inline-flex ${
                   syncStatus === "erro" ? "bg-red-50 text-alert" : storageMode === "supabase" ? "bg-aqua-100 text-aqua-700" : "bg-slate-100 text-slate-500"
                 }`}
-                title={syncError || (storageMode === "supabase" ? "Dados sincronizados no Supabase" : "Dados salvos apenas neste navegador")}
+                title={syncError || (storageMode === "supabase" ? "Dados sincronizados com segurança" : "Dados salvos apenas neste aparelho")}
               >
                 <Cloud size={16} /> {syncLabel}
               </span>

@@ -535,15 +535,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSyncError("");
       setSyncStatus("sincronizado");
     } catch (error) {
-      setSyncError(error instanceof Error ? error.message : "Falha ao salvar no Supabase.");
+      setSyncError("Falha ao salvar os dados.");
       setSyncStatus("erro");
     }
   }
 
   function publishRemoteNotification(userId: string | undefined | null, notification: AppState["notifications"][number]) {
     if (!userId || !supabaseMarketplaceEnabled) return;
-    publishNotification(userId, notification).catch((error) => {
-      setSyncError(error instanceof Error ? error.message : "Falha ao publicar notificação.");
+    publishNotification(userId, notification).catch(() => {
+      setSyncError("Falha ao publicar notificação.");
       setSyncStatus("erro");
     });
   }
@@ -599,8 +599,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setSyncError("");
         setSyncStatus("sincronizado");
       })
-      .catch((error) => {
-        setSyncError(error instanceof Error ? error.message : fallbackMessage);
+      .catch(() => {
+        setSyncError(fallbackMessage);
         setSyncStatus("erro");
       });
   }
@@ -637,9 +637,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setSyncError("");
         setSyncStatus("sincronizado");
       })
-      .catch((error) => {
+      .catch(() => {
         if (!active) return;
-        setSyncError(error instanceof Error ? error.message : "Falha ao carregar dados do Supabase.");
+        setSyncError("Falha ao carregar seus dados.");
         setSyncStatus("erro");
       });
 
@@ -661,9 +661,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setState((current) => mergeCompanyMarketplaceState(mergePublicWorkers(current, publicWorkers), currentCompany.id, companyPayload));
         setSyncError("");
       })
-      .catch((error) => {
+      .catch(() => {
         if (!active) return;
-        setSyncError(error instanceof Error ? error.message : "Falha ao carregar o banco de profissionais.");
+        setSyncError("Falha ao carregar o banco de profissionais.");
         setSyncStatus("erro");
       });
 
@@ -675,8 +675,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading || role !== "trabalhador" || !user || !currentWorker || !supabaseMarketplaceEnabled) return;
 
-    publishWorkerProfile(user, currentWorker).catch((error) => {
-      setSyncError(error instanceof Error ? error.message : "Falha ao publicar o perfil no banco de profissionais.");
+    publishWorkerProfile(user, currentWorker).catch(() => {
+      setSyncError("Falha ao publicar o perfil no banco de profissionais.");
       setSyncStatus("erro");
     });
   }, [authLoading, currentWorker, role, user]);
@@ -691,9 +691,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setState((current) => mergeWorkerMarketplaceState(current, currentWorker.id, payload));
         setSyncError("");
       })
-      .catch((error) => {
+      .catch(() => {
         if (!active) return;
-        setSyncError(error instanceof Error ? error.message : "Falha ao carregar vagas e candidaturas.");
+        setSyncError("Falha ao carregar vagas e candidaturas.");
         setSyncStatus("erro");
       });
 
@@ -712,9 +712,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setState((current) => mergeNotifications(current, notifications));
         setSyncError("");
       })
-      .catch((error) => {
+      .catch(() => {
         if (!active) return;
-        setSyncError(error instanceof Error ? error.message : "Falha ao carregar notificações.");
+        setSyncError("Falha ao carregar notificações.");
         setSyncStatus("erro");
       });
 
@@ -733,9 +733,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         applyCoinAccount(account);
         setSyncError("");
       })
-      .catch((error) => {
+      .catch(() => {
         if (!active) return;
-        setSyncError(error instanceof Error ? error.message : "Falha ao carregar carteira de moedas.");
+        setSyncError("Falha ao carregar carteira de moedas.");
         setSyncStatus("erro");
       });
 
@@ -781,8 +781,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setSyncError("");
           setSyncStatus("sincronizado");
         })
-        .catch((error) => {
-          setSyncError(error instanceof Error ? error.message : "Falha ao publicar vaga no Supabase.");
+        .catch(() => {
+          setSyncError("Falha ao publicar vaga.");
           setSyncStatus("erro");
         });
     }
@@ -951,8 +951,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         if (supabaseMarketplaceEnabled) {
-          publishJob(user, currentCompany, { ...job, status, urgent: status === "Cancelada" || status === "Concluída" ? false : job.urgent }).catch((error) => {
-            setSyncError(error instanceof Error ? error.message : "Falha ao atualizar vaga no Supabase.");
+          publishJob(user, currentCompany, { ...job, status, urgent: status === "Cancelada" || status === "Concluída" ? false : job.urgent }).catch(() => {
+            setSyncError("Falha ao atualizar vaga.");
             setSyncStatus("erro");
           });
         }
@@ -1035,8 +1035,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           )
         }));
         if (supabaseMarketplaceEnabled && user) {
-          publishCompanyProfile(user, nextCompany).catch((error) => {
-            setSyncError(error instanceof Error ? error.message : "Falha ao publicar perfil da empresa.");
+          publishCompanyProfile(user, nextCompany).catch(() => {
+            setSyncError("Falha ao publicar perfil da empresa.");
             setSyncStatus("erro");
           });
         }
@@ -1110,7 +1110,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               setSyncError("");
               setSyncStatus("sincronizado");
             })
-            .catch((error) => {
+            .catch(() => {
               commit((current) => ({
                 ...current,
                 applications: current.applications.filter((item) => item.id !== application.id),
@@ -1123,12 +1123,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 },
                 notifications: current.notifications.filter((item) => item.id !== companyNotification.id)
               }));
-              setSyncError(error instanceof Error ? error.message : "Falha ao enviar candidatura com moeda.");
+              setSyncError("Falha ao enviar candidatura com moeda.");
               setSyncStatus("erro");
             });
         } else if (supabaseMarketplaceEnabled) {
-          publishApplication(currentWorker, jobId, application.id).catch((error) => {
-            setSyncError(error instanceof Error ? error.message : "Falha ao publicar candidatura no Supabase.");
+          publishApplication(currentWorker, jobId, application.id).catch(() => {
+            setSyncError("Falha ao enviar candidatura.");
             setSyncStatus("erro");
           });
           publishRemoteNotification(job.companyId, companyNotification);
@@ -1238,8 +1238,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         if (supabaseMarketplaceEnabled) {
-          updateRemoteApplicationStatus(application, status).catch((error) => {
-            setSyncError(error instanceof Error ? error.message : "Falha ao atualizar candidatura no Supabase.");
+          updateRemoteApplicationStatus(application, status).catch(() => {
+            setSyncError("Falha ao atualizar candidatura.");
             setSyncStatus("erro");
           });
           publishRemoteNotification(application.workerId, {
@@ -1340,8 +1340,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           };
         });
         if (supabaseMarketplaceEnabled) {
-          publishInvitedApplication(jobId, workerId, invitedApplication.id).catch((error) => {
-            setSyncError(error instanceof Error ? error.message : "Falha ao publicar convite no Supabase.");
+          publishInvitedApplication(jobId, workerId, invitedApplication.id).catch(() => {
+            setSyncError("Falha ao enviar convite.");
             setSyncStatus("erro");
           });
           publishRemoteNotification(workerId, remoteInviteNotification);
@@ -1409,8 +1409,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           )
         }));
         if (supabaseMarketplaceEnabled) {
-          markRemoteNotificationRead(notificationId).catch((error) => {
-            setSyncError(error instanceof Error ? error.message : "Falha ao marcar notificação como lida.");
+          markRemoteNotificationRead(notificationId).catch(() => {
+            setSyncError("Falha ao marcar notificação como lida.");
             setSyncStatus("erro");
           });
         }
@@ -1423,8 +1423,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           )
         }));
         if (supabaseMarketplaceEnabled && user) {
-          markRemoteRoleNotificationsRead(user.id, role).catch((error) => {
-            setSyncError(error instanceof Error ? error.message : "Falha ao marcar notificações como lidas.");
+          markRemoteRoleNotificationsRead(user.id, role).catch(() => {
+            setSyncError("Falha ao marcar notificações como lidas.");
             setSyncStatus("erro");
           });
         }

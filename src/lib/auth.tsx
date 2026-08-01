@@ -68,7 +68,7 @@ function getAuthErrorMessage(message: string) {
     return "Este e-mail já está cadastrado. Use o login.";
   }
   if (normalized.includes("password")) {
-    return "A senha precisa atender aos requisitos de segurança do Supabase.";
+    return "A senha precisa atender aos requisitos de segurança.";
   }
   return message || "Não foi possível concluir a autenticação.";
 }

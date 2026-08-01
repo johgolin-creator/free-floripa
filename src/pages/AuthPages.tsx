@@ -68,7 +68,7 @@ export function LoginPage() {
         }}
       >
         {error && <div className="auth-alert auth-alert-error">{error}</div>}
-        {!authEnabled && <div className="auth-alert auth-alert-info">Modo local: Supabase não configurado neste ambiente.</div>}
+        {!authEnabled && <div className="auth-alert auth-alert-info">Modo demonstração: dados salvos apenas neste aparelho.</div>}
         <label className="label">E-mail<input name="email" className="input" type="email" required placeholder="seu@email.com" /></label>
         <label className="label">Senha<input name="password" className="input" type="password" required placeholder="••••••••" /></label>
         <fieldset className="grid gap-2">
@@ -373,7 +373,7 @@ function AuthShell({ title, description, children }: { title: string; descriptio
                 </p>
               </div>
               <div className="auth-side-list">
-                <span><ShieldCheck size={17} /> Login conectado ao Supabase</span>
+                <span><ShieldCheck size={17} /> Acesso seguro por e-mail e senha</span>
                 <span><BriefcaseBusiness size={17} /> Vagas e escalas organizadas</span>
                 <span><UsersRound size={17} /> Perfis com experiência por função</span>
               </div>
@@ -386,7 +386,7 @@ function AuthShell({ title, description, children }: { title: string; descriptio
                 <h1 className="text-2xl font-black text-navy-950">{title}</h1>
                 <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
                 <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-aqua-700">
-                  <CheckCircle2 size={17} /> Login real com Supabase Auth quando configurado.
+                  <CheckCircle2 size={17} /> Conta protegida para trabalhador e empresa.
                 </p>
               </div>
               {children}

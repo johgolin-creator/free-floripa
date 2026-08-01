@@ -211,11 +211,11 @@ export function SubscriptionPage() {
       <section className="plan-note">
         <div>
           <span className="badge bg-white text-aqua-700">
-            <ShieldCheck size={15} /> MVP
+            <ShieldCheck size={15} /> Moedas
           </span>
-          <h3>Pagamento real entra depois</h3>
+          <h3>Recargas em preparação</h3>
           <p>
-            Nesta fase, o botao adiciona moedas dentro do app para teste. O pagamento real sera definido depois, seguindo as regras da Play Store.
+            As moedas organizam o acesso as vagas dentro do app. Por enquanto, as recargas ficam sob controle da administracao do Free Floripa.
           </p>
         </div>
         <div className="plan-note-list">

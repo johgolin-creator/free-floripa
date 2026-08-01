@@ -48,7 +48,7 @@ const privacySections = [
   },
   {
     title: "Servicos de tecnologia",
-    text: "O aplicativo usa servicos de infraestrutura como Supabase para autenticacao, banco de dados e armazenamento de informacoes. Futuramente poderemos usar provedores de e-mail, notificacao e pagamento, sempre para operar o proprio Free Floripa."
+    text: "O aplicativo usa servicos de infraestrutura para autenticacao, banco de dados e armazenamento de informacoes. Futuramente poderemos usar provedores de e-mail, notificacao e pagamento, sempre para operar o proprio Free Floripa."
   },
   {
     title: "Seguranca e retencao",
