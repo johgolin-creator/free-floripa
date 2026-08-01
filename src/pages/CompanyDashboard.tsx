@@ -197,6 +197,7 @@ export function CompanyDashboard() {
             <h3 className="mb-3 font-black text-navy-950">Operação</h3>
             <div className="grid gap-2 text-sm font-semibold">
               <Link to="/app/candidatos" className="secondary justify-start"><UsersRound size={17} /> Candidatos recebidos</Link>
+              <Link to="/app/eventos" className="secondary justify-start"><CalendarDays size={17} /> Montar evento</Link>
               <Link to="/app/profissionais" className="secondary justify-start"><Search size={17} /> Banco de profissionais</Link>
               <Link to="/app/minhas-vagas" className="secondary justify-start"><BriefcaseBusiness size={17} /> Vagas publicadas</Link>
               <Link to="/app/equipe" className="secondary justify-start"><CheckCircle2 size={17} /> Favoritos e contratados</Link>

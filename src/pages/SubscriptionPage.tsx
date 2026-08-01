@@ -215,7 +215,7 @@ export function SubscriptionPage() {
           </span>
           <h3>Pagamento real entra depois</h3>
           <p>
-            Nesta fase, o botão adiciona moedas dentro do app para teste. Depois conectamos Mercado Pago, Stripe ou outro provedor de pagamento.
+            Nesta fase, o botao adiciona moedas dentro do app para teste. O pagamento real sera definido depois, seguindo as regras da Play Store.
           </p>
         </div>
         <div className="plan-note-list">

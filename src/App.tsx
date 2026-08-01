@@ -21,6 +21,7 @@ const CompanyDashboard = lazy(() => import("./pages/CompanyDashboard").then(({ C
 const CompanyJobsPage = lazy(() => import("./pages/CompanyJobsPage").then(({ CompanyJobsPage }) => ({ default: CompanyJobsPage })));
 const CandidatesPage = lazy(() => import("./pages/CandidatesPage").then(({ CandidatesPage }) => ({ default: CandidatesPage })));
 const CompanySchedulePage = lazy(() => import("./pages/CompanySchedulePage").then(({ CompanySchedulePage }) => ({ default: CompanySchedulePage })));
+const CompanyEventsPage = lazy(() => import("./pages/CompanyEventsPage").then(({ CompanyEventsPage }) => ({ default: CompanyEventsPage })));
 const ProfessionalBankPage = lazy(() => import("./pages/ProfessionalBankPage").then(({ ProfessionalBankPage }) => ({ default: ProfessionalBankPage })));
 const TeamPage = lazy(() => import("./pages/TeamPage").then(({ TeamPage }) => ({ default: TeamPage })));
 const CompanyProfilePage = lazy(() => import("./pages/CompanyProfilePage").then(({ CompanyProfilePage }) => ({ default: CompanyProfilePage })));
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="perfil-trabalhador" element={<RoleRoute role="trabalhador"><WorkerProfilePage /></RoleRoute>} />
           <Route path="empresa" element={<RoleRoute role="empresa"><CompanyDashboard /></RoleRoute>} />
           <Route path="minhas-vagas" element={<RoleRoute role="empresa"><CompanyJobsPage /></RoleRoute>} />
+          <Route path="eventos" element={<RoleRoute role="empresa"><CompanyEventsPage /></RoleRoute>} />
           <Route path="profissionais" element={<RoleRoute role="empresa"><ProfessionalBankPage /></RoleRoute>} />
           <Route path="candidatos" element={<RoleRoute role="empresa"><CandidatesPage /></RoleRoute>} />
           <Route path="escala" element={<RoleRoute role="empresa"><CompanySchedulePage /></RoleRoute>} />

@@ -37,6 +37,7 @@ const workerLinks = [
 
 const companyLinks = [
   { to: "/app/empresa", label: "Painel", mobileLabel: "Painel", icon: Home },
+  { to: "/app/eventos", label: "Eventos", mobileLabel: "Eventos", icon: CalendarDays },
   { to: "/app/minhas-vagas", label: "Minhas vagas", mobileLabel: "Vagas", icon: BriefcaseBusiness },
   { to: "/app/profissionais", label: "Banco", mobileLabel: "Banco", icon: Search },
   { to: "/app/candidatos", label: "Candidatos", mobileLabel: "Cand.", icon: UsersRound },
@@ -181,10 +182,7 @@ export function AppLayout() {
         </div>
       </main>
 
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-30 grid border-t border-white/80 bg-white/95 shadow-lift backdrop-blur-xl md:hidden"
-        style={{ gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))` }}
-      >
+      <nav className="fixed bottom-0 left-0 right-0 z-30 flex overflow-x-auto border-t border-white/80 bg-white/95 px-1 shadow-lift backdrop-blur-xl md:hidden">
         {links.map((link) => {
           const Icon = link.icon;
           const active = location.pathname === link.to;
@@ -192,7 +190,7 @@ export function AppLayout() {
             <NavLink
               key={link.to}
               to={link.to}
-              className={`grid min-h-16 place-items-center gap-1 border-t-2 px-0.5 text-center text-[0.62rem] font-black leading-tight transition ${
+              className={`grid min-h-16 min-w-[4.75rem] flex-1 place-items-center gap-1 border-t-2 px-1 text-center text-[0.62rem] font-black leading-tight transition ${
                 active ? "border-aqua-500 text-aqua-700" : "border-transparent text-slate-500"
               }`}
             >
