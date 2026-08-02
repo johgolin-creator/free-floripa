@@ -94,11 +94,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     let active = true;
-    supabase.auth
-      .getSession()
-      .then(({ data, error }) => {
+    const authClient = supabase;
+
+    async function loadSession() {
+      const code = new URLSearchParams(window.location.search).get("code");
+      if (code) {
+        const { data, error } = await authClient.auth.exchangeCodeForSession(code);
+        if (error) throw error;
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return data.session;
+      }
+
+      const { data, error } = await authClient.auth.getSession();
+      if (error) throw error;
+      return data.session;
+    }
+
+    loadSession()
+      .then((nextSession) => {
         if (!active) return;
-        if (!error) setSession(data.session);
+        setSession(nextSession);
       })
       .finally(() => {
         if (active) setLoading(false);

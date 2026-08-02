@@ -100,12 +100,13 @@ export function LoginPage() {
 }
 
 export function ResetPasswordPage() {
-  const { authEnabled, user, role, resetPassword, updatePassword } = useAuth();
+  const { authEnabled, loading, user, role, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const canSetNewPassword = authEnabled && Boolean(user);
+  const isOpeningRecoveryLink = authEnabled && loading && (window.location.search.includes("code=") || window.location.hash.includes("access_token"));
 
   return (
     <AuthShell
@@ -153,6 +154,11 @@ export function ResetPasswordPage() {
       >
         {error && <div className="auth-alert auth-alert-error">{error}</div>}
         {message && <div className="auth-alert auth-alert-info">{message}</div>}
+        {isOpeningRecoveryLink && (
+          <div className="auth-alert auth-alert-info">
+            Validando o link de recuperação. Aguarde um instante.
+          </div>
+        )}
         {!authEnabled && (
           <div className="auth-alert auth-alert-info">
             No modo demonstração, a recuperação por e-mail fica disponível apenas no site online.
@@ -188,7 +194,7 @@ export function ResetPasswordPage() {
               E-mail cadastrado
               <input name="email" className="input" type="email" required placeholder="seu@email.com" />
             </label>
-            <button type="submit" disabled={pending || !authEnabled} className="primary">
+            <button type="submit" disabled={pending || !authEnabled || isOpeningRecoveryLink} className="primary">
               <Mail size={17} /> {pending ? "Enviando..." : "Enviar link de recuperação"}
             </button>
             <Link to="/login" className="secondary">Voltar para o login</Link>
