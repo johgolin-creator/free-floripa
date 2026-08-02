@@ -8,6 +8,7 @@ import type { UserRole } from "./lib/types";
 
 const PublicHome = lazy(() => import("./pages/PublicHome").then(({ PublicHome }) => ({ default: PublicHome })));
 const LoginPage = lazy(() => import("./pages/AuthPages").then(({ LoginPage }) => ({ default: LoginPage })));
+const ResetPasswordPage = lazy(() => import("./pages/AuthPages").then(({ ResetPasswordPage }) => ({ default: ResetPasswordPage })));
 const WorkerSignupPage = lazy(() => import("./pages/AuthPages").then(({ WorkerSignupPage }) => ({ default: WorkerSignupPage })));
 const CompanySignupPage = lazy(() => import("./pages/AuthPages").then(({ CompanySignupPage }) => ({ default: CompanySignupPage })));
 const WorkerDashboard = lazy(() => import("./pages/WorkerDashboard").then(({ WorkerDashboard }) => ({ default: WorkerDashboard })));
@@ -46,6 +47,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<PublicHome />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/recuperar-senha" element={<ResetPasswordPage />} />
         <Route path="/cadastro-trabalhador" element={<WorkerSignupPage />} />
         <Route path="/cadastro-empresa" element={<CompanySignupPage />} />
         <Route path="/termos" element={<LegalPage kind="terms" />} />

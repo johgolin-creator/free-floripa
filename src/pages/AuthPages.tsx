@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, BriefcaseBusiness, Building2, CheckCircle2, ClipboardList, LogIn, ShieldCheck, UserRound, UsersRound } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, Building2, CheckCircle2, ClipboardList, KeyRound, LogIn, Mail, ShieldCheck, UserRound, UsersRound } from "lucide-react";
 import { BrandLogo } from "../components/BrandLogo";
 import { experienceLevels, functions, neighborhoods } from "../data/demoData";
 import { useAuth } from "../lib/auth";
@@ -70,7 +70,12 @@ export function LoginPage() {
         {error && <div className="auth-alert auth-alert-error">{error}</div>}
         {!authEnabled && <div className="auth-alert auth-alert-info">Modo demonstração: dados salvos apenas neste aparelho.</div>}
         <label className="label">E-mail<input name="email" className="input" type="email" required placeholder="seu@email.com" /></label>
-        <label className="label">Senha<input name="password" className="input" type="password" required placeholder="••••••••" /></label>
+        <div className="grid gap-1">
+          <label className="label">Senha<input name="password" className="input" type="password" required placeholder="••••••••" /></label>
+          <Link to="/recuperar-senha" className="justify-self-start text-sm font-black text-aqua-700 hover:text-aqua-800">
+            Esqueci minha senha
+          </Link>
+        </div>
         <fieldset className="grid gap-2">
           <legend className="text-sm font-bold text-slate-600">Tipo de acesso</legend>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -89,6 +94,106 @@ export function LoginPage() {
           <Link to="/cadastro-trabalhador" className="secondary">Criar conta trabalhador</Link>
           <Link to="/cadastro-empresa" className="secondary">Criar conta empresa</Link>
         </div>
+      </form>
+    </AuthShell>
+  );
+}
+
+export function ResetPasswordPage() {
+  const { authEnabled, user, role, resetPassword, updatePassword } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [pending, setPending] = useState(false);
+  const canSetNewPassword = authEnabled && Boolean(user);
+
+  return (
+    <AuthShell
+      title={canSetNewPassword ? "Criar nova senha" : "Recuperar senha"}
+      description={canSetNewPassword ? "Digite uma nova senha para voltar a acessar sua conta." : "Informe seu e-mail para receber o link de recuperação."}
+    >
+      <form
+        className="auth-form"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          const form = new FormData(event.currentTarget);
+
+          try {
+            setPending(true);
+            setError("");
+            setMessage("");
+
+            if (canSetNewPassword) {
+              const password = String(form.get("password") || "");
+              const confirmPassword = String(form.get("confirmPassword") || "");
+
+              if (password.length < 6) {
+                setError("A nova senha precisa ter pelo menos 6 caracteres.");
+                return;
+              }
+              if (password !== confirmPassword) {
+                setError("As senhas não conferem.");
+                return;
+              }
+
+              await updatePassword({ password });
+              setMessage("Senha atualizada com sucesso.");
+              return;
+            }
+
+            const email = String(form.get("email") || "").trim();
+            await resetPassword({ email });
+            setMessage("Enviamos um link para seu e-mail. Abra esse link para criar uma nova senha.");
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Não foi possível recuperar a senha.");
+          } finally {
+            setPending(false);
+          }
+        }}
+      >
+        {error && <div className="auth-alert auth-alert-error">{error}</div>}
+        {message && <div className="auth-alert auth-alert-info">{message}</div>}
+        {!authEnabled && (
+          <div className="auth-alert auth-alert-info">
+            No modo demonstração, a recuperação por e-mail fica disponível apenas no site online.
+          </div>
+        )}
+
+        {canSetNewPassword ? (
+          <>
+            <label className="label">
+              Nova senha
+              <input name="password" className="input" type="password" required placeholder="Digite a nova senha" />
+            </label>
+            <label className="label">
+              Confirmar nova senha
+              <input name="confirmPassword" className="input" type="password" required placeholder="Repita a nova senha" />
+            </label>
+            <button type="submit" disabled={pending} className="primary">
+              <KeyRound size={17} /> {pending ? "Salvando..." : "Salvar nova senha"}
+            </button>
+            {message && (
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => navigate(role === "empresa" ? "/app/empresa" : "/app/trabalhador")}
+              >
+                Entrar no app
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <label className="label">
+              E-mail cadastrado
+              <input name="email" className="input" type="email" required placeholder="seu@email.com" />
+            </label>
+            <button type="submit" disabled={pending || !authEnabled} className="primary">
+              <Mail size={17} /> {pending ? "Enviando..." : "Enviar link de recuperação"}
+            </button>
+            <Link to="/login" className="secondary">Voltar para o login</Link>
+          </>
+        )}
       </form>
     </AuthShell>
   );
@@ -392,7 +497,7 @@ function AuthShell({ title, description, children }: { title: string; descriptio
               {children}
               <div className="mt-5 flex flex-wrap gap-3 text-xs font-black text-slate-500">
                 <Link to="/termos" className="hover:text-aqua-700">Termos de Uso</Link>
-              <Link to="/privacidade" className="hover:text-aqua-700">Política de Privacidade</Link>
+                <Link to="/privacidade" className="hover:text-aqua-700">Política de Privacidade</Link>
               </div>
             </div>
           </div>

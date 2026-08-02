@@ -13,6 +13,14 @@ interface SignUpInput extends SignInInput {
   metadata: Record<string, unknown>;
 }
 
+interface ResetPasswordInput {
+  email: string;
+}
+
+interface UpdatePasswordInput {
+  password: string;
+}
+
 interface AuthContextValue {
   authEnabled: boolean;
   loading: boolean;
@@ -22,6 +30,8 @@ interface AuthContextValue {
   email: string;
   signIn: (input: SignInInput) => Promise<{ role: UserRole }>;
   signUp: (input: SignUpInput) => Promise<{ role: UserRole; needsEmailConfirmation: boolean }>;
+  resetPassword: (input: ResetPasswordInput) => Promise<void>;
+  updatePassword: (input: UpdatePasswordInput) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -29,13 +39,13 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const DEFAULT_PUBLIC_APP_URL = "https://free-floripa.onrender.com";
 const DEFAULT_ADMIN_EMAILS = ["jonathan.f@gmail.com"];
 
-function getAuthRedirectUrl() {
+function getAuthRedirectUrl(pathname = "/login") {
   const configuredUrl = import.meta.env.VITE_PUBLIC_APP_URL;
   const browserOrigin = window.location.origin;
   const isLocalOrigin = browserOrigin.includes("localhost") || browserOrigin.includes("127.0.0.1");
   const baseUrl = configuredUrl || (isLocalOrigin ? DEFAULT_PUBLIC_APP_URL : browserOrigin);
 
-  return `${baseUrl.replace(/\/$/, "")}/login`;
+  return `${baseUrl.replace(/\/$/, "")}${pathname}`;
 }
 
 function getUserRole(user: User | null): UserRole | null {
@@ -148,6 +158,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw new Error(getAuthErrorMessage(error.message));
 
         return { role: getUserRole(data.user) ?? fallbackRole, needsEmailConfirmation: !data.session };
+      },
+      async resetPassword({ email }) {
+        if (!supabase) {
+          throw new Error("Recuperação por e-mail disponível apenas no ambiente online.");
+        }
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: getAuthRedirectUrl("/recuperar-senha")
+        });
+        if (error) throw new Error(getAuthErrorMessage(error.message));
+      },
+      async updatePassword({ password }) {
+        if (!supabase) {
+          throw new Error("Alteração de senha disponível apenas no ambiente online.");
+        }
+
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw new Error(getAuthErrorMessage(error.message));
       },
       async signOut() {
         if (!supabase) return;
