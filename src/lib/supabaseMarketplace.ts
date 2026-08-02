@@ -205,7 +205,7 @@ function mapPublicWorker(row: WorkerProfileRow, experiences: FunctionExperienceR
       function: functionName,
       level: found ? toExperienceLevel(found.level) : "Iniciante",
       months: Math.max(0, Number(found?.months ?? 0)),
-      acceptsAssistant: found?.accepts_assistant ?? true,
+      acceptsAssistant: found?.accepts_assistant ?? false,
       verified: found?.verified ?? false
     };
   });

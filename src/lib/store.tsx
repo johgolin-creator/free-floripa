@@ -267,7 +267,7 @@ function createWorkerForUser(user: User): WorkerProfile {
         function: functionName,
         level: (levelItem?.level ?? "Iniciante") as WorkerProfile["functionExperience"][number]["level"],
         months: Number.isFinite(months) && months > 0 ? months : 0,
-        acceptsAssistant: typeof levelItem?.acceptsAssistant === "boolean" ? levelItem.acceptsAssistant : true,
+        acceptsAssistant: false,
         verified: false
       };
     }),

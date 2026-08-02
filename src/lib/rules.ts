@@ -50,7 +50,7 @@ export function getFunctionExperience(worker: WorkerProfile, functionName: JobFu
     function: functionName,
     level: worker.verified ? "Experiente" : "Poucas diárias",
     months: Math.max(1, Math.round(worker.completedJobs / Math.max(1, worker.functions.length))),
-    acceptsAssistant: true,
+    acceptsAssistant: false,
     verified: worker.verified
   };
 }
@@ -64,7 +64,7 @@ export function getExperienceLabel(level: ExperienceLevel) {
 export function getCompatibilityLabel(worker: WorkerProfile, functionName: JobFunction) {
   const experience = getFunctionExperience(worker, functionName);
   if (!experience) return "Função não declarada";
-  if (experience.level === "Iniciante") return experience.acceptsAssistant ? "Somente como auxiliar" : "Iniciante";
+  if (experience.level === "Iniciante") return "Iniciante";
   if (experience.level === "Poucas diárias") return "Precisa de orientação";
   if (experience.verified) return "Experiência verificada";
   return "Nível declarado";

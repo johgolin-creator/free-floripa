@@ -59,7 +59,6 @@ export function WorkerCard({
           {visibleExperiences.slice(0, 4).map((experience) => (
             <span key={experience.function} className="badge">
               {experience.function}: {getExperienceLabel(experience.level)}
-              {experience.acceptsAssistant ? " + auxiliar" : ""}
             </span>
           ))}
         </div>

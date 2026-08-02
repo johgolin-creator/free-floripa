@@ -237,7 +237,7 @@ export function WorkerSignupPage() {
             function: item,
             level: String(form.get(`level-${item}`) || "Iniciante"),
             months: Math.max(0, Number(form.get(`months-${item}`) || 0)),
-            acceptsAssistant: form.get(`assistant-${item}`) === "on"
+            acceptsAssistant: false
           }));
 
           if (selectedFunctions.length === 0) {
@@ -345,10 +345,6 @@ export function WorkerSignupPage() {
                     <label className="label">
                       Meses de experiência
                       <input name={`months-${item}`} type="number" min="0" className="input" defaultValue={0} />
-                    </label>
-                    <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                      <input name={`assistant-${item}`} type="checkbox" defaultChecked className="h-4 w-4 accent-aqua-500" />
-                      Aceito começar como auxiliar nessa função
                     </label>
                   </div>
                 )}

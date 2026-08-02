@@ -156,7 +156,7 @@ export function PublicHome() {
           <div className="mx-auto grid max-w-7xl gap-4 px-4 py-12 md:grid-cols-3">
             {[
               ["1", "Vaga com critério", "A empresa informa função, valor, horário, bairro e experiência esperada."],
-              ["2", "Candidatura transparente", "O trabalhador aparece com nível por profissão e indicação se aceita auxiliar."],
+              ["2", "Candidatura transparente", "O trabalhador aparece com nível de experiência por profissão."],
               ["3", "Equipe confirmada", "Aprovação, check-in, check-out e avaliações ficam organizados no histórico."]
             ].map(([step, title, text]) => (
               <article key={step} className="card p-5 hover:-translate-y-0.5 hover:shadow-lift">

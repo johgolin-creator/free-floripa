@@ -122,7 +122,6 @@ export function WorkerProfilePage() {
                     <strong className="mt-1 block text-sm text-navy-950">{getExperienceLabel(experience.level)}</strong>
                     <p className="mt-1 text-xs font-semibold text-slate-500">
                       {experience.months} meses informados
-                      {experience.acceptsAssistant ? " - aceita auxiliar" : ""}
                       {experience.verified ? " - verificado" : ""}
                     </p>
                   </div>
@@ -186,7 +185,7 @@ export function WorkerProfilePage() {
                     function: functionName,
                     level: String(form.get(`level-${functionName}`) || existing?.level || "Iniciante") as NonNullable<typeof existing>["level"],
                     months: Math.max(0, Number(form.get(`months-${functionName}`) || existing?.months || 0)),
-                    acceptsAssistant: form.get(`assistant-${functionName}`) === "on",
+                    acceptsAssistant: false,
                     verified: existing?.verified ?? false
                   };
                 }),
@@ -283,10 +282,6 @@ export function WorkerProfilePage() {
                           <label className="label">
                             Meses de experiência
                             <input name={`months-${functionName}`} type="number" min="0" className="input" defaultValue={existing?.months ?? 0} />
-                          </label>
-                          <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                            <input name={`assistant-${functionName}`} type="checkbox" defaultChecked={existing?.acceptsAssistant ?? true} className="h-4 w-4 accent-aqua-500" />
-                            Aceito começar como auxiliar
                           </label>
                         </div>
                       )}

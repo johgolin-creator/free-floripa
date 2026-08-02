@@ -17,7 +17,7 @@ export const experienceLevels = [
   {
     value: "Iniciante",
     label: "Estou começando",
-    description: "Liberado para vagas simples ou como auxiliar."
+    description: "Liberado para vagas simples com acompanhamento."
   },
   {
     value: "Poucas diárias",
@@ -104,7 +104,7 @@ export const workers: WorkerProfile[] = [
     functionExperience: [
       { function: "Garçom", level: "Profissional experiente", months: 60, acceptsAssistant: false, verified: true },
       { function: "Recepcionista", level: "Experiente", months: 24, acceptsAssistant: false, verified: true },
-      { function: "Promotor", level: "Experiente", months: 18, acceptsAssistant: true, verified: false }
+      { function: "Promotor", level: "Experiente", months: 18, acceptsAssistant: false, verified: false }
     ],
     experience: "5 temporadas em eventos, restaurantes e beach clubs.",
     description: "Atendimento ágil, boa comunicação e disponibilidade para turnos noturnos.",
@@ -133,7 +133,7 @@ export const workers: WorkerProfile[] = [
     functions: ["Bartender", "Garçom"],
     functionExperience: [
       { function: "Bartender", level: "Profissional experiente", months: 48, acceptsAssistant: false, verified: true },
-      { function: "Garçom", level: "Experiente", months: 30, acceptsAssistant: true, verified: true }
+      { function: "Garçom", level: "Experiente", months: 30, acceptsAssistant: false, verified: true }
     ],
     experience: "Bartender em bares de alto movimento e festas privadas.",
     description: "Drinks clássicos, atendimento em balcão e montagem de bar.",
@@ -163,7 +163,7 @@ export const workers: WorkerProfile[] = [
     functionExperience: [
       { function: "Segurança", level: "Experiente", months: 18, acceptsAssistant: false, verified: false },
       { function: "Operador de caixa", level: "Experiente", months: 20, acceptsAssistant: false, verified: false },
-      { function: "Recepcionista", level: "Poucas diárias", months: 6, acceptsAssistant: true, verified: false }
+      { function: "Recepcionista", level: "Poucas diárias", months: 6, acceptsAssistant: false, verified: false }
     ],
     experience: "Controle de acesso, caixa em casa noturna, lista e atendimento.",
     description: "Organizada, pontual e acostumada com fluxo grande de pessoas.",
@@ -192,7 +192,7 @@ export const workers: WorkerProfile[] = [
     functions: ["Montador de eventos", "Limpeza"],
     functionExperience: [
       { function: "Montador de eventos", level: "Profissional experiente", months: 42, acceptsAssistant: false, verified: true },
-      { function: "Limpeza", level: "Experiente", months: 24, acceptsAssistant: true, verified: true }
+      { function: "Limpeza", level: "Experiente", months: 24, acceptsAssistant: false, verified: true }
     ],
     experience: "Montagem, desmontagem, carga leve e pós-evento.",
     description: "Força operacional para eventos, com disponibilidade de última hora.",
