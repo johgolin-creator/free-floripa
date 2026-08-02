@@ -19,6 +19,7 @@ import {
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
+import { UrgentBadge } from "../components/UrgentBadge";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore, type CompanyScheduleInput } from "../lib/store";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
@@ -199,7 +200,7 @@ export function CompanySchedulePage() {
                   <div className="schedule-job-head">
                     <div>
                       <div className="mb-2 flex flex-wrap gap-2">
-                        {job.urgent && <span className="badge urgent">URGENTE</span>}
+                        {job.urgent && <UrgentBadge />}
                         <span className="badge">{getJobStatus(job)}</span>
                         <span className="badge">{job.function}</span>
                         <span className="badge">{formatCurrency(job.dailyValue)}</span>

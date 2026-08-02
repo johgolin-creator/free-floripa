@@ -20,6 +20,7 @@ import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
 import { ShiftReceipt } from "../components/ShiftReceipt";
+import { UrgentBadge } from "../components/UrgentBadge";
 import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
@@ -209,7 +210,7 @@ export function CandidatesPage() {
               <div className="candidate-job-main">
                 <div>
                   <div className="mb-2 flex flex-wrap gap-2">
-                    {selectedJob.urgent && <span className="badge urgent">URGENTE</span>}
+                    {selectedJob.urgent && <UrgentBadge />}
                     <span className="badge">{selectedJob.function}</span>
                     <span className="badge">{formatCurrency(selectedJob.dailyValue)}</span>
                   </div>

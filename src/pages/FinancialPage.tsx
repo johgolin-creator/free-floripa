@@ -2,6 +2,7 @@ import { BriefcaseBusiness, CalendarCheck, Clock3, CreditCard, WalletCards } fro
 import type { ReactNode } from "react";
 import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
+import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate } from "../lib/format";
 
@@ -55,7 +56,7 @@ export function FinancialPage() {
                       <div className="mb-2 flex flex-wrap gap-2">
                         <span className="badge">{job.function}</span>
                         <span className="badge">{formatDate(job.date)}</span>
-                        {job.urgent && <span className="badge urgent">URGENTE</span>}
+                        {job.urgent && <UrgentBadge />}
                       </div>
                       <h3>{job.title}</h3>
                       <p className="text-sm font-semibold text-slate-600">{job.neighborhood} - {job.quantity} vaga{job.quantity === 1 ? "" : "s"}</p>

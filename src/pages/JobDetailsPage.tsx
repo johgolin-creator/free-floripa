@@ -2,7 +2,6 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import {
-  AlertTriangle,
   ArrowRight,
   BadgeCheck,
   Building2,
@@ -23,6 +22,7 @@ import {
 } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
+import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
 import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots, isJobOpenForApplications } from "../lib/rules";
@@ -125,7 +125,7 @@ export function JobDetailsPage() {
         <section className="job-preview-card">
           <div className="job-preview-main">
             <div className="mb-3 flex flex-wrap gap-2">
-              {currentJob.urgent && <span className="badge urgent"><AlertTriangle size={14} /> URGENTE</span>}
+              {currentJob.urgent && <UrgentBadge />}
               <span className="badge">{currentJob.function}</span>
               <span className="badge">{currentJob.paymentMethod}</span>
             </div>
@@ -183,7 +183,7 @@ export function JobDetailsPage() {
         <div className="job-detail-grid">
           <div>
             <div className="mb-3 flex flex-wrap gap-2">
-              {currentJob.urgent && <span className="badge urgent"><AlertTriangle size={14} /> URGENTE</span>}
+              {currentJob.urgent && <UrgentBadge />}
               <span className="badge">{jobStatus}</span>
               <span className="badge">{currentJob.function}</span>
               <span className="badge">{currentJob.paymentMethod}</span>

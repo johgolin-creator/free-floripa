@@ -21,6 +21,7 @@ import { Link } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
+import { UrgentBadge } from "../components/UrgentBadge";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 import type { CreateJobInput, UrgentReplacementInput } from "../lib/store";
@@ -141,7 +142,7 @@ export function CompanyDashboard() {
               <article key={job.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <span className={job.urgent ? "badge urgent" : "badge"}>{job.urgent ? "URGENTE" : job.function}</span>
+                    {job.urgent ? <UrgentBadge /> : <span className="badge">{job.function}</span>}
                     <h4 className="mt-2 font-black text-navy-950">{job.title}</h4>
                     <p className="text-sm text-slate-600">{job.neighborhood} - {job.startsAt} às {job.endsAt} - {formatCurrency(job.dailyValue)}</p>
                   </div>
@@ -474,7 +475,7 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => void
           </div>
           <div className="job-review-card">
             <div>
-              <span className={draft.urgent ? "badge urgent" : "badge"}>{draft.urgent ? "URGENTE" : draft.function}</span>
+              {draft.urgent ? <UrgentBadge /> : <span className="badge">{draft.function}</span>}
               <h4>{draft.title || "Título da vaga"}</h4>
               <p>{draft.description || "Descrição da vaga ainda não preenchida."}</p>
             </div>

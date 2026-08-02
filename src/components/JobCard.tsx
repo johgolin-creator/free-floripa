@@ -1,5 +1,6 @@
 import { CalendarDays, Clock, Lock, MapPin, Star, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+import { UrgentBadge } from "./UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, pluralize } from "../lib/format";
 import { getOpenSlots } from "../lib/rules";
@@ -29,7 +30,7 @@ export function JobCard({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap gap-2">
-            {job.urgent && <span className="badge urgent">URGENTE</span>}
+            {job.urgent && <UrgentBadge />}
             <span className="badge">{job.function}</span>
             <span className="badge">{job.paymentMethod}</span>
             {matchLabel && <span className={matchScore && matchScore >= 62 ? "badge bg-aqua-100 text-aqua-700" : "badge bg-slate-100 text-slate-600"}><Star size={14} /> {matchLabel}</span>}

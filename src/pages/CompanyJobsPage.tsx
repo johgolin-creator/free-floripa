@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { EmptyState } from "../components/EmptyState";
+import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
@@ -122,8 +123,8 @@ export function CompanyJobsPage() {
                     <div className="company-job-head">
                       <div>
                         <div className="mb-2 flex flex-wrap gap-2">
-                          <span className={getStatusClass(status)}>{status}</span>
-                          {job.urgent && status !== "Cancelada" && status !== "Concluída" && <span className="badge urgent">URGENTE</span>}
+                          {status === "Urgente" ? <UrgentBadge /> : <span className={getStatusClass(status)}>{status}</span>}
+                          {job.urgent && status !== "Urgente" && status !== "Cancelada" && status !== "Concluída" && <UrgentBadge />}
                           <span className="badge">{job.function}</span>
                         </div>
                         <h3>{job.title}</h3>
@@ -217,7 +218,6 @@ function isActiveStatus(status: ReturnType<typeof getJobStatus>) {
 }
 
 function getStatusClass(status: ReturnType<typeof getJobStatus>) {
-  if (status === "Urgente") return "badge urgent";
   if (status === "Cancelada") return "badge bg-red-50 text-alert";
   if (status === "Concluída") return "badge bg-aqua-100 text-aqua-700";
   if (status === "Rascunho") return "badge bg-slate-200 text-slate-700";
