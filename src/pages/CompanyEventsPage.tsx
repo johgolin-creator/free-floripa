@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { CalendarDays, CheckCircle2, ClipboardList, MapPin, PartyPopper, Plus, Search, Star, UsersRound } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
@@ -34,6 +34,7 @@ function suggestCrewSize(guests: number, functionName: JobFunction) {
 
 export function CompanyEventsPage() {
   const { state, currentCompany, createJob } = useAppStore();
+  const lastCreatedEventKey = useRef("");
   const today = new Date().toISOString().slice(0, 10);
   const [eventName, setEventName] = useState("Casamento");
   const [eventType, setEventType] = useState("Casamento");
@@ -45,6 +46,7 @@ export function CompanyEventsPage() {
   const [guests, setGuests] = useState(100);
   const [dailyValue, setDailyValue] = useState(180);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Pix");
+  const [isCreating, setIsCreating] = useState(false);
   const [selectedFunction, setSelectedFunction] = useState<JobFunction>("Garçom");
   const [needs, setNeeds] = useState<CrewNeeds>(() => ({
     ...createEmptyNeeds(),
@@ -71,6 +73,23 @@ export function CompanyEventsPage() {
     acc[item] = realWorkers.filter((worker) => Boolean(getFunctionExperience(worker, item))).length;
     return acc;
   }, {} as CrewNeeds);
+  const eventCreationKey = useMemo(
+    () =>
+      JSON.stringify({
+        eventName: eventName.trim(),
+        eventType,
+        date,
+        startsAt,
+        endsAt,
+        neighborhood,
+        location: location.trim(),
+        guests,
+        dailyValue,
+        paymentMethod,
+        needs: requestedFunctions.map((item) => [item, needs[item]])
+      }),
+    [dailyValue, date, endsAt, eventName, eventType, guests, location, needs, neighborhood, paymentMethod, requestedFunctions, startsAt]
+  );
 
   function updateNeed(functionName: JobFunction, quantity: number) {
     setNeeds((current) => ({ ...current, [functionName]: Math.max(0, quantity) }));
@@ -86,6 +105,8 @@ export function CompanyEventsPage() {
   }
 
   function createEventJobs() {
+    if (isCreating) return;
+
     if (!eventName.trim() || !date || !startsAt || !endsAt || !location.trim()) {
       setMessage("Preencha nome, data, horário e local do evento antes de criar as vagas.");
       return;
@@ -96,6 +117,12 @@ export function CompanyEventsPage() {
       return;
     }
 
+    if (lastCreatedEventKey.current === eventCreationKey) {
+      setMessage("Essas vagas já foram criadas para este evento. Altere algum dado se quiser gerar um novo pacote.");
+      return;
+    }
+
+    setIsCreating(true);
     requestedFunctions.forEach((functionName) => {
       createJob({
         title: `${eventName}: ${functionName}`,
@@ -116,6 +143,8 @@ export function CompanyEventsPage() {
         urgent: false
       });
     });
+    lastCreatedEventKey.current = eventCreationKey;
+    setIsCreating(false);
 
     setMessage(`${requestedFunctions.length} vaga${requestedFunctions.length === 1 ? "" : "s"} criada${requestedFunctions.length === 1 ? "" : "s"} para ${eventName}. Agora você pode acompanhar os candidatos em Minhas vagas.`);
   }
@@ -130,12 +159,12 @@ export function CompanyEventsPage() {
 
       {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
 
-      <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <div className="card p-4">
-          <div className="mb-4 flex items-center gap-2 text-sm font-black text-navy-950">
+      <section className="event-builder-grid">
+        <div className="event-form-card">
+          <div className="event-form-title">
             <PartyPopper size={18} /> Dados do evento
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="event-data-grid">
             <label className="label">
               Nome do evento
               <input value={eventName} onChange={(event) => setEventName(event.target.value)} className="input" placeholder="Casamento Ana e Joao" />
@@ -192,14 +221,14 @@ export function CompanyEventsPage() {
           </div>
         </div>
 
-        <aside className="grid gap-3">
+        <aside className="event-summary-panel">
           <Metric icon={<UsersRound />} label="Profissionais na equipe" value={totalProfessionals} />
           <Metric icon={<ClipboardList />} label="Funções com vagas" value={requestedFunctions.length} />
           <Metric icon={<Star />} label="Diária base" value={formatCurrency(dailyValue)} />
         </aside>
       </section>
 
-      <section className="card p-4">
+      <section className="event-team-card">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="font-black text-navy-950">Equipe necessária</h3>
@@ -209,9 +238,9 @@ export function CompanyEventsPage() {
             <CheckCircle2 size={17} /> Sugerir equipe
           </button>
         </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="event-needs-grid">
           {eventFunctions.map((item) => (
-            <label key={item} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <label key={item} className="event-need-card">
               <span className="text-sm font-black text-navy-950">{item}</span>
               <span className="mt-2 flex items-center gap-2">
                 <input
@@ -229,8 +258,8 @@ export function CompanyEventsPage() {
           ))}
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="button" onClick={createEventJobs} className="primary">
-            <Plus size={17} /> Criar vagas do evento
+          <button type="button" onClick={createEventJobs} disabled={isCreating || requestedFunctions.length === 0} className="primary">
+            <Plus size={17} /> {isCreating ? "Criando vagas..." : "Criar vagas do evento"}
           </button>
         </div>
       </section>

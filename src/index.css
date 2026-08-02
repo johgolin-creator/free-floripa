@@ -427,14 +427,60 @@ a {
   @apply rounded-lg border border-slate-200 bg-white p-3 shadow-sm;
 }
 
+.event-builder-grid {
+  @apply grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_280px];
+}
+
+.event-form-card,
+.event-team-card {
+  @apply rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+}
+
+.event-form-title {
+  @apply mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-sm font-black text-navy-950;
+}
+
+.event-data-grid {
+  @apply grid gap-3 md:grid-cols-2;
+}
+
+.event-data-grid .label {
+  @apply rounded-lg border border-slate-100 bg-slate-50/70 p-3;
+}
+
+.event-data-grid .label:has(input[placeholder*="Endere"]),
+.event-data-grid .label:has(input[placeholder*="Endereco"]) {
+  @apply md:col-span-2;
+}
+
+.event-summary-panel {
+  @apply grid gap-3 sm:grid-cols-3 xl:grid-cols-1;
+}
+
+.event-summary-panel .card {
+  @apply p-3;
+}
+
+.event-needs-grid {
+  @apply grid gap-2 md:grid-cols-2 xl:grid-cols-4;
+}
+
+.event-need-card {
+  @apply rounded-lg border border-slate-200 bg-slate-50 p-3 transition hover:border-aqua-200 hover:bg-aqua-50/70;
+}
+
+.event-need-card .input {
+  @apply min-h-10;
+}
+
 .company-jobs-hero,
 .candidate-board-hero {
-  @apply grid gap-5 rounded-lg border border-slate-200/70 bg-white/95 p-5 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_520px] lg:items-center;
+  @apply grid gap-4 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_440px] lg:items-center;
 }
 
 .company-jobs-hero h2,
 .candidate-board-hero h2 {
-  @apply mt-2 text-2xl font-black leading-tight text-navy-950 md:text-3xl;
+  @apply mt-1 text-2xl font-black leading-tight text-navy-950;
 }
 
 .company-jobs-hero p,
@@ -449,17 +495,17 @@ a {
 
 .company-hero-metric,
 .candidate-hero-metric {
-  @apply grid min-h-28 gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3;
+  @apply grid min-h-20 gap-1 rounded-lg border border-slate-100 bg-slate-50 p-2.5;
 }
 
 .company-hero-metric > span,
 .candidate-hero-metric > span {
-  @apply inline-flex h-9 w-9 items-center justify-center rounded-lg bg-navy-950 text-aqua-300;
+  @apply inline-flex h-8 w-8 items-center justify-center rounded-lg bg-navy-950 text-aqua-300;
 }
 
 .company-hero-metric strong,
 .candidate-hero-metric strong {
-  @apply text-2xl font-black text-navy-950;
+  @apply text-xl font-black text-navy-950;
 }
 
 .company-hero-metric small,
@@ -469,7 +515,7 @@ a {
 
 .company-filter-bar,
 .candidate-selector-panel {
-  @apply grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_auto] lg:items-end;
+  @apply grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-3 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_auto] lg:items-end;
 }
 
 .company-filter-stats,
@@ -479,7 +525,7 @@ a {
 
 .company-stat-tile,
 .candidate-stat-tile {
-  @apply rounded-lg border border-slate-100 bg-slate-50 p-3;
+  @apply rounded-lg border border-slate-100 bg-slate-50 px-3 py-2;
 }
 
 .company-stat-tile strong,
@@ -497,7 +543,7 @@ a {
 }
 
 .company-filter-button {
-  @apply min-h-10 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700;
+  @apply min-h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700;
 }
 
 .company-filter-button.is-active {
@@ -505,15 +551,15 @@ a {
 }
 
 .company-job-card {
-  @apply grid gap-4 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+  @apply grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-3 shadow-sm ring-1 ring-white/70;
 }
 
 .company-job-head {
-  @apply grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start;
+  @apply grid gap-3 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start;
 }
 
 .company-job-head h3 {
-  @apply text-xl font-black text-navy-950;
+  @apply text-base font-black leading-snug text-navy-950 md:text-lg;
 }
 
 .company-job-head p {
@@ -521,11 +567,11 @@ a {
 }
 
 .company-mini-grid {
-  @apply grid grid-cols-2 gap-2 text-sm sm:grid-cols-4 lg:w-[520px];
+  @apply grid grid-cols-2 gap-2 text-sm sm:grid-cols-4 xl:w-[420px];
 }
 
 .company-mini-tile {
-  @apply rounded-lg border border-slate-100 bg-slate-50 p-2;
+  @apply rounded-lg border border-slate-100 bg-slate-50 px-2 py-1.5;
 }
 
 .company-mini-tile strong {
@@ -537,7 +583,7 @@ a {
 }
 
 .company-job-progress {
-  @apply grid gap-2 rounded-lg bg-slate-50 p-3;
+  @apply grid gap-1.5 rounded-lg bg-slate-50 px-3 py-2;
 }
 
 .company-job-progress > div:first-child {
@@ -562,7 +608,7 @@ a {
 }
 
 .company-action {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-center text-sm font-black text-navy-950 shadow-sm transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700 disabled:cursor-not-allowed disabled:opacity-45;
+  @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-center text-xs font-black text-navy-950 shadow-sm transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700 disabled:cursor-not-allowed disabled:opacity-45;
 }
 
 .company-action-primary {
@@ -574,7 +620,7 @@ a {
 }
 
 .company-history {
-  @apply rounded-lg border border-slate-200 bg-slate-50 p-3;
+  @apply rounded-lg border border-slate-200 bg-slate-50 px-3 py-2;
 }
 
 .company-history summary {
