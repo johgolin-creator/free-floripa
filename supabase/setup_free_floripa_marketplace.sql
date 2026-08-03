@@ -201,13 +201,51 @@ create policy "workers manage own function experience" on public.worker_function
 );
 
 drop policy if exists "companies public limited read" on public.company_profiles;
-create policy "companies public limited read" on public.company_profiles for select using (true);
+drop policy if exists "company profiles visible by role" on public.company_profiles;
+create policy "company profiles visible by role" on public.company_profiles for select using (
+  auth.role() = 'authenticated'
+  and (
+    user_id = auth.uid()
+    or exists (
+      select 1
+      from public.users u
+      where u.id = auth.uid()
+        and u.role in ('trabalhador', 'admin')
+    )
+  )
+);
 
 drop policy if exists "companies manage own" on public.company_profiles;
 create policy "companies manage own" on public.company_profiles for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 drop policy if exists "jobs readable by authenticated users" on public.jobs;
-create policy "jobs readable by authenticated users" on public.jobs for select using (auth.role() = 'authenticated');
+drop policy if exists "jobs visible to workers or owning company" on public.jobs;
+create policy "jobs visible to workers or owning company" on public.jobs for select using (
+  auth.role() = 'authenticated'
+  and (
+    exists (
+      select 1
+      from public.company_profiles c
+      where c.id = company_id
+        and c.user_id = auth.uid()
+    )
+    or exists (
+      select 1
+      from public.users u
+      where u.id = auth.uid()
+        and u.role = 'admin'
+    )
+    or (
+      status not in ('Rascunho', 'Cancelada')
+      and exists (
+        select 1
+        from public.users u
+        where u.id = auth.uid()
+          and u.role = 'trabalhador'
+      )
+    )
+  )
+);
 
 drop policy if exists "companies insert jobs" on public.jobs;
 create policy "companies insert jobs" on public.jobs for insert with check (
@@ -222,6 +260,12 @@ create policy "companies update own jobs" on public.jobs for update using (
 drop policy if exists "workers apply to jobs" on public.applications;
 create policy "workers apply to jobs" on public.applications for insert with check (
   exists (select 1 from public.worker_profiles w where w.id = worker_id and w.user_id = auth.uid())
+  and exists (
+    select 1
+    from public.jobs j
+    where j.id = job_id
+      and j.status not in ('Rascunho', 'Cancelada')
+  )
 );
 
 drop policy if exists "companies invite workers to own jobs" on public.applications;
@@ -253,6 +297,13 @@ create policy "companies update applications for own jobs" on public.application
     join public.company_profiles c on c.id = j.company_id
     where j.id = job_id and c.user_id = auth.uid()
   )
+) with check (
+  exists (
+    select 1
+    from public.jobs j
+    join public.company_profiles c on c.id = j.company_id
+    where j.id = job_id and c.user_id = auth.uid()
+  )
 );
 
 drop policy if exists "shift participants read" on public.work_shifts;
@@ -274,6 +325,12 @@ create policy "companies create shifts" on public.work_shifts for insert with ch
 
 drop policy if exists "shift participants update" on public.work_shifts;
 create policy "shift participants update" on public.work_shifts for update using (
+  exists (select 1 from public.worker_profiles w where w.id = worker_id and w.user_id = auth.uid())
+  or exists (
+    select 1 from public.jobs j join public.company_profiles c on c.id = j.company_id
+    where j.id = job_id and c.user_id = auth.uid()
+  )
+) with check (
   exists (select 1 from public.worker_profiles w where w.id = worker_id and w.user_id = auth.uid())
   or exists (
     select 1 from public.jobs j join public.company_profiles c on c.id = j.company_id
