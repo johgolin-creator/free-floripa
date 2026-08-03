@@ -314,6 +314,19 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => void
     quantity: Number(draft.quantity),
     dailyValue: Number(draft.dailyValue)
   };
+  const requiredFields = [
+    draft.title.trim(),
+    parsed.quantity > 0,
+    draft.date,
+    draft.startsAt,
+    draft.endsAt,
+    parsed.dailyValue > 0,
+    draft.approximateAddress.trim(),
+    draft.fullAddress.trim(),
+    draft.description.trim()
+  ];
+  const completedFields = requiredFields.filter(Boolean).length;
+  const completionPercent = Math.round((completedFields / requiredFields.length) * 100);
 
   function setField<Key extends keyof JobDraft>(field: Key, value: JobDraft[Key]) {
     setDraft((current) => ({ ...current, [field]: value }));
@@ -371,6 +384,15 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => void
     >
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
       <RequiredFieldSummary />
+      <div className="job-wizard-progress-card">
+        <div>
+          <span className="section-eyebrow">Preenchimento</span>
+          <strong>{completedFields}/{requiredFields.length} itens obrigatórios completos</strong>
+        </div>
+        <div className="job-wizard-progress-track">
+          <span style={{ width: `${completionPercent}%` }} />
+        </div>
+      </div>
       <div className="job-wizard-steps">
         {jobSteps.map((item, index) => (
           <button
@@ -406,7 +428,7 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => void
             </label>
             <label className="label">Quantidade<input value={draft.quantity} onChange={(event) => setField("quantity", event.target.value)} type="number" min="1" className="input" /></label>
           </div>
-          <label className="flex items-center gap-2 text-sm font-bold text-slate-600">
+          <label className="job-wizard-toggle-card">
             <input checked={draft.urgent} onChange={(event) => setField("urgent", event.target.checked)} type="checkbox" className="h-5 w-5 accent-alert" /> Marcar como vaga urgente
           </label>
         </section>
