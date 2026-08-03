@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import {
@@ -32,6 +32,9 @@ export function JobDetailsPage() {
   const { state, currentWorker, applyToJob, unlockJobWithCoins, subscribeProfessional, subscribePlus } = useAppStore();
   const [message, setMessage] = useState("");
   const [showPlans, setShowPlans] = useState(false);
+  const [showApplyConfirm, setShowApplyConfirm] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const applyingRef = useRef(false);
   const job = state.jobs.find((item) => item.id === id);
 
   if (!job) return <Navigate to="/app/vagas" replace />;
@@ -47,15 +50,38 @@ export function JobDetailsPage() {
   const unlockItems = ["Descrição completa", "Requisitos e benefícios", "Candidatura liberada", "Dados protegidos no momento certo"];
 
   function handleApply() {
+    if (application) {
+      setMessage(`Você já se candidatou para esta vaga. Status atual: ${application.status}.`);
+      return;
+    }
+    if (!isJobOpenForApplications(currentJob)) {
+      setMessage("Esta vaga não está mais aberta para candidatura.");
+      return;
+    }
     if (!hasUnlockedJob) {
       setMessage("Use 1 moeda para liberar a vaga completa antes de enviar candidatura.");
       setShowPlans(true);
       return;
     }
+    if (state.subscription.creditsRemaining <= 0) {
+      setMessage("Você não possui moedas suficientes para enviar candidatura.");
+      setShowPlans(true);
+      return;
+    }
+    setShowApplyConfirm(true);
+  }
+
+  function confirmApply() {
+    if (applyingRef.current) return;
+    applyingRef.current = true;
+    setIsApplying(true);
+    setShowApplyConfirm(false);
 
     const result = applyToJob(currentJob.id);
     setMessage(result.message);
     if (result.requiresPlan) setShowPlans(true);
+    applyingRef.current = false;
+    setIsApplying(false);
   }
 
   function handleUnlockJob() {
@@ -107,6 +133,27 @@ export function JobDetailsPage() {
         <Link to="/app/planos" onClick={() => setShowPlans(false)} className="secondary">
           Ver todos os pacotes <ArrowRight size={17} />
         </Link>
+      </div>
+    </Modal>
+  ) : null;
+  const applyConfirmModal = showApplyConfirm ? (
+    <Modal title="Confirmar candidatura" onClose={() => setShowApplyConfirm(false)}>
+      <div className="grid gap-4">
+        <div className="rounded-lg border border-aqua-100 bg-aqua-50 p-4">
+          <span className="badge bg-white text-aqua-700">
+            <CreditCard size={15} /> Saldo: {state.subscription.creditsRemaining} moeda(s)
+          </span>
+          <h3 className="mt-3 text-xl font-black text-navy-950">Enviar candidatura para esta vaga?</h3>
+          <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+            Esta candidatura usará 1 moeda. Depois do envio, a empresa poderá analisar seu perfil e responder pela plataforma.
+          </p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button type="button" onClick={() => setShowApplyConfirm(false)} className="secondary">Cancelar</button>
+          <button type="button" onClick={confirmApply} disabled={isApplying} className="primary">
+            {isApplying ? "Enviando..." : "Usar 1 moeda e candidatar-se"}
+          </button>
+        </div>
       </div>
     </Modal>
   ) : null;
@@ -253,8 +300,17 @@ export function JobDetailsPage() {
               </strong>
               <p className="mt-1 text-xs font-semibold text-slate-500">{getCompatibilityLabel(currentWorker, currentJob.function)}</p>
             </div>
-            <button type="button" onClick={handleApply} disabled={Boolean(application) || !isJobOpenForApplications(currentJob)} className="primary">
-              {application ? `Status: ${application.status}` : isJobOpenForApplications(currentJob) ? "Candidatar-se" : `Vaga ${jobStatus}`}
+            {application && (
+              <div className="rounded-lg border border-aqua-100 bg-aqua-50 p-3">
+                <strong className="block text-sm text-navy-950">Candidatura enviada</strong>
+                <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">Status atual: {application.status}. Acompanhe a resposta da empresa em Minhas candidaturas.</p>
+                <Link to="/app/candidaturas" className="secondary mt-3 w-full">
+                  Ver minhas candidaturas <ArrowRight size={17} />
+                </Link>
+              </div>
+            )}
+            <button type="button" onClick={handleApply} disabled={Boolean(application) || isApplying || !isJobOpenForApplications(currentJob)} className="primary">
+              {application ? `Status: ${application.status}` : isApplying ? "Enviando..." : isJobOpenForApplications(currentJob) ? "Candidatar-se" : `Vaga ${jobStatus}`}
             </button>
             <p className="text-xs leading-5 text-slate-500">
               Cadastro gratuito com prévia das vagas. Use moedas para liberar vaga completa e enviar candidaturas.
@@ -263,6 +319,7 @@ export function JobDetailsPage() {
         </div>
       </section>
 
+      {applyConfirmModal}
       {plansModal}
     </div>
   );

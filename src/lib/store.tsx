@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
 import { initialState } from "../data/demoData";
 import { useAuth } from "./auth";
@@ -517,6 +517,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     supabaseStateEnabled ? "carregando" : "local"
   );
   const [syncError, setSyncError] = useState("");
+  const pendingApplicationKeys = useRef(new Set<string>());
 
   function commit(updater: (current: AppState) => AppState) {
     setState((current) => {
@@ -1045,6 +1046,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const job = state.jobs.find((item) => item.id === jobId);
         if (!job) return { ok: false, message: "Vaga não encontrada." };
         const company = state.companies.find((item) => item.id === job.companyId);
+        const pendingKey = `${currentWorker.id}:${jobId}`;
 
         if (!state.subscription.unlockedJobIds.includes(jobId)) {
           return {
@@ -1058,6 +1060,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (!result.allowed) {
           return { ok: false, message: result.reason, requiresPlan: state.subscription.creditsRemaining <= 0 };
         }
+        if (pendingApplicationKeys.current.has(pendingKey)) {
+          return { ok: false, message: "Sua candidatura já está sendo enviada. Aguarde alguns segundos." };
+        }
+        pendingApplicationKeys.current.add(pendingKey);
 
         const application: Application = {
           id: crypto.randomUUID(),
@@ -1111,6 +1117,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               setSyncStatus("sincronizado");
             })
             .catch(() => {
+              pendingApplicationKeys.current.delete(pendingKey);
               commit((current) => ({
                 ...current,
                 applications: current.applications.filter((item) => item.id !== application.id),
@@ -1133,6 +1140,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           });
           publishRemoteNotification(job.companyId, companyNotification);
         }
+        window.setTimeout(() => pendingApplicationKeys.current.delete(pendingKey), 1500);
 
         return { ok: true, message: "Candidatura enviada com sucesso. 1 moeda foi utilizada." };
       },

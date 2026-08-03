@@ -72,7 +72,7 @@ export function getCompatibilityLabel(worker: WorkerProfile, functionName: JobFu
 
 export function canApply(job: Job, applications: Application[], worker: WorkerProfile, creditsRemaining: number) {
   if (!isJobOpenForApplications(job)) {
-    return { allowed: false, reason: "Todas as vagas já foram preenchidas." };
+    return { allowed: false, reason: "Esta vaga não está mais aberta para candidatura." };
   }
 
   const duplicated = applications.some((application) => application.jobId === job.id && application.workerId === worker.id);
