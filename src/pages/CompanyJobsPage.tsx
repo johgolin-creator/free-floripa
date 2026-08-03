@@ -46,6 +46,22 @@ export function CompanyJobsPage() {
   };
 
   function runStatus(jobId: string, status: JobStatus) {
+    const job = jobs.find((item) => item.id === jobId);
+    if (job && status === "Cancelada" && isFilledJob(job, state.applications)) {
+      const confirmed = state.applications.filter(
+        (application) =>
+          application.jobId === job.id &&
+          (application.status === "Aprovada" || application.status === "Trabalho concluído")
+      ).length;
+      const confirmedText = `${confirmed}/${job.quantity}`;
+      if (
+        !window.confirm(
+          `Esta vaga já está preenchida (${confirmedText}). Para cancelar agora, serão cobradas 10 moedas da empresa. Deseja continuar?`
+        )
+      ) {
+        return;
+      }
+    }
     const result = updateJobStatus(jobId, status);
     setMessage(result.message);
   }
@@ -89,7 +105,11 @@ export function CompanyJobsPage() {
               <Stat label="rascunhos" value={String(jobs.filter((job) => getJobStatus(job) === "Rascunho").length)} />
               <Stat label="concluídas" value={String(jobs.filter((job) => getJobStatus(job) === "Concluída").length)} />
               <Stat label="canceladas" value={String(jobs.filter((job) => getJobStatus(job) === "Cancelada").length)} />
+              <Stat label="moedas" value={String(state.subscription.creditsRemaining)} />
             </div>
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-800 lg:col-span-2">
+              Cancelar uma vaga já preenchida custa 10 moedas da empresa. Vagas sem equipe completa podem ser canceladas sem taxa.
+            </p>
             <div className="company-filter-buttons">
               {filters.map((item) => (
                 <button
@@ -117,6 +137,7 @@ export function CompanyJobsPage() {
                 const expectedValue = confirmed * job.dailyValue;
                 const terminal = status === "Concluída" || status === "Cancelada";
                 const progress = Math.min(100, Math.round((confirmed / job.quantity) * 100));
+                const filledCancellationFee = confirmed >= job.quantity ? 10 : 0;
 
                 return (
                   <article key={job.id} className="company-job-card">
@@ -162,7 +183,7 @@ export function CompanyJobsPage() {
                         <CheckCircle2 size={17} /> Encerrar
                       </button>
                       <button type="button" onClick={() => runStatus(job.id, "Cancelada")} disabled={terminal} className="company-action company-action-danger">
-                        <XCircle size={17} /> Cancelar
+                        <XCircle size={17} /> Cancelar{filledCancellationFee > 0 ? " (-10 moedas)" : ""}
                       </button>
                       <button
                         type="button"
@@ -215,6 +236,15 @@ function matchesFilter(job: Job, filter: JobFilter) {
 
 function isActiveStatus(status: ReturnType<typeof getJobStatus>) {
   return status === "Publicada" || status === "Urgente" || status === "Em andamento";
+}
+
+function isFilledJob(job: Job, applications: Application[]) {
+  const confirmed = applications.filter(
+    (application) =>
+      application.jobId === job.id &&
+      (application.status === "Aprovada" || application.status === "Trabalho concluído")
+  ).length;
+  return confirmed >= job.quantity;
 }
 
 function getStatusClass(status: ReturnType<typeof getJobStatus>) {

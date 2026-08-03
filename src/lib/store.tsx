@@ -25,6 +25,7 @@ import {
   applyRemoteToJobWithCoin,
   grantRemoteCoins,
   loadRemoteCoinAccount,
+  spendRemoteCoins,
   supabaseCoinsEnabled,
   unlockRemoteJobWithCoin,
   type CoinAccount
@@ -881,6 +882,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const job = state.jobs.find((item) => item.id === jobId && item.companyId === currentCompany.id);
         if (!job) return { ok: false, message: "Vaga não encontrada para esta empresa." };
         const affectedApplications = state.applications.filter((application) => application.jobId === jobId);
+        const approvedCount = countApproved(state.applications, jobId);
+        const filledCancellationFee = status === "Cancelada" && approvedCount >= job.quantity ? 10 : 0;
+
+        if (filledCancellationFee > 0 && state.subscription.creditsRemaining < filledCancellationFee) {
+          return {
+            ok: false,
+            message: `Esta vaga já está preenchida. Para cancelar, a empresa precisa de ${filledCancellationFee} moedas. Saldo atual: ${state.subscription.creditsRemaining}.`
+          };
+        }
 
         commit((current) => {
           const nextApplications = current.applications.map((application) => {
@@ -908,6 +918,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...current,
             applications: nextApplications,
             shifts: nextShifts,
+            subscription:
+              filledCancellationFee > 0
+                ? {
+                    ...current.subscription,
+                    creditsRemaining: Math.max(0, current.subscription.creditsRemaining - filledCancellationFee)
+                  }
+                : current.subscription,
             jobs: current.jobs.map((item) =>
               item.id === jobId
                 ? {
@@ -951,6 +968,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           });
         }
 
+        if (filledCancellationFee > 0) {
+          queueLowCoinsEmail(Math.max(0, state.subscription.creditsRemaining - filledCancellationFee));
+          if (supabaseCoinsEnabled && user) {
+            trackCoinSync(spendRemoteCoins(user.id, filledCancellationFee, "cancel_filled_job", jobId), "Falha ao cobrar taxa de cancelamento.");
+          }
+        }
+
         if (supabaseMarketplaceEnabled) {
           publishJob(user, currentCompany, { ...job, status, urgent: status === "Cancelada" || status === "Concluída" ? false : job.urgent }).catch(() => {
             setSyncError("Falha ao atualizar vaga.");
@@ -958,7 +982,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           });
         }
 
-        return { ok: true, message: `Vaga marcada como ${status}.` };
+        return {
+          ok: true,
+          message:
+            filledCancellationFee > 0
+              ? `Vaga cancelada. Como ela já estava preenchida, foram cobradas ${filledCancellationFee} moedas.`
+              : `Vaga marcada como ${status}.`
+        };
       },
       duplicateJob(jobId) {
         const job = state.jobs.find((item) => item.id === jobId && item.companyId === currentCompany.id);

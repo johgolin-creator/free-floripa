@@ -311,6 +311,7 @@ function getTransactionTitle(transaction: CoinTransaction) {
   if (transaction.reason === "coin_pack") return "Pacote de moedas comprado";
   if (transaction.reason === "unlock_job") return "Vaga completa liberada";
   if (transaction.reason === "apply_job") return "Candidatura enviada";
+  if (transaction.reason === "cancel_filled_job") return "Cancelamento de vaga preenchida";
   if (transaction.kind === "refund") return "Moedas estornadas";
   if (transaction.kind === "bonus") return "Bônus de moedas";
   return "Movimentação de moedas";
@@ -319,6 +320,7 @@ function getTransactionTitle(transaction: CoinTransaction) {
 function getTransactionDescription(transaction: CoinTransaction) {
   if (transaction.reason === "unlock_job" && transaction.jobId) return `Desbloqueio da vaga ${transaction.jobId}.`;
   if (transaction.reason === "apply_job" && transaction.applicationId) return `Candidatura ${transaction.applicationId}.`;
+  if (transaction.reason === "cancel_filled_job" && transaction.jobId) return `Taxa de cancelamento da vaga preenchida ${transaction.jobId}.`;
   if (transaction.amount > 0) return "Moedas adicionadas ao saldo da sua conta.";
   return "Moedas utilizadas dentro do Free Floripa.";
 }
