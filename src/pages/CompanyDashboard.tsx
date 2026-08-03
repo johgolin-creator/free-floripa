@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   AlertTriangle,
@@ -56,11 +56,45 @@ type JobDraft = {
   urgent: boolean;
 };
 
+type SubmitResult = { ok: boolean; message?: string };
+
+function normalizeJobKeyValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map((item) => normalizeJobKeyValue(item));
+  if (typeof value === "string") return value.trim().toLocaleLowerCase("pt-BR");
+  return value;
+}
+
+function createJobInputKey(input: CreateJobInput) {
+  return JSON.stringify({
+    ...input,
+    title: normalizeJobKeyValue(input.title),
+    approximateAddress: normalizeJobKeyValue(input.approximateAddress),
+    fullAddress: normalizeJobKeyValue(input.fullAddress),
+    uniform: normalizeJobKeyValue(input.uniform),
+    requiredExperience: normalizeJobKeyValue(input.requiredExperience),
+    description: normalizeJobKeyValue(input.description),
+    benefits: input.benefits.map((item) => normalizeJobKeyValue(item))
+  });
+}
+
+function createUrgentReplacementKey(input: UrgentReplacementInput) {
+  return JSON.stringify({
+    function: input.function,
+    quantity: input.quantity,
+    startsAt: input.startsAt,
+    dailyValue: input.dailyValue,
+    neighborhood: input.neighborhood,
+    observation: normalizeJobKeyValue(input.observation)
+  });
+}
+
 export function CompanyDashboard() {
   const { state, currentCompany, createJob, createUrgentReplacement } = useAppStore();
   const [showJobForm, setShowJobForm] = useState(false);
   const [showUrgentForm, setShowUrgentForm] = useState(false);
   const [message, setMessage] = useState("");
+  const lastCreatedJobKey = useRef("");
+  const lastCreatedUrgentKey = useRef("");
   const companyJobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const companyApplications = state.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId));
   const openJobs = companyJobs.filter((job) => {
@@ -213,8 +247,14 @@ export function CompanyDashboard() {
           title="Criar nova vaga"
           onClose={() => setShowJobForm(false)}
           onCreate={(input) => {
+            const jobKey = createJobInputKey(input);
+            if (lastCreatedJobKey.current === jobKey) {
+              return { ok: false, message: "Essa vaga já foi criada. Altere algum dado para publicar novamente." };
+            }
             createJob(input);
+            lastCreatedJobKey.current = jobKey;
             setMessage("Vaga publicada com sucesso. Ela já aparece em Minhas vagas e para os trabalhadores compatíveis.");
+            return { ok: true };
           }}
         />
       )}
@@ -222,9 +262,15 @@ export function CompanyDashboard() {
         <Modal title="Reposição urgente" onClose={() => setShowUrgentForm(false)}>
           <UrgentForm
             onSubmit={(input) => {
+              const urgentKey = createUrgentReplacementKey(input);
+              if (lastCreatedUrgentKey.current === urgentKey) {
+                return { ok: false, message: "Essa vaga urgente já foi criada. Altere algum dado para publicar novamente." };
+              }
               createUrgentReplacement(input);
+              lastCreatedUrgentKey.current = urgentKey;
               setShowUrgentForm(false);
               setMessage("Reposição urgente publicada. Ela foi marcada como URGENTE para os trabalhadores.");
+              return { ok: true };
             }}
           />
         </Modal>
@@ -270,22 +316,27 @@ function CreateJobModal({
 }: {
   title: string;
   onClose: () => void;
-  onCreate: (input: CreateJobInput) => void;
+  onCreate: (input: CreateJobInput) => SubmitResult | void;
 }) {
   return (
     <Modal title={title} onClose={onClose}>
       <CreateJobForm
         onSubmit={(input) => {
-          onCreate(input);
+          const result = onCreate(input);
+          if (result?.ok === false) return result;
           onClose();
+          return { ok: true };
         }}
       />
     </Modal>
   );
 }
 
-function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => void }) {
+function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => SubmitResult | void }) {
   const [error, setError] = useState("");
+  const [isPublishing, setIsPublishing] = useState(false);
+  const isPublishingRef = useRef(false);
+  const lastSubmittedKey = useRef("");
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<JobDraft>({
     title: "",
@@ -348,13 +399,14 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => void
   }
 
   function publish() {
+    if (isPublishingRef.current) return;
+
     const result = validateJobDraft(draft);
     if (!result.ok) {
       setError(result.message);
       return;
     }
-    setError("");
-    onSubmit({
+    const input: CreateJobInput = {
       title: draft.title.trim(),
       function: draft.function,
       quantity: parsed.quantity,
@@ -371,7 +423,24 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => void
       description: draft.description.trim(),
       benefits,
       urgent: draft.urgent
-    });
+    };
+    const submitKey = createJobInputKey(input);
+    if (lastSubmittedKey.current === submitKey) {
+      setError("Essa vaga já foi enviada. Altere algum dado para publicar novamente.");
+      return;
+    }
+
+    setError("");
+    isPublishingRef.current = true;
+    setIsPublishing(true);
+    const submitResult = onSubmit(input);
+    if (submitResult?.ok === false) {
+      isPublishingRef.current = false;
+      setIsPublishing(false);
+      setError(submitResult.message ?? "Não foi possível publicar esta vaga.");
+      return;
+    }
+    lastSubmittedKey.current = submitKey;
   }
 
   return (
@@ -519,7 +588,9 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => void
         {step < jobSteps.length - 1 ? (
           <button type="button" onClick={goNext} className="company-action company-action-primary">Continuar</button>
         ) : (
-          <button type="submit" className="company-action company-action-primary">Publicar vaga</button>
+          <button type="submit" disabled={isPublishing} className="company-action company-action-primary">
+            {isPublishing ? "Publicando..." : "Publicar vaga"}
+          </button>
         )}
       </div>
     </form>
@@ -581,14 +652,18 @@ function RequiredFieldSummary() {
   );
 }
 
-function UrgentForm({ onSubmit }: { onSubmit: (input: UrgentReplacementInput) => void }) {
+function UrgentForm({ onSubmit }: { onSubmit: (input: UrgentReplacementInput) => SubmitResult | void }) {
   const [error, setError] = useState("");
+  const [isPublishing, setIsPublishing] = useState(false);
+  const isPublishingRef = useRef(false);
+  const lastSubmittedKey = useRef("");
 
   return (
     <form
       className="grid gap-3"
       onSubmit={(event) => {
         event.preventDefault();
+        if (isPublishingRef.current) return;
         const form = new FormData(event.currentTarget);
         const quantity = Number(form.get("quantity"));
         const startsAt = String(form.get("startsAt") || "").trim();
@@ -597,15 +672,30 @@ function UrgentForm({ onSubmit }: { onSubmit: (input: UrgentReplacementInput) =>
           setError("Preencha quantidade, horário e valor para criar a reposição urgente.");
           return;
         }
-        setError("");
-        onSubmit({
+        const input: UrgentReplacementInput = {
           function: form.get("function") as JobFunction,
           quantity,
           startsAt,
           dailyValue,
           neighborhood: form.get("neighborhood") as Neighborhood,
           observation: String(form.get("observation") || "")
-        });
+        };
+        const submitKey = createUrgentReplacementKey(input);
+        if (lastSubmittedKey.current === submitKey) {
+          setError("Essa vaga urgente já foi enviada. Altere algum dado para publicar novamente.");
+          return;
+        }
+        setError("");
+        isPublishingRef.current = true;
+        setIsPublishing(true);
+        const result = onSubmit(input);
+        if (result?.ok === false) {
+          isPublishingRef.current = false;
+          setIsPublishing(false);
+          setError(result.message ?? "Não foi possível publicar a vaga urgente.");
+          return;
+        }
+        lastSubmittedKey.current = submitKey;
       }}
     >
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
@@ -624,7 +714,9 @@ function UrgentForm({ onSubmit }: { onSubmit: (input: UrgentReplacementInput) =>
         <label className="label md:col-span-2">Bairro<select name="neighborhood" className="input" required>{neighborhoods.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
       <label className="label">Observação<textarea name="observation" className="input min-h-24 py-3" placeholder="Cobrir falta no turno da noite" /></label>
-      <button type="submit" className="danger">Criar vaga URGENTE</button>
+      <button type="submit" disabled={isPublishing} className="danger">
+        {isPublishing ? "Criando..." : "Criar vaga URGENTE"}
+      </button>
     </form>
   );
 }
