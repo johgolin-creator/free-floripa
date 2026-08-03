@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   Clock3,
+  CreditCard,
   Lock,
   MapPin,
   MessageCircle,
@@ -19,22 +20,26 @@ import { formatCurrency, formatDate, formatDateTime, getWhatsAppUrl } from "../l
 import type { Application, Job, WorkShift } from "../lib/types";
 
 const cancelableStatuses: Application["status"][] = ["Enviada", "Em análise"];
-const filters = ["Todas", "Aguardando", "Aprovadas", "Histórico"] as const;
+const filters = ["Todas", "Ativas", "Aprovadas", "Finalizadas"] as const;
 
 export function ApplicationsPage() {
   const { state, currentWorker, updateApplicationStatus } = useAppStore();
   const [message, setMessage] = useState("");
   const [filter, setFilter] = useState<(typeof filters)[number]>("Todas");
-  const applications = state.applications.filter((application) => application.workerId === currentWorker.id);
+  const applications = state.applications
+    .filter((application) => application.workerId === currentWorker.id)
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
   const filteredApplications = applications.filter((application) => matchesFilter(application, filter));
   const stats = {
     total: applications.length,
     waiting: applications.filter((application) => application.status === "Enviada" || application.status === "Em análise").length,
     approved: applications.filter((application) => application.status === "Aprovada").length,
-    completed: applications.filter((application) => application.status === "Trabalho concluído").length
+    completed: applications.filter((application) => application.status === "Trabalho concluído").length,
+    coinsUsed: applications.length
   };
 
   function cancelApplication(application: Application) {
+    if (!window.confirm("Cancelar esta candidatura? Essa ação avisa a empresa e remove você da seleção desta vaga.")) return;
     const result = updateApplicationStatus(application.id, "Cancelada");
     setMessage(result.message);
   }
@@ -54,20 +59,29 @@ export function ApplicationsPage() {
           <section className="worker-hero">
             <div>
               <span className="section-eyebrow">Sua busca por trabalho</span>
-              <h2>Cada candidatura com status e próximo passo claro</h2>
+              <h2>Cada candidatura com status, custo e próximo passo claro</h2>
               <p>
-                Veja quais empresas ainda estão analisando, quais turnos foram aprovados e onde o contato já está liberado.
+                Veja quais empresas ainda estão analisando, quais turnos foram aprovados, onde o contato já está liberado e quais candidaturas usaram moedas.
               </p>
             </div>
             <div className="worker-hero-metrics">
               <HeroMetric icon={<ClipboardCheck size={19} />} label="enviadas" value={String(stats.total)} />
               <HeroMetric icon={<Clock3 size={19} />} label="aguardando" value={String(stats.waiting)} />
               <HeroMetric icon={<UserCheck size={19} />} label="aprovadas" value={String(stats.approved)} />
-              <HeroMetric icon={<BriefcaseBusiness size={19} />} label="concluídas" value={String(stats.completed)} />
+              <HeroMetric icon={<CreditCard size={19} />} label="moedas usadas" value={String(stats.coinsUsed)} />
             </div>
           </section>
 
           <section className="worker-filter-panel">
+            <div className="worker-filter-summary">
+              <div>
+                <strong>Saldo atual: {state.subscription.creditsRemaining} moeda(s)</strong>
+                <span>Cada candidatura enviada consome 1 moeda. Vagas aprovadas liberam contato e próximos passos.</span>
+              </div>
+              <Link to="/app/assinatura" className="secondary min-h-10">
+                Comprar moedas
+              </Link>
+            </div>
             <div className="worker-filter-buttons">
               {filters.map((item) => (
                 <button
@@ -100,6 +114,7 @@ export function ApplicationsPage() {
                       <span className={getStatusClass(application.status)}>{application.status}</span>
                       <span className="badge">{job.function}</span>
                       <span className="badge">{formatCurrency(job.dailyValue)}</span>
+                      <span className="badge bg-aqua-50 text-aqua-700"><CreditCard size={14} /> 1 moeda usada</span>
                     </div>
                     <h3>{job.title}</h3>
                     <p className="text-sm text-slate-600">
@@ -107,7 +122,11 @@ export function ApplicationsPage() {
                     </p>
                     <p className="mt-1 text-xs font-semibold text-slate-500">Enviada em {formatDateTime(application.createdAt)}</p>
                   </div>
-                  <strong className="worker-next-step">{getNextStep(application, shift)}</strong>
+                  <div className="worker-next-step">
+                    <small>Próxima etapa</small>
+                    <strong>{getNextStep(application, shift)}</strong>
+                    <span>{getStatusDescription(application.status, contactUnlocked)}</span>
+                  </div>
                 </div>
 
                 <ApplicationFlow application={application} shift={shift} />
@@ -116,6 +135,7 @@ export function ApplicationsPage() {
                   <Info icon={<CalendarDays size={16} />} label="Horário" value={`${job.startsAt} às ${job.endsAt}`} />
                   <Info icon={<MapPin size={16} />} label="Local" value={contactUnlocked ? job.fullAddress : job.approximateAddress} />
                   <Info icon={<BriefcaseBusiness size={16} />} label="Pagamento" value={job.paymentMethod} />
+                  <Info icon={<CreditCard size={16} />} label="Custo" value="1 moeda na candidatura" />
                 </div>
 
                 <div className="grid gap-2 md:grid-cols-[1fr_auto] md:items-center">
@@ -146,7 +166,7 @@ export function ApplicationsPage() {
                       disabled={!canCancel}
                       className="company-action company-action-danger"
                     >
-                      <XCircle size={17} /> Cancelar
+                      <XCircle size={17} /> {canCancel ? "Cancelar" : "Cancelamento bloqueado"}
                     </button>
                   </div>
                 </div>
@@ -225,12 +245,22 @@ function getNextStep(application: Application, shift: WorkShift | undefined) {
 }
 
 function matchesFilter(application: Application, filter: (typeof filters)[number]) {
-  if (filter === "Aguardando") return application.status === "Enviada" || application.status === "Em análise";
+  if (filter === "Ativas") return application.status === "Enviada" || application.status === "Em análise";
   if (filter === "Aprovadas") return application.status === "Aprovada";
-  if (filter === "Histórico") {
+  if (filter === "Finalizadas") {
     return ["Trabalho concluído", "Recusada", "Cancelada", "Falta registrada"].includes(application.status);
   }
   return true;
+}
+
+function getStatusDescription(status: Application["status"], contactUnlocked: boolean) {
+  if (status === "Enviada") return "A empresa recebeu sua candidatura e ainda não abriu a decisão.";
+  if (status === "Em análise") return "Seu perfil está em avaliação pela empresa.";
+  if (status === "Aprovada") return contactUnlocked ? "Contato liberado. Combine os detalhes do turno." : "Aprovação registrada. Aguarde liberação dos dados.";
+  if (status === "Trabalho concluído") return "Turno finalizado e salvo no histórico.";
+  if (status === "Falta registrada") return "A empresa registrou ausência neste turno.";
+  if (status === "Cancelada") return "Esta candidatura foi encerrada e não segue mais na seleção.";
+  return "A empresa escolheu seguir com outros profissionais.";
 }
 
 function getStatusClass(status: Application["status"]) {
