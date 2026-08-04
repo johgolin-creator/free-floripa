@@ -404,9 +404,11 @@ export const initialState: AppState = {
   favoriteWorkerIds: ["worker-1", "worker-2"],
   notifications,
   chatMessages: [],
+  coinLedger: [],
   subscription: {
     plan: "Gratuito",
     creditsRemaining: 4,
+    companyCreditsRemaining: 12,
     renewalDate: "2026-02-01",
     unlockedJobIds: []
   },

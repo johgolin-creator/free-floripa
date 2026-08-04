@@ -131,7 +131,8 @@ export function AdminPage() {
               <span className="flex items-center gap-2"><ShieldCheck size={16} /> Revisar {alerts.length} alerta(s) operacionais.</span>
               <span className="flex items-center gap-2"><Ban size={16} /> {blockedWorkerIds.length} trabalhador(es) bloqueado(s).</span>
               <span className="flex items-center gap-2"><Ban size={16} /> {blockedCompanyIds.length} empresa(s) bloqueada(s).</span>
-              <span className="flex items-center gap-2"><WalletCards size={16} /> Saldo da conta atual: {state.subscription.creditsRemaining} moeda(s).</span>
+              <span className="flex items-center gap-2"><WalletCards size={16} /> Trabalhador: {state.subscription.creditsRemaining} moeda(s).</span>
+              <span className="flex items-center gap-2"><WalletCards size={16} /> Empresa: {state.subscription.companyCreditsRemaining} moeda(s).</span>
             </div>
           </div>
         </section>
@@ -205,25 +206,23 @@ export function AdminPage() {
       {tab === "Moedas" && (
         <section className="grid gap-4 lg:grid-cols-[0.8fr_1fr]">
           <div className="card p-4">
-            <h3 className="mb-3 font-black text-navy-950">Carteira da conta atual</h3>
+            <h3 className="mb-3 font-black text-navy-950">Carteiras da conta atual</h3>
             <div className="grid gap-3">
-              <InfoTile icon={<WalletCards />} label="Saldo atual" value={`${state.subscription.creditsRemaining} moeda(s)`} />
+              <InfoTile icon={<WalletCards />} label="Saldo do trabalhador" value={`${state.subscription.creditsRemaining} moeda(s)`} />
+              <InfoTile icon={<WalletCards />} label="Saldo da empresa" value={`${state.subscription.companyCreditsRemaining} moeda(s)`} />
               <InfoTile icon={<BriefcaseBusiness />} label="Vagas liberadas" value={String(unlockedJobs.length)} />
               <InfoTile icon={<ClipboardList />} label="Candidaturas enviadas" value={String(state.applications.length)} />
             </div>
           </div>
-          <AdminList title="Uso recente de moedas" count={unlockedJobs.length + state.applications.length}>
-            {unlockedJobs.map((job) => (
-              <CoinRow key={`unlock-${job.id}`} title="Vaga liberada" text={`${job.title} - ${job.function}`} amount="-1 moeda" />
-            ))}
-            {state.applications.slice(0, 8).map((application) => {
-              const job = state.jobs.find((item) => item.id === application.jobId);
+          <AdminList title="Uso recente de moedas" count={state.coinLedger.length}>
+            {state.coinLedger.slice(0, 12).map((transaction) => {
+              const job = transaction.jobId ? state.jobs.find((item) => item.id === transaction.jobId) : undefined;
               return (
                 <CoinRow
-                  key={`application-${application.id}`}
-                  title="Candidatura enviada"
-                  text={`${job?.title ?? "Vaga"} - ${application.status}`}
-                  amount="-1 moeda"
+                  key={transaction.id}
+                  title={getCoinAdminTitle(transaction.reason)}
+                  text={`${transaction.role === "empresa" ? "Empresa" : "Trabalhador"} - ${job?.title ?? "Sem vaga vinculada"}`}
+                  amount={`${transaction.amount > 0 ? "+" : ""}${transaction.amount} moeda${Math.abs(transaction.amount) === 1 ? "" : "s"}`}
                 />
               );
             })}
@@ -367,6 +366,16 @@ function CoinRow({ title, text, amount }: { title: string; text: string; amount:
       </div>
     </article>
   );
+}
+
+function getCoinAdminTitle(reason: string) {
+  if (reason === "package_professional") return "Pacote Profissional";
+  if (reason === "package_plus") return "Pacote Plus";
+  if (reason === "coin_pack") return "Pacote de moedas";
+  if (reason === "unlock_job") return "Vaga liberada";
+  if (reason === "apply_job") return "Candidatura enviada";
+  if (reason === "cancel_filled_job") return "Cancelamento de vaga preenchida";
+  return "Movimentação de moedas";
 }
 
 function normalize(value: string) {

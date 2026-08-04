@@ -168,32 +168,6 @@ export async function spendRemoteCoinForApplication(
   };
 }
 
-export async function spendRemoteCoins(
-  userId: string,
-  amount: number,
-  reason: string,
-  jobId?: string
-): Promise<CoinAccount | null> {
-  if (!supabase) return null;
-
-  const { data, error } = await supabase.rpc("add_coin_transaction", {
-    target_user_id: userId,
-    coin_delta: -Math.abs(amount),
-    tx_kind: "spend",
-    tx_reason: reason,
-    target_job_id: jobId ?? null,
-    target_application_id: null,
-    tx_metadata: {}
-  });
-
-  if (error) throw new Error(error.message);
-
-  return {
-    balance: toBalance(mapWallet(data)),
-    unlockedJobIds: await loadUnlockedJobIds(userId)
-  };
-}
-
 export async function applyRemoteToJobWithCoin(
   userId: string,
   workerId: string,

@@ -105,7 +105,7 @@ export function CompanyJobsPage() {
               <Stat label="rascunhos" value={String(jobs.filter((job) => getJobStatus(job) === "Rascunho").length)} />
               <Stat label="concluídas" value={String(jobs.filter((job) => getJobStatus(job) === "Concluída").length)} />
               <Stat label="canceladas" value={String(jobs.filter((job) => getJobStatus(job) === "Cancelada").length)} />
-              <Stat label="moedas" value={String(state.subscription.creditsRemaining)} />
+              <Stat label="moedas empresa" value={String(state.subscription.companyCreditsRemaining)} />
             </div>
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-800 lg:col-span-2">
               Cancelar uma vaga já preenchida custa 10 moedas da empresa. Vagas sem equipe completa podem ser canceladas sem taxa.

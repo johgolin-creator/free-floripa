@@ -25,7 +25,6 @@ import {
   applyRemoteToJobWithCoin,
   grantRemoteCoins,
   loadRemoteCoinAccount,
-  spendRemoteCoins,
   supabaseCoinsEnabled,
   unlockRemoteJobWithCoin,
   type CoinAccount
@@ -149,6 +148,14 @@ function hasShiftFor(shifts: AppState["shifts"], jobId: string, workerId: string
   return shifts.some((shift) => shift.jobId === jobId && shift.workerId === workerId);
 }
 
+function coinLedgerEntry(input: Omit<AppState["coinLedger"][number], "id" | "createdAt">): AppState["coinLedger"][number] {
+  return {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    ...input
+  };
+}
+
 function mergeSeedUpdates(savedState: AppState): AppState {
   const securityJob = initialState.jobs.find((job) => job.id === "job-6");
   const seededWorker = initialState.workers.find((worker) => worker.id === "worker-3");
@@ -156,12 +163,16 @@ function mergeSeedUpdates(savedState: AppState): AppState {
     ...savedState,
     subscription: {
       ...savedState.subscription,
+      companyCreditsRemaining: Number.isFinite(savedState.subscription?.companyCreditsRemaining)
+        ? savedState.subscription.companyCreditsRemaining
+        : 0,
       unlockedJobIds: Array.isArray(savedState.subscription?.unlockedJobIds)
         ? savedState.subscription.unlockedJobIds
         : []
     },
     companySchedules: Array.isArray(savedState.companySchedules) ? savedState.companySchedules : [],
     chatMessages: Array.isArray(savedState.chatMessages) ? savedState.chatMessages : [],
+    coinLedger: Array.isArray(savedState.coinLedger) ? savedState.coinLedger : [],
     adminModeration: {
       blockedWorkerIds: Array.isArray(savedState.adminModeration?.blockedWorkerIds)
         ? savedState.adminModeration.blockedWorkerIds
@@ -174,6 +185,8 @@ function mergeSeedUpdates(savedState: AppState): AppState {
   let changed =
     !Array.isArray(savedState.companySchedules) ||
     !Array.isArray(savedState.chatMessages) ||
+    !Array.isArray(savedState.coinLedger) ||
+    !Number.isFinite(savedState.subscription?.companyCreditsRemaining) ||
     !Array.isArray(savedState.subscription?.unlockedJobIds) ||
     !Array.isArray(savedState.adminModeration?.blockedWorkerIds) ||
     !Array.isArray(savedState.adminModeration?.blockedCompanyIds);
@@ -885,10 +898,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const approvedCount = countApproved(state.applications, jobId);
         const filledCancellationFee = status === "Cancelada" && approvedCount >= job.quantity ? 10 : 0;
 
-        if (filledCancellationFee > 0 && state.subscription.creditsRemaining < filledCancellationFee) {
+        if (filledCancellationFee > 0 && state.subscription.companyCreditsRemaining < filledCancellationFee) {
           return {
             ok: false,
-            message: `Esta vaga já está preenchida. Para cancelar, a empresa precisa de ${filledCancellationFee} moedas. Saldo atual: ${state.subscription.creditsRemaining}.`
+            message: `Esta vaga já está preenchida. Para cancelar, a empresa precisa de ${filledCancellationFee} moedas empresariais. Saldo atual: ${state.subscription.companyCreditsRemaining}.`
           };
         }
 
@@ -922,9 +935,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
               filledCancellationFee > 0
                 ? {
                     ...current.subscription,
-                    creditsRemaining: Math.max(0, current.subscription.creditsRemaining - filledCancellationFee)
+                    companyCreditsRemaining: Math.max(0, current.subscription.companyCreditsRemaining - filledCancellationFee)
                   }
                 : current.subscription,
+            coinLedger:
+              filledCancellationFee > 0
+                ? [
+                    coinLedgerEntry({
+                      role: "empresa",
+                      kind: "spend",
+                      reason: "cancel_filled_job",
+                      amount: -filledCancellationFee,
+                      balanceAfter: Math.max(0, current.subscription.companyCreditsRemaining - filledCancellationFee),
+                      jobId
+                    }),
+                    ...current.coinLedger
+                  ]
+                : current.coinLedger,
             jobs: current.jobs.map((item) =>
               item.id === jobId
                 ? {
@@ -966,13 +993,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
               metadata: { jobId, applicationId: application.id, workerId: worker.id, status }
             });
           });
-        }
-
-        if (filledCancellationFee > 0) {
-          queueLowCoinsEmail(Math.max(0, state.subscription.creditsRemaining - filledCancellationFee));
-          if (supabaseCoinsEnabled && user) {
-            trackCoinSync(spendRemoteCoins(user.id, filledCancellationFee, "cancel_filled_job", jobId), "Falha ao cobrar taxa de cancelamento.");
-          }
         }
 
         if (supabaseMarketplaceEnabled) {
@@ -1119,6 +1139,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...current.subscription,
             creditsRemaining: Math.max(0, current.subscription.creditsRemaining - 1)
           },
+          coinLedger: [
+            coinLedgerEntry({
+              role: "trabalhador",
+              kind: "spend",
+              reason: "apply_job",
+              amount: -1,
+              balanceAfter: Math.max(0, current.subscription.creditsRemaining - 1),
+              jobId,
+              applicationId: application.id
+            }),
+            ...current.coinLedger
+          ],
           notifications: [
             companyNotification,
             ...current.notifications
@@ -1151,6 +1183,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               commit((current) => ({
                 ...current,
                 applications: current.applications.filter((item) => item.id !== application.id),
+                coinLedger: current.coinLedger.filter((item) => item.applicationId !== application.id),
                 jobs: current.jobs.map((item) =>
                   item.id === jobId ? { ...item, candidates: Math.max(0, item.candidates - 1) } : item
                 ),
@@ -1570,7 +1603,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...current.subscription,
             creditsRemaining: Math.max(0, current.subscription.creditsRemaining - 1),
             unlockedJobIds: [...current.subscription.unlockedJobIds, jobId]
-          }
+          },
+          coinLedger: [
+            coinLedgerEntry({
+              role: "trabalhador",
+              kind: "spend",
+              reason: "unlock_job",
+              amount: -1,
+              balanceAfter: Math.max(0, current.subscription.creditsRemaining - 1),
+              jobId
+            }),
+            ...current.coinLedger
+          ]
         }));
         if (supabaseCoinsEnabled && user) {
           trackCoinSync(unlockRemoteJobWithCoin(user.id, jobId), "Falha ao liberar vaga com moeda.");
@@ -1585,10 +1629,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
           subscription: {
             ...current.subscription,
             plan: "Profissional",
-            creditsRemaining: current.subscription.creditsRemaining + 20
-          }
+            creditsRemaining:
+              current.activeRole === "trabalhador"
+                ? current.subscription.creditsRemaining + 20
+                : current.subscription.creditsRemaining,
+            companyCreditsRemaining:
+              current.activeRole === "empresa"
+                ? current.subscription.companyCreditsRemaining + 20
+                : current.subscription.companyCreditsRemaining
+          },
+          coinLedger: [
+            coinLedgerEntry({
+              role: current.activeRole,
+              kind: "purchase",
+              reason: "package_professional",
+              amount: 20,
+              balanceAfter:
+                current.activeRole === "empresa"
+                  ? current.subscription.companyCreditsRemaining + 20
+                  : current.subscription.creditsRemaining + 20
+            }),
+            ...current.coinLedger
+          ]
         }));
-        if (supabaseCoinsEnabled && user) {
+        if (state.activeRole === "trabalhador" && supabaseCoinsEnabled && user) {
           trackCoinSync(grantRemoteCoins(user.id, 20, "package_professional"), "Falha ao adicionar moedas.");
         }
       },
@@ -1598,10 +1662,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
           subscription: {
             ...current.subscription,
             plan: "Plus",
-            creditsRemaining: current.subscription.creditsRemaining + 35
-          }
+            creditsRemaining:
+              current.activeRole === "trabalhador"
+                ? current.subscription.creditsRemaining + 35
+                : current.subscription.creditsRemaining,
+            companyCreditsRemaining:
+              current.activeRole === "empresa"
+                ? current.subscription.companyCreditsRemaining + 35
+                : current.subscription.companyCreditsRemaining
+          },
+          coinLedger: [
+            coinLedgerEntry({
+              role: current.activeRole,
+              kind: "purchase",
+              reason: "package_plus",
+              amount: 35,
+              balanceAfter:
+                current.activeRole === "empresa"
+                  ? current.subscription.companyCreditsRemaining + 35
+                  : current.subscription.creditsRemaining + 35
+            }),
+            ...current.coinLedger
+          ]
         }));
-        if (supabaseCoinsEnabled && user) {
+        if (state.activeRole === "trabalhador" && supabaseCoinsEnabled && user) {
           trackCoinSync(grantRemoteCoins(user.id, 35, "package_plus"), "Falha ao adicionar moedas.");
         }
       },
@@ -1610,10 +1694,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ...current,
           subscription: {
             ...current.subscription,
-            creditsRemaining: current.subscription.creditsRemaining + amount
-          }
+            creditsRemaining:
+              current.activeRole === "trabalhador"
+                ? current.subscription.creditsRemaining + amount
+                : current.subscription.creditsRemaining,
+            companyCreditsRemaining:
+              current.activeRole === "empresa"
+                ? current.subscription.companyCreditsRemaining + amount
+                : current.subscription.companyCreditsRemaining
+          },
+          coinLedger: [
+            coinLedgerEntry({
+              role: current.activeRole,
+              kind: "purchase",
+              reason: "coin_pack",
+              amount,
+              balanceAfter:
+                current.activeRole === "empresa"
+                  ? current.subscription.companyCreditsRemaining + amount
+                  : current.subscription.creditsRemaining + amount
+            }),
+            ...current.coinLedger
+          ]
         }));
-        if (supabaseCoinsEnabled && user) {
+        if (state.activeRole === "trabalhador" && supabaseCoinsEnabled && user) {
           trackCoinSync(grantRemoteCoins(user.id, amount, "coin_pack"), "Falha ao adicionar moedas.");
         }
       },

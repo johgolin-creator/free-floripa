@@ -44,6 +44,7 @@ const companyLinks = [
   { to: "/app/escala", label: "Escala", mobileLabel: "Escala", icon: CalendarDays },
   { to: "/app/mensagens", label: "Mensagens", mobileLabel: "Chat", icon: MessageCircle },
   { to: "/app/financeiro", label: "Financeiro", mobileLabel: "R$", icon: WalletCards },
+  { to: "/app/planos", label: "Moedas", mobileLabel: "Moedas", icon: CreditCard },
   { to: "/app/equipe", label: "Minha equipe", mobileLabel: "Equipe", icon: Star },
   { to: "/app/perfil-empresa", label: "Perfil", mobileLabel: "Perfil", icon: Building2 }
 ];
@@ -74,8 +75,15 @@ export function AppLayout() {
             : "Sincronizado";
   const areaLabel = state.activeRole === "trabalhador" ? "Área do trabalhador" : "Área da empresa";
   const identityName = state.activeRole === "trabalhador" ? currentWorker.name : currentCompany.establishmentName;
-  const showWorkerCoins = state.activeRole === "trabalhador";
-  const coinBalance = state.subscription.creditsRemaining;
+  const coinBalance =
+    state.activeRole === "trabalhador"
+      ? state.subscription.creditsRemaining
+      : state.subscription.companyCreditsRemaining;
+  const coinLabel = state.activeRole === "trabalhador" ? "Moedas" : "Moedas da empresa";
+  const coinHelp =
+    state.activeRole === "trabalhador"
+      ? "Use moedas para liberar vagas completas e enviar candidaturas."
+      : "Use moedas para ações empresariais, como cancelar vagas já preenchidas.";
 
   if (!completion.complete && location.pathname !== profilePath && !(isAdmin && location.pathname.startsWith("/app/admin"))) {
     return <Navigate to={profilePath} replace />;
@@ -90,22 +98,20 @@ export function AppLayout() {
 
         <RoleSwitcher />
 
-        {showWorkerCoins && (
-          <Link
-            to="/app/planos"
-            className="mt-3 rounded-lg border border-aqua-300/25 bg-aqua-300/10 p-3 text-white shadow-soft transition hover:bg-aqua-300/15"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <span className="flex items-center gap-2 text-xs font-black text-aqua-200">
-                <WalletCards size={16} /> Moedas
-              </span>
-              <strong className="rounded-md bg-aqua-300 px-2.5 py-1 text-base font-black text-navy-950">{coinBalance}</strong>
-            </div>
-            <p className="mt-1.5 text-[0.7rem] font-semibold leading-4 text-slate-300">
-              Use moedas para liberar vagas completas e enviar candidaturas.
-            </p>
-          </Link>
-        )}
+        <Link
+          to="/app/planos"
+          className="mt-3 rounded-lg border border-aqua-300/25 bg-aqua-300/10 p-3 text-white shadow-soft transition hover:bg-aqua-300/15"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <span className="flex items-center gap-2 text-xs font-black text-aqua-200">
+              <WalletCards size={16} /> {coinLabel}
+            </span>
+            <strong className="rounded-md bg-aqua-300 px-2.5 py-1 text-base font-black text-navy-950">{coinBalance}</strong>
+          </div>
+          <p className="mt-1.5 text-[0.7rem] font-semibold leading-4 text-slate-300">
+            {coinHelp}
+          </p>
+        </Link>
 
         <nav className="mt-4 grid gap-1.5">
           {links.map((link) => {
@@ -151,17 +157,15 @@ export function AppLayout() {
               <h1 className="text-xl font-black text-navy-950">{identityName || areaLabel}</h1>
             </div>
             <div className="flex min-w-0 items-center gap-2">
-              {showWorkerCoins && (
-                <Link
-                  to="/app/planos"
-                  className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-3 text-xs font-black text-aqua-800 shadow-soft transition hover:border-aqua-300 hover:bg-aqua-100"
-                  title="Saldo de moedas"
-                >
-                  <WalletCards size={16} />
-                  <span className="hidden sm:inline">Moedas:</span>
-                  <strong className="text-sm">{coinBalance}</strong>
-                </Link>
-              )}
+              <Link
+                to="/app/planos"
+                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-3 text-xs font-black text-aqua-800 shadow-soft transition hover:border-aqua-300 hover:bg-aqua-100"
+                title={coinLabel}
+              >
+                <WalletCards size={16} />
+                <span className="hidden sm:inline">{state.activeRole === "trabalhador" ? "Moedas:" : "Empresa:"}</span>
+                <strong className="text-sm">{coinBalance}</strong>
+              </Link>
               <span
                 className={`hidden min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-black md:inline-flex ${
                   syncStatus === "erro" ? "bg-red-50 text-alert" : storageMode === "supabase" ? "bg-aqua-100 text-aqua-700" : "bg-slate-100 text-slate-500"

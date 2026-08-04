@@ -58,9 +58,23 @@ export function SubscriptionPage() {
   const [transactionsError, setTransactionsError] = useState("");
   const isProfessional = state.subscription.plan === "Profissional";
   const isPlus = state.subscription.plan === "Plus";
+  const isCompany = state.activeRole === "empresa";
+  const activeBalance = isCompany ? state.subscription.companyCreditsRemaining : state.subscription.creditsRemaining;
+  const walletLabel = isCompany ? "Saldo empresarial" : "Saldo do trabalhador";
+  const pageDescription = isCompany
+    ? "Use moedas empresariais para ações da empresa, como cancelar vagas que já foram preenchidas."
+    : "Use moedas para liberar vagas completas e enviar candidaturas sem mensalidade fixa.";
+  const heroText = isCompany
+    ? "As moedas da empresa ficam separadas das moedas do trabalhador. Assim cada lado tem controle próprio de uso e custo."
+    : "O gratuito deixa você conhecer as oportunidades. As moedas liberam a vaga inteira e a candidatura apenas quando você decidir usar.";
+  const localTransactions = state.coinLedger.filter((transaction) => transaction.role === state.activeRole);
+  const statementTransactions = transactions.length > 0 ? transactions : localTransactions;
 
   useEffect(() => {
-    if (!user || !supabaseCoinsEnabled) return;
+    if (isCompany || !user || !supabaseCoinsEnabled) {
+      setTransactions([]);
+      return;
+    }
 
     let active = true;
     setTransactionsLoading(true);
@@ -81,16 +95,16 @@ export function SubscriptionPage() {
     return () => {
       active = false;
     };
-  }, [state.subscription.creditsRemaining, user]);
+  }, [isCompany, state.subscription.creditsRemaining, user]);
 
   function handleSubscribe() {
     subscribeProfessional();
-    setMessage("Pacote Profissional comprado. 20 moedas foram adicionadas ao seu saldo.");
+    setMessage(`Pacote Profissional comprado. 20 moedas foram adicionadas ao ${isCompany ? "saldo da empresa" : "seu saldo"}.`);
   }
 
   function handleSubscribePlus() {
     subscribePlus();
-    setMessage("Pacote Plus comprado. 35 moedas foram adicionadas ao seu saldo.");
+    setMessage(`Pacote Plus comprado. 35 moedas foram adicionadas ao ${isCompany ? "saldo da empresa" : "seu saldo"}.`);
   }
 
   return (
@@ -98,10 +112,10 @@ export function SubscriptionPage() {
       <SectionHeader
         eyebrow="Moedas"
         title="Compre moedas e use quando precisar"
-        description="Use moedas para liberar vagas completas e enviar candidaturas sem mensalidade fixa."
+        description={pageDescription}
         action={
-          <Link to="/app/vagas" className="secondary">
-            <Search size={17} /> Ver vagas
+          <Link to={isCompany ? "/app/minhas-vagas" : "/app/vagas"} className="secondary">
+            <Search size={17} /> {isCompany ? "Ver minhas vagas" : "Ver vagas"}
           </Link>
         }
       />
@@ -111,12 +125,10 @@ export function SubscriptionPage() {
       <section className="plan-hero">
         <div className="plan-hero-copy">
           <span className="badge bg-aqua-50 text-aqua-700">
-            <CreditCard size={15} /> Saldo: {state.subscription.creditsRemaining} moeda(s)
+            <CreditCard size={15} /> {walletLabel}: {activeBalance} moeda(s)
           </span>
           <h2>Pague por uso, sem travar em mensalidade</h2>
-          <p>
-            O gratuito deixa você conhecer as oportunidades. As moedas liberam a vaga inteira e a candidatura apenas quando você decidir usar.
-          </p>
+          <p>{heroText}</p>
           <div className="plan-unlock-grid">
             {unlockItems.map((item) => (
               <span key={item}>
@@ -144,16 +156,17 @@ export function SubscriptionPage() {
       </section>
 
       <div className="grid gap-3 md:grid-cols-3">
-        <PlanStat icon={<WalletCards size={18} />} label="Saldo atual" value={`${state.subscription.creditsRemaining} moeda(s)`} />
-        <PlanStat icon={<Lock size={18} />} label="Desbloqueio de vaga" value="1 moeda" />
-        <PlanStat icon={<CreditCard size={18} />} label="Candidatura" value="1 moeda" />
+        <PlanStat icon={<WalletCards size={18} />} label={walletLabel} value={`${activeBalance} moeda(s)`} />
+        <PlanStat icon={<Lock size={18} />} label={isCompany ? "Cancelar vaga preenchida" : "Desbloqueio de vaga"} value={isCompany ? "10 moedas" : "1 moeda"} />
+        <PlanStat icon={<CreditCard size={18} />} label={isCompany ? "Carteira separada" : "Candidatura"} value={isCompany ? "Empresa" : "1 moeda"} />
       </div>
 
       <CoinStatement
-        transactions={transactions}
+        transactions={statementTransactions}
         loading={transactionsLoading}
         error={transactionsError}
-        localBalance={state.subscription.creditsRemaining}
+        localBalance={activeBalance}
+        role={state.activeRole}
       />
 
       <section className="grid gap-4 lg:grid-cols-3">
@@ -215,13 +228,17 @@ export function SubscriptionPage() {
           </span>
           <h3>Recargas em preparação</h3>
           <p>
-            As moedas organizam o acesso às vagas dentro do app. Por enquanto, as recargas ficam sob controle da administração do Free Floripa.
+            As moedas organizam ações importantes dentro do app. Por enquanto, as recargas ficam sob controle da administração do Free Floripa.
           </p>
         </div>
         <div className="plan-note-list">
           <Feature icon={<ShieldCheck />} title="Dados protegidos" text="Detalhes sensíveis aparecem só quando o fluxo permite." />
-          <Feature icon={<BadgeCheck />} title="Decisão melhor" text="O trabalhador paga para ver detalhes quando a vaga fizer sentido." />
-          <Feature icon={<Zap />} title="Sem mensalidade" text="A pessoa compra moedas e usa conforme a necessidade." />
+          <Feature
+            icon={<BadgeCheck />}
+            title="Decisão melhor"
+            text={isCompany ? "A empresa paga apenas por ações sensíveis, como cancelar vaga preenchida." : "O trabalhador paga para ver detalhes quando a vaga fizer sentido."}
+          />
+          <Feature icon={<Zap />} title="Sem mensalidade" text="A conta compra moedas e usa conforme a necessidade." />
         </div>
       </section>
     </div>
@@ -232,21 +249,26 @@ function CoinStatement({
   transactions,
   loading,
   error,
-  localBalance
+  localBalance,
+  role
 }: {
   transactions: CoinTransaction[];
   loading: boolean;
   error: string;
   localBalance: number;
+  role: "trabalhador" | "empresa";
 }) {
+  const isCompany = role === "empresa";
   return (
     <section className="card p-4">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <span className="section-eyebrow">Extrato</span>
-          <h3 className="text-xl font-black text-navy-950">Histórico de moedas</h3>
+          <h3 className="text-xl font-black text-navy-950">{isCompany ? "Histórico de moedas da empresa" : "Histórico de moedas do trabalhador"}</h3>
           <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
-            Acompanhe compras, vagas liberadas e candidaturas enviadas.
+            {isCompany
+              ? "Acompanhe compras e cobranças empresariais, separadas do saldo do trabalhador."
+              : "Acompanhe compras, vagas liberadas e candidaturas enviadas."}
           </p>
         </div>
         <span className="badge bg-aqua-50 text-aqua-700">
@@ -262,7 +284,9 @@ function CoinStatement({
         <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5">
           <strong className="text-navy-950">Nenhuma movimentação registrada ainda.</strong>
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-            Quando você comprar moedas, liberar uma vaga ou enviar candidatura, o histórico aparecerá aqui.
+            {isCompany
+              ? "Quando a empresa comprar moedas ou tiver uma cobrança empresarial, o histórico aparecerá aqui."
+              : "Quando você comprar moedas, liberar uma vaga ou enviar candidatura, o histórico aparecerá aqui."}
           </p>
         </div>
       ) : (
