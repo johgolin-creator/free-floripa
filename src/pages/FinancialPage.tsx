@@ -1,10 +1,10 @@
-import { BriefcaseBusiness, CalendarCheck, Clock3, CreditCard, WalletCards } from "lucide-react";
+import { AlertTriangle, BriefcaseBusiness, CalendarCheck, Clock3, CreditCard, TrendingUp, WalletCards } from "lucide-react";
 import type { ReactNode } from "react";
 import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
-import { formatCurrency, formatDate } from "../lib/format";
+import { formatCurrency, formatDate, formatDateTime } from "../lib/format";
 
 export function FinancialPage() {
   const { state, currentWorker, currentCompany } = useAppStore();
@@ -27,6 +27,17 @@ export function FinancialPage() {
       const job = companyJobs.find((item) => item.id === application.jobId);
       return total + (job?.dailyValue ?? 0);
     }, 0);
+    const companyLedger = state.coinLedger.filter((entry) => entry.role === "empresa");
+    const coinPurchases = companyLedger.filter((entry) => entry.amount > 0).reduce((total, entry) => total + entry.amount, 0);
+    const coinSpent = Math.abs(companyLedger.filter((entry) => entry.amount < 0).reduce((total, entry) => total + entry.amount, 0));
+    const cancellationFees = Math.abs(
+      companyLedger
+        .filter((entry) => entry.reason === "cancel_filled_job")
+        .reduce((total, entry) => total + entry.amount, 0)
+    );
+    const canceledJobs = companyJobs.filter((job) => job.status === "Cancelada");
+    const costPerConfirmed = confirmed.length > 0 ? confirmedTotal / confirmed.length : 0;
+    const recentCompanyLedger = companyLedger.slice(0, 8);
 
     return (
       <FinancialShell
@@ -36,9 +47,70 @@ export function FinancialPage() {
           { icon: <BriefcaseBusiness size={18} />, label: "previsto", value: formatCurrency(plannedTotal) },
           { icon: <Clock3 size={18} />, label: "confirmado", value: formatCurrency(confirmedTotal) },
           { icon: <CalendarCheck size={18} />, label: "concluído", value: formatCurrency(completedTotal) },
-          { icon: <WalletCards size={18} />, label: "vagas", value: String(companyJobs.length) }
+          { icon: <WalletCards size={18} />, label: "saldo moedas", value: String(state.subscription.companyCreditsRemaining) }
         ]}
       >
+        <section className="mb-4 grid gap-3 md:grid-cols-4">
+          <FinanceTile icon={<WalletCards size={18} />} label="Moedas compradas" value={`${coinPurchases} moeda${coinPurchases === 1 ? "" : "s"}`} />
+          <FinanceTile icon={<CreditCard size={18} />} label="Moedas usadas" value={`${coinSpent} moeda${coinSpent === 1 ? "" : "s"}`} />
+          <FinanceTile icon={<AlertTriangle size={18} />} label="Taxas de cancelamento" value={`${cancellationFees} moeda${cancellationFees === 1 ? "" : "s"}`} />
+          <FinanceTile icon={<TrendingUp size={18} />} label="Custo por confirmado" value={formatCurrency(costPerConfirmed)} />
+        </section>
+
+        <section className="mb-4 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <article className="card p-4">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <span className="section-eyebrow">Controle empresarial</span>
+                <h3 className="text-xl font-black text-navy-950">Resumo de custos e moedas</h3>
+                <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
+                  Separe o custo dos turnos e o uso de moedas em ações sensíveis, como cancelamento de vaga preenchida.
+                </p>
+              </div>
+              <span className="badge bg-aqua-50 text-aqua-700">
+                <WalletCards size={15} /> Saldo: {state.subscription.companyCreditsRemaining}
+              </span>
+            </div>
+            <div className="grid gap-2 md:grid-cols-3">
+              <Info label="vagas criadas" value={String(companyJobs.length)} />
+              <Info label="vagas canceladas" value={String(canceledJobs.length)} />
+              <Info label="profissionais confirmados" value={String(confirmed.length)} />
+              <Info label="trabalhos concluídos" value={String(completed.length)} />
+              <Info label="custo confirmado" value={formatCurrency(confirmedTotal)} />
+              <Info label="custo concluído" value={formatCurrency(completedTotal)} />
+            </div>
+          </article>
+
+          <article className="card p-4">
+            <div className="mb-4">
+              <span className="section-eyebrow">Extrato empresarial</span>
+              <h3 className="text-xl font-black text-navy-950">Moedas recentes</h3>
+              <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">Compras, cobranças e ajustes que impactam o saldo da empresa.</p>
+            </div>
+            {recentCompanyLedger.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-600">
+                Nenhuma movimentação de moedas empresariais ainda.
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                {recentCompanyLedger.map((entry) => (
+                  <div key={entry.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <strong className="text-sm text-navy-950">{getCompanyCoinTitle(entry.reason)}</strong>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">{formatDateTime(entry.createdAt)}</p>
+                      </div>
+                      <span className={`text-sm font-black ${entry.amount > 0 ? "text-aqua-700" : "text-navy-950"}`}>
+                        {entry.amount > 0 ? "+" : ""}{entry.amount}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </article>
+        </section>
+
         {companyJobs.length === 0 ? (
           <EmptyState title="Sem movimentação financeira" text="Crie vagas para acompanhar os custos previstos e concluídos." />
         ) : (
@@ -49,6 +121,11 @@ export function FinancialPage() {
                 (application) => application.status === "Aprovada" || application.status === "Trabalho concluído"
               ).length;
               const jobCompleted = jobApplications.filter((application) => application.status === "Trabalho concluído").length;
+              const jobCoinFees = Math.abs(
+                companyLedger
+                  .filter((entry) => entry.jobId === job.id && entry.amount < 0)
+                  .reduce((total, entry) => total + entry.amount, 0)
+              );
               return (
                 <article key={job.id} className="worker-application-card">
                   <div className="worker-card-head">
@@ -61,12 +138,17 @@ export function FinancialPage() {
                       <h3>{job.title}</h3>
                       <p className="text-sm font-semibold text-slate-600">{job.neighborhood} - {job.quantity} vaga{job.quantity === 1 ? "" : "s"}</p>
                     </div>
-                    <strong className="worker-next-step">{formatCurrency(job.dailyValue)} por diária</strong>
+                    <div className="worker-next-step">
+                      <small>Diária</small>
+                      <strong>{formatCurrency(job.dailyValue)}</strong>
+                      <span>{job.status}</span>
+                    </div>
                   </div>
                   <div className="worker-info-grid">
                     <Info label="previsto" value={formatCurrency(job.dailyValue * job.quantity)} />
                     <Info label="confirmado" value={formatCurrency(job.dailyValue * jobConfirmed)} />
                     <Info label="concluído" value={formatCurrency(job.dailyValue * jobCompleted)} />
+                    <Info label="moedas cobradas" value={`${jobCoinFees} moeda${jobCoinFees === 1 ? "" : "s"}`} />
                   </div>
                 </article>
               );
@@ -164,6 +246,25 @@ function FinancialShell({
       {children}
     </div>
   );
+}
+
+function FinanceTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="metric-card">
+      <div className="mb-2 text-aqua-700">{icon}</div>
+      <strong className="block text-sm text-navy-950">{value}</strong>
+      <span className="text-xs font-black uppercase text-slate-500">{label}</span>
+    </div>
+  );
+}
+
+function getCompanyCoinTitle(reason: string) {
+  if (reason === "package_professional") return "Pacote Profissional";
+  if (reason === "package_plus") return "Pacote Plus";
+  if (reason === "coin_pack") return "Compra de moedas";
+  if (reason === "cancel_filled_job") return "Cancelamento de vaga preenchida";
+  if (reason === "admin_adjustment") return "Ajuste administrativo";
+  return "Movimentação de moedas";
 }
 
 function Info({ label, value }: { label: string; value: string }) {
