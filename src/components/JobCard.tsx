@@ -19,6 +19,7 @@ export function JobCard({
 }) {
   const { state } = useAppStore();
   const company = state.companies.find((item) => item.id === job.companyId);
+  const companyReviews = state.companyReviews.filter((review) => review.companyId === job.companyId);
   const application = state.applications.find((item) => item.jobId === job.id && item.workerId === state.selectedWorkerId);
   const confirmed = application?.status === "Aprovada" || application?.status === "Trabalho concluído";
   const openSlots = getOpenSlots(job);
@@ -37,6 +38,10 @@ export function JobCard({
           </div>
           <h3 className="text-lg font-black leading-snug text-navy-950">{job.title}</h3>
           <p className="text-sm font-semibold text-slate-600">{canViewFullJob ? company?.establishmentName : "Empresa verificada"}</p>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-xs font-black text-slate-500">
+            <span className="inline-flex items-center gap-1"><Star size={14} /> {company?.rating.toFixed(1) ?? "0.0"}</span>
+            <span>{companyReviews.length} avaliação{companyReviews.length === 1 ? "" : "ões"}</span>
+          </p>
         </div>
         <div className="w-fit rounded-lg bg-navy-950 px-3 py-2 text-left text-white shadow-soft sm:text-right">
           <strong className="block text-lg text-white">{formatCurrency(job.dailyValue)}</strong>

@@ -46,6 +46,13 @@ export function JobDetailsPage() {
   const currentJob = job;
   const company = state.companies.find((item) => item.id === currentJob.companyId);
   const application = state.applications.find((item) => item.jobId === currentJob.id && item.workerId === state.selectedWorkerId);
+  const companyReviews = state.companyReviews.filter((review) => review.companyId === currentJob.companyId);
+  const companyReportCount = state.trustReports.filter(
+    (report) =>
+      report.status === "Aberto" &&
+      ((report.targetType === "company" && report.targetId === currentJob.companyId) ||
+        (report.targetType === "job" && report.targetId === currentJob.id))
+  ).length;
   const confirmed = application?.status === "Aprovada" || application?.status === "Trabalho concluído";
   const workerExperience = getFunctionExperience(currentWorker, currentJob.function);
   const jobStatus = getJobStatus(currentJob);
@@ -222,6 +229,15 @@ export function JobDetailsPage() {
               : "Esta empresa está em revisão pela administração. Aguarde a liberação antes de usar moedas nesta vaga."}
           </SafetyNotice>
         )}
+        {company && (
+          <CompanyReputation
+            companyName={company.establishmentName}
+            rating={company.rating}
+            reviews={companyReviews}
+            reportCount={companyReportCount}
+            compact
+          />
+        )}
 
         <section className="job-preview-card">
           <div className="job-preview-main">
@@ -292,6 +308,14 @@ export function JobDetailsPage() {
             ? "Seu perfil está em revisão pela administração. Candidaturas ficam pausadas até a liberação."
             : "Esta empresa está em revisão pela administração. A candidatura está bloqueada por segurança."}
         </SafetyNotice>
+      )}
+      {company && (
+        <CompanyReputation
+          companyName={company.establishmentName}
+          rating={company.rating}
+          reviews={companyReviews}
+          reportCount={companyReportCount}
+        />
       )}
 
       <section className="job-detail-card">
@@ -405,5 +429,68 @@ function Info({ label, value, icon }: { label: string; value: string; icon?: Rea
       </span>
       <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
     </div>
+  );
+}
+
+function CompanyReputation({
+  companyName,
+  rating,
+  reviews,
+  reportCount,
+  compact = false
+}: {
+  companyName: string;
+  rating: number;
+  reviews: Array<{ id: string; rating: number; workerName: string; comment: string }>;
+  reportCount: number;
+  compact?: boolean;
+}) {
+  const ratingTone = rating >= 4.5 ? "text-aqua-700" : rating >= 4 ? "text-navy-950" : "text-amber-700";
+
+  return (
+    <section className={`rounded-lg border border-slate-200 bg-white p-4 shadow-sm ${compact ? "" : "grid gap-3"}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <span className="section-eyebrow">Reputação da empresa</span>
+          <h3 className="mt-1 font-black text-navy-950">{companyName}</h3>
+          <p className="mt-1 text-sm font-semibold text-slate-600">
+            Avaliações feitas por trabalhadores depois de turnos concluídos.
+          </p>
+        </div>
+        <div className="rounded-lg bg-aqua-50 px-3 py-2 text-right">
+          <strong className={`flex items-center gap-1 text-lg ${ratingTone}`}>
+            <Star size={17} /> {rating.toFixed(1)}
+          </strong>
+          <span className="block text-xs font-black uppercase text-slate-500">
+            {reviews.length} avaliação{reviews.length === 1 ? "" : "ões"}
+          </span>
+        </div>
+      </div>
+
+      {reportCount > 0 && (
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-bold leading-5 text-amber-900">
+          Esta empresa ou vaga possui {reportCount} relato{reportCount === 1 ? "" : "s"} aberto{reportCount === 1 ? "" : "s"} em revisão administrativa.
+        </div>
+      )}
+
+      {!compact && (
+        <div className="grid gap-2">
+          {reviews.length === 0 ? (
+            <p className="rounded-lg bg-slate-50 p-3 text-sm font-semibold leading-6 text-slate-600">
+              Ainda não há avaliações registradas por trabalhadores para esta empresa.
+            </p>
+          ) : (
+            reviews.slice(0, 3).map((review) => (
+              <article key={review.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <strong className="flex items-center gap-1 text-sm text-navy-950">
+                  <Star size={15} /> {review.rating} estrelas - {review.workerName}
+                </strong>
+                <p className="mt-1 text-sm leading-6 text-slate-600">{review.comment}</p>
+              </article>
+            ))
+          )}
+        </div>
+      )}
+    </section>
   );
 }
