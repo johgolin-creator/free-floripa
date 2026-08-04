@@ -22,6 +22,7 @@ import { SectionHeader } from "../components/SectionHeader";
 import { ShiftReceipt } from "../components/ShiftReceipt";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, formatDateTime, getWhatsAppUrl } from "../lib/format";
+import { getShiftVerificationCode } from "../lib/shiftVerification";
 import type { Application, CompanyProfile, Job, WorkShift } from "../lib/types";
 
 const tabs = ["Próximos", "Em andamento", "Concluídos", "Ocorrências"] as const;
@@ -153,6 +154,7 @@ export function MyJobsPage() {
               const company = state.companies.find((companyItem) => companyItem.id === job.companyId);
               const checkedIn = shift?.status === "Fez check-in";
               const waiting = application.status === "Aprovada" && shift?.status === "Ainda não chegou";
+              const verificationCode = getShiftVerificationCode(job.id, application.workerId);
               const blockedAction =
                 state.adminModeration.blockedWorkerIds.includes(currentWorker.id) ||
                 state.adminModeration.blockedCompanyIds.includes(job.companyId);
@@ -166,6 +168,9 @@ export function MyJobsPage() {
                         {company?.establishmentName ?? "Empresa"} - {formatDate(job.date)} - {job.startsAt}
                       </p>
                       <span className={getStatusClass(application, shift)}>{getWorkStatus(application, shift)}</span>
+                      <span className="mt-2 inline-flex rounded-full bg-aqua-50 px-2 py-1 text-xs font-black text-aqua-700">
+                        Código {verificationCode}
+                      </span>
                     </div>
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-navy-950 text-aqua-300">
                       {checkedIn ? <LogOut size={17} /> : <LogIn size={17} />}
@@ -215,6 +220,7 @@ export function MyJobsPage() {
             const done = application.status === "Trabalho concluído" || shift?.status === "Finalizou o turno";
             const blockedAction = state.adminModeration.blockedWorkerIds.includes(currentWorker.id) || state.adminModeration.blockedCompanyIds.includes(job.companyId);
             const alreadyReviewedCompany = state.companyReviews.some((review) => review.applicationId === application.id && review.workerId === currentWorker.id);
+            const verificationCode = getShiftVerificationCode(job.id, application.workerId);
 
             return (
               <article key={application.id} className="worker-application-card">
@@ -224,6 +230,7 @@ export function MyJobsPage() {
                       <span className={getStatusClass(application, shift)}>{getWorkStatus(application, shift)}</span>
                       <span className="badge">{job.function}</span>
                       <span className="badge">{formatCurrency(job.dailyValue)}</span>
+                      <span className="badge bg-aqua-50 text-aqua-700">Código {verificationCode}</span>
                     </div>
                     <h3>{job.title}</h3>
                     <p className="text-sm font-semibold text-slate-600">
@@ -301,6 +308,7 @@ export function MyJobsPage() {
             <Info label="Endereço completo" value={selectedItem.job.fullAddress} />
             <Info label="Uniforme" value={selectedItem.job.uniform} />
             <Info label="Benefícios" value={selectedItem.job.benefits.join(", ")} />
+            <Info label="Código de presença" value={getShiftVerificationCode(selectedItem.job.id, selectedItem.application.workerId)} />
             <Info label="Status" value={getWorkStatus(selectedItem.application, selectedItem.shift)} icon={<CheckCircle2 size={16} />} />
           </div>
         </Modal>

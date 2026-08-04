@@ -25,6 +25,7 @@ import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore, type CompanyScheduleInput } from "../lib/store";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
+import { getShiftVerificationCode } from "../lib/shiftVerification";
 import type { Application, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, Neighborhood, WorkShift } from "../lib/types";
 
 type ScheduleFilter = "Todas" | "Hoje" | "Futuras" | "Concluídas";
@@ -434,6 +435,7 @@ function ScheduleWorker({
   const active = application.status === "Aprovada";
   const completed = application.status === "Trabalho concluído";
   const absence = application.status === "Falta registrada";
+  const verificationCode = getShiftVerificationCode(job.id, worker.id);
 
   return (
     <article className="schedule-worker-card">
@@ -444,6 +446,7 @@ function ScheduleWorker({
             <strong className="text-sm text-navy-950">{worker.name}</strong>
             <span className="badge">{application.status}</span>
             <span className="badge">{shift?.status ?? "Aguardando presença"}</span>
+            <span className="badge bg-aqua-50 text-aqua-700">Código {verificationCode}</span>
           </div>
           <p className="mt-1 text-sm font-semibold text-slate-600">
             {worker.functions.join(", ")} - {worker.neighborhood}

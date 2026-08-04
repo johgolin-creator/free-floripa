@@ -27,6 +27,7 @@ import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
 import { calculateReliability, getOpenSlots } from "../lib/rules";
+import { getShiftVerificationCode } from "../lib/shiftVerification";
 import type { AppState, Application, Job, WorkShift, WorkerProfile } from "../lib/types";
 
 const terminalStatuses = ["Recusada", "Cancelada", "Trabalho concluído", "Falta registrada"];
@@ -305,6 +306,7 @@ export function CandidatesPage() {
                 const workerBlocked = state.adminModeration.blockedWorkerIds.includes(worker.id);
                 const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
                 const blockedAction = workerBlocked || companyBlocked;
+                const verificationCode = getShiftVerificationCode(selectedJob.id, worker.id);
 
                 return (
                   <article key={application.id} className="candidate-card">
@@ -315,6 +317,7 @@ export function CandidatesPage() {
                           <span className="badge bg-aqua-100 text-aqua-700">{application.status}</span>
                           <span className="badge">{getShiftLabel(application, shift)}</span>
                           <span className="badge">Inscrito em {formatDate(application.createdAt.slice(0, 10))}</span>
+                          <span className="badge bg-aqua-50 text-aqua-700">Código {verificationCode}</span>
                         </div>
                         <button type="button" onClick={() => toggleFavorite(worker.id)} className="secondary">
                           <Heart size={17} fill={favorite ? "currentColor" : "none"} /> {favorite ? "Favorito" : "Favoritar"}
