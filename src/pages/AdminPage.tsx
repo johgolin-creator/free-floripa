@@ -146,6 +146,7 @@ export function AdminPage() {
           <AdminList title="Trabalhadores" count={filteredWorkers.length}>
             {filteredWorkers.map((worker) => {
               const blocked = blockedWorkerIds.includes(worker.id);
+              const reportCount = countOpenReportsForWorker(openReports, worker.id);
               return (
                 <AdminRow
                   key={worker.id}
@@ -154,6 +155,7 @@ export function AdminPage() {
                   subtitle={`${worker.email} - ${worker.functions.join(", ") || "Sem função"}`}
                   meta={`${worker.rating.toFixed(1)} nota - ${worker.completedJobs} trabalhos - ${worker.attendanceRate}% presença`}
                   blocked={blocked}
+                  reportCount={reportCount}
                   onToggle={() => toggleWorkerBlock(worker.id)}
                 />
               );
@@ -163,6 +165,7 @@ export function AdminPage() {
             {filteredCompanies.map((company) => {
               const blocked = blockedCompanyIds.includes(company.id);
               const jobs = state.jobs.filter((job) => job.companyId === company.id).length;
+              const reportCount = countOpenReportsForCompany(openReports, company.id, state.jobs);
               return (
                 <AdminRow
                   key={company.id}
@@ -171,6 +174,7 @@ export function AdminPage() {
                   subtitle={`${company.responsibleName} - ${company.email}`}
                   meta={`${jobs} vaga(s) - ${company.category} - ${company.neighborhood}`}
                   blocked={blocked}
+                  reportCount={reportCount}
                   onToggle={() => toggleCompanyBlock(company.id)}
                 />
               );
@@ -184,6 +188,7 @@ export function AdminPage() {
           {filteredJobs.map((job) => {
             const company = state.companies.find((item) => item.id === job.companyId);
             const openSlots = getOpenSlots(job);
+            const reportCount = countOpenReportsForJob(openReports, job.id);
             return (
               <article key={job.id} className="worker-application-card">
                 <div className="worker-card-head">
@@ -192,6 +197,7 @@ export function AdminPage() {
                       {job.urgent ? <UrgentBadge /> : <span className="badge">{getJobStatus(job)}</span>}
                       <span className="badge">{job.function}</span>
                       <span className="badge">{formatDate(job.date)}</span>
+                      {reportCount > 0 && <span className="badge border-red-100 bg-red-50 text-alert">{reportCount} relato(s)</span>}
                     </div>
                     <h3>{job.title}</h3>
                     <p className="text-sm font-semibold text-slate-600">
@@ -336,6 +342,23 @@ function buildAlerts(state: ReturnType<typeof useAppStore>["state"]) {
   return [...workerAlerts, ...jobAlerts, ...companyAlerts];
 }
 
+function countOpenReportsForWorker(reports: TrustReport[], workerId: string) {
+  return reports.filter((report) => report.targetType === "worker" && report.targetId === workerId).length;
+}
+
+function countOpenReportsForCompany(reports: TrustReport[], companyId: string, jobs: ReturnType<typeof useAppStore>["state"]["jobs"]) {
+  const companyJobIds = new Set(jobs.filter((job) => job.companyId === companyId).map((job) => job.id));
+  return reports.filter(
+    (report) =>
+      (report.targetType === "company" && report.targetId === companyId) ||
+      (report.targetType === "job" && companyJobIds.has(report.targetId))
+  ).length;
+}
+
+function countOpenReportsForJob(reports: TrustReport[], jobId: string) {
+  return reports.filter((report) => report.targetType === "job" && report.targetId === jobId).length;
+}
+
 function AdminMetric({ icon, label, value, tone = "normal" }: { icon: ReactNode; label: string; value: string; tone?: "normal" | "alert" }) {
   return (
     <span className={`smart-dashboard-metric ${tone === "alert" ? "is-alert" : ""}`}>
@@ -373,6 +396,7 @@ function AdminRow({
   subtitle,
   meta,
   blocked,
+  reportCount = 0,
   onToggle
 }: {
   icon: ReactNode;
@@ -380,6 +404,7 @@ function AdminRow({
   subtitle: string;
   meta: string;
   blocked: boolean;
+  reportCount?: number;
   onToggle: () => void;
 }) {
   return (
@@ -392,6 +417,7 @@ function AdminRow({
           <div className="min-w-0">
             <div className="flex flex-wrap gap-2">
               <span className={blocked ? "badge border-red-100 bg-red-50 text-alert" : "badge"}>{blocked ? "Bloqueado" : "Ativo"}</span>
+              {reportCount > 0 && <span className="badge border-amber-200 bg-amber-50 text-amber-700">{reportCount} relato(s) aberto(s)</span>}
             </div>
             <h3 className="mt-2">{title}</h3>
             <p className="text-sm font-semibold text-slate-600">{subtitle}</p>
