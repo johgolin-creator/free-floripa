@@ -404,6 +404,7 @@ export const initialState: AppState = {
   favoriteWorkerIds: ["worker-1", "worker-2"],
   notifications,
   chatMessages: [],
+  companyReviews: [],
   coinLedger: [],
   subscription: {
     plan: "Gratuito",

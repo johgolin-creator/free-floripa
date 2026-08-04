@@ -11,6 +11,7 @@ import {
   MessageCircle,
   Phone,
   Shirt,
+  Star,
   UserCheck,
   WalletCards
 } from "lucide-react";
@@ -24,6 +25,7 @@ import { formatCurrency, formatDate, formatDateTime, getWhatsAppUrl } from "../l
 import type { Application, CompanyProfile, Job, WorkShift } from "../lib/types";
 
 const tabs = ["Próximos", "Em andamento", "Concluídos", "Ocorrências"] as const;
+const ratingOptions = [5, 4, 3, 2, 1];
 
 type WorkItem = {
   application: Application;
@@ -36,10 +38,11 @@ type ReceiptItem = WorkItem & {
 };
 
 export function MyJobsPage() {
-  const { state, currentWorker, checkIn, checkOut } = useAppStore();
+  const { state, currentWorker, addCompanyReview, checkIn, checkOut } = useAppStore();
   const [tab, setTab] = useState<(typeof tabs)[number]>("Próximos");
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
   const [receiptItem, setReceiptItem] = useState<ReceiptItem | null>(null);
+  const [companyReviewItem, setCompanyReviewItem] = useState<ReceiptItem | null>(null);
   const [message, setMessage] = useState("");
 
   const workItems = useMemo(
@@ -139,6 +142,7 @@ export function MyJobsPage() {
             const waiting = application.status === "Aprovada" && shift?.status === "Ainda não chegou";
             const done = application.status === "Trabalho concluído" || shift?.status === "Finalizou o turno";
             const blockedAction = state.adminModeration.blockedWorkerIds.includes(currentWorker.id) || state.adminModeration.blockedCompanyIds.includes(job.companyId);
+            const alreadyReviewedCompany = state.companyReviews.some((review) => review.applicationId === application.id && review.workerId === currentWorker.id);
 
             return (
               <article key={application.id} className="worker-application-card">
@@ -172,6 +176,11 @@ export function MyJobsPage() {
                     {done && company && (
                       <button type="button" onClick={() => setReceiptItem({ ...item, company })} className="company-action">
                         <ClipboardCheck size={17} /> Comprovante
+                      </button>
+                    )}
+                    {done && company && (
+                      <button type="button" onClick={() => setCompanyReviewItem({ ...item, company })} disabled={alreadyReviewedCompany} className="company-action">
+                        <Star size={17} /> {alreadyReviewedCompany ? "Empresa avaliada" : "Avaliar empresa"}
                       </button>
                     )}
                   </div>
@@ -239,7 +248,77 @@ export function MyJobsPage() {
           />
         </Modal>
       )}
+
+      {companyReviewItem && (
+        <Modal title={`Avaliar ${companyReviewItem.company.establishmentName}`} onClose={() => setCompanyReviewItem(null)}>
+          <CompanyReviewForm
+            onSubmit={(review) => {
+              const result = addCompanyReview(companyReviewItem.company.id, {
+                workerId: currentWorker.id,
+                workerName: currentWorker.name,
+                rating: review.rating,
+                comment: review.comment,
+                jobId: companyReviewItem.job.id,
+                applicationId: companyReviewItem.application.id
+              });
+              setMessage(result.message);
+              if (result.ok) setCompanyReviewItem(null);
+            }}
+          />
+        </Modal>
+      )}
     </div>
+  );
+}
+
+function CompanyReviewForm({ onSubmit }: { onSubmit: (review: { rating: number; comment: string }) => void }) {
+  const [error, setError] = useState("");
+
+  return (
+    <form
+      className="grid gap-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const rating = Number(form.get("rating"));
+        const comment = String(form.get("comment") || "").trim();
+
+        if (!rating || !comment) {
+          setError("Informe a nota e um comentário sobre a empresa.");
+          return;
+        }
+
+        setError("");
+        onSubmit({ rating, comment });
+      }}
+    >
+      {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
+      <div className="rounded-lg border border-aqua-100 bg-aqua-50 p-3">
+        <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+          <Star size={17} /> Avaliação da empresa
+        </div>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+          Avalie comunicação, pagamento combinado, organização do turno, endereço e respeito com a equipe.
+        </p>
+      </div>
+      <label className="label">
+        Nota geral
+        <select name="rating" className="input" required defaultValue="5">
+          {ratingOptions.map((score) => (
+            <option key={score} value={score}>
+              {score} estrela{score > 1 ? "s" : ""}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="label">
+        Comentário
+        <textarea name="comment" className="input min-h-24 py-3" required placeholder="Ex.: pagamento conforme combinado, equipe bem organizada e local correto." />
+      </label>
+      <button type="submit" className="primary">
+        <Star size={17} /> Salvar avaliação
+      </button>
+    </form>
   );
 }
 

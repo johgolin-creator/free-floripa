@@ -156,6 +156,18 @@ export interface Review {
   createdAt?: string;
 }
 
+export interface CompanyReview {
+  id: string;
+  companyId: string;
+  workerId: string;
+  workerName: string;
+  rating: number;
+  comment: string;
+  jobId?: string;
+  applicationId?: string;
+  createdAt: string;
+}
+
 export interface NotificationItem {
   id: string;
   title: string;
@@ -234,6 +246,7 @@ export interface AppState {
   favoriteWorkerIds: string[];
   notifications: NotificationItem[];
   chatMessages: ChatMessage[];
+  companyReviews: CompanyReview[];
   coinLedger: CoinLedgerEntry[];
   subscription: SubscriptionState;
   adminModeration: AdminModerationState;

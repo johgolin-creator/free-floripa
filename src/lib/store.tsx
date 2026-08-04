@@ -30,7 +30,7 @@ import {
   type CoinAccount
 } from "./supabaseCoins";
 import { emailNotificationsEnabled, enqueueEmailNotification, type EmailNotificationInput } from "./emailNotifications";
-import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyProfile, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, TrustReportTargetType, UserRole, WorkerProfile } from "./types";
+import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyProfile, CompanyReview, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, TrustReportTargetType, UserRole, WorkerProfile } from "./types";
 
 const STORAGE_KEY = "free-floripa:state";
 const DEFAULT_WORKER_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
@@ -114,6 +114,7 @@ interface AppContextValue {
   subscribePlus: () => void;
   buyCredits: (amount?: number) => void;
   addReview: (workerId: string, review: Omit<Review, "id">) => void;
+  addCompanyReview: (companyId: string, review: Omit<CompanyReview, "id" | "companyId" | "createdAt">) => { ok: boolean; message: string };
   toggleWorkerBlock: (workerId: string) => void;
   toggleCompanyBlock: (companyId: string) => void;
   submitTrustReport: (input: { targetType: TrustReportTargetType; targetId: string; targetName: string; reason: string }) => { ok: boolean; message: string };
@@ -174,6 +175,7 @@ function mergeSeedUpdates(savedState: AppState): AppState {
     },
     companySchedules: Array.isArray(savedState.companySchedules) ? savedState.companySchedules : [],
     chatMessages: Array.isArray(savedState.chatMessages) ? savedState.chatMessages : [],
+    companyReviews: Array.isArray(savedState.companyReviews) ? savedState.companyReviews : [],
     coinLedger: Array.isArray(savedState.coinLedger) ? savedState.coinLedger : [],
     trustReports: Array.isArray(savedState.trustReports) ? savedState.trustReports : [],
     adminModeration: {
@@ -188,6 +190,7 @@ function mergeSeedUpdates(savedState: AppState): AppState {
   let changed =
     !Array.isArray(savedState.companySchedules) ||
     !Array.isArray(savedState.chatMessages) ||
+    !Array.isArray(savedState.companyReviews) ||
     !Array.isArray(savedState.coinLedger) ||
     !Array.isArray(savedState.trustReports) ||
     !Number.isFinite(savedState.subscription?.companyCreditsRemaining) ||
@@ -1805,6 +1808,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
               : worker
             )
         }));
+      },
+      addCompanyReview(companyId, review) {
+        const company = state.companies.find((item) => item.id === companyId);
+        if (!company) return { ok: false, message: "Empresa não encontrada para avaliação." };
+        if (review.rating < 1 || review.rating > 5 || !review.comment.trim()) {
+          return { ok: false, message: "Informe nota e comentário para avaliar a empresa." };
+        }
+        const alreadyReviewed =
+          review.applicationId &&
+          state.companyReviews.some((item) => item.applicationId === review.applicationId && item.workerId === review.workerId);
+
+        if (alreadyReviewed) {
+          return { ok: false, message: "Você já avaliou esta empresa neste turno." };
+        }
+
+        commit((current) => {
+          const nextReview: CompanyReview = {
+            id: crypto.randomUUID(),
+            companyId,
+            ...review,
+            comment: review.comment.trim(),
+            createdAt: new Date().toISOString()
+          };
+          const companyReviews = [nextReview, ...current.companyReviews];
+          const reviewsForCompany = companyReviews.filter((item) => item.companyId === companyId);
+          const rating = reviewsForCompany.reduce((total, item) => total + item.rating, 0) / reviewsForCompany.length;
+
+          return {
+            ...current,
+            companyReviews,
+            companies: current.companies.map((item) =>
+              item.id === companyId
+                ? {
+                    ...item,
+                    rating: Number(rating.toFixed(1))
+                  }
+                : item
+            )
+          };
+        });
+
+        return { ok: true, message: "Avaliação da empresa registrada. Obrigado por fortalecer a reputação da plataforma." };
       },
       submitTrustReport(input) {
         const reason = input.reason.trim();

@@ -27,6 +27,7 @@ export function CompanyProfilePage() {
   const [message, setMessage] = useState("");
   const completion = getCompanyProfileCompletion(currentCompany);
   const blocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
+  const companyReviews = state.companyReviews.filter((review) => review.companyId === currentCompany.id);
 
   return (
     <div>
@@ -90,6 +91,23 @@ export function CompanyProfilePage() {
                   tone={currentCompany.rating >= 4.5 ? "success" : "neutral"}
                 />
               </div>
+            </div>
+            <div className="profile-panel">
+              <h3 className="font-black text-navy-950">Avaliações dos trabalhadores</h3>
+              {companyReviews.length === 0 ? (
+                <p className="mt-2 text-sm leading-6 text-slate-600">Nenhum trabalhador avaliou esta empresa ainda.</p>
+              ) : (
+                <div className="mt-3 grid gap-2">
+                  {companyReviews.slice(0, 4).map((review) => (
+                    <div key={review.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <strong className="flex items-center gap-1 text-sm text-navy-950">
+                        <Star size={15} /> {review.rating} estrelas - {review.workerName}
+                      </strong>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">{review.comment}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
