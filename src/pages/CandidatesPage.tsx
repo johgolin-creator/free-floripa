@@ -11,6 +11,7 @@ import {
   Mail,
   MessageCircle,
   Phone,
+  ShieldCheck,
   Star,
   UserCheck,
   UserX,
@@ -25,10 +26,12 @@ import { UrgentBadge } from "../components/UrgentBadge";
 import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
-import { getOpenSlots } from "../lib/rules";
-import type { Application, Job, WorkShift, WorkerProfile } from "../lib/types";
+import { calculateReliability, getOpenSlots } from "../lib/rules";
+import type { AppState, Application, Job, WorkShift, WorkerProfile } from "../lib/types";
 
 const terminalStatuses = ["Recusada", "Cancelada", "Trabalho concluído", "Falta registrada"];
+const candidateStatusFilters = ["Todos", "Enviada", "Em análise", "Aprovada", "Trabalho concluído", "Recusada", "Falta registrada"] as const;
+type CandidateStatusFilter = (typeof candidateStatusFilters)[number];
 
 type ReviewTarget = {
   application: Application;
@@ -59,11 +62,32 @@ export function CandidatesPage() {
   const [reviewComment, setReviewComment] = useState("");
   const [reviewError, setReviewError] = useState("");
   const [receiptTarget, setReceiptTarget] = useState<ReceiptTarget | null>(null);
+  const [candidateStatusFilter, setCandidateStatusFilter] = useState<CandidateStatusFilter>("Todos");
+  const [trustedCandidatesOnly, setTrustedCandidatesOnly] = useState(false);
   const companyJobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const selectedJobId = searchParams.get("vaga") || companyJobs[0]?.id || "";
   const selectedJob = companyJobs.find((job) => job.id === selectedJobId) ?? companyJobs[0];
   const applications = state.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId));
   const selectedApplications = selectedJob ? applications.filter((application) => application.jobId === selectedJob.id) : [];
+  const visibleApplications = useMemo(
+    () =>
+      selectedApplications
+        .filter((application) => candidateStatusFilter === "Todos" || application.status === candidateStatusFilter)
+        .filter((application) => {
+          if (!trustedCandidatesOnly) return true;
+          const worker = state.workers.find((item) => item.id === application.workerId);
+          return worker ? isTrustedCandidate(worker, state) : false;
+        })
+        .sort((a, b) => {
+          const workerA = state.workers.find((item) => item.id === a.workerId);
+          const workerB = state.workers.find((item) => item.id === b.workerId);
+          const scoreA = workerA ? calculateReliability(workerA) : 0;
+          const scoreB = workerB ? calculateReliability(workerB) : 0;
+          if (scoreA !== scoreB) return scoreB - scoreA;
+          return b.createdAt.localeCompare(a.createdAt);
+        }),
+    [candidateStatusFilter, selectedApplications, state, trustedCandidatesOnly]
+  );
   const stats = useMemo(() => getJobStats(selectedJob, selectedApplications), [selectedApplications, selectedJob]);
   const generalStats = useMemo(() => getCompanyCandidateStats(applications), [applications]);
   const pendingReviews = useMemo(
@@ -204,6 +228,31 @@ export function CandidatesPage() {
                 <Stat label="vagas abertas" value={String(getOpenSlots(selectedJob))} />
               </div>
             )}
+            {selectedJob && (
+              <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+                <label className="label">
+                  Filtrar candidatos
+                  <select
+                    className="input"
+                    value={candidateStatusFilter}
+                    onChange={(event) => setCandidateStatusFilter(event.target.value as CandidateStatusFilter)}
+                  >
+                    {candidateStatusFilters.map((status) => (
+                      <option key={status}>{status}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex min-h-11 items-center gap-2 self-end rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={trustedCandidatesOnly}
+                    onChange={(event) => setTrustedCandidatesOnly(event.target.checked)}
+                    className="h-5 w-5 accent-aqua-500"
+                  />
+                  <ShieldCheck size={17} /> Somente confiáveis
+                </label>
+              </div>
+            )}
           </section>
 
           {selectedJob && (
@@ -236,9 +285,11 @@ export function CandidatesPage() {
 
           {!selectedJob || selectedApplications.length === 0 ? (
             <EmptyState title="Nenhum candidato nesta vaga" text="Quando alguém se candidatar, os dados aparecerão aqui com ações de aprovação." />
+          ) : visibleApplications.length === 0 ? (
+            <EmptyState title="Nenhum candidato neste filtro" text="Altere o status ou desmarque somente confiáveis para ver mais candidatos desta vaga." />
           ) : (
             <div className="grid gap-3">
-              {selectedApplications.map((application) => {
+              {visibleApplications.map((application) => {
                 const worker = state.workers.find((item) => item.id === application.workerId);
                 if (!worker || !selectedJob) return null;
                 const shift = state.shifts.find((item) => item.jobId === selectedJob.id && item.workerId === worker.id);
@@ -489,6 +540,15 @@ function getPendingReviews(applications: Application[], jobs: Job[], workers: Wo
     })
     .filter((item): item is PendingReview => Boolean(item))
     .sort((a, b) => b.application.createdAt.localeCompare(a.application.createdAt));
+}
+
+function isTrustedCandidate(worker: WorkerProfile, state: AppState) {
+  const hasOpenReport = state.trustReports.some(
+    (report) => report.status === "Aberto" && report.targetType === "worker" && report.targetId === worker.id
+  );
+  const blocked = state.adminModeration.blockedWorkerIds.includes(worker.id);
+
+  return calculateReliability(worker) >= 85 && worker.attendanceRate >= 90 && worker.cancellations <= 2 && !blocked && !hasOpenReport;
 }
 
 function getShiftLabel(application: Application, shift: WorkShift | undefined) {
