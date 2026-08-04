@@ -47,6 +47,7 @@ export function AdminPage() {
   }, 0);
   const alerts = useMemo(() => buildAlerts(state), [state]);
   const openReports = state.trustReports.filter((report) => report.status === "Aberto");
+  const resolvedReports = state.trustReports.filter((report) => report.status === "Resolvido").slice(0, 8);
 
   const filteredWorkers = state.workers.filter((worker) =>
     normalize(`${worker.name} ${worker.email} ${worker.phone} ${worker.functions.join(" ")}`).includes(normalizedSearch)
@@ -235,25 +236,44 @@ export function AdminPage() {
       {tab === "Alertas" && (
         <AdminList title="Relatos e alertas operacionais" count={alerts.length + openReports.length}>
           {openReports.map((report) => {
+            const reportedJob = report.targetType === "job" ? state.jobs.find((job) => job.id === report.targetId) : undefined;
+            const reportedJobCompany = reportedJob ? state.companies.find((company) => company.id === reportedJob.companyId) : undefined;
+            const blockTargetCompanyId = report.targetType === "company" ? report.targetId : reportedJobCompany?.id;
             const targetBlocked =
               (report.targetType === "worker" && blockedWorkerIds.includes(report.targetId)) ||
-              (report.targetType === "company" && blockedCompanyIds.includes(report.targetId));
+              Boolean(blockTargetCompanyId && blockedCompanyIds.includes(blockTargetCompanyId));
             return (
               <ReportRow
                 key={report.id}
                 report={report}
+                targetMeta={
+                  reportedJobCompany
+                    ? `Vaga vinculada à empresa ${reportedJobCompany.establishmentName}.`
+                    : undefined
+                }
                 targetBlocked={targetBlocked}
                 onResolve={() => resolveTrustReport(report.id)}
                 onBlock={
                   report.targetType === "worker"
                     ? () => toggleWorkerBlock(report.targetId)
-                    : report.targetType === "company"
-                      ? () => toggleCompanyBlock(report.targetId)
+                    : blockTargetCompanyId
+                      ? () => toggleCompanyBlock(blockTargetCompanyId)
                       : undefined
                 }
               />
             );
           })}
+          {openReports.length === 0 && (
+            <article className="worker-application-card">
+              <div className="worker-card-head">
+                <div>
+                  <span className="badge border-aqua-100 bg-aqua-50 text-aqua-700">Sem relatos abertos</span>
+                  <h3 className="mt-2">Nenhuma denúncia aguardando revisão</h3>
+                  <p className="text-sm font-semibold text-slate-600">Quando trabalhadores ou empresas relatarem problemas, eles aparecerão aqui primeiro.</p>
+                </div>
+              </div>
+            </article>
+          )}
           {alerts.map((alert) => (
             <article key={alert.id} className="worker-application-card border-amber-100 bg-amber-50/50">
               <div className="worker-card-head">
@@ -270,6 +290,17 @@ export function AdminPage() {
               </div>
             </article>
           ))}
+          {resolvedReports.length > 0 && (
+            <div className="mt-2 grid gap-3 border-t border-slate-200 pt-4">
+              <div>
+                <h3 className="font-black text-navy-950">Histórico resolvido</h3>
+                <p className="text-sm font-semibold text-slate-600">Últimos relatos marcados como resolvidos pela administração.</p>
+              </div>
+              {resolvedReports.map((report) => (
+                <ResolvedReportRow key={report.id} report={report} />
+              ))}
+            </div>
+          )}
         </AdminList>
       )}
     </div>
@@ -377,11 +408,13 @@ function AdminRow({
 
 function ReportRow({
   report,
+  targetMeta,
   targetBlocked,
   onResolve,
   onBlock
 }: {
   report: TrustReport;
+  targetMeta?: string;
   targetBlocked: boolean;
   onResolve: () => void;
   onBlock?: () => void;
@@ -400,6 +433,7 @@ function ReportRow({
             </div>
             <h3 className="mt-2">{report.targetName}</h3>
             <p className="text-sm font-semibold leading-6 text-slate-600">{report.reason}</p>
+            {targetMeta && <p className="mt-1 text-sm font-black text-navy-950">{targetMeta}</p>}
             <p className="mt-1 text-xs font-black uppercase text-slate-500">
               Enviado por {report.reporterName} em {formatDate(report.createdAt.slice(0, 10))}
             </p>
@@ -414,6 +448,27 @@ function ReportRow({
           <button type="button" onClick={onResolve} className="secondary">
             <CheckCircle2 size={16} /> Marcar resolvido
           </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ResolvedReportRow({ report }: { report: TrustReport }) {
+  return (
+    <article className="worker-application-card bg-slate-50/80">
+      <div className="worker-card-head">
+        <div>
+          <div className="flex flex-wrap gap-2">
+            <span className="badge border-aqua-100 bg-aqua-50 text-aqua-700">Resolvido</span>
+            <span className="badge">{getReportTargetLabel(report.targetType)}</span>
+          </div>
+          <h3 className="mt-2">{report.targetName}</h3>
+          <p className="text-sm font-semibold leading-6 text-slate-600">{report.reason}</p>
+          <p className="mt-1 text-xs font-black uppercase text-slate-500">
+            Enviado por {report.reporterName}
+            {report.resolvedAt ? ` - Resolvido em ${formatDate(report.resolvedAt.slice(0, 10))}` : ""}
+          </p>
         </div>
       </div>
     </article>
