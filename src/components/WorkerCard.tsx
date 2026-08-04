@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, Award, CheckCircle2, Heart, MapPin, Star } from "lucide-react";
+import { AlertTriangle, Award, CheckCircle2, Flag, Heart, MapPin, Star } from "lucide-react";
 import { Modal } from "./Modal";
 import { useAppStore } from "../lib/store";
 import { calculateReliability, getCompatibilityLabel, getExperienceLabel, getFunctionExperience } from "../lib/rules";
@@ -15,8 +15,10 @@ export function WorkerCard({
   showActions?: boolean;
   functionFocus?: JobFunction;
 }) {
-  const { state, toggleFavorite, updateApplicationStatus } = useAppStore();
+  const { state, submitTrustReport, toggleFavorite, updateApplicationStatus } = useAppStore();
   const [showProfile, setShowProfile] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState("");
   const [message, setMessage] = useState("");
   const favorite = state.favoriteWorkerIds.includes(worker.id);
   const blocked = state.adminModeration.blockedWorkerIds.includes(worker.id);
@@ -112,7 +114,7 @@ export function WorkerCard({
       </div>
 
       {showActions && (
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-4">
           <button type="button" onClick={() => setShowProfile(true)} className="secondary">
             <Award size={17} />
             Ver perfil
@@ -137,7 +139,16 @@ export function WorkerCard({
             <Heart size={17} fill={favorite ? "currentColor" : "none"} />
             {favorite ? "Favorito" : "Favoritar"}
           </button>
+          <button type="button" onClick={() => setShowReport(true)} className="secondary">
+            <Flag size={17} />
+            Relatar
+          </button>
         </div>
+      )}
+      {!showActions && (
+        <button type="button" onClick={() => setShowReport(true)} className="secondary min-h-10 justify-self-start px-3 text-xs">
+          <Flag size={15} /> Relatar profissional
+        </button>
       )}
 
       {showProfile && (
@@ -161,6 +172,45 @@ export function WorkerCard({
               ))}
             </div>
           </div>
+        </Modal>
+      )}
+
+      {showReport && (
+        <Modal title={`Relatar ${worker.name}`} onClose={() => setShowReport(false)}>
+          <form
+            className="grid gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const result = submitTrustReport({
+                targetType: "worker",
+                targetId: worker.id,
+                targetName: worker.name,
+                reason: reportReason
+              });
+              setMessage(result.message);
+              if (result.ok) {
+                setReportReason("");
+                setShowReport(false);
+              }
+            }}
+          >
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-bold leading-5 text-amber-900">
+              Use este relato para falta de conduta, dados falsos, ausência combinada ou outro risco para a operação.
+            </div>
+            <label className="label">
+              O que aconteceu?
+              <textarea
+                value={reportReason}
+                onChange={(event) => setReportReason(event.target.value)}
+                className="input min-h-28 py-3"
+                required
+                placeholder="Descreva o problema para a administração revisar."
+              />
+            </label>
+            <button type="submit" className="danger">
+              <Flag size={17} /> Enviar relato
+            </button>
+          </form>
         </Modal>
       )}
     </article>

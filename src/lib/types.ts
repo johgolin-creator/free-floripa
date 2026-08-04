@@ -204,6 +204,23 @@ export interface AdminModerationState {
   blockedCompanyIds: string[];
 }
 
+export type TrustReportTargetType = "worker" | "company" | "job";
+export type TrustReportStatus = "Aberto" | "Resolvido";
+
+export interface TrustReport {
+  id: string;
+  reporterRole: UserRole;
+  reporterId: string;
+  reporterName: string;
+  targetType: TrustReportTargetType;
+  targetId: string;
+  targetName: string;
+  reason: string;
+  status: TrustReportStatus;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
 export interface AppState {
   activeRole: UserRole;
   selectedWorkerId: string;
@@ -220,4 +237,5 @@ export interface AppState {
   coinLedger: CoinLedgerEntry[];
   subscription: SubscriptionState;
   adminModeration: AdminModerationState;
+  trustReports: TrustReport[];
 }

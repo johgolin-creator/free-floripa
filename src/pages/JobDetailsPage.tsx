@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import {
   ArrowRight,
@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Clock,
   CreditCard,
+  Flag,
   Lock,
   Mail,
   MapPin,
@@ -30,10 +31,12 @@ import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getJo
 
 export function JobDetailsPage() {
   const { id } = useParams();
-  const { state, currentWorker, applyToJob, unlockJobWithCoins, subscribeProfessional, subscribePlus } = useAppStore();
+  const { state, currentWorker, applyToJob, submitTrustReport, unlockJobWithCoins, subscribeProfessional, subscribePlus } = useAppStore();
   const [message, setMessage] = useState("");
   const [showPlans, setShowPlans] = useState(false);
   const [showApplyConfirm, setShowApplyConfirm] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState("");
   const [isApplying, setIsApplying] = useState(false);
   const applyingRef = useRef(false);
   const job = state.jobs.find((item) => item.id === id);
@@ -95,6 +98,21 @@ export function JobDetailsPage() {
     const result = unlockJobWithCoins(currentJob.id);
     setMessage(result.message);
     if (!result.ok) setShowPlans(true);
+  }
+
+  function submitJobReport(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const result = submitTrustReport({
+      targetType: "job",
+      targetId: currentJob.id,
+      targetName: currentJob.title,
+      reason: reportReason
+    });
+    setMessage(result.message);
+    if (result.ok) {
+      setReportReason("");
+      setShowReport(false);
+    }
   }
 
   const plansModal = showPlans ? (
@@ -164,6 +182,28 @@ export function JobDetailsPage() {
       </div>
     </Modal>
   ) : null;
+  const reportModal = showReport ? (
+    <Modal title="Relatar problema na vaga" onClose={() => setShowReport(false)}>
+      <form className="grid gap-3" onSubmit={submitJobReport}>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-bold leading-5 text-amber-900">
+          Use este relato para vaga suspeita, cobrança fora da plataforma, dados incorretos, pagamento duvidoso ou conduta inadequada.
+        </div>
+        <label className="label">
+          O que aconteceu?
+          <textarea
+            value={reportReason}
+            onChange={(event) => setReportReason(event.target.value)}
+            className="input min-h-28 py-3"
+            required
+            placeholder="Descreva o problema para a administração revisar."
+          />
+        </label>
+        <button type="submit" className="danger">
+          <Flag size={17} /> Enviar relato
+        </button>
+      </form>
+    </Modal>
+  ) : null;
 
   if (!canViewFullJob) {
     return (
@@ -222,10 +262,14 @@ export function JobDetailsPage() {
             <button type="button" onClick={() => setShowPlans(true)} className="secondary">
               Comprar moedas <Zap size={17} />
             </button>
+            <button type="button" onClick={() => setShowReport(true)} className="secondary">
+              <Flag size={17} /> Relatar problema
+            </button>
           </aside>
         </section>
 
         {plansModal}
+        {reportModal}
       </div>
     );
   }
@@ -339,12 +383,16 @@ export function JobDetailsPage() {
             <p className="text-xs leading-5 text-slate-500">
               Cadastro gratuito com prévia das vagas. Use moedas para liberar vaga completa e enviar candidaturas.
             </p>
+            <button type="button" onClick={() => setShowReport(true)} className="secondary">
+              <Flag size={17} /> Relatar problema
+            </button>
           </aside>
         </div>
       </section>
 
       {applyConfirmModal}
       {plansModal}
+      {reportModal}
     </div>
   );
 }

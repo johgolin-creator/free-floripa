@@ -30,7 +30,7 @@ import {
   type CoinAccount
 } from "./supabaseCoins";
 import { emailNotificationsEnabled, enqueueEmailNotification, type EmailNotificationInput } from "./emailNotifications";
-import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyProfile, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, UserRole, WorkerProfile } from "./types";
+import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyProfile, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, TrustReportTargetType, UserRole, WorkerProfile } from "./types";
 
 const STORAGE_KEY = "free-floripa:state";
 const DEFAULT_WORKER_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
@@ -116,6 +116,8 @@ interface AppContextValue {
   addReview: (workerId: string, review: Omit<Review, "id">) => void;
   toggleWorkerBlock: (workerId: string) => void;
   toggleCompanyBlock: (companyId: string) => void;
+  submitTrustReport: (input: { targetType: TrustReportTargetType; targetId: string; targetName: string; reason: string }) => { ok: boolean; message: string };
+  resolveTrustReport: (reportId: string) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -173,6 +175,7 @@ function mergeSeedUpdates(savedState: AppState): AppState {
     companySchedules: Array.isArray(savedState.companySchedules) ? savedState.companySchedules : [],
     chatMessages: Array.isArray(savedState.chatMessages) ? savedState.chatMessages : [],
     coinLedger: Array.isArray(savedState.coinLedger) ? savedState.coinLedger : [],
+    trustReports: Array.isArray(savedState.trustReports) ? savedState.trustReports : [],
     adminModeration: {
       blockedWorkerIds: Array.isArray(savedState.adminModeration?.blockedWorkerIds)
         ? savedState.adminModeration.blockedWorkerIds
@@ -186,6 +189,7 @@ function mergeSeedUpdates(savedState: AppState): AppState {
     !Array.isArray(savedState.companySchedules) ||
     !Array.isArray(savedState.chatMessages) ||
     !Array.isArray(savedState.coinLedger) ||
+    !Array.isArray(savedState.trustReports) ||
     !Number.isFinite(savedState.subscription?.companyCreditsRemaining) ||
     !Array.isArray(savedState.subscription?.unlockedJobIds) ||
     !Array.isArray(savedState.adminModeration?.blockedWorkerIds) ||
@@ -1799,6 +1803,71 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   };
                 })()
               : worker
+            )
+        }));
+      },
+      submitTrustReport(input) {
+        const reason = input.reason.trim();
+        if (reason.length < 12) {
+          return { ok: false, message: "Descreva o problema com um pouco mais de detalhe para a administração avaliar." };
+        }
+
+        const reporterId = state.activeRole === "empresa" ? currentCompany.id : currentWorker.id;
+        const reporterName = state.activeRole === "empresa" ? currentCompany.establishmentName : currentWorker.name;
+        const alreadyOpen = state.trustReports.some(
+          (report) =>
+            report.status === "Aberto" &&
+            report.reporterId === reporterId &&
+            report.targetType === input.targetType &&
+            report.targetId === input.targetId
+        );
+
+        if (alreadyOpen) {
+          return { ok: false, message: "Você já enviou um relato aberto sobre este caso. A administração ainda vai revisar." };
+        }
+
+        const report = {
+          id: crypto.randomUUID(),
+          reporterRole: state.activeRole,
+          reporterId,
+          reporterName,
+          targetType: input.targetType,
+          targetId: input.targetId,
+          targetName: input.targetName,
+          reason,
+          status: "Aberto" as const,
+          createdAt: new Date().toISOString()
+        };
+
+        commit((current) => ({
+          ...current,
+          trustReports: [report, ...current.trustReports],
+          notifications: [
+            {
+              id: crypto.randomUUID(),
+              title: "Relato enviado para revisão",
+              body: "A administração recebeu o relato e poderá bloquear perfis se houver risco.",
+              role: state.activeRole,
+              createdAt: report.createdAt,
+              read: false
+            },
+            ...current.notifications
+          ]
+        }));
+
+        return { ok: true, message: "Relato enviado para a administração. Obrigado por ajudar a manter o Free Floripa seguro." };
+      },
+      resolveTrustReport(reportId) {
+        commit((current) => ({
+          ...current,
+          trustReports: current.trustReports.map((report) =>
+            report.id === reportId
+              ? {
+                  ...report,
+                  status: "Resolvido" as const,
+                  resolvedAt: new Date().toISOString()
+                }
+              : report
           )
         }));
       },

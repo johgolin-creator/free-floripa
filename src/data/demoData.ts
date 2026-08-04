@@ -415,5 +415,6 @@ export const initialState: AppState = {
   adminModeration: {
     blockedWorkerIds: [],
     blockedCompanyIds: []
-  }
+  },
+  trustReports: []
 };

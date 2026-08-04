@@ -16,13 +16,14 @@ import { UrgentBadge } from "../components/UrgentBadge";
 import { formatCurrency, formatDate } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
 import { useAppStore } from "../lib/store";
+import type { TrustReport } from "../lib/types";
 
 type AdminTab = "Resumo" | "Usuários" | "Vagas" | "Moedas" | "Alertas";
 
 const tabs: AdminTab[] = ["Resumo", "Usuários", "Vagas", "Moedas", "Alertas"];
 
 export function AdminPage() {
-  const { state, toggleWorkerBlock, toggleCompanyBlock } = useAppStore();
+  const { state, resolveTrustReport, toggleWorkerBlock, toggleCompanyBlock } = useAppStore();
   const [tab, setTab] = useState<AdminTab>("Resumo");
   const [search, setSearch] = useState("");
   const normalizedSearch = normalize(search);
@@ -45,6 +46,7 @@ export function AdminPage() {
     return total + (job?.dailyValue ?? 0);
   }, 0);
   const alerts = useMemo(() => buildAlerts(state), [state]);
+  const openReports = state.trustReports.filter((report) => report.status === "Aberto");
 
   const filteredWorkers = state.workers.filter((worker) =>
     normalize(`${worker.name} ${worker.email} ${worker.phone} ${worker.functions.join(" ")}`).includes(normalizedSearch)
@@ -80,7 +82,7 @@ export function AdminPage() {
           <AdminMetric icon={<UserRound size={19} />} label="freelancers" value={String(state.workers.length)} />
           <AdminMetric icon={<Building2 size={19} />} label="empresas" value={String(state.companies.length)} />
           <AdminMetric icon={<BriefcaseBusiness size={19} />} label="vagas abertas" value={String(openJobs.length)} />
-          <AdminMetric icon={<AlertTriangle size={19} />} label="alertas" value={String(alerts.length)} tone={alerts.length > 0 ? "alert" : "normal"} />
+          <AdminMetric icon={<AlertTriangle size={19} />} label="alertas" value={String(alerts.length + openReports.length)} tone={alerts.length + openReports.length > 0 ? "alert" : "normal"} />
         </div>
       </section>
 
@@ -128,7 +130,7 @@ export function AdminPage() {
           <div className="card p-4">
             <h3 className="mb-3 font-black text-navy-950">Ações rápidas</h3>
             <div className="grid gap-2 text-sm font-semibold text-slate-600">
-              <span className="flex items-center gap-2"><ShieldCheck size={16} /> Revisar {alerts.length} alerta(s) operacionais.</span>
+              <span className="flex items-center gap-2"><ShieldCheck size={16} /> Revisar {openReports.length} relato(s) e {alerts.length} alerta(s) operacionais.</span>
               <span className="flex items-center gap-2"><Ban size={16} /> {blockedWorkerIds.length} trabalhador(es) bloqueado(s).</span>
               <span className="flex items-center gap-2"><Ban size={16} /> {blockedCompanyIds.length} empresa(s) bloqueada(s).</span>
               <span className="flex items-center gap-2"><WalletCards size={16} /> Trabalhador: {state.subscription.creditsRemaining} moeda(s).</span>
@@ -231,7 +233,27 @@ export function AdminPage() {
       )}
 
       {tab === "Alertas" && (
-        <AdminList title="Alertas operacionais" count={alerts.length}>
+        <AdminList title="Relatos e alertas operacionais" count={alerts.length + openReports.length}>
+          {openReports.map((report) => {
+            const targetBlocked =
+              (report.targetType === "worker" && blockedWorkerIds.includes(report.targetId)) ||
+              (report.targetType === "company" && blockedCompanyIds.includes(report.targetId));
+            return (
+              <ReportRow
+                key={report.id}
+                report={report}
+                targetBlocked={targetBlocked}
+                onResolve={() => resolveTrustReport(report.id)}
+                onBlock={
+                  report.targetType === "worker"
+                    ? () => toggleWorkerBlock(report.targetId)
+                    : report.targetType === "company"
+                      ? () => toggleCompanyBlock(report.targetId)
+                      : undefined
+                }
+              />
+            );
+          })}
           {alerts.map((alert) => (
             <article key={alert.id} className="worker-application-card border-amber-100 bg-amber-50/50">
               <div className="worker-card-head">
@@ -353,6 +375,51 @@ function AdminRow({
   );
 }
 
+function ReportRow({
+  report,
+  targetBlocked,
+  onResolve,
+  onBlock
+}: {
+  report: TrustReport;
+  targetBlocked: boolean;
+  onResolve: () => void;
+  onBlock?: () => void;
+}) {
+  return (
+    <article className="worker-application-card border-red-100 bg-red-50/50">
+      <div className="worker-card-head">
+        <div className="flex gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-red-100 text-alert">
+            <AlertTriangle size={20} />
+          </span>
+          <div>
+            <div className="flex flex-wrap gap-2">
+              <span className="badge border-red-100 bg-red-50 text-alert">Relato aberto</span>
+              <span className="badge">{getReportTargetLabel(report.targetType)}</span>
+            </div>
+            <h3 className="mt-2">{report.targetName}</h3>
+            <p className="text-sm font-semibold leading-6 text-slate-600">{report.reason}</p>
+            <p className="mt-1 text-xs font-black uppercase text-slate-500">
+              Enviado por {report.reporterName} em {formatDate(report.createdAt.slice(0, 10))}
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-2 sm:min-w-40">
+          {onBlock && (
+            <button type="button" onClick={onBlock} className={targetBlocked ? "secondary" : "danger"}>
+              <Ban size={16} /> {targetBlocked ? "Desbloquear alvo" : "Bloquear alvo"}
+            </button>
+          )}
+          <button type="button" onClick={onResolve} className="secondary">
+            <CheckCircle2 size={16} /> Marcar resolvido
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function CoinRow({ title, text, amount }: { title: string; text: string; amount: string }) {
   return (
     <article className="worker-application-card">
@@ -366,6 +433,12 @@ function CoinRow({ title, text, amount }: { title: string; text: string; amount:
       </div>
     </article>
   );
+}
+
+function getReportTargetLabel(targetType: TrustReport["targetType"]) {
+  if (targetType === "worker") return "Profissional";
+  if (targetType === "company") return "Empresa";
+  return "Vaga";
 }
 
 function getCoinAdminTitle(reason: string) {
