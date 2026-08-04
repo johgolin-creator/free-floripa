@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Copy,
+  PartyPopper,
   RotateCcw,
   Square,
   UsersRound,
@@ -25,6 +26,19 @@ import type { Application, Job, JobStatus } from "../lib/types";
 type JobFilter = "Todas" | "Ativas" | "Rascunhos" | "Histórico";
 
 const filters: JobFilter[] = ["Todas", "Ativas", "Rascunhos", "Histórico"];
+type EventPackage = {
+  key: string;
+  name: string;
+  date: string;
+  startsAt: string;
+  endsAt: string;
+  neighborhood: string;
+  jobs: Job[];
+  totalNeeded: number;
+  totalConfirmed: number;
+  totalCandidates: number;
+  expectedValue: number;
+};
 
 export function CompanyJobsPage() {
   const { state, currentCompany, updateJobStatus, duplicateJob } = useAppStore();
@@ -34,6 +48,7 @@ export function CompanyJobsPage() {
   const jobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const companyApplications = state.applications.filter((application) => jobs.some((job) => job.id === application.jobId));
   const filteredJobs = useMemo(() => jobs.filter((job) => matchesFilter(job, filter)), [jobs, filter]);
+  const eventPackages = useMemo(() => groupEventPackages(jobs, state.applications), [jobs, state.applications]);
   const dashboard = {
     active: jobs.filter((job) => isActiveStatus(getJobStatus(job))).length,
     urgent: jobs.filter((job) => job.urgent && isActiveStatus(getJobStatus(job))).length,
@@ -133,6 +148,51 @@ export function CompanyJobsPage() {
             </div>
           </section>
 
+          {eventPackages.length > 0 && (
+            <section className="event-package-panel">
+              <div className="event-package-heading">
+                <div>
+                  <span className="section-eyebrow">Eventos montados</span>
+                  <h3>Pacotes de evento</h3>
+                  <p>Veja o evento inteiro em uma visão só, mesmo com vagas separadas por função.</p>
+                </div>
+                <Link to="/app/eventos" className="secondary">
+                  <PartyPopper size={17} /> Montar outro evento
+                </Link>
+              </div>
+              <div className="event-package-grid">
+                {eventPackages.map((eventPackage) => (
+                  <article key={eventPackage.key} className="event-package-card">
+                    <div className="event-package-title">
+                      <div>
+                        <strong>{eventPackage.name}</strong>
+                        <span>
+                          {formatDate(eventPackage.date)} • {eventPackage.startsAt} às {eventPackage.endsAt} • {eventPackage.neighborhood}
+                        </span>
+                      </div>
+                      <span className="badge">{eventPackage.jobs.length} vagas</span>
+                    </div>
+                    <div className="event-package-metrics">
+                      <Mini label="equipe" value={`${eventPackage.totalConfirmed}/${eventPackage.totalNeeded}`} />
+                      <Mini label="candidatos" value={String(eventPackage.totalCandidates)} />
+                      <Mini label="previsto" value={formatCurrency(eventPackage.expectedValue)} />
+                    </div>
+                    <div className="event-package-functions">
+                      {eventPackage.jobs.map((job) => (
+                        <span key={job.id}>
+                          {job.quantity} {job.function}
+                        </span>
+                      ))}
+                    </div>
+                    <Link to={`/app/candidatos?vaga=${eventPackage.jobs[0]?.id ?? ""}`} className="company-action company-action-primary">
+                      <ClipboardList size={17} /> Ver candidatos do pacote
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
           {filteredJobs.length === 0 ? (
             <EmptyState title="Nada neste filtro" text="Troque o filtro para visualizar outras vagas." />
           ) : (
@@ -223,6 +283,50 @@ export function CompanyJobsPage() {
       )}
     </div>
   );
+}
+
+function groupEventPackages(jobs: Job[], applications: Application[]): EventPackage[] {
+  const groups = new Map<string, EventPackage>();
+
+  jobs.forEach((job) => {
+    const eventName = getEventPackageName(job);
+    if (!eventName) return;
+
+    const key = `${eventName}|${job.date}|${job.startsAt}|${job.endsAt}`;
+    const jobApplications = applications.filter((application) => application.jobId === job.id);
+    const confirmed = jobApplications.filter(
+      (application) => application.status === "Aprovada" || application.status === "Trabalho concluído"
+    ).length;
+    const current = groups.get(key) ?? {
+      key,
+      name: eventName,
+      date: job.date,
+      startsAt: job.startsAt,
+      endsAt: job.endsAt,
+      neighborhood: job.neighborhood,
+      jobs: [],
+      totalNeeded: 0,
+      totalConfirmed: 0,
+      totalCandidates: 0,
+      expectedValue: 0
+    };
+
+    current.jobs.push(job);
+    current.totalNeeded += job.quantity;
+    current.totalConfirmed += confirmed;
+    current.totalCandidates += jobApplications.length;
+    current.expectedValue += confirmed * job.dailyValue;
+    groups.set(key, current);
+  });
+
+  return Array.from(groups.values()).sort((a, b) => b.date.localeCompare(a.date));
+}
+
+function getEventPackageName(job: Job) {
+  if (!job.description.includes("Equipe criada pela aba Eventos")) return null;
+  const separatorIndex = job.title.indexOf(":");
+  if (separatorIndex <= 0) return null;
+  return job.title.slice(0, separatorIndex).trim();
 }
 
 function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
