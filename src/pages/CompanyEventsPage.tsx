@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { CalendarDays, CheckCircle2, ClipboardList, MapPin, PartyPopper, Plus, Search, Star, UsersRound } from "lucide-react";
+import { CalendarDays, CheckCircle2, ClipboardList, Clock3, MapPin, PartyPopper, Plus, Search, Star, UsersRound } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
@@ -15,6 +15,13 @@ const eventTypes = ["Casamento", "Aniversário", "Evento corporativo", "Formatur
 const eventFunctions = functions.filter((item) =>
   ["Garçom", "Bartender", "Segurança", "Recepcionista", "Auxiliar de cozinha", "Copeiro", "Limpeza", "Promotor"].includes(item)
 );
+
+const eventPresets = [
+  { type: "Casamento", name: "Casamento", guests: 120, startsAt: "17:00", endsAt: "02:00", dailyValue: 220 },
+  { type: "Aniversário", name: "Aniversário", guests: 70, startsAt: "18:00", endsAt: "00:00", dailyValue: 180 },
+  { type: "Evento corporativo", name: "Evento corporativo", guests: 90, startsAt: "14:00", endsAt: "22:00", dailyValue: 200 },
+  { type: "Formatura", name: "Formatura", guests: 160, startsAt: "20:00", endsAt: "04:00", dailyValue: 230 }
+];
 
 type CrewNeeds = Record<JobFunction, number>;
 
@@ -74,6 +81,7 @@ export function CompanyEventsPage() {
   );
   const requestedFunctions = eventFunctions.filter((item) => needs[item] > 0);
   const totalProfessionals = requestedFunctions.reduce((total, item) => total + needs[item], 0);
+  const estimatedEventCost = totalProfessionals * dailyValue;
   const availableByFunction = requestedFunctions.reduce((acc, item) => {
     acc[item] = realWorkers.filter((worker) => Boolean(getFunctionExperience(worker, item))).length;
     return acc;
@@ -95,9 +103,25 @@ export function CompanyEventsPage() {
       }),
     [dailyValue, date, endsAt, eventName, eventType, guests, location, needs, neighborhood, paymentMethod, requestedFunctions, startsAt]
   );
+  const eventAlreadyCreated = lastCreatedEventKey.current === eventCreationKey;
 
   function updateNeed(functionName: JobFunction, quantity: number) {
     setNeeds((current) => ({ ...current, [functionName]: Math.max(0, quantity) }));
+  }
+
+  function applyPreset(preset: (typeof eventPresets)[number]) {
+    const suggested = createEmptyNeeds();
+    eventFunctions.forEach((item) => {
+      suggested[item] = suggestCrewSize(preset.guests, item);
+    });
+    setEventType(preset.type);
+    setEventName(preset.name);
+    setGuests(preset.guests);
+    setStartsAt(preset.startsAt);
+    setEndsAt(preset.endsAt);
+    setDailyValue(preset.dailyValue);
+    setNeeds(suggested);
+    setMessage(`${preset.type} aplicado como base. Confira local, data e equipe antes de criar as vagas.`);
   }
 
   function applySuggestion() {
@@ -179,6 +203,16 @@ export function CompanyEventsPage() {
           <div className="event-form-title">
             <PartyPopper size={18} /> Dados do evento
           </div>
+          <div className="event-preset-grid">
+            {eventPresets.map((preset) => (
+              <button key={preset.type} type="button" onClick={() => applyPreset(preset)} className="event-preset-button">
+                <strong>{preset.type}</strong>
+                <span>
+                  {preset.guests} convidados • {preset.startsAt} às {preset.endsAt}
+                </span>
+              </button>
+            ))}
+          </div>
           <div className="event-data-grid">
             <label className="label">
               Nome do evento
@@ -239,7 +273,8 @@ export function CompanyEventsPage() {
         <aside className="event-summary-panel">
           <Metric icon={<UsersRound />} label="Profissionais na equipe" value={totalProfessionals} />
           <Metric icon={<ClipboardList />} label="Funções com vagas" value={requestedFunctions.length} />
-          <Metric icon={<Star />} label="Diária base" value={formatCurrency(dailyValue)} />
+          <Metric icon={<Star />} label="Custo estimado" value={formatCurrency(estimatedEventCost)} />
+          <Metric icon={<Clock3 />} label="Horário do evento" value={`${startsAt} - ${endsAt}`} />
         </aside>
       </section>
 
@@ -272,10 +307,39 @@ export function CompanyEventsPage() {
             </label>
           ))}
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button type="button" onClick={createEventJobs} disabled={isCreating || requestedFunctions.length === 0 || companyBlocked} className="primary">
-            <Plus size={17} /> {isCreating ? "Criando vagas..." : "Criar vagas do evento"}
+        {requestedFunctions.length > 0 && (
+          <div className="event-review-panel">
+            <div>
+              <p className="section-eyebrow">Conferência</p>
+              <h3>Vagas que serão criadas</h3>
+              <p>Cada função vira uma vaga separada para facilitar candidaturas, aprovação e controle da equipe no dia do evento.</p>
+            </div>
+            <div className="event-review-list">
+              {requestedFunctions.map((item) => (
+                <span key={item}>
+                  <strong>{needs[item]}</strong>
+                  {item}
+                </span>
+              ))}
+            </div>
+            <div className="event-review-footer">
+              <span>
+                <CalendarDays size={16} /> {date} • {neighborhood}
+              </span>
+              <strong>{formatCurrency(estimatedEventCost)} estimado</strong>
+            </div>
+          </div>
+        )}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={createEventJobs}
+            disabled={isCreating || requestedFunctions.length === 0 || companyBlocked || eventAlreadyCreated}
+            className="primary"
+          >
+            <Plus size={17} /> {isCreating ? "Criando vagas..." : eventAlreadyCreated ? "Vagas já criadas" : "Criar vagas do evento"}
           </button>
+          {eventAlreadyCreated && <span className="event-created-note">Altere algum dado do evento para gerar um novo pacote de vagas.</span>}
         </div>
       </section>
 
