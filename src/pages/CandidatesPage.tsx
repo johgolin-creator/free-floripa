@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
+import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { ShiftReceipt } from "../components/ShiftReceipt";
 import { UrgentBadge } from "../components/UrgentBadge";
@@ -229,6 +230,10 @@ export function CandidatesPage() {
             </section>
           )}
 
+          <SafetyNotice title="Decisão segura">
+            Antes de aprovar, confira experiência, comparecimento, cancelamentos e avaliações. O contato do profissional só é liberado depois da confirmação.
+          </SafetyNotice>
+
           {!selectedJob || selectedApplications.length === 0 ? (
             <EmptyState title="Nenhum candidato nesta vaga" text="Quando alguém se candidatar, os dados aparecerão aqui com ações de aprovação." />
           ) : (
@@ -246,6 +251,9 @@ export function CandidatesPage() {
                 const contactUnlocked = approved || completed;
                 const refused = terminalStatuses.includes(application.status) && !approved;
                 const noSlots = getOpenSlots(selectedJob) === 0 && !approved && !completed;
+                const workerBlocked = state.adminModeration.blockedWorkerIds.includes(worker.id);
+                const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
+                const blockedAction = workerBlocked || companyBlocked;
 
                 return (
                   <article key={application.id} className="candidate-card">
@@ -264,11 +272,19 @@ export function CandidatesPage() {
 
                       <HiringFlow application={application} shift={shift} reviewed={reviewed} />
 
+                      {blockedAction && (
+                        <SafetyNotice title="Ações bloqueadas por segurança" tone="warning">
+                          {workerBlocked
+                            ? "Este profissional está em revisão pela administração. Aprovação, presença e convite ficam pausados."
+                            : "Sua empresa está em revisão pela administração. As decisões de candidatos ficam pausadas."}
+                        </SafetyNotice>
+                      )}
+
                       <div className="candidate-action-grid">
                         <button
                           type="button"
                           onClick={() => runStatus(application.id, "Em análise")}
-                          disabled={application.status !== "Enviada"}
+                          disabled={blockedAction || application.status !== "Enviada"}
                           className="secondary"
                         >
                           <Clock3 size={17} /> Analisar
@@ -276,7 +292,7 @@ export function CandidatesPage() {
                         <button
                           type="button"
                           onClick={() => runStatus(application.id, "Aprovada")}
-                          disabled={approved || completed || noSlots}
+                          disabled={blockedAction || approved || completed || noSlots}
                           className="primary"
                         >
                           <UserCheck size={17} /> {approved || completed ? "Confirmado" : noSlots ? "Sem vaga" : "Aprovar"}
@@ -284,7 +300,7 @@ export function CandidatesPage() {
                         <button
                           type="button"
                           onClick={() => runStatus(application.id, "Recusada")}
-                          disabled={refused || approved || completed}
+                          disabled={blockedAction || refused || approved || completed}
                           className="secondary"
                         >
                           <UserX size={17} /> Recusar
@@ -295,7 +311,7 @@ export function CandidatesPage() {
                             checkIn(selectedJob.id, worker.id);
                             setMessage(`Check-in registrado para ${worker.name}.`);
                           }}
-                          disabled={!approved || shift?.status !== "Ainda não chegou"}
+                          disabled={blockedAction || !approved || shift?.status !== "Ainda não chegou"}
                           className="secondary"
                         >
                           Check-in
@@ -306,7 +322,7 @@ export function CandidatesPage() {
                             checkOut(selectedJob.id, worker.id);
                             runStatus(application.id, "Trabalho concluído");
                           }}
-                          disabled={!approved || shift?.status !== "Fez check-in"}
+                          disabled={blockedAction || !approved || shift?.status !== "Fez check-in"}
                           className="primary"
                         >
                           <CheckCircle2 size={17} /> Concluir
@@ -314,7 +330,7 @@ export function CandidatesPage() {
                         <button
                           type="button"
                           onClick={() => runStatus(application.id, "Falta registrada")}
-                          disabled={!approved || shift?.status !== "Ainda não chegou"}
+                          disabled={blockedAction || !approved || shift?.status !== "Ainda não chegou"}
                           className="danger"
                         >
                           Registrar falta

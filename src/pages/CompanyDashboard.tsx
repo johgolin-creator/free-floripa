@@ -20,6 +20,7 @@ import {
 import { Link } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
+import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { functions, neighborhoods } from "../data/demoData";
@@ -95,6 +96,7 @@ export function CompanyDashboard() {
   const [message, setMessage] = useState("");
   const lastCreatedJobKey = useRef("");
   const lastCreatedUrgentKey = useRef("");
+  const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
   const companyJobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const companyApplications = state.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId));
   const openJobs = companyJobs.filter((job) => {
@@ -124,10 +126,10 @@ export function CompanyDashboard() {
         description="Publique vagas temporárias, acompanhe candidatos e confirme sua equipe."
         action={
           <div className="grid gap-2 sm:flex">
-            <button type="button" onClick={() => setShowUrgentForm(true)} className="danger">
+            <button type="button" onClick={() => setShowUrgentForm(true)} disabled={companyBlocked} className="danger">
               <Zap size={17} /> Preciso de reposição urgente
             </button>
-            <button type="button" onClick={() => setShowJobForm(true)} className="primary">
+            <button type="button" onClick={() => setShowJobForm(true)} disabled={companyBlocked} className="primary">
               <Plus size={17} /> Criar nova vaga
             </button>
           </div>
@@ -142,6 +144,11 @@ export function CompanyDashboard() {
       </div>
 
       {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+      {companyBlocked && (
+        <SafetyNotice title="Publicação bloqueada" tone="warning">
+          Sua empresa está em revisão pela administração. Criação de vagas, reposição urgente e novas confirmações ficam pausadas até a liberação.
+        </SafetyNotice>
+      )}
 
       <section className="smart-dashboard-hero">
         <div>
@@ -247,6 +254,9 @@ export function CompanyDashboard() {
           title="Criar nova vaga"
           onClose={() => setShowJobForm(false)}
           onCreate={(input) => {
+            if (companyBlocked) {
+              return { ok: false, message: "Sua empresa está em revisão pela administração e não pode publicar vagas no momento." };
+            }
             const jobKey = createJobInputKey(input);
             if (lastCreatedJobKey.current === jobKey) {
               return { ok: false, message: "Essa vaga já foi criada. Altere algum dado para publicar novamente." };
@@ -262,6 +272,9 @@ export function CompanyDashboard() {
         <Modal title="Reposição urgente" onClose={() => setShowUrgentForm(false)}>
           <UrgentForm
             onSubmit={(input) => {
+              if (companyBlocked) {
+                return { ok: false, message: "Sua empresa está em revisão pela administração e não pode publicar vaga urgente no momento." };
+              }
               const urgentKey = createUrgentReplacementKey(input);
               if (lastCreatedUrgentKey.current === urgentKey) {
                 return { ok: false, message: "Essa vaga urgente já foi criada. Altere algum dado para publicar novamente." };

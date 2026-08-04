@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
+import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { functions, neighborhoods } from "../data/demoData";
@@ -47,6 +48,7 @@ export function CompanySchedulePage() {
   const [message, setMessage] = useState("");
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<CompanySchedule | null>(null);
+  const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
   const today = new Date().toISOString().slice(0, 10);
   const companySchedules = state.companySchedules ?? [];
   const manualSchedules = companySchedules
@@ -84,12 +86,20 @@ export function CompanySchedulePage() {
     companyJobs.reduce((total, job) => total + getOpenSlots(job), 0);
 
   function runStatus(applicationId: string, status: Application["status"]) {
+    if (companyBlocked) {
+      setMessage("Sua empresa está em revisão pela administração e não pode alterar a escala no momento.");
+      return false;
+    }
     const result = updateApplicationStatus(applicationId, status);
     setMessage(result.message);
     return result.ok;
   }
 
   function handleCreate(input: CompanyScheduleInput) {
+    if (companyBlocked) {
+      setMessage("Sua empresa está em revisão pela administração e não pode criar escalas no momento.");
+      return;
+    }
     createCompanySchedule(input);
     setCreating(false);
     setMessage("Escala criada. Ela já aparece na aba Escala e pode ser editada a qualquer momento.");
@@ -113,9 +123,16 @@ export function CompanySchedulePage() {
         eyebrow="Escala"
         title="Montar escala"
         description="Crie suas próprias escalas, edite a operação e acompanhe também os profissionais aprovados nas vagas."
-        action={<button type="button" onClick={() => setCreating(true)} className="primary"><Plus size={17} /> Criar escala</button>}
+        action={<button type="button" onClick={() => setCreating(true)} disabled={companyBlocked} className="primary"><Plus size={17} /> Criar escala</button>}
       />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+      {companyBlocked && (
+        <div className="mb-4">
+          <SafetyNotice title="Escala em revisão" tone="warning">
+            Sua empresa está em revisão pela administração. Criar, editar, excluir e concluir escalas fica pausado até a liberação.
+          </SafetyNotice>
+        </div>
+      )}
 
       <section className="schedule-hero">
         <div>
@@ -161,7 +178,7 @@ export function CompanySchedulePage() {
             <h3 className="text-lg font-black text-navy-950">Escalas criadas pelo contratante</h3>
             <p className="text-sm font-semibold text-slate-600">Use para planejar equipe antes de publicar vaga ou antes de alguém se candidatar.</p>
           </div>
-          <button type="button" onClick={() => setCreating(true)} className="company-action"><Plus size={17} /> Nova escala</button>
+          <button type="button" onClick={() => setCreating(true)} disabled={companyBlocked} className="company-action"><Plus size={17} /> Nova escala</button>
         </div>
         {manualSchedules.length === 0 ? (
           <EmptyState title="Nenhuma escala criada" text="Clique em Criar escala para montar uma escala manual da empresa." />
@@ -171,6 +188,7 @@ export function CompanySchedulePage() {
               <ManualScheduleCard
                 key={schedule.id}
                 schedule={schedule}
+                disabled={companyBlocked}
                 onEdit={() => setEditing(schedule)}
                 onDelete={() => handleDelete(schedule.id)}
               />
@@ -235,6 +253,7 @@ export function CompanySchedulePage() {
                           application={application}
                           job={job}
                           shift={state.shifts.find((item) => item.jobId === job.id && item.workerId === application.workerId)}
+                          disabled={companyBlocked}
                           onCheckIn={() => {
                             checkIn(job.id, application.workerId);
                             setMessage("Check-in registrado na escala.");
@@ -272,10 +291,12 @@ export function CompanySchedulePage() {
 
 function ManualScheduleCard({
   schedule,
+  disabled,
   onEdit,
   onDelete
 }: {
   schedule: CompanySchedule;
+  disabled?: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -296,8 +317,8 @@ function ManualScheduleCard({
           {schedule.notes && <p className="mt-2 text-sm leading-6 text-slate-600">{schedule.notes}</p>}
         </div>
         <div className="schedule-card-actions">
-          <button type="button" onClick={onEdit} className="company-action company-action-primary"><Edit3 size={17} /> Editar</button>
-          <button type="button" onClick={onDelete} className="company-action company-action-danger"><Trash2 size={17} /> Excluir</button>
+          <button type="button" onClick={onEdit} disabled={disabled} className="company-action company-action-primary"><Edit3 size={17} /> Editar</button>
+          <button type="button" onClick={onDelete} disabled={disabled} className="company-action company-action-danger"><Trash2 size={17} /> Excluir</button>
         </div>
       </div>
       <div className="schedule-team-box">
@@ -393,6 +414,7 @@ function ScheduleWorker({
   application,
   job,
   shift,
+  disabled,
   onCheckIn,
   onCheckOut,
   onAbsence
@@ -400,6 +422,7 @@ function ScheduleWorker({
   application: Application;
   job: Job;
   shift?: WorkShift;
+  disabled?: boolean;
   onCheckIn: () => void;
   onCheckOut: () => void;
   onAbsence: () => void;
@@ -443,7 +466,7 @@ function ScheduleWorker({
         <button
           type="button"
           onClick={onCheckIn}
-          disabled={!active || shift?.status !== "Ainda não chegou"}
+          disabled={disabled || !active || shift?.status !== "Ainda não chegou"}
           className="secondary"
         >
           <UserCheck size={17} /> Check-in
@@ -451,7 +474,7 @@ function ScheduleWorker({
         <button
           type="button"
           onClick={onCheckOut}
-          disabled={!active || shift?.status !== "Fez check-in"}
+          disabled={disabled || !active || shift?.status !== "Fez check-in"}
           className="primary"
         >
           <CheckCircle2 size={17} /> Concluir
@@ -459,7 +482,7 @@ function ScheduleWorker({
         <button
           type="button"
           onClick={onAbsence}
-          disabled={!active || completed || absence || shift?.status !== "Ainda não chegou"}
+          disabled={disabled || !active || completed || absence || shift?.status !== "Ainda não chegou"}
           className="danger"
         >
           <UserX size={17} /> Falta

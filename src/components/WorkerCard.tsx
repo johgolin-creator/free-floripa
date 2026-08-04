@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Award, CheckCircle2, Heart, MapPin, Star } from "lucide-react";
+import { AlertTriangle, Award, CheckCircle2, Heart, MapPin, Star } from "lucide-react";
 import { Modal } from "./Modal";
 import { useAppStore } from "../lib/store";
 import { calculateReliability, getCompatibilityLabel, getExperienceLabel, getFunctionExperience } from "../lib/rules";
@@ -19,6 +19,7 @@ export function WorkerCard({
   const [showProfile, setShowProfile] = useState(false);
   const [message, setMessage] = useState("");
   const favorite = state.favoriteWorkerIds.includes(worker.id);
+  const blocked = state.adminModeration.blockedWorkerIds.includes(worker.id);
   const reliability = calculateReliability(worker);
   const trustBadges = getTrustBadges(worker);
   const pendingApplication = state.applications.find((application) => application.workerId === worker.id && application.status !== "Aprovada");
@@ -39,6 +40,11 @@ export function WorkerCard({
             {worker.verified && (
               <span className="inline-flex items-center gap-1 text-xs font-bold text-aqua-700">
                 <CheckCircle2 size={14} /> Verificado
+              </span>
+            )}
+            {blocked && (
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-alert">
+                <AlertTriangle size={14} /> Em revisão
               </span>
             )}
           </div>
@@ -69,6 +75,13 @@ export function WorkerCard({
                 <Award size={14} /> {badge.label}
               </span>
             ))}
+          </div>
+        )}
+        {(blocked || worker.cancellations >= 3 || worker.attendanceRate < 85) && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-900">
+            {blocked
+              ? "Perfil bloqueado pela administração. Evite aprovar ou convidar até a revisão terminar."
+              : "Atenção ao histórico: confirme disponibilidade, horário e chegada antes de aprovar."}
           </div>
         )}
       </div>
@@ -114,6 +127,7 @@ export function WorkerCard({
                 setMessage("Este profissional não possui candidatura pendente nesta vaga.");
               }
             }}
+            disabled={blocked}
             className="primary"
           >
             <CheckCircle2 size={17} />

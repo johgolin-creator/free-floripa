@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { CalendarDays, CheckCircle2, ClipboardList, MapPin, PartyPopper, Plus, Search, Star, UsersRound } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
+import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { WorkerCard } from "../components/WorkerCard";
 import { functions, neighborhoods } from "../data/demoData";
@@ -58,8 +59,12 @@ export function CompanyEventsPage() {
     Limpeza: 1
   }));
   const [message, setMessage] = useState("");
+  const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
 
-  const realWorkers = useMemo(() => state.workers.filter((worker) => !demoWorkerIds.has(worker.id)), [state.workers]);
+  const realWorkers = useMemo(
+    () => state.workers.filter((worker) => !demoWorkerIds.has(worker.id) && !state.adminModeration.blockedWorkerIds.includes(worker.id)),
+    [state.adminModeration.blockedWorkerIds, state.workers]
+  );
   const selectedWorkers = useMemo(
     () =>
       realWorkers
@@ -106,6 +111,11 @@ export function CompanyEventsPage() {
 
   function createEventJobs() {
     if (isCreating) return;
+
+    if (companyBlocked) {
+      setMessage("Sua empresa está em revisão pela administração e não pode criar vagas de evento no momento.");
+      return;
+    }
 
     if (!eventName.trim() || !date || !startsAt || !endsAt || !location.trim()) {
       setMessage("Preencha nome, data, horário e local do evento antes de criar as vagas.");
@@ -158,6 +168,11 @@ export function CompanyEventsPage() {
       />
 
       {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+      <SafetyNotice title="Evento protegido" tone={companyBlocked ? "warning" : "info"}>
+        {companyBlocked
+          ? "Criação de vagas de evento está pausada enquanto a administração revisa sua empresa."
+          : "Perfis em revisao nao entram nas sugestoes do evento, mantendo a selecao mais segura para sua equipe."}
+      </SafetyNotice>
 
       <section className="event-builder-grid">
         <div className="event-form-card">
@@ -258,7 +273,7 @@ export function CompanyEventsPage() {
           ))}
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="button" onClick={createEventJobs} disabled={isCreating || requestedFunctions.length === 0} className="primary">
+          <button type="button" onClick={createEventJobs} disabled={isCreating || requestedFunctions.length === 0 || companyBlocked} className="primary">
             <Plus size={17} /> {isCreating ? "Criando vagas..." : "Criar vagas do evento"}
           </button>
         </div>

@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { BadgeCheck, Edit3, ImageUp, Save, Star, UserRound } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { AlertTriangle, BadgeCheck, Edit3, ImageUp, Save, ShieldCheck, Star, UserRound } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
+import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { experienceLevels, functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
@@ -11,7 +12,7 @@ import { calculateReliability, getExperienceLabel, getFunctionExperience } from 
 import type { JobFunction } from "../lib/types";
 
 export function WorkerProfilePage() {
-  const { currentWorker, updateWorkerProfile } = useAppStore();
+  const { state, currentWorker, updateWorkerProfile } = useAppStore();
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -19,6 +20,7 @@ export function WorkerProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState(currentWorker.avatarUrl);
   const reliability = calculateReliability(currentWorker);
   const completion = getWorkerProfileCompletion(currentWorker);
+  const blocked = state.adminModeration.blockedWorkerIds.includes(currentWorker.id);
   const functionExperiences = currentWorker.functions
     .map((item) => getFunctionExperience(currentWorker, item))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -54,6 +56,11 @@ export function WorkerProfilePage() {
           setEditing(true);
         }}
       />
+      {blocked && (
+        <SafetyNotice title="Perfil em revisão pela administração" tone="warning">
+          Enquanto a revisão estiver ativa, novas candidaturas, chat e check-in ficam pausados por segurança.
+        </SafetyNotice>
+      )}
       <section className="profile-card">
         <div className="h-36 bg-[url('https://images.unsplash.com/photo-1523755231516-e43fd2e8dca5?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
         <div className="p-5">
@@ -126,6 +133,23 @@ export function WorkerProfilePage() {
                     </p>
                   </div>
                 ))}
+              </div>
+            </div>
+            <div className="profile-panel">
+              <h3 className="font-black text-navy-950">Validação e segurança</h3>
+              <div className="mt-3 grid gap-2">
+                <ValidationRow
+                  icon={blocked ? <AlertTriangle size={16} /> : <ShieldCheck size={16} />}
+                  title={blocked ? "Conta em revisão" : currentWorker.verified ? "Identidade verificada" : "Identidade pendente"}
+                  text={blocked ? "A administração pausou ações sensíveis deste perfil." : currentWorker.verified ? "Perfil liberado para candidaturas e histórico de confiança." : "Envie documentos ao suporte para receber o selo de verificação."}
+                  tone={blocked ? "warning" : currentWorker.verified ? "success" : "neutral"}
+                />
+                <ValidationRow
+                  icon={<BadgeCheck size={16} />}
+                  title="Histórico operacional"
+                  text={`${currentWorker.completedJobs} trabalhos, ${currentWorker.attendanceRate}% de comparecimento e ${currentWorker.cancellations} cancelamento(s).`}
+                  tone={currentWorker.attendanceRate >= 90 && currentWorker.cancellations <= 1 ? "success" : "neutral"}
+                />
               </div>
             </div>
             <div className="profile-panel">
@@ -324,6 +348,35 @@ function Info({ label, value }: { label: string; value: string }) {
     <div className="profile-info-tile">
       <span className="text-xs font-black uppercase text-slate-500">{label}</span>
       <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
+    </div>
+  );
+}
+
+function ValidationRow({
+  icon,
+  title,
+  text,
+  tone
+}: {
+  icon: ReactNode;
+  title: string;
+  text: string;
+  tone: "success" | "warning" | "neutral";
+}) {
+  const toneClass =
+    tone === "success"
+      ? "border-aqua-100 bg-aqua-50 text-aqua-700"
+      : tone === "warning"
+        ? "border-amber-200 bg-amber-50 text-amber-800"
+        : "border-slate-200 bg-slate-50 text-slate-600";
+
+  return (
+    <div className={`grid gap-2 rounded-lg border p-3 sm:grid-cols-[auto_1fr] ${toneClass}`}>
+      <span className="mt-0.5">{icon}</span>
+      <div>
+        <strong className="block text-sm text-navy-950">{title}</strong>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{text}</p>
+      </div>
     </div>
   );
 }

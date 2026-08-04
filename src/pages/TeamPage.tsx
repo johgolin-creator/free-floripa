@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BriefcaseBusiness, MessageSquareText, RotateCcw, Star } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
+import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
@@ -18,6 +19,7 @@ export function TeamPage() {
   const [workerToReview, setWorkerToReview] = useState<WorkerProfile | null>(null);
   const [workerToInvite, setWorkerToInvite] = useState<WorkerProfile | null>(null);
   const [message, setMessage] = useState("");
+  const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
   const favorites = state.workers.filter((worker) => state.favoriteWorkerIds.includes(worker.id));
   const hiredIds = state.applications
     .filter((application) => application.status === "Aprovada" || application.status === "Trabalho concluído")
@@ -34,17 +36,25 @@ export function TeamPage() {
         description="Convide novamente profissionais salvos e avalie colaboradores depois do turno."
       />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+      <div className="mb-4">
+        <SafetyNotice title="Equipe com controle" tone={companyBlocked ? "warning" : "info"}>
+          {companyBlocked
+            ? "Sua empresa está em revisão pela administração. Convites ficam pausados até a liberação."
+            : "Profissionais em revisão ficam sinalizados aqui, e novos convites são bloqueados até a liberação da administração."}
+        </SafetyNotice>
+      </div>
       {team.length === 0 ? (
         <EmptyState title="Nenhum profissional salvo" text="Favorite candidatos para montar sua base de confiança." />
       ) : (
         <div className="grid gap-3 xl:grid-cols-2">
           {team.map((worker) => {
             const wasHired = hiredIds.includes(worker.id);
+            const workerBlocked = state.adminModeration.blockedWorkerIds.includes(worker.id);
             return (
               <div key={worker.id} className="grid gap-2">
                 <WorkerCard worker={worker} showActions={false} />
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <button type="button" onClick={() => setWorkerToInvite(worker)} disabled={openJobs.length === 0} className="primary">
+                  <button type="button" onClick={() => setWorkerToInvite(worker)} disabled={openJobs.length === 0 || companyBlocked || workerBlocked} className="primary">
                     <RotateCcw size={17} /> Convidar novamente
                   </button>
                   <button type="button" onClick={() => setWorkerToReview(worker)} disabled={!wasHired} className="secondary">

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { CalendarDays, CheckCircle2, MessageCircle, UserRound } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
+import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { useAppStore } from "../lib/store";
 import { formatDate, formatDateTime } from "../lib/format";
@@ -52,6 +53,10 @@ export function MessagesPage() {
         .filter((item) => item.applicationId === selected.application.id)
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     : [];
+  const selectedBlocked = selected
+    ? state.adminModeration.blockedWorkerIds.includes(selected.application.workerId) ||
+      state.adminModeration.blockedCompanyIds.includes(selected.job.companyId)
+    : false;
 
   useEffect(() => {
     if (selected) markChatConversationRead(selected.application.id);
@@ -128,6 +133,12 @@ export function MessagesPage() {
                 </span>
               </div>
 
+              <SafetyNotice title={selectedBlocked ? "Conversa em revisão" : "Chat protegido"} tone={selectedBlocked ? "warning" : "info"}>
+                {selectedBlocked
+                  ? "O envio de mensagens fica pausado enquanto um dos perfis passa por revisão da administração."
+                  : "Mantenha combinações de horário, entrada, uniforme e pagamento registradas aqui para preservar o histórico do turno."}
+              </SafetyNotice>
+
               <div className="grid max-h-[440px] gap-2 overflow-auto pr-1">
                 {messages.length === 0 ? (
                   <div className="rounded-lg bg-slate-50 p-4 text-sm font-semibold text-slate-500">
@@ -158,10 +169,11 @@ export function MessagesPage() {
                   className="input min-h-24 py-3"
                   value={message}
                   onChange={(event) => setMessage(event.target.value)}
+                  disabled={selectedBlocked}
                   placeholder="Combine horário, entrada, uniforme ou qualquer detalhe do turno."
                 />
-                <button type="submit" className="primary self-stretch">
-                  <MessageCircle size={17} /> Enviar
+                <button type="submit" disabled={selectedBlocked} className="primary self-stretch">
+                  <MessageCircle size={17} /> {selectedBlocked ? "Bloqueado" : "Enviar"}
                 </button>
               </form>
             </section>

@@ -21,6 +21,7 @@ import {
   Zap
 } from "lucide-react";
 import { Modal } from "../components/Modal";
+import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
@@ -47,9 +48,15 @@ export function JobDetailsPage() {
   const jobStatus = getJobStatus(currentJob);
   const hasUnlockedJob = state.subscription.unlockedJobIds.includes(currentJob.id);
   const canViewFullJob = hasUnlockedJob || confirmed;
+  const workerBlocked = state.adminModeration.blockedWorkerIds.includes(currentWorker.id);
+  const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentJob.companyId);
   const unlockItems = ["Descrição completa", "Requisitos e benefícios", "Candidatura liberada", "Dados protegidos no momento certo"];
 
   function handleApply() {
+    if (workerBlocked || companyBlocked) {
+      setMessage(workerBlocked ? "Seu perfil está em revisão e não pode enviar candidaturas agora." : "Esta empresa está em revisão e não recebe candidaturas agora.");
+      return;
+    }
     if (application) {
       setMessage(`Você já se candidatou para esta vaga. Status atual: ${application.status}.`);
       return;
@@ -168,6 +175,13 @@ export function JobDetailsPage() {
         />
 
         {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+        {(workerBlocked || companyBlocked) && (
+          <SafetyNotice title="Ação bloqueada por segurança" tone="warning">
+            {workerBlocked
+              ? "Seu perfil está em revisão pela administração. Candidaturas ficam pausadas até a liberação."
+              : "Esta empresa está em revisão pela administração. Aguarde a liberação antes de usar moedas nesta vaga."}
+          </SafetyNotice>
+        )}
 
         <section className="job-preview-card">
           <div className="job-preview-main">
@@ -225,6 +239,16 @@ export function JobDetailsPage() {
       />
 
       {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+      <SafetyNotice title="Contratação protegida">
+        Confirme dados, horário, uniforme e pagamento dentro do Free Floripa antes de combinar detalhes externos. O contato completo só deve ser usado após aprovação.
+      </SafetyNotice>
+      {(workerBlocked || companyBlocked) && (
+        <SafetyNotice title="Ação bloqueada por segurança" tone="warning">
+          {workerBlocked
+            ? "Seu perfil está em revisão pela administração. Candidaturas ficam pausadas até a liberação."
+            : "Esta empresa está em revisão pela administração. A candidatura está bloqueada por segurança."}
+        </SafetyNotice>
+      )}
 
       <section className="job-detail-card">
         <div className="job-detail-grid">
@@ -309,8 +333,8 @@ export function JobDetailsPage() {
                 </Link>
               </div>
             )}
-            <button type="button" onClick={handleApply} disabled={Boolean(application) || isApplying || !isJobOpenForApplications(currentJob)} className="primary">
-              {application ? `Status: ${application.status}` : isApplying ? "Enviando..." : isJobOpenForApplications(currentJob) ? "Candidatar-se" : `Vaga ${jobStatus}`}
+            <button type="button" onClick={handleApply} disabled={Boolean(application) || isApplying || workerBlocked || companyBlocked || !isJobOpenForApplications(currentJob)} className="primary">
+              {application ? `Status: ${application.status}` : workerBlocked || companyBlocked ? "Bloqueado por segurança" : isApplying ? "Enviando..." : isJobOpenForApplications(currentJob) ? "Candidatar-se" : `Vaga ${jobStatus}`}
             </button>
             <p className="text-xs leading-5 text-slate-500">
               Cadastro gratuito com prévia das vagas. Use moedas para liberar vaga completa e enviar candidaturas.

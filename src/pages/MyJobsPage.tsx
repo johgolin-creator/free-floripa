@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
+import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { ShiftReceipt } from "../components/ShiftReceipt";
 import { useAppStore } from "../lib/store";
@@ -73,11 +74,19 @@ export function MyJobsPage() {
   };
 
   function doCheckIn(item: WorkItem) {
+    if (state.adminModeration.blockedWorkerIds.includes(currentWorker.id) || state.adminModeration.blockedCompanyIds.includes(item.job.companyId)) {
+      setMessage("Check-in bloqueado enquanto o perfil passa por revisão de segurança.");
+      return;
+    }
     checkIn(item.job.id, currentWorker.id);
     setMessage(`Check-in registrado para ${item.job.title}.`);
   }
 
   function doCheckOut(item: WorkItem) {
+    if (state.adminModeration.blockedWorkerIds.includes(currentWorker.id) || state.adminModeration.blockedCompanyIds.includes(item.job.companyId)) {
+      setMessage("Check-out bloqueado enquanto o perfil passa por revisão de segurança.");
+      return;
+    }
     checkOut(item.job.id, currentWorker.id);
     setMessage("Check-out registrado. A empresa ainda pode concluir e avaliar o serviço.");
   }
@@ -107,6 +116,10 @@ export function MyJobsPage() {
         </div>
       </section>
 
+      <SafetyNotice title="Presença segura">
+        Faça check-in somente ao chegar no local combinado e registre o check-out no fim do turno. Use o chat para manter endereço, uniforme e pagamento documentados.
+      </SafetyNotice>
+
       <div className="worker-filter-buttons mb-4">
         {tabs.map((item) => (
           <button key={item} type="button" onClick={() => setTab(item)} className={`worker-filter-button ${tab === item ? "is-active" : ""}`}>
@@ -125,6 +138,7 @@ export function MyJobsPage() {
             const checkedIn = shift?.status === "Fez check-in";
             const waiting = application.status === "Aprovada" && shift?.status === "Ainda não chegou";
             const done = application.status === "Trabalho concluído" || shift?.status === "Finalizou o turno";
+            const blockedAction = state.adminModeration.blockedWorkerIds.includes(currentWorker.id) || state.adminModeration.blockedCompanyIds.includes(job.companyId);
 
             return (
               <article key={application.id} className="worker-application-card">
@@ -143,12 +157,12 @@ export function MyJobsPage() {
                   </div>
                   <div className="worker-action-row">
                     {waiting && (
-                      <button type="button" onClick={() => doCheckIn(item)} className="company-action company-action-primary">
+                      <button type="button" onClick={() => doCheckIn(item)} disabled={blockedAction} className="company-action company-action-primary">
                         <LogIn size={17} /> Check-in
                       </button>
                     )}
                     {checkedIn && (
-                      <button type="button" onClick={() => doCheckOut(item)} className="company-action company-action-primary">
+                      <button type="button" onClick={() => doCheckOut(item)} disabled={blockedAction} className="company-action company-action-primary">
                         <LogOut size={17} /> Check-out
                       </button>
                     )}

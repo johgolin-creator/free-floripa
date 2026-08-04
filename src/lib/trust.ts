@@ -51,5 +51,21 @@ export function getTrustBadges(worker: WorkerProfile): TrustBadge[] {
     });
   }
 
+  if (worker.cancellations >= 3) {
+    badges.unshift({
+      label: "Cancelamentos altos",
+      detail: `${worker.cancellations} cancelamentos registrados`,
+      tone: "bg-amber-50 text-amber-700"
+    });
+  }
+
+  if (worker.attendanceRate < 85) {
+    badges.unshift({
+      label: "Presença em atenção",
+      detail: `${worker.attendanceRate}% de comparecimento`,
+      tone: "bg-red-50 text-alert"
+    });
+  }
+
   return badges.slice(0, 4);
 }

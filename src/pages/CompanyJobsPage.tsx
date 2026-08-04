@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { EmptyState } from "../components/EmptyState";
+import { SafetyNotice } from "../components/SafetyNotice";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate } from "../lib/format";
@@ -29,6 +30,7 @@ export function CompanyJobsPage() {
   const { state, currentCompany, updateJobStatus, duplicateJob } = useAppStore();
   const [filter, setFilter] = useState<JobFilter>("Todas");
   const [message, setMessage] = useState("");
+  const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
   const jobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const companyApplications = state.applications.filter((application) => jobs.some((job) => job.id === application.jobId));
   const filteredJobs = useMemo(() => jobs.filter((job) => matchesFilter(job, filter)), [jobs, filter]);
@@ -79,6 +81,13 @@ export function CompanyJobsPage() {
         description="Controle status, candidatos, encerramento, cancelamento, duplicação e histórico."
       />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+      {companyBlocked && (
+        <div className="mb-4">
+          <SafetyNotice title="Vagas em revisão" tone="warning">
+            Sua empresa está em revisão pela administração. Alterações, cancelamentos, reabertura e duplicação ficam pausados até a liberação.
+          </SafetyNotice>
+        </div>
+      )}
       {jobs.length === 0 ? (
         <EmptyState title="Nenhuma vaga publicada" text="Crie uma nova vaga no painel da empresa." />
       ) : (
@@ -179,24 +188,24 @@ export function CompanyJobsPage() {
                       <Link to={`/app/candidatos?vaga=${job.id}`} className="company-action company-action-primary">
                         <ClipboardList size={17} /> Candidatos
                       </Link>
-                      <button type="button" onClick={() => runStatus(job.id, "Concluída")} disabled={terminal} className="company-action company-action-primary">
+                      <button type="button" onClick={() => runStatus(job.id, "Concluída")} disabled={terminal || companyBlocked} className="company-action company-action-primary">
                         <CheckCircle2 size={17} /> Encerrar
                       </button>
-                      <button type="button" onClick={() => runStatus(job.id, "Cancelada")} disabled={terminal} className="company-action company-action-danger">
+                      <button type="button" onClick={() => runStatus(job.id, "Cancelada")} disabled={terminal || companyBlocked} className="company-action company-action-danger">
                         <XCircle size={17} /> Cancelar{filledCancellationFee > 0 ? " (-10 moedas)" : ""}
                       </button>
                       <button
                         type="button"
                         onClick={() => runStatus(job.id, "Publicada")}
-                        disabled={status === "Publicada" || status === "Urgente" || status === "Em andamento"}
+                        disabled={status === "Publicada" || status === "Urgente" || status === "Em andamento" || companyBlocked}
                         className="company-action"
                       >
                         <RotateCcw size={17} /> Reabrir
                       </button>
-                      <button type="button" onClick={() => runDuplicate(job.id)} className="company-action">
+                      <button type="button" onClick={() => runDuplicate(job.id)} disabled={companyBlocked} className="company-action">
                         <Copy size={17} /> Duplicar
                       </button>
-                      <button type="button" onClick={() => runStatus(job.id, "Rascunho")} disabled={status === "Rascunho" || terminal} className="company-action">
+                      <button type="button" onClick={() => runStatus(job.id, "Rascunho")} disabled={status === "Rascunho" || terminal || companyBlocked} className="company-action">
                         <Square size={17} /> Rascunho
                       </button>
                     </div>

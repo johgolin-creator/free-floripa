@@ -3,6 +3,7 @@ import { BriefcaseBusiness, Filter, Heart, MapPin, Search, Star, UserCheck, User
 import { Link } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
+import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { WorkerCard } from "../components/WorkerCard";
 import { functions, neighborhoods } from "../data/demoData";
@@ -25,7 +26,14 @@ export function ProfessionalBankPage() {
   const [visibleCount, setVisibleCount] = useState(WORKERS_PAGE_SIZE);
   const [message, setMessage] = useState("");
 
-  const realWorkers = useMemo(() => state.workers.filter((worker) => !demoWorkerIds.has(worker.id)), [state.workers]);
+  const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
+  const blockedWorkerCount = state.workers.filter(
+    (worker) => !demoWorkerIds.has(worker.id) && state.adminModeration.blockedWorkerIds.includes(worker.id)
+  ).length;
+  const realWorkers = useMemo(
+    () => state.workers.filter((worker) => !demoWorkerIds.has(worker.id) && !state.adminModeration.blockedWorkerIds.includes(worker.id)),
+    [state.adminModeration.blockedWorkerIds, state.workers]
+  );
   const openJobs = state.jobs.filter((job) => job.companyId === currentCompany.id && isJobOpenForApplications(job));
   const favoriteCount = realWorkers.filter((worker) => state.favoriteWorkerIds.includes(worker.id)).length;
   const verifiedCount = realWorkers.filter((worker) => worker.verified).length;
@@ -63,6 +71,14 @@ export function ProfessionalBankPage() {
       />
 
       {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+
+      <SafetyNotice title="Banco protegido" tone={companyBlocked ? "warning" : "info"}>
+        {companyBlocked
+          ? "Sua empresa está em revisão pela administração. Convites ficam pausados até a liberação."
+          : blockedWorkerCount > 0
+            ? `${blockedWorkerCount} perfil em revisão foi removido da busca para proteger suas contratações.`
+            : "Perfis em revisão ficam fora da busca e convites são bloqueados quando houver risco de segurança."}
+      </SafetyNotice>
 
       <section className="grid gap-3 md:grid-cols-3">
         <Metric icon={<UsersRound size={21} />} label="Profissionais disponíveis" value={realWorkers.length} />
@@ -138,7 +154,7 @@ export function ProfessionalBankPage() {
                     <button type="button" onClick={() => toggleFavorite(worker.id)} className="secondary">
                       <Heart size={17} fill={favorite ? "currentColor" : "none"} /> {favorite ? "Remover favorito" : "Salvar favorito"}
                     </button>
-                    <button type="button" onClick={() => setWorkerToInvite(worker)} disabled={openJobs.length === 0} className="primary">
+                    <button type="button" onClick={() => setWorkerToInvite(worker)} disabled={openJobs.length === 0 || companyBlocked} className="primary">
                       <UserCheck size={17} /> Convidar para vaga
                     </button>
                   </div>

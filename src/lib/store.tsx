@@ -760,6 +760,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [authLoading, user?.id, localStorageKey]);
 
   const createJobHandler = (input: CreateJobInput) => {
+    if (state.adminModeration.blockedCompanyIds.includes(currentCompany.id)) {
+      return "";
+    }
+
     const id = crypto.randomUUID();
     const job: Job = {
       id,
@@ -837,6 +841,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       createJob: createJobHandler,
       createCompanySchedule(input) {
+        if (state.adminModeration.blockedCompanyIds.includes(currentCompany.id)) {
+          return "";
+        }
+
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
         const schedule: CompanySchedule = {
@@ -866,6 +874,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return id;
       },
       updateCompanySchedule(scheduleId, input) {
+        if (state.adminModeration.blockedCompanyIds.includes(currentCompany.id)) {
+          return { ok: false, message: "Sua empresa está em revisão pela administração e não pode editar escalas no momento." };
+        }
+
         const exists = (state.companySchedules ?? []).some((schedule) => schedule.id === scheduleId && schedule.companyId === currentCompany.id);
         if (!exists) return { ok: false, message: "Escala não encontrada para esta empresa." };
 
@@ -881,6 +893,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return { ok: true, message: "Escala atualizada." };
       },
       deleteCompanySchedule(scheduleId) {
+        if (state.adminModeration.blockedCompanyIds.includes(currentCompany.id)) {
+          return { ok: false, message: "Sua empresa está em revisão pela administração e não pode excluir escalas no momento." };
+        }
+
         const exists = (state.companySchedules ?? []).some((schedule) => schedule.id === scheduleId && schedule.companyId === currentCompany.id);
         if (!exists) return { ok: false, message: "Escala não encontrada para esta empresa." };
 
@@ -894,6 +910,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateJobStatus(jobId, status) {
         const job = state.jobs.find((item) => item.id === jobId && item.companyId === currentCompany.id);
         if (!job) return { ok: false, message: "Vaga não encontrada para esta empresa." };
+        if (state.adminModeration.blockedCompanyIds.includes(currentCompany.id)) {
+          return { ok: false, message: "Sua empresa está em revisão pela administração e não pode alterar vagas no momento." };
+        }
         const affectedApplications = state.applications.filter((application) => application.jobId === jobId);
         const approvedCount = countApproved(state.applications, jobId);
         const filledCancellationFee = status === "Cancelada" && approvedCount >= job.quantity ? 10 : 0;
@@ -1013,6 +1032,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       duplicateJob(jobId) {
         const job = state.jobs.find((item) => item.id === jobId && item.companyId === currentCompany.id);
         if (!job) return { ok: false, message: "Vaga não encontrada para esta empresa." };
+        if (state.adminModeration.blockedCompanyIds.includes(currentCompany.id)) {
+          return { ok: false, message: "Sua empresa está em revisão pela administração e não pode duplicar vagas no momento." };
+        }
 
         const nextJobId = crypto.randomUUID();
         const duplicated: Job = {
@@ -1097,6 +1119,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (!job) return { ok: false, message: "Vaga não encontrada." };
         const company = state.companies.find((item) => item.id === job.companyId);
         const pendingKey = `${currentWorker.id}:${jobId}`;
+        if (state.adminModeration.blockedWorkerIds.includes(currentWorker.id)) {
+          return { ok: false, message: "Seu perfil está em revisão pela administração e não pode enviar candidaturas no momento." };
+        }
+        if (state.adminModeration.blockedCompanyIds.includes(job.companyId)) {
+          return { ok: false, message: "Esta empresa está em revisão pela administração. A candidatura está bloqueada por segurança." };
+        }
 
         if (!state.subscription.unlockedJobIds.includes(jobId)) {
           return {
@@ -1213,6 +1241,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const job = state.jobs.find((item) => item.id === application.jobId);
         if (!job) return { ok: false, message: "Vaga não encontrada." };
         const worker = state.workers.find((item) => item.id === application.workerId);
+        if (state.adminModeration.blockedCompanyIds.includes(job.companyId)) {
+          return { ok: false, message: "Esta empresa está bloqueada para alterar candidaturas." };
+        }
+        if (state.adminModeration.blockedWorkerIds.includes(application.workerId)) {
+          return { ok: false, message: "Este profissional está em revisão pela administração. A ação foi bloqueada por segurança." };
+        }
 
         if (application.status === status) {
           return { ok: true, message: `Candidatura já está marcada como ${status}.` };
@@ -1338,6 +1372,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (!worker) return { ok: false, message: "Profissional não encontrado." };
         const job = state.jobs.find((item) => item.id === jobId && item.companyId === currentCompany.id);
         if (!job) return { ok: false, message: "Vaga não encontrada para esta empresa." };
+        if (state.adminModeration.blockedCompanyIds.includes(currentCompany.id)) {
+          return { ok: false, message: "Sua empresa está em revisão pela administração e não pode confirmar profissionais no momento." };
+        }
+        if (state.adminModeration.blockedWorkerIds.includes(workerId)) {
+          return { ok: false, message: "Este profissional está em revisão pela administração e não pode ser confirmado no momento." };
+        }
         const existing = state.applications.find((item) => item.jobId === jobId && item.workerId === workerId);
         const approvedCount = state.applications.filter(
           (item) => item.jobId === jobId && item.id !== existing?.id && item.status === "Aprovada"
@@ -1433,6 +1473,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return { ok: true, message: `${worker.name} foi confirmado em ${job.title}.` };
       },
       checkIn(jobId, workerId) {
+        const job = state.jobs.find((item) => item.id === jobId);
+        if (
+          state.adminModeration.blockedWorkerIds.includes(workerId) ||
+          (job && state.adminModeration.blockedCompanyIds.includes(job.companyId))
+        ) {
+          return;
+        }
         const remoteCheckinNotification: AppState["notifications"][number] = {
           id: crypto.randomUUID(),
           title: "O profissional realizou check-in",
@@ -1463,6 +1510,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         publishRemoteNotification(currentCompany.id, remoteCheckinNotification);
       },
       checkOut(jobId, workerId) {
+        const job = state.jobs.find((item) => item.id === jobId);
+        if (
+          state.adminModeration.blockedWorkerIds.includes(workerId) ||
+          (job && state.adminModeration.blockedCompanyIds.includes(job.companyId))
+        ) {
+          return;
+        }
         commit((current) => ({
           ...current,
           shifts: current.shifts.map((shift) =>
@@ -1531,6 +1585,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const worker = state.workers.find((item) => item.id === application.workerId);
         const company = state.companies.find((item) => item.id === job.companyId);
         if (!worker || !company) return { ok: false, message: "Participante da conversa não encontrado." };
+        if (state.adminModeration.blockedWorkerIds.includes(worker.id) || state.adminModeration.blockedCompanyIds.includes(company.id)) {
+          return { ok: false, message: "Esta conversa está bloqueada enquanto um dos perfis passa por revisão de segurança." };
+        }
 
         const allowedStatus = application.status === "Aprovada" || application.status === "Trabalho concluído";
         if (!allowedStatus) return { ok: false, message: "O chat libera somente após a aprovação da candidatura." };

@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { Building2, Edit3, ImageUp, Save, Star } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { AlertTriangle, BadgeCheck, Building2, Edit3, ImageUp, Save, ShieldCheck, Star } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
+import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
@@ -21,10 +22,11 @@ const companyCategories: CompanyProfile["category"][] = [
 ];
 
 export function CompanyProfilePage() {
-  const { currentCompany, updateCompanyProfile } = useAppStore();
+  const { state, currentCompany, updateCompanyProfile } = useAppStore();
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
   const completion = getCompanyProfileCompletion(currentCompany);
+  const blocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
 
   return (
     <div>
@@ -35,6 +37,11 @@ export function CompanyProfilePage() {
       />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       <ProfileCompletionAlert complete={completion.complete} missing={completion.missing} onEdit={() => setEditing(true)} />
+      {blocked && (
+        <SafetyNotice title="Empresa em revisão pela administração" tone="warning">
+          Publicações, aprovações, chat e ações sensíveis podem ficar pausadas até a liberação.
+        </SafetyNotice>
+      )}
       <section className="profile-card">
         <div className="h-36 bg-[url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
         <div className="p-5">
@@ -62,9 +69,28 @@ export function CompanyProfilePage() {
             <Info label="Endereço" value={currentCompany.address} />
             <Info label="Bairro" value={currentCompany.neighborhood} />
           </div>
-          <div className="profile-panel mt-5">
-            <h3 className="font-black text-navy-950">Sobre a empresa</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">{currentCompany.description}</p>
+          <div className="profile-section-grid">
+            <div className="profile-panel">
+              <h3 className="font-black text-navy-950">Sobre a empresa</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{currentCompany.description}</p>
+            </div>
+            <div className="profile-panel">
+              <h3 className="font-black text-navy-950">Validação e segurança</h3>
+              <div className="mt-3 grid gap-2">
+                <ValidationRow
+                  icon={blocked ? <AlertTriangle size={16} /> : <ShieldCheck size={16} />}
+                  title={blocked ? "Conta em revisão" : completion.complete ? "Cadastro operacional completo" : "Cadastro pendente"}
+                  text={blocked ? "A administração pausou ações sensíveis desta empresa." : completion.complete ? "Dados principais preenchidos para publicar vagas com mais confiança." : "Complete os dados obrigatórios para transmitir mais segurança."}
+                  tone={blocked ? "warning" : completion.complete ? "success" : "neutral"}
+                />
+                <ValidationRow
+                  icon={<BadgeCheck size={16} />}
+                  title="Reputação da empresa"
+                  text={`${currentCompany.rating.toFixed(1)} de avaliação. Mantenha informações de vaga, horário e pagamento sempre atualizadas.`}
+                  tone={currentCompany.rating >= 4.5 ? "success" : "neutral"}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -170,6 +196,35 @@ function Info({ label, value }: { label: string; value: string }) {
     <div className="profile-info-tile">
       <span className="text-xs font-black uppercase text-slate-500">{label}</span>
       <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
+    </div>
+  );
+}
+
+function ValidationRow({
+  icon,
+  title,
+  text,
+  tone
+}: {
+  icon: ReactNode;
+  title: string;
+  text: string;
+  tone: "success" | "warning" | "neutral";
+}) {
+  const toneClass =
+    tone === "success"
+      ? "border-aqua-100 bg-aqua-50 text-aqua-700"
+      : tone === "warning"
+        ? "border-amber-200 bg-amber-50 text-amber-800"
+        : "border-slate-200 bg-slate-50 text-slate-600";
+
+  return (
+    <div className={`grid gap-2 rounded-lg border p-3 sm:grid-cols-[auto_1fr] ${toneClass}`}>
+      <span className="mt-0.5">{icon}</span>
+      <div>
+        <strong className="block text-sm text-navy-950">{title}</strong>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{text}</p>
+      </div>
     </div>
   );
 }
