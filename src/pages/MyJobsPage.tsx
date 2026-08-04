@@ -69,6 +69,20 @@ export function MyJobsPage() {
     if (tab === "Concluídos") return item.application.status === "Trabalho concluído" || item.shift?.status === "Finalizou o turno";
     return item.application.status === "Cancelada" || item.application.status === "Falta registrada";
   });
+  const actionItems = workItems
+    .filter(
+      (item) =>
+        item.shift?.status === "Fez check-in" ||
+        item.shift?.status === "Finalizou o turno" ||
+        (item.application.status === "Aprovada" && item.shift?.status === "Ainda não chegou")
+    )
+    .sort((a, b) => {
+      const priorityA = getActionPriority(a.application, a.shift);
+      const priorityB = getActionPriority(b.application, b.shift);
+      if (priorityA !== priorityB) return priorityA - priorityB;
+      return `${a.job.date} ${a.job.startsAt}`.localeCompare(`${b.job.date} ${b.job.startsAt}`);
+    })
+    .slice(0, 3);
   const agendaStats = {
     next: workItems.filter((item) => item.application.status === "Aprovada" && item.shift?.status === "Ainda não chegou").length,
     active: workItems.filter((item) => item.shift?.status === "Fez check-in").length,
@@ -122,6 +136,64 @@ export function MyJobsPage() {
       <SafetyNotice title="Presença segura">
         Faça check-in somente ao chegar no local combinado e registre o check-out no fim do turno. Use o chat para manter endereço, uniforme e pagamento documentados.
       </SafetyNotice>
+
+      {actionItems.length > 0 && (
+        <section className="candidate-selector-panel mb-4 border-aqua-200 bg-aqua-50/70">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+              <Clock size={18} /> Ações rápidas
+            </div>
+            <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
+              Atalhos para os turnos que precisam de check-in, check-out ou acompanhamento imediato.
+            </p>
+          </div>
+          <div className="grid gap-2 md:grid-cols-3">
+            {actionItems.map((item) => {
+              const { application, job, shift } = item;
+              const company = state.companies.find((companyItem) => companyItem.id === job.companyId);
+              const checkedIn = shift?.status === "Fez check-in";
+              const waiting = application.status === "Aprovada" && shift?.status === "Ainda não chegou";
+              const blockedAction =
+                state.adminModeration.blockedWorkerIds.includes(currentWorker.id) ||
+                state.adminModeration.blockedCompanyIds.includes(job.companyId);
+
+              return (
+                <article key={application.id} className="rounded-lg border border-white bg-white p-3 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <strong className="block truncate text-sm text-navy-950">{job.title}</strong>
+                      <p className="mt-1 truncate text-xs font-bold text-slate-500">
+                        {company?.establishmentName ?? "Empresa"} - {formatDate(job.date)} - {job.startsAt}
+                      </p>
+                      <span className={getStatusClass(application, shift)}>{getWorkStatus(application, shift)}</span>
+                    </div>
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-navy-950 text-aqua-300">
+                      {checkedIn ? <LogOut size={17} /> : <LogIn size={17} />}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-2">
+                    {waiting && (
+                      <button type="button" onClick={() => doCheckIn(item)} disabled={blockedAction} className="primary w-full">
+                        <LogIn size={17} /> Fazer check-in
+                      </button>
+                    )}
+                    {checkedIn && (
+                      <button type="button" onClick={() => doCheckOut(item)} disabled={blockedAction} className="primary w-full">
+                        <LogOut size={17} /> Fazer check-out
+                      </button>
+                    )}
+                    {!waiting && !checkedIn && (
+                      <button type="button" onClick={() => setSelectedItem(item)} className="secondary w-full">
+                        <Clock size={17} /> Ver detalhes
+                      </button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <div className="worker-filter-buttons mb-4">
         {tabs.map((item) => (
@@ -338,6 +410,13 @@ function getGuidance(application: Application, shift: WorkShift | undefined) {
   if (shift?.status === "Finalizou o turno") return "Check-out feito. Aguarde a conclusão da empresa.";
   if (shift?.status === "Fez check-in") return "Turno em andamento. Faça check-out ao finalizar.";
   return "Turno confirmado. No dia combinado, registre o check-in.";
+}
+
+function getActionPriority(application: Application, shift: WorkShift | undefined) {
+  if (shift?.status === "Fez check-in") return 1;
+  if (shift?.status === "Finalizou o turno") return 2;
+  if (application.status === "Aprovada") return 3;
+  return 4;
 }
 
 function getStatusClass(application: Application, shift: WorkShift | undefined) {
