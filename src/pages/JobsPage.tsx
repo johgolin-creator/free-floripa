@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { BriefcaseBusiness, CalendarDays, Filter, Lock, MapPin, RotateCcw, Search, Star, WalletCards, Zap } from "lucide-react";
+import { BriefcaseBusiness, CalendarDays, Filter, Lock, MapPin, RotateCcw, Search, ShieldCheck, Star, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { JobCard } from "../components/JobCard";
@@ -7,7 +7,7 @@ import { SectionHeader } from "../components/SectionHeader";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 import { getFunctionExperience, isJobOpenForApplications } from "../lib/rules";
-import type { Job, JobFunction, Neighborhood, WorkerProfile } from "../lib/types";
+import type { AppState, Job, JobFunction, Neighborhood, WorkerProfile } from "../lib/types";
 
 type SortOption = "Melhor combinação" | "Mais recentes" | "Maior diária" | "Mais próximas" | "Urgentes";
 
@@ -23,6 +23,7 @@ export function JobsPage() {
   const [experienceFilter, setExperienceFilter] = useState("");
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [compatibleOnly, setCompatibleOnly] = useState(false);
+  const [trustedCompaniesOnly, setTrustedCompaniesOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("Melhor combinação");
   const [visibleCount, setVisibleCount] = useState(JOBS_PAGE_SIZE);
   const hasCoins = state.subscription.creditsRemaining > 0;
@@ -44,7 +45,8 @@ export function JobsPage() {
         const byExperience = !experience || normalizeSearch(job.job.requiredExperience).includes(experience);
         const byUrgency = !urgentOnly || job.job.urgent;
         const byCompatibility = !compatibleOnly || job.match.compatible;
-        return byFunction && byNeighborhood && byDate && byValue && byExperience && byUrgency && byCompatibility;
+        const byTrustedCompany = !trustedCompaniesOnly || isTrustedCompanyJob(job.job, state);
+        return byFunction && byNeighborhood && byDate && byValue && byExperience && byUrgency && byCompatibility && byTrustedCompany;
       })
       .sort((a, b) => {
         if (sortBy === "Maior diária") return b.job.dailyValue - a.job.dailyValue;
@@ -59,7 +61,7 @@ export function JobsPage() {
         }
         return `${a.job.date} ${a.job.startsAt}`.localeCompare(`${b.job.date} ${b.job.startsAt}`);
       });
-  }, [state.jobs, currentWorker, functionFilter, neighborhoodFilter, dateFilter, minValue, experienceFilter, urgentOnly, compatibleOnly, sortBy]);
+  }, [state, state.jobs, currentWorker, functionFilter, neighborhoodFilter, dateFilter, minValue, experienceFilter, urgentOnly, compatibleOnly, trustedCompaniesOnly, sortBy]);
 
   const filteredJobs = scoredJobs.map((item) => item.job);
   const visibleScoredJobs = scoredJobs.slice(0, visibleCount);
@@ -69,7 +71,7 @@ export function JobsPage() {
     open: openJobs.length,
     compatible: openJobs.filter((job) => getJobMatch(job, currentWorker).compatible).length,
     urgent: openJobs.filter((job) => job.urgent).length,
-    bestDaily: openJobs.reduce((max, job) => Math.max(max, job.dailyValue), 0)
+    trusted: openJobs.filter((job) => isTrustedCompanyJob(job, state)).length
   };
 
   const activeFilters = [
@@ -80,12 +82,13 @@ export function JobsPage() {
     experienceFilter.trim() && `Experiência: ${experienceFilter.trim()}`,
     urgentOnly && "Somente urgentes",
     compatibleOnly && "Boa combinação",
+    trustedCompaniesOnly && "Empresas confiáveis",
     sortBy !== "Melhor combinação" && `Ordem: ${sortBy}`
   ].filter((item): item is string => Boolean(item));
 
   useEffect(() => {
     setVisibleCount(JOBS_PAGE_SIZE);
-  }, [functionFilter, neighborhoodFilter, dateFilter, minValue, experienceFilter, urgentOnly, compatibleOnly, sortBy]);
+  }, [functionFilter, neighborhoodFilter, dateFilter, minValue, experienceFilter, urgentOnly, compatibleOnly, trustedCompaniesOnly, sortBy]);
 
   function clearFilters() {
     setFunctionFilter("Todas");
@@ -95,6 +98,7 @@ export function JobsPage() {
     setExperienceFilter("");
     setUrgentOnly(false);
     setCompatibleOnly(false);
+    setTrustedCompaniesOnly(false);
     setSortBy("Melhor combinação");
   }
 
@@ -118,7 +122,7 @@ export function JobsPage() {
           <HeroMetric icon={<BriefcaseBusiness size={19} />} label="abertas" value={String(dashboard.open)} />
           <HeroMetric icon={<Star size={19} />} label="boas combinações" value={String(dashboard.compatible)} />
           <HeroMetric icon={<Zap size={19} />} label="urgentes" value={String(dashboard.urgent)} />
-          <HeroMetric icon={<WalletCards size={19} />} label="maior diária" value={dashboard.bestDaily > 0 ? `R$ ${dashboard.bestDaily}` : "R$ 0"} />
+          <HeroMetric icon={<ShieldCheck size={19} />} label="empresas confiáveis" value={String(dashboard.trusted)} />
         </div>
       </section>
 
@@ -203,6 +207,10 @@ export function JobsPage() {
           <input type="checkbox" checked={compatibleOnly} onChange={(event) => setCompatibleOnly(event.target.checked)} className="h-5 w-5 accent-aqua-500" />
           Mostrar apenas boa combinação
         </label>
+        <label className="flex min-h-11 items-center gap-2 text-sm font-bold text-slate-600 md:col-span-2">
+          <input type="checkbox" checked={trustedCompaniesOnly} onChange={(event) => setTrustedCompaniesOnly(event.target.checked)} className="h-5 w-5 accent-aqua-500" />
+          Mostrar apenas empresas com boa reputação
+        </label>
         <div className="flex flex-wrap items-center gap-2 md:col-span-2 md:justify-end">
           <button type="button" onClick={clearFilters} className="secondary">
             <RotateCcw size={17} /> Limpar
@@ -275,6 +283,18 @@ function getJobMatch(job: Job, worker: WorkerProfile) {
   if (score >= 80) return { compatible: true, score, label: "Ótima combinação" };
   if (score >= 62) return { compatible: true, score, label: "Boa combinação" };
   return { compatible: true, score, label: "Compatível" };
+}
+
+function isTrustedCompanyJob(job: Job, state: AppState) {
+  const company = state.companies.find((item) => item.id === job.companyId);
+  const hasOpenReport = state.trustReports.some(
+    (report) =>
+      report.status === "Aberto" &&
+      ((report.targetType === "company" && report.targetId === job.companyId) ||
+        (report.targetType === "job" && report.targetId === job.id))
+  );
+
+  return Boolean(company && company.rating >= 4.5 && !hasOpenReport);
 }
 
 function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
