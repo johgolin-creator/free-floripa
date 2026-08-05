@@ -54,6 +54,12 @@ type ReceiptTarget = {
   shift?: WorkShift;
 };
 
+type EventCandidateOption = {
+  key: string;
+  name: string;
+  jobs: Job[];
+};
+
 export function CandidatesPage() {
   const { state, currentCompany, toggleFavorite, updateApplicationStatus, checkIn, checkOut, addReview } = useAppStore();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -66,10 +72,16 @@ export function CandidatesPage() {
   const [candidateStatusFilter, setCandidateStatusFilter] = useState<CandidateStatusFilter>("Todos");
   const [trustedCandidatesOnly, setTrustedCandidatesOnly] = useState(false);
   const companyJobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
-  const selectedJobId = searchParams.get("vaga") || companyJobs[0]?.id || "";
+  const eventOptions = useMemo(() => getEventCandidateOptions(companyJobs), [companyJobs]);
+  const selectedEventKey = searchParams.get("evento") || "";
+  const selectedEvent = eventOptions.find((eventOption) => eventOption.key === selectedEventKey);
+  const selectedJobId = selectedEvent ? "" : searchParams.get("vaga") || companyJobs[0]?.id || "";
   const selectedJob = companyJobs.find((job) => job.id === selectedJobId) ?? companyJobs[0];
+  const selectedJobs = selectedEvent ? selectedEvent.jobs : selectedJob ? [selectedJob] : [];
+  const selectedJobIds = new Set(selectedJobs.map((job) => job.id));
+  const selectedControlValue = selectedEvent ? `event:${selectedEvent.key}` : selectedJob?.id ?? "";
   const applications = state.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId));
-  const selectedApplications = selectedJob ? applications.filter((application) => application.jobId === selectedJob.id) : [];
+  const selectedApplications = selectedJobs.length > 0 ? applications.filter((application) => selectedJobIds.has(application.jobId)) : [];
   const visibleApplications = useMemo(
     () =>
       selectedApplications
@@ -89,7 +101,8 @@ export function CandidatesPage() {
         }),
     [candidateStatusFilter, selectedApplications, state, trustedCandidatesOnly]
   );
-  const stats = useMemo(() => getJobStats(selectedJob, selectedApplications), [selectedApplications, selectedJob]);
+  const stats = useMemo(() => getJobStats(selectedApplications), [selectedApplications]);
+  const selectedCapacity = useMemo(() => getSelectedCapacity(selectedJobs), [selectedJobs]);
   const generalStats = useMemo(() => getCompanyCandidateStats(applications), [applications]);
   const pendingReviews = useMemo(
     () => getPendingReviews(applications, state.jobs, state.workers),
@@ -97,10 +110,14 @@ export function CandidatesPage() {
   );
 
   useEffect(() => {
-    if (companyJobs.length > 0 && !companyJobs.some((job) => job.id === selectedJobId)) {
+    if (selectedEventKey && !selectedEvent) {
+      setSearchParams({ vaga: companyJobs[0]?.id ?? "" }, { replace: true });
+      return;
+    }
+    if (!selectedEventKey && companyJobs.length > 0 && !companyJobs.some((job) => job.id === selectedJobId)) {
       setSearchParams({ vaga: companyJobs[0].id }, { replace: true });
     }
-  }, [companyJobs, selectedJobId, setSearchParams]);
+  }, [companyJobs, selectedEvent, selectedEventKey, selectedJobId, setSearchParams]);
 
   function runStatus(applicationId: string, status: Application["status"]) {
     const result = updateApplicationStatus(applicationId, status);
@@ -211,25 +228,43 @@ export function CandidatesPage() {
               Vaga
               <select
                 className="input"
-                value={selectedJob?.id ?? ""}
-                onChange={(event) => setSearchParams({ vaga: event.target.value })}
+                value={selectedControlValue}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  if (value.startsWith("event:")) {
+                    setSearchParams({ evento: value.slice(6) });
+                    return;
+                  }
+                  setSearchParams({ vaga: value });
+                }}
               >
+                {eventOptions.length > 0 && (
+                  <optgroup label="Pacotes de evento">
+                    {eventOptions.map((eventOption) => (
+                      <option key={eventOption.key} value={`event:${eventOption.key}`}>
+                        {eventOption.name} - {eventOption.jobs.length} vagas do pacote
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                <optgroup label="Vagas individuais">
                 {companyJobs.map((job) => (
                   <option key={job.id} value={job.id}>
                     {job.title} - {formatDate(job.date)} - {job.candidates} candidato{job.candidates === 1 ? "" : "s"}
                   </option>
                 ))}
+                </optgroup>
               </select>
             </label>
-            {selectedJob && (
+            {selectedJobs.length > 0 && (
               <div className="candidate-stat-grid">
                 <Stat label="candidatos" value={String(stats.total)} />
                 <Stat label="em análise" value={String(stats.pending)} />
-                <Stat label="confirmados" value={`${selectedJob.filled}/${selectedJob.quantity}`} />
-                <Stat label="vagas abertas" value={String(getOpenSlots(selectedJob))} />
+                <Stat label="confirmados" value={`${selectedCapacity.filled}/${selectedCapacity.quantity}`} />
+                <Stat label="vagas abertas" value={String(selectedCapacity.openSlots)} />
               </div>
             )}
-            {selectedJob && (
+            {selectedJobs.length > 0 && (
               <div className="grid gap-3 md:grid-cols-[1fr_auto]">
                 <label className="label">
                   Filtrar candidatos
@@ -256,18 +291,24 @@ export function CandidatesPage() {
             )}
           </section>
 
-          {selectedJob && (
+          {selectedJobs.length > 0 && (
             <section className="candidate-job-summary">
               <div className="candidate-job-main">
                 <div>
                   <div className="mb-2 flex flex-wrap gap-2">
-                    {selectedJob.urgent && <UrgentBadge />}
-                    <span className="badge">{selectedJob.function}</span>
-                    <span className="badge">{formatCurrency(selectedJob.dailyValue)}</span>
+                    {!selectedEvent && selectedJob?.urgent && <UrgentBadge />}
+                    <span className="badge">{selectedEvent ? "Pacote de evento" : selectedJob?.function}</span>
+                    <span className="badge">
+                      {selectedEvent ? `${selectedJobs.length} vagas` : formatCurrency(selectedJob?.dailyValue ?? 0)}
+                    </span>
                   </div>
-                  <h3 className="text-lg font-black text-navy-950">{selectedJob.title}</h3>
+                  <h3 className="text-lg font-black text-navy-950">{selectedEvent ? selectedEvent.name : selectedJob?.title}</h3>
                   <p className="text-sm font-semibold text-slate-600">
-                    {selectedJob.neighborhood} - {formatDate(selectedJob.date)} - {selectedJob.startsAt} até {selectedJob.endsAt}
+                    {selectedEvent && selectedJobs[0]
+                      ? `${selectedJobs[0].neighborhood} - ${formatDate(selectedJobs[0].date)} - ${selectedJobs[0].startsAt} até ${selectedJobs[0].endsAt}`
+                      : selectedJob
+                        ? `${selectedJob.neighborhood} - ${formatDate(selectedJob.date)} - ${selectedJob.startsAt} até ${selectedJob.endsAt}`
+                        : ""}
                   </p>
                 </div>
                 <div className="candidate-job-result">
@@ -284,33 +325,37 @@ export function CandidatesPage() {
             Antes de aprovar, confira experiência, comparecimento, cancelamentos e avaliações. O contato do profissional só é liberado depois da confirmação.
           </SafetyNotice>
 
-          {!selectedJob || selectedApplications.length === 0 ? (
-            <EmptyState title="Nenhum candidato nesta vaga" text="Quando alguém se candidatar, os dados aparecerão aqui com ações de aprovação." />
+          {selectedJobs.length === 0 || selectedApplications.length === 0 ? (
+            <EmptyState
+              title={selectedEvent ? "Nenhum candidato neste evento" : "Nenhum candidato nesta vaga"}
+              text="Quando alguém se candidatar, os dados aparecerão aqui com ações de aprovação."
+            />
           ) : visibleApplications.length === 0 ? (
-            <EmptyState title="Nenhum candidato neste filtro" text="Altere o status ou desmarque somente confiáveis para ver mais candidatos desta vaga." />
+            <EmptyState title="Nenhum candidato neste filtro" text="Altere o status ou desmarque somente confiáveis para ver mais candidatos." />
           ) : (
             <div className="grid gap-3">
               {visibleApplications.map((application) => {
                 const worker = state.workers.find((item) => item.id === application.workerId);
-                if (!worker || !selectedJob) return null;
-                const shift = state.shifts.find((item) => item.jobId === selectedJob.id && item.workerId === worker.id);
+                const jobForApplication = companyJobs.find((job) => job.id === application.jobId);
+                if (!worker || !jobForApplication) return null;
+                const shift = state.shifts.find((item) => item.jobId === jobForApplication.id && item.workerId === worker.id);
                 const favorite = state.favoriteWorkerIds.includes(worker.id);
                 const approved = application.status === "Aprovada";
                 const completed = application.status === "Trabalho concluído";
                 const reviewed = worker.reviews.some(
-                  (review) => review.jobId === selectedJob.id && review.applicationId === application.id
+                  (review) => review.jobId === jobForApplication.id && review.applicationId === application.id
                 );
                 const contactUnlocked = approved || completed;
                 const refused = terminalStatuses.includes(application.status) && !approved;
-                const noSlots = getOpenSlots(selectedJob) === 0 && !approved && !completed;
+                const noSlots = getOpenSlots(jobForApplication) === 0 && !approved && !completed;
                 const workerBlocked = state.adminModeration.blockedWorkerIds.includes(worker.id);
                 const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
                 const blockedAction = workerBlocked || companyBlocked;
-                const verificationCode = getShiftVerificationCode(selectedJob.id, worker.id);
+                const verificationCode = getShiftVerificationCode(jobForApplication.id, worker.id);
 
                 return (
                   <article key={application.id} className="candidate-card">
-                    <WorkerCard worker={worker} functionFocus={selectedJob.function} showActions={false} />
+                    <WorkerCard worker={worker} functionFocus={jobForApplication.function} showActions={false} />
                     <div className="candidate-control-panel">
                       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                         <div className="flex flex-wrap gap-2">
@@ -362,7 +407,7 @@ export function CandidatesPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            checkIn(selectedJob.id, worker.id);
+                            checkIn(jobForApplication.id, worker.id);
                             setMessage(`Check-in registrado para ${worker.name}.`);
                           }}
                           disabled={blockedAction || !approved || shift?.status !== "Ainda não chegou"}
@@ -373,7 +418,7 @@ export function CandidatesPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            checkOut(selectedJob.id, worker.id);
+                            checkOut(jobForApplication.id, worker.id);
                             runStatus(application.id, "Trabalho concluído");
                           }}
                           disabled={blockedAction || !approved || shift?.status !== "Fez check-in"}
@@ -402,7 +447,7 @@ export function CandidatesPage() {
                           </div>
                           <a
                             className="primary"
-                            href={getWhatsAppUrl(worker.phone, `Olá, ${worker.name}. Sua vaga ${selectedJob.title} no ${currentCompany.establishmentName} foi aprovada.`)}
+                            href={getWhatsAppUrl(worker.phone, `Olá, ${worker.name}. Sua vaga ${jobForApplication.title} no ${currentCompany.establishmentName} foi aprovada.`)}
                             target="_blank"
                             rel="noreferrer"
                           >
@@ -429,7 +474,7 @@ export function CandidatesPage() {
                           </div>
                           <button
                             type="button"
-                            onClick={() => openReview(application, selectedJob, worker.id, worker.name)}
+                            onClick={() => openReview(application, jobForApplication, worker.id, worker.name)}
                             disabled={reviewed}
                             className={reviewed ? "secondary" : "primary"}
                           >
@@ -437,7 +482,7 @@ export function CandidatesPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setReceiptTarget({ application, job: selectedJob, worker, shift })}
+                            onClick={() => setReceiptTarget({ application, job: jobForApplication, worker, shift })}
                             className="secondary"
                           >
                             <ClipboardCheck size={17} /> Comprovante
@@ -508,14 +553,51 @@ export function CandidatesPage() {
   );
 }
 
-function getJobStats(job: Job | undefined, applications: Application[]) {
-  if (!job) return { total: 0, pending: 0, completed: 0, noShow: 0 };
+function getJobStats(applications: Application[]) {
   return {
     total: applications.length,
     pending: applications.filter((item) => item.status === "Enviada" || item.status === "Em análise").length,
     completed: applications.filter((item) => item.status === "Trabalho concluído").length,
     noShow: applications.filter((item) => item.status === "Falta registrada").length
   };
+}
+
+function getSelectedCapacity(jobs: Job[]) {
+  return jobs.reduce(
+    (total, job) => ({
+      quantity: total.quantity + job.quantity,
+      filled: total.filled + job.filled,
+      openSlots: total.openSlots + getOpenSlots(job)
+    }),
+    { quantity: 0, filled: 0, openSlots: 0 }
+  );
+}
+
+function getEventCandidateOptions(jobs: Job[]): EventCandidateOption[] {
+  const groups = new Map<string, EventCandidateOption>();
+
+  jobs.forEach((job) => {
+    const eventName = getEventPackageName(job);
+    if (!eventName) return;
+
+    const key = getEventPackageKey(job, eventName);
+    const current = groups.get(key) ?? { key, name: eventName, jobs: [] };
+    current.jobs.push(job);
+    groups.set(key, current);
+  });
+
+  return Array.from(groups.values()).sort((a, b) => b.jobs[0].date.localeCompare(a.jobs[0].date));
+}
+
+function getEventPackageName(job: Job) {
+  if (!job.description.includes("Equipe criada pela aba Eventos")) return null;
+  const separatorIndex = job.title.indexOf(":");
+  if (separatorIndex <= 0) return null;
+  return job.title.slice(0, separatorIndex).trim();
+}
+
+function getEventPackageKey(job: Job, eventName = getEventPackageName(job)) {
+  return eventName ? `${eventName}|${job.date}|${job.startsAt}|${job.endsAt}` : "";
 }
 
 function getCompanyCandidateStats(applications: Application[]) {

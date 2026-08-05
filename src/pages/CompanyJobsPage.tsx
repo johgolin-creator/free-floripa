@@ -184,7 +184,7 @@ export function CompanyJobsPage() {
                         </span>
                       ))}
                     </div>
-                    <Link to={`/app/candidatos?vaga=${eventPackage.jobs[0]?.id ?? ""}`} className="company-action company-action-primary">
+                    <Link to={`/app/candidatos?evento=${encodeURIComponent(eventPackage.key)}`} className="company-action company-action-primary">
                       <ClipboardList size={17} /> Ver candidatos do pacote
                     </Link>
                   </article>

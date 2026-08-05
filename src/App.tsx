@@ -93,6 +93,11 @@ function PageLoading() {
 
 function RoleRoute({ role, children }: { role: UserRole; children: ReactNode }) {
   const { state } = useAppStore();
+  const { authEnabled, role: authRole } = useAuth();
+  if (authEnabled && authRole && authRole !== role) {
+    return <Navigate to={authRole === "empresa" ? "/app/empresa" : "/app/trabalhador"} replace />;
+  }
+
   if (state.activeRole !== role) {
     return <Navigate to={state.activeRole === "empresa" ? "/app/empresa" : "/app/trabalhador"} replace />;
   }

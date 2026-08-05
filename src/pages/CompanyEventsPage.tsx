@@ -195,7 +195,7 @@ export function CompanyEventsPage() {
       <SafetyNotice title="Evento protegido" tone={companyBlocked ? "warning" : "info"}>
         {companyBlocked
           ? "Criação de vagas de evento está pausada enquanto a administração revisa sua empresa."
-          : "Perfis em revisao nao entram nas sugestoes do evento, mantendo a selecao mais segura para sua equipe."}
+          : "Perfis em revisão não entram nas sugestões do evento, mantendo a seleção mais segura para sua equipe."}
       </SafetyNotice>
 
       <section className="event-builder-grid">
@@ -235,11 +235,11 @@ export function CompanyEventsPage() {
               <input value={guests} onChange={(event) => setGuests(Number(event.target.value || 0))} className="input" min={1} type="number" />
             </label>
             <label className="label">
-              Inicio
+              Início
               <input value={startsAt} onChange={(event) => setStartsAt(event.target.value)} className="input" type="time" />
             </label>
             <label className="label">
-              Termino
+              Término
               <input value={endsAt} onChange={(event) => setEndsAt(event.target.value)} className="input" type="time" />
             </label>
             <label className="label">
@@ -368,7 +368,7 @@ export function CompanyEventsPage() {
         <div className="grid gap-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="section-eyebrow">Disponiveis</p>
+              <p className="section-eyebrow">Disponíveis</p>
               <h3 className="text-xl font-black text-navy-950">{selectedFunction}</h3>
             </div>
             <p className="flex items-center gap-1.5 text-sm font-bold text-slate-600">
@@ -416,7 +416,7 @@ function WorkerOption({ worker, functionFocus }: { worker: WorkerProfile; functi
         </span>
         <span className="metric-tile bg-aqua-50">
           <strong className="block text-navy-950">{reliability}%</strong>
-          <span className="text-slate-600">confiavel</span>
+          <span className="text-slate-600">confiável</span>
         </span>
       </div>
     </div>
