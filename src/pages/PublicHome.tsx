@@ -2,9 +2,15 @@ import {
   ArrowRight,
   BadgeCheck,
   BriefcaseBusiness,
+  CalendarDays,
   CheckCircle2,
   ClipboardCheck,
+  Coins,
+  Flame,
+  Heart,
   LogIn,
+  MapPin,
+  PartyPopper,
   ShieldCheck,
   Smartphone,
   UsersRound,
@@ -64,9 +70,9 @@ export function PublicHome() {
             className="hero-bg absolute inset-0 h-full w-full object-cover opacity-40"
           />
           <div className="hero-overlay absolute inset-0" />
-          <div className="hero-content relative mx-auto grid min-h-[560px] max-w-7xl content-center gap-5 px-4 py-10">
-            <img src={logoUrl} alt="Free Floripa" className="hero-brand-logo" />
+          <div className="hero-content public-hero-content relative mx-auto grid min-h-[620px] max-w-7xl content-center gap-8 px-4 py-10">
             <div className="hero-text max-w-4xl">
+              <img src={logoUrl} alt="Free Floripa" className="hero-brand-logo" />
               <div className="hero-badge mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-sm font-black text-aqua-100 shadow-soft backdrop-blur">
                 <Waves size={17} /> Florianópolis pronta para turnos, diárias e eventos
               </div>
@@ -88,6 +94,12 @@ export function PublicHome() {
                   Quero trabalhar
                 </Link>
               </div>
+            </div>
+            <div className="phone-showcase" aria-label="Previa do aplicativo Free Floripa">
+              <PhoneMockup title="Free Floripa" eyebrow="Ola, Gabriela!" variant="worker" />
+              <PhoneMockup title="Beach Club Jurere" eyebrow="Vaga urgente" variant="job" featured />
+              <PhoneMockup title="Painel da empresa" eyebrow="Beach Club Jurere" variant="company" />
+              <PhoneMockup title="Criar evento" eyebrow="Casamento" variant="event" />
             </div>
           </div>
         </section>
@@ -249,6 +261,84 @@ function Metric({ value, label }: { value: string; label: string }) {
       <strong className="block text-2xl font-black text-navy-950">{value}</strong>
       <span className="mt-1 block text-sm font-black text-aqua-700">{label}</span>
     </div>
+  );
+}
+
+function PhoneMockup({
+  title,
+  eyebrow,
+  variant,
+  featured = false
+}: {
+  title: string;
+  eyebrow: string;
+  variant: "worker" | "job" | "company" | "event";
+  featured?: boolean;
+}) {
+  return (
+    <article className={`phone-mockup ${featured ? "is-featured" : ""}`}>
+      <div className="phone-status">
+        <span>9:41</span>
+        <span>•••</span>
+      </div>
+      <div className="phone-app-head">
+        <span>{eyebrow}</span>
+        {variant === "job" ? <Heart size={16} /> : <BadgeCheck size={16} />}
+      </div>
+      <h3>{title}</h3>
+      {variant === "worker" && (
+        <>
+          <div className="phone-search">Buscar vagas, locais ou empresas</div>
+          <div className="phone-category-row">
+            {["Garçom", "Bartender", "Limpeza", "Recepção"].map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
+          <div className="phone-job-card">
+            <strong><Flame size={14} /> Beach Club Jurerê</strong>
+            <small>Garçom • Hoje • R$ 180,00</small>
+          </div>
+        </>
+      )}
+      {variant === "job" && (
+        <>
+          <div className="phone-cover" />
+          <div className="phone-detail-list">
+            <span><CalendarDays size={14} /> Hoje, 18/05</span>
+            <span><MapPin size={14} /> Jurerê Internacional</span>
+            <span><UsersRound size={14} /> 6 vagas</span>
+          </div>
+          <button type="button">Candidatar-se</button>
+        </>
+      )}
+      {variant === "company" && (
+        <>
+          <div className="phone-metric-grid">
+            <span><strong>8</strong> vagas abertas</span>
+            <span><strong>24</strong> equipe</span>
+            <span><strong>56</strong> candidatos</span>
+            <span><strong>1.250</strong> moedas</span>
+          </div>
+          <button type="button">+ Criar vaga</button>
+        </>
+      )}
+      {variant === "event" && (
+        <>
+          <div className="phone-step-row">
+            {[1, 2, 3, 4].map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
+          <div className="phone-event-card">
+            <PartyPopper size={18} />
+            <strong>Casamento</strong>
+            <small>Equipe sugerida: 12 profissionais</small>
+          </div>
+          <div className="phone-price"><Coins size={16} /> R$ 2.850 - 3.450</div>
+          <button type="button">Criar evento</button>
+        </>
+      )}
+    </article>
   );
 }
 

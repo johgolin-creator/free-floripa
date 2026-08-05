@@ -209,6 +209,128 @@ a {
   @apply mt-6 grid gap-3 sm:flex;
 }
 
+.public-hero-content {
+  @apply lg:grid-cols-[0.9fr_1.1fr] lg:items-center;
+}
+
+.phone-showcase {
+  @apply grid grid-cols-2 items-end gap-3 sm:grid-cols-4 lg:min-h-[520px];
+}
+
+.phone-mockup {
+  @apply relative grid min-h-[330px] content-start gap-3 overflow-hidden rounded-[2rem] border-[7px] border-slate-950 bg-white p-3 text-navy-950 shadow-lift ring-1 ring-white/20;
+}
+
+.phone-mockup::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  width: 42%;
+  height: 4px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(8, 38, 61, 0.18);
+}
+
+.phone-mockup.is-featured {
+  @apply -translate-y-5;
+}
+
+.phone-status {
+  @apply flex items-center justify-between text-[0.62rem] font-black text-slate-500;
+}
+
+.phone-app-head {
+  @apply flex min-h-9 items-center justify-between rounded-lg bg-navy-950 px-2.5 text-xs font-black text-white;
+}
+
+.phone-app-head svg {
+  @apply text-aqua-300;
+}
+
+.phone-mockup h3 {
+  @apply text-base font-black leading-tight text-navy-950;
+}
+
+.phone-search {
+  @apply rounded-lg bg-slate-100 px-3 py-2 text-[0.68rem] font-bold text-slate-500;
+}
+
+.phone-category-row {
+  @apply grid grid-cols-2 gap-2;
+}
+
+.phone-category-row span {
+  @apply rounded-lg border border-slate-100 bg-slate-50 p-2 text-center text-[0.62rem] font-black text-navy-950;
+}
+
+.phone-job-card,
+.phone-event-card {
+  @apply grid gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm shadow-sm;
+}
+
+.phone-job-card strong,
+.phone-event-card strong {
+  @apply inline-flex items-center gap-1.5 font-black text-navy-950;
+}
+
+.phone-job-card svg {
+  @apply text-alert;
+}
+
+.phone-job-card small,
+.phone-event-card small {
+  @apply text-[0.68rem] font-semibold text-slate-500;
+}
+
+.phone-cover {
+  @apply h-24 rounded-lg bg-cover bg-center shadow-sm;
+  background-image:
+    linear-gradient(180deg, rgba(8, 38, 61, 0.04), rgba(8, 38, 61, 0.28)),
+    url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=500&q=80");
+}
+
+.phone-detail-list {
+  @apply grid gap-2 text-[0.72rem] font-bold text-slate-600;
+}
+
+.phone-detail-list span {
+  @apply flex items-center gap-1.5;
+}
+
+.phone-mockup button {
+  @apply mt-auto min-h-10 rounded-lg bg-navy-950 px-3 text-xs font-black text-white;
+}
+
+.phone-metric-grid {
+  @apply grid grid-cols-2 gap-2;
+}
+
+.phone-metric-grid span {
+  @apply rounded-lg border border-slate-100 bg-slate-50 p-2 text-[0.62rem] font-bold text-slate-500;
+}
+
+.phone-metric-grid strong {
+  @apply block text-xl font-black text-navy-950;
+}
+
+.phone-step-row {
+  @apply grid grid-cols-4 gap-2;
+}
+
+.phone-step-row span {
+  @apply grid h-8 place-items-center rounded-full bg-slate-100 text-xs font-black text-navy-950;
+}
+
+.phone-step-row span:first-child {
+  @apply bg-aqua-500;
+}
+
+.phone-price {
+  @apply flex items-center gap-2 rounded-lg bg-aqua-50 px-3 py-2 text-xs font-black text-aqua-800;
+}
+
 .auth-card {
   @apply overflow-hidden;
 }
