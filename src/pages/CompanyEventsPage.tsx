@@ -198,6 +198,15 @@ export function CompanyEventsPage() {
           : "Perfis em revisão não entram nas sugestões do evento, mantendo a seleção mais segura para sua equipe."}
       </SafetyNotice>
 
+      <div className="event-stepper" aria-label="Etapas para criar evento">
+        {["Tipo de evento", "Equipe", "Detalhes", "Revisão"].map((step, index) => (
+          <div key={step} className={`event-step ${index === 0 ? "is-current" : ""}`}>
+            <span>{index + 1}</span>
+            <strong>{step}</strong>
+          </div>
+        ))}
+      </div>
+
       <section className="event-builder-grid">
         <div className="event-form-card">
           <div className="event-form-title">

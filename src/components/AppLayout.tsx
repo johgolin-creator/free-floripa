@@ -90,7 +90,7 @@ export function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-ice pb-16 md:grid md:grid-cols-[264px_1fr] md:pb-0">
+    <div className="app-shell min-h-screen bg-ice pb-20 md:grid md:grid-cols-[264px_1fr] md:pb-0">
       <aside className="app-sidebar hidden border-r border-white/10 p-4 text-white shadow-lift md:flex md:flex-col">
         <NavLink to="/" className="mb-5 flex items-center gap-3">
           <BrandLogo inverted />
@@ -147,12 +147,56 @@ export function AppLayout() {
       </aside>
 
       <main className="min-w-0">
-        <header className="border-b border-white/80 bg-white/85 px-4 py-2 shadow-sm backdrop-blur-xl md:px-8">
+        <header className="app-mobile-header md:hidden">
           <div className="flex items-center justify-between gap-3">
-            <NavLink to="/" className="flex items-center gap-2 md:hidden">
-              <BrandLogo compact />
+            <NavLink to="/" className="min-w-0">
+              <BrandLogo compact inverted />
             </NavLink>
-            <div className="hidden md:block">
+            <div className="hidden">
+              <p className="text-xs font-bold uppercase text-aqua-700">A equipe que você precisa, quando você precisa.</p>
+              <h1 className="text-xl font-black text-navy-950">{identityName || areaLabel}</h1>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Link
+                to="/app/planos"
+                className="app-mobile-coin"
+                title={coinLabel}
+              >
+                <WalletCards size={15} />
+                <strong>{coinBalance}</strong>
+              </Link>
+              <span
+                className={`hidden min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-black md:inline-flex ${
+                  syncStatus === "erro" ? "bg-red-50 text-alert" : storageMode === "supabase" ? "bg-aqua-100 text-aqua-700" : "bg-slate-100 text-slate-500"
+                }`}
+                title={syncError || (storageMode === "supabase" ? "Dados sincronizados com segurança" : "Dados salvos apenas neste aparelho")}
+              >
+                <Cloud size={16} /> {syncLabel}
+              </span>
+              <NavLink to="/app/notificacoes" className="app-mobile-bell" aria-label="Notificações">
+                <Bell size={18} />
+                {unread > 0 && <span>{unread}</span>}
+              </NavLink>
+              <div className="hidden">
+                <RoleSwitcher compact />
+              </div>
+            </div>
+          </div>
+          <div className="mt-5">
+            <p className="text-xs font-bold text-aqua-200">
+              Olá, {identityName?.split(" ")[0] || (state.activeRole === "trabalhador" ? "profissional" : "empresa")}!
+            </p>
+            <h1 className="mt-1 text-2xl font-black leading-tight text-white">{areaLabel}</h1>
+          </div>
+          <Link to={state.activeRole === "trabalhador" ? "/app/vagas" : "/app/candidatos"} className="app-mobile-search">
+            <span>{state.activeRole === "trabalhador" ? "Buscar vagas, locais ou empresas" : "Buscar profissionais e candidatos"}</span>
+            <Search size={18} />
+          </Link>
+        </header>
+
+        <header className="hidden border-b border-white/80 bg-white/85 px-4 py-2 shadow-sm backdrop-blur-xl md:block md:px-8">
+          <div className="flex items-center justify-between gap-3">
+            <div>
               <p className="text-xs font-bold uppercase text-aqua-700">A equipe que você precisa, quando você precisa.</p>
               <h1 className="text-xl font-black text-navy-950">{identityName || areaLabel}</h1>
             </div>
@@ -181,12 +225,12 @@ export function AppLayout() {
           </div>
         </header>
 
-        <div className="mx-auto w-full max-w-[1440px] px-4 py-5 md:px-8 md:py-7">
+        <div className="app-content mx-auto w-full max-w-[1440px] px-4 py-5 md:px-8 md:py-7">
           <Outlet />
         </div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-30 flex gap-1 overflow-x-auto border-t border-white/80 bg-white/95 px-2 py-1 shadow-lift backdrop-blur-xl md:hidden">
+      <nav className="app-bottom-nav fixed bottom-0 left-0 right-0 z-30 flex gap-1 overflow-x-auto border-t border-white/80 bg-white/95 px-2 py-1 shadow-lift backdrop-blur-xl md:hidden">
         {links.map((link) => {
           const Icon = link.icon;
           const active = location.pathname === link.to;
@@ -194,11 +238,11 @@ export function AppLayout() {
             <NavLink
               key={link.to}
               to={link.to}
-              className={`grid min-h-14 min-w-[4.15rem] flex-1 place-items-center gap-0.5 rounded-lg border-t-2 px-1 text-center text-[0.58rem] font-black leading-tight transition ${
-                active ? "border-aqua-500 text-aqua-700" : "border-transparent text-slate-500"
+              className={`grid min-h-14 min-w-[4.15rem] flex-1 place-items-center gap-0.5 rounded-lg px-1 text-center text-[0.58rem] font-black leading-tight transition ${
+                active ? "text-navy-950" : "text-slate-500"
               }`}
             >
-              <span className={`mobile-nav-icon ${active ? "bg-aqua-50" : "bg-transparent"}`}>
+              <span className={`mobile-nav-icon ${active ? "is-active" : ""}`}>
                 <Icon size={16} />
               </span>
               <span className="w-full truncate px-0.5">{link.mobileLabel}</span>
