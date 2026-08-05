@@ -751,6 +751,22 @@ a {
   @apply grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-3 shadow-soft ring-1 ring-white/70;
 }
 
+.candidate-event-context {
+  @apply grid gap-1 rounded-lg border border-aqua-100 bg-aqua-50/70 px-3 py-2;
+}
+
+.candidate-event-context span {
+  @apply inline-flex items-center gap-1.5 text-xs font-black uppercase text-aqua-800;
+}
+
+.candidate-event-context strong {
+  @apply text-sm font-black text-navy-950;
+}
+
+.candidate-event-context small {
+  @apply text-xs font-bold text-slate-600;
+}
+
 .hiring-flow {
   @apply grid gap-2 rounded-lg bg-slate-50 p-3;
 }

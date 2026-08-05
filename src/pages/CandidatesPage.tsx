@@ -357,6 +357,17 @@ export function CandidatesPage() {
                   <article key={application.id} className="candidate-card">
                     <WorkerCard worker={worker} functionFocus={jobForApplication.function} showActions={false} />
                     <div className="candidate-control-panel">
+                      {selectedEvent && (
+                        <div className="candidate-event-context">
+                          <span>
+                            <BriefcaseBusiness size={16} /> {jobForApplication.function}
+                          </span>
+                          <strong>{jobForApplication.title}</strong>
+                          <small>
+                            {jobForApplication.quantity} vaga{jobForApplication.quantity === 1 ? "" : "s"} • {formatCurrency(jobForApplication.dailyValue)} • {getOpenSlots(jobForApplication)} aberta{getOpenSlots(jobForApplication) === 1 ? "" : "s"}
+                          </small>
+                        </div>
+                      )}
                       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                         <div className="flex flex-wrap gap-2">
                           <span className="badge bg-aqua-100 text-aqua-700">{application.status}</span>
