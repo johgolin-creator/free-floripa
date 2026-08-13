@@ -212,7 +212,7 @@ function mapPublicWorker(row: WorkerProfileRow, experiences: FunctionExperienceR
 
   return {
     id: row.id,
-    name: row.display_name?.trim() || "Profissional Free Floripa",
+    name: row.display_name?.trim() || "Profissional PONT",
     phone: "",
     email: "",
     avatarUrl: row.avatar_url || DEFAULT_PUBLIC_AVATAR,
@@ -222,7 +222,7 @@ function mapPublicWorker(row: WorkerProfileRow, experiences: FunctionExperienceR
     functions: fallbackFunctions,
     functionExperience,
     experience: row.experience || "",
-    description: row.description || "Profissional cadastrado no Free Floripa.",
+    description: row.description || "Profissional cadastrado no PONT.",
     availability: row.availability || "A combinar",
     hasTransport: Boolean(row.has_transport),
     maxDistanceKm: Math.max(1, Number(row.max_distance_km ?? 10)),
@@ -244,7 +244,7 @@ function normalizeTime(value?: string | null) {
 function mapCompany(row: CompanyProfileRow): CompanyProfile {
   return {
     id: row.id,
-    establishmentName: row.establishment_name || "Empresa Free Floripa",
+    establishmentName: row.establishment_name || "Empresa PONT",
     responsibleName: row.responsible_name || "Responsável",
     cnpj: row.cnpj || "",
     phone: row.phone || "",

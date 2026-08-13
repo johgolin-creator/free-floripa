@@ -14,7 +14,7 @@ export function SafetyNotice({
   const classes =
     tone === "warning"
       ? "border-amber-200 bg-amber-50 text-amber-900"
-      : "border-aqua-100 bg-aqua-50 text-navy-950";
+      : "border-aqua-100 bg-aqua-50 text-white";
 
   return (
     <div className={`grid gap-2 rounded-lg border p-3 text-sm shadow-sm sm:grid-cols-[auto_1fr] ${classes}`}>

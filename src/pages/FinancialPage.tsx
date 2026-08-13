@@ -62,7 +62,7 @@ export function FinancialPage() {
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <span className="section-eyebrow">Controle empresarial</span>
-                <h3 className="text-xl font-black text-navy-950">Resumo de custos e moedas</h3>
+                <h3 className="text-xl font-black text-white">Resumo de custos e moedas</h3>
                 <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
                   Separe o custo dos turnos e o uso de moedas em ações sensíveis, como cancelamento de vaga preenchida.
                 </p>
@@ -84,7 +84,7 @@ export function FinancialPage() {
           <article className="card p-4">
             <div className="mb-4">
               <span className="section-eyebrow">Extrato empresarial</span>
-              <h3 className="text-xl font-black text-navy-950">Moedas recentes</h3>
+              <h3 className="text-xl font-black text-white">Moedas recentes</h3>
               <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">Compras, cobranças e ajustes que impactam o saldo da empresa.</p>
             </div>
             {recentCompanyLedger.length === 0 ? (
@@ -97,10 +97,10 @@ export function FinancialPage() {
                   <div key={entry.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <strong className="text-sm text-navy-950">{getCompanyCoinTitle(entry.reason)}</strong>
+                        <strong className="text-sm text-white">{getCompanyCoinTitle(entry.reason)}</strong>
                         <p className="mt-1 text-xs font-semibold text-slate-500">{formatDateTime(entry.createdAt)}</p>
                       </div>
-                      <span className={`text-sm font-black ${entry.amount > 0 ? "text-aqua-700" : "text-navy-950"}`}>
+                      <span className={`text-sm font-black ${entry.amount > 0 ? "text-aqua-700" : "text-white"}`}>
                         {entry.amount > 0 ? "+" : ""}{entry.amount}
                       </span>
                     </div>
@@ -252,7 +252,7 @@ function FinanceTile({ icon, label, value }: { icon: ReactNode; label: string; v
   return (
     <div className="metric-card">
       <div className="mb-2 text-aqua-700">{icon}</div>
-      <strong className="block text-sm text-navy-950">{value}</strong>
+      <strong className="block text-sm text-white">{value}</strong>
       <span className="text-xs font-black uppercase text-slate-500">{label}</span>
     </div>
   );
@@ -271,7 +271,7 @@ function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="worker-info-tile">
       <span className="text-xs font-black uppercase text-slate-500">{label}</span>
-      <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
+      <strong className="mt-1 block text-sm text-white">{value}</strong>
     </div>
   );
 }

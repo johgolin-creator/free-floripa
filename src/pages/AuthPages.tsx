@@ -44,7 +44,7 @@ export function LoginPage() {
   const [pending, setPending] = useState(false);
 
   return (
-    <AuthShell title="Entrar no Free Floripa" description="Acesse com e-mail e senha para entrar na sua área.">
+    <AuthShell title="Entrar no PONT" description="Acesse com e-mail e senha para entrar na sua área.">
       <form
         className="auth-form"
         onSubmit={async (event) => {
@@ -285,7 +285,7 @@ export function WorkerSignupPage() {
         {error && <div className="auth-alert auth-alert-error">{error}</div>}
         {message && <div className="auth-alert auth-alert-info">{message}</div>}
         <section className="auth-required-panel">
-          <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+          <div className="flex items-center gap-2 text-sm font-black text-white">
             <ClipboardList size={17} /> Dados obrigatórios do cadastro
           </div>
           <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">{workerRequiredFields.join(", ")}.</p>
@@ -310,11 +310,11 @@ export function WorkerSignupPage() {
           </label>
         </div>
         <SignupStep number="3" title="Profissões e experiência" />
-        <fieldset className="rounded-lg border border-slate-200 bg-white/75 p-3">
+        <fieldset className="rounded-lg border border-slate-200 bg-brand-charcoal/70 p-3">
           <legend className="px-1 text-sm font-black text-slate-600">Profissões e nível de experiência</legend>
           <div className="mt-2 grid gap-2 md:grid-cols-2">
             {functions.map((item) => (
-              <div key={item} className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+              <div key={item} className="rounded-lg border border-slate-200 bg-brand-charcoal p-3 shadow-sm">
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
                   <input
                     type="checkbox"
@@ -425,7 +425,7 @@ export function CompanySignupPage() {
         {error && <div className="auth-alert auth-alert-error">{error}</div>}
         {message && <div className="auth-alert auth-alert-info">{message}</div>}
         <section className="auth-required-panel">
-          <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+          <div className="flex items-center gap-2 text-sm font-black text-white">
             <ClipboardList size={17} /> Dados obrigatórios da empresa
           </div>
           <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">{companyRequiredFields.join(", ")}.</p>
@@ -464,7 +464,7 @@ function AuthShell({ title, description, children }: { title: string; descriptio
   return (
     <div className="auth-bg min-h-screen px-4 py-6">
       <main className="mx-auto max-w-6xl">
-        <Link to="/" className="mb-5 inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-black text-navy-900 shadow-sm transition hover:bg-aqua-50">
+        <Link to="/" className="mb-5 inline-flex items-center gap-2 rounded-full bg-brand-charcoal px-3 py-2 text-sm font-black text-white shadow-sm transition hover:bg-aqua-50">
           <ArrowLeft size={17} /> Voltar
         </Link>
         <section className="auth-card card overflow-hidden p-0">
@@ -473,7 +473,7 @@ function AuthShell({ title, description, children }: { title: string; descriptio
             <aside className="auth-side-panel">
               <BrandLogo inverted />
               <div>
-                <p className="text-xs font-black uppercase text-aqua-300">Free Floripa</p>
+                <p className="text-xs font-black uppercase text-aqua-300">PONT</p>
                 <h2 className="mt-2 text-3xl font-black leading-tight text-white">Acesse, publique e acompanhe turnos com mais controle.</h2>
                 <p className="mt-3 text-sm font-semibold leading-6 text-slate-300">
                   Uma entrada mais simples para empresas e trabalhadores seguirem para a área certa.
@@ -490,7 +490,7 @@ function AuthShell({ title, description, children }: { title: string; descriptio
                 <div className="mb-4 md:hidden">
                   <BrandLogo />
                 </div>
-                <h1 className="text-2xl font-black text-navy-950">{title}</h1>
+                <h1 className="text-2xl font-black text-white">{title}</h1>
                 <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
                 <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-aqua-700">
                   <CheckCircle2 size={17} /> Conta protegida para trabalhador e empresa.
@@ -511,12 +511,12 @@ function AuthShell({ title, description, children }: { title: string; descriptio
 
 function LegalConsentText() {
   return (
-    <p className="rounded-lg border border-slate-200 bg-white/80 p-3 text-xs font-semibold leading-5 text-slate-600">
+    <p className="rounded-lg border border-slate-200 bg-brand-charcoal/80 p-3 text-xs font-semibold leading-5 text-slate-600">
       Ao criar a conta, você concorda com os{" "}
       <Link to="/termos" className="font-black text-aqua-700 hover:text-aqua-800">Termos de Uso</Link>
       {" "}e com a{" "}
       <Link to="/privacidade" className="font-black text-aqua-700 hover:text-aqua-800">Política de Privacidade</Link>
-      {" "}do Free Floripa.
+      {" "}do PONT.
     </p>
   );
 }
@@ -525,7 +525,7 @@ function SignupStep({ number, title }: { number: string; title: string }) {
   return (
     <div className="signup-step mt-2 flex items-center gap-2 rounded-lg border border-aqua-100 bg-aqua-50 px-3 py-2">
       <span className="grid h-7 w-7 place-items-center rounded-full bg-navy-950 text-xs font-black text-aqua-300">{number}</span>
-      <strong className="text-sm text-navy-950">{title}</strong>
+      <strong className="text-sm text-white">{title}</strong>
     </div>
   );
 }

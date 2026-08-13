@@ -35,7 +35,7 @@ export function ApplicationsPage() {
     waiting: applications.filter((application) => application.status === "Enviada" || application.status === "Em análise").length,
     approved: applications.filter((application) => application.status === "Aprovada").length,
     completed: applications.filter((application) => application.status === "Trabalho concluído").length,
-    coinsUsed: applications.length
+    unlockedJobs: applications.filter((application) => state.subscription.unlockedJobIds.includes(application.jobId)).length
   };
 
   function cancelApplication(application: Application) {
@@ -59,16 +59,16 @@ export function ApplicationsPage() {
           <section className="worker-hero">
             <div>
               <span className="section-eyebrow">Sua busca por trabalho</span>
-              <h2>Cada candidatura com status, custo e próximo passo claro</h2>
+              <h2>Cada candidatura com status e próximo passo claro</h2>
               <p>
-                Veja quais empresas ainda estão analisando, quais turnos foram aprovados, onde o contato já está liberado e quais candidaturas usaram moedas.
+                Veja quais empresas ainda estão analisando, quais turnos foram aprovados e onde o contato já está liberado.
               </p>
             </div>
             <div className="worker-hero-metrics">
               <HeroMetric icon={<ClipboardCheck size={19} />} label="enviadas" value={String(stats.total)} />
               <HeroMetric icon={<Clock3 size={19} />} label="aguardando" value={String(stats.waiting)} />
               <HeroMetric icon={<UserCheck size={19} />} label="aprovadas" value={String(stats.approved)} />
-              <HeroMetric icon={<CreditCard size={19} />} label="moedas usadas" value={String(stats.coinsUsed)} />
+              <HeroMetric icon={<CreditCard size={19} />} label="vagas liberadas" value={String(stats.unlockedJobs)} />
             </div>
           </section>
 
@@ -76,9 +76,9 @@ export function ApplicationsPage() {
             <div className="worker-filter-summary">
               <div>
                 <strong>Saldo atual: {state.subscription.creditsRemaining} moeda(s)</strong>
-                <span>Cada candidatura enviada consome 1 moeda. Vagas aprovadas liberam contato e próximos passos.</span>
+                <span>A moeda libera a vaga completa. Depois disso, a candidatura naquela vaga não cobra de novo.</span>
               </div>
-              <Link to="/app/assinatura" className="secondary min-h-10">
+              <Link to="/app/planos" className="secondary min-h-10">
                 Comprar moedas
               </Link>
             </div>
@@ -114,7 +114,7 @@ export function ApplicationsPage() {
                       <span className={getStatusClass(application.status)}>{application.status}</span>
                       <span className="badge">{job.function}</span>
                       <span className="badge">{formatCurrency(job.dailyValue)}</span>
-                      <span className="badge bg-aqua-50 text-aqua-700"><CreditCard size={14} /> 1 moeda usada</span>
+                      <span className="badge bg-aqua-50 text-aqua-700"><CreditCard size={14} /> Vaga liberada</span>
                     </div>
                     <h3>{job.title}</h3>
                     <p className="text-sm text-slate-600">
@@ -135,7 +135,7 @@ export function ApplicationsPage() {
                   <Info icon={<CalendarDays size={16} />} label="Horário" value={`${job.startsAt} às ${job.endsAt}`} />
                   <Info icon={<MapPin size={16} />} label="Local" value={contactUnlocked ? job.fullAddress : job.approximateAddress} />
                   <Info icon={<BriefcaseBusiness size={16} />} label="Pagamento" value={job.paymentMethod} />
-                  <Info icon={<CreditCard size={16} />} label="Custo" value="1 moeda na candidatura" />
+                  <Info icon={<CreditCard size={16} />} label="Acesso" value="Vaga liberada" />
                 </div>
 
                 <div className="grid gap-2 md:grid-cols-[1fr_auto] md:items-center">
@@ -273,7 +273,7 @@ function getStepClass(state: StepState) {
   if (state === "done") return "border-aqua-200 bg-aqua-100 text-aqua-700";
   if (state === "current") return "border-navy-200 bg-white text-navy-950";
   if (state === "blocked") return "border-red-100 bg-red-50 text-alert";
-  return "border-slate-200 bg-white text-slate-500";
+  return "border-slate-200 bg-brand-charcoal text-slate-500";
 }
 
 function Info({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
@@ -282,7 +282,7 @@ function Info({ icon, label, value }: { icon: ReactNode; label: string; value: s
       <span className="flex items-center gap-1.5 text-xs font-black uppercase text-slate-500">
         {icon} {label}
       </span>
-      <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
+      <strong className="mt-1 block text-sm text-white">{value}</strong>
     </div>
   );
 }

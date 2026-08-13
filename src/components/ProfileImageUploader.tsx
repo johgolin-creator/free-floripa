@@ -17,14 +17,14 @@ export function ProfileImageUploader({ label, value, kind, previewAlt, onChange 
   return (
     <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 md:col-span-2">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <img src={value} alt={previewAlt} className="h-20 w-20 rounded-lg border border-white object-cover shadow-sm" />
+        <img src={value} alt={previewAlt} className="h-20 w-20 rounded-lg border border-white/10 object-cover shadow-sm" />
         <div className="min-w-0 flex-1">
           <label className="label">
             {label}
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp,image/gif"
-              className="input cursor-pointer bg-white"
+              className="input cursor-pointer"
               disabled={uploading}
               onChange={async (event) => {
                 const input = event.currentTarget;
@@ -54,7 +54,7 @@ export function ProfileImageUploader({ label, value, kind, previewAlt, onChange 
       <label className="label">
         Link da imagem
         <input
-          className="input bg-white"
+          className="input"
           value={value}
           placeholder="Cole um link ou envie uma imagem acima"
           onChange={(event) => onChange(event.target.value)}

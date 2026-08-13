@@ -74,7 +74,7 @@ export function AdminPage() {
       <section className="smart-dashboard-hero">
         <div>
           <span className="section-eyebrow">Controle operacional</span>
-          <h2>Visão geral do Free Floripa</h2>
+          <h2>Visão geral do PONT</h2>
           <p>
             Use este painel para enxergar crescimento, pendências e contas que precisam de revisão antes que virem problema.
           </p>
@@ -120,7 +120,7 @@ export function AdminPage() {
       {tab === "Resumo" && (
         <section className="grid gap-4 lg:grid-cols-[1fr_0.8fr]">
           <div className="card p-4">
-            <h3 className="mb-3 font-black text-navy-950">Indicadores principais</h3>
+            <h3 className="mb-3 font-black text-white">Indicadores principais</h3>
             <div className="grid gap-3 md:grid-cols-2">
               <InfoTile icon={<ClipboardList />} label="Candidaturas pendentes" value={String(pendingApplications.length)} />
               <InfoTile icon={<CheckCircle2 />} label="Candidaturas confirmadas" value={String(approvedApplications.length)} />
@@ -129,7 +129,7 @@ export function AdminPage() {
             </div>
           </div>
           <div className="card p-4">
-            <h3 className="mb-3 font-black text-navy-950">Ações rápidas</h3>
+            <h3 className="mb-3 font-black text-white">Ações rápidas</h3>
             <div className="grid gap-2 text-sm font-semibold text-slate-600">
               <span className="flex items-center gap-2"><ShieldCheck size={16} /> Revisar {openReports.length} relato(s) e {alerts.length} alerta(s) operacionais.</span>
               <span className="flex items-center gap-2"><Ban size={16} /> {blockedWorkerIds.length} trabalhador(es) bloqueado(s).</span>
@@ -215,7 +215,7 @@ export function AdminPage() {
       {tab === "Moedas" && (
         <section className="grid gap-4 lg:grid-cols-[0.8fr_1fr]">
           <div className="card p-4">
-            <h3 className="mb-3 font-black text-navy-950">Carteiras da conta atual</h3>
+            <h3 className="mb-3 font-black text-white">Carteiras da conta atual</h3>
             <div className="grid gap-3">
               <InfoTile icon={<WalletCards />} label="Saldo do trabalhador" value={`${state.subscription.creditsRemaining} moeda(s)`} />
               <InfoTile icon={<WalletCards />} label="Saldo da empresa" value={`${state.subscription.companyCreditsRemaining} moeda(s)`} />
@@ -299,7 +299,7 @@ export function AdminPage() {
           {resolvedReports.length > 0 && (
             <div className="mt-2 grid gap-3 border-t border-slate-200 pt-4">
               <div>
-                <h3 className="font-black text-navy-950">Histórico resolvido</h3>
+                <h3 className="font-black text-white">Histórico resolvido</h3>
                 <p className="text-sm font-semibold text-slate-600">Últimos relatos marcados como resolvidos pela administração.</p>
               </div>
               {resolvedReports.map((report) => (
@@ -373,7 +373,7 @@ function InfoTile({ icon, label, value }: { icon: ReactNode; label: string; valu
   return (
     <div className="worker-info-tile">
       <span className="flex items-center gap-2 text-xs font-black uppercase text-slate-500">{icon} {label}</span>
-      <strong className="mt-2 block text-lg text-navy-950">{value}</strong>
+      <strong className="mt-2 block text-lg text-white">{value}</strong>
     </div>
   );
 }
@@ -382,7 +382,7 @@ function AdminList({ title, count, children }: { title: string; count: number; c
   return (
     <section className="card p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h3 className="font-black text-navy-950">{title}</h3>
+        <h3 className="font-black text-white">{title}</h3>
         <span className="badge">{count}</span>
       </div>
       <div className="grid gap-3">{children}</div>
@@ -459,7 +459,7 @@ function ReportRow({
             </div>
             <h3 className="mt-2">{report.targetName}</h3>
             <p className="text-sm font-semibold leading-6 text-slate-600">{report.reason}</p>
-            {targetMeta && <p className="mt-1 text-sm font-black text-navy-950">{targetMeta}</p>}
+            {targetMeta && <p className="mt-1 text-sm font-black text-white">{targetMeta}</p>}
             <p className="mt-1 text-xs font-black uppercase text-slate-500">
               Enviado por {report.reporterName} em {formatDate(report.createdAt.slice(0, 10))}
             </p>

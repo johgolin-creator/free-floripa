@@ -18,8 +18,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import logoUrl from "../assets/free-floripa-logo.jpg?inline";
-import { BrandLogo } from "../components/BrandLogo";
+import { BrandLogo, PontMark } from "../components/BrandLogo";
 import { JobCard } from "../components/JobCard";
 import { functions } from "../data/demoData";
 import { useAppStore } from "../lib/store";
@@ -30,7 +29,7 @@ export function PublicHome() {
 
   return (
     <div className="min-h-screen bg-ice">
-      <header className="sticky top-0 z-40 border-b border-white/80 bg-white/85 shadow-sm backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-brand-charcoal/90 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/" className="min-w-0">
             <BrandLogo compact />
@@ -38,7 +37,7 @@ export function PublicHome() {
           <div className="flex shrink-0 gap-2">
             <Link
               to="/login"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-navy-900 shadow-sm transition hover:bg-slate-50"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-brand-charcoal px-4 text-sm font-black text-white shadow-sm transition hover:bg-white/5"
             >
               <LogIn size={17} /> Entrar
             </Link>
@@ -51,7 +50,7 @@ export function PublicHome() {
             <Link
               to="/cadastro-trabalhador"
               onClick={() => setRole("trabalhador")}
-              className="hidden min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-navy-900 shadow-sm transition hover:bg-slate-50 md:inline-flex"
+              className="hidden min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-brand-charcoal px-4 text-sm font-black text-white shadow-sm transition hover:bg-white/5 md:inline-flex"
             >
               Trabalhar
             </Link>
@@ -72,12 +71,12 @@ export function PublicHome() {
           <div className="hero-overlay absolute inset-0" />
           <div className="hero-content public-hero-content relative mx-auto grid min-h-[620px] max-w-7xl content-center gap-8 px-4 py-10">
             <div className="hero-text max-w-4xl">
-              <img src={logoUrl} alt="Free Floripa" className="hero-brand-logo" />
-              <div className="hero-badge mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-sm font-black text-aqua-100 shadow-soft backdrop-blur">
+              <PontMark className="hero-brand-logo" />
+              <div className="hero-badge mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-sm font-black text-aqua-300 shadow-soft backdrop-blur">
                 <Waves size={17} /> Florianópolis pronta para turnos, diárias e eventos
               </div>
-              <h1 className="hero-title max-w-3xl text-5xl font-black leading-tight md:text-7xl">Free Floripa</h1>
-              <p className="hero-copy mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-200 md:text-lg">
+              <h1 className="hero-title max-w-3xl text-5xl font-black leading-tight md:text-7xl">PONT</h1>
+              <p className="hero-copy mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-300 md:text-lg">
                 A plataforma para empresas encontrarem mão de obra temporária com mais organização, histórico e nível de experiência por função.
               </p>
               <div className="hero-actions mt-6 grid gap-3 sm:flex">
@@ -90,13 +89,13 @@ export function PublicHome() {
                 <Link to="/cadastro-empresa" onClick={() => setRole("empresa")} className="primary">
                   Publicar vaga <ArrowRight size={18} />
                 </Link>
-                <Link to="/cadastro-trabalhador" onClick={() => setRole("trabalhador")} className="secondary bg-white/95">
+                <Link to="/cadastro-trabalhador" onClick={() => setRole("trabalhador")} className="secondary">
                   Quero trabalhar
                 </Link>
               </div>
             </div>
-            <div className="phone-showcase" aria-label="Previa do aplicativo Free Floripa">
-              <PhoneMockup title="Free Floripa" eyebrow="Ola, Gabriela!" variant="worker" />
+            <div className="phone-showcase" aria-label="Previa do aplicativo PONT">
+              <PhoneMockup title="PONT" eyebrow="Ola, Gabriela!" variant="worker" />
               <PhoneMockup title="Beach Club Jurere" eyebrow="Vaga urgente" variant="job" featured />
               <PhoneMockup title="Painel da empresa" eyebrow="Beach Club Jurere" variant="company" />
               <PhoneMockup title="Criar evento" eyebrow="Casamento" variant="event" />
@@ -139,7 +138,7 @@ export function PublicHome() {
           </div>
         </section>
 
-        <section className="border-b border-slate-200 bg-white">
+        <section className="border-b border-white/10 bg-brand-dark">
           <div className="mx-auto grid max-w-7xl gap-3 px-4 py-4 sm:grid-cols-3">
             <Metric value="Profissional" label="libera vaga completa" />
             <Metric value="3 min" label="para publicar uma vaga" />
@@ -151,7 +150,7 @@ export function PublicHome() {
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase text-aqua-700">Vagas abertas</p>
-              <h2 className="text-2xl font-black text-navy-950">Oportunidades recentes</h2>
+              <h2 className="text-2xl font-black text-white">Oportunidades recentes</h2>
             </div>
             <Link to="/app/vagas" onClick={() => setRole("trabalhador")} className="secondary">
               Ver todas
@@ -164,7 +163,7 @@ export function PublicHome() {
           </div>
         </section>
 
-        <section className="bg-white/80">
+        <section className="bg-brand-dark">
           <div className="mx-auto grid max-w-7xl gap-4 px-4 py-12 md:grid-cols-3">
             {[
               ["1", "Vaga com critério", "A empresa informa função, valor, horário, bairro e experiência esperada."],
@@ -173,7 +172,7 @@ export function PublicHome() {
             ].map(([step, title, text]) => (
               <article key={step} className="card p-5 hover:-translate-y-0.5 hover:shadow-lift">
                 <span className="grid h-10 w-10 place-items-center rounded-lg bg-navy-950 font-black text-aqua-300">{step}</span>
-                <h3 className="mt-4 font-black text-navy-950">{title}</h3>
+                <h3 className="mt-4 font-black text-white">{title}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
               </article>
             ))}
@@ -183,11 +182,11 @@ export function PublicHome() {
         <section className="mx-auto max-w-7xl px-4 py-12">
           <div className="mb-5">
             <p className="text-xs font-black uppercase text-aqua-700">Profissões</p>
-            <h2 className="text-2xl font-black text-navy-950">Categorias de profissionais</h2>
+            <h2 className="text-2xl font-black text-white">Categorias de profissionais</h2>
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
             {functions.map((item) => (
-              <div key={item} className="flex min-h-20 items-center rounded-lg border border-white bg-white p-4 text-sm font-black text-navy-950 shadow-soft transition hover:-translate-y-0.5 hover:border-aqua-200 hover:bg-aqua-50">
+              <div key={item} className="flex min-h-20 items-center rounded-lg border border-white/10 bg-brand-charcoal p-4 text-sm font-black text-white shadow-soft transition hover:-translate-y-0.5 hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-800">
                 {item}
               </div>
             ))}
@@ -217,12 +216,12 @@ export function PublicHome() {
           </div>
         </section>
       </main>
-      <footer className="border-t border-slate-200 bg-white">
+      <footer className="border-t border-white/10 bg-brand-dark">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 text-sm font-semibold text-slate-600 md:flex-row md:items-center md:justify-between">
-          <span>Free Floripa - plataforma para turnos, diárias e eventos.</span>
+          <span>PONT - plataforma para turnos, diárias e eventos.</span>
           <div className="flex flex-wrap gap-3">
-            <Link to="/termos" className="font-black text-navy-950 hover:text-aqua-700">Termos de Uso</Link>
-            <Link to="/privacidade" className="font-black text-navy-950 hover:text-aqua-700">Política de Privacidade</Link>
+            <Link to="/termos" className="font-black text-white hover:text-aqua-700">Termos de Uso</Link>
+            <Link to="/privacidade" className="font-black text-white hover:text-aqua-700">Política de Privacidade</Link>
           </div>
         </div>
       </footer>
@@ -257,8 +256,8 @@ function EntryCard({
 
 function Metric({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-lg border border-white bg-white p-4 shadow-soft">
-      <strong className="block text-2xl font-black text-navy-950">{value}</strong>
+    <div className="rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft">
+      <strong className="block text-2xl font-black text-white">{value}</strong>
       <span className="mt-1 block text-sm font-black text-aqua-700">{label}</span>
     </div>
   );
@@ -364,10 +363,10 @@ function Feature({ icon, title, text }: { icon: ReactNode; title: string; text: 
   return (
     <article className="card p-5 hover:-translate-y-0.5 hover:shadow-lift">
       <div className="mb-3 text-aqua-700">{icon}</div>
-      <h3 className="font-black text-navy-950">{title}</h3>
+      <h3 className="font-black text-white">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
       <span className="mt-4 inline-flex items-center gap-1 text-xs font-black uppercase text-aqua-700">
-        <BadgeCheck size={14} /> Free Floripa
+        <BadgeCheck size={14} /> PONT
       </span>
     </article>
   );

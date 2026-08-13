@@ -70,7 +70,7 @@ export function WorkerDashboard() {
               : "Busque vagas compatíveis e acompanhe suas candidaturas para receber confirmações."}
           </p>
           <div className="smart-dashboard-actions">
-            <Link to="/app/meus-trabalhos" className="company-action company-action-primary"><CalendarCheck size={17} /> Meus turnos</Link>
+            <Link to="/app/trabalhos" className="company-action company-action-primary"><CalendarCheck size={17} /> Meus turnos</Link>
             <Link to="/app/vagas" className="company-action"><BriefcaseBusiness size={17} /> Buscar vagas</Link>
           </div>
         </div>
@@ -84,9 +84,9 @@ export function WorkerDashboard() {
 
       <section className="soft-panel grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-center">
         <div>
-          <h3 className="font-black text-navy-950">Acesso profissional</h3>
+          <h3 className="font-black text-white">Acesso profissional</h3>
           <p className="text-sm text-slate-600">
-            Saldo atual: {state.subscription.creditsRemaining} moeda(s). O gratuito mostra prévias; as moedas liberam vaga completa e candidaturas conforme o uso.
+            Saldo atual: {state.subscription.creditsRemaining} moeda(s). O gratuito mostra prévias; a moeda libera a vaga completa antes da candidatura.
           </p>
         </div>
         <Link to="/app/planos" className="primary">Comprar moedas</Link>
@@ -132,7 +132,7 @@ export function WorkerDashboard() {
           </div>
 
           <section className="card p-4">
-            <h3 className="mb-3 font-black text-navy-950">Resumo</h3>
+            <h3 className="mb-3 font-black text-white">Resumo</h3>
             <div className="grid gap-2 text-sm text-slate-600">
               <span className="flex items-center gap-2"><ClipboardList size={16} /> {applications.length} candidaturas enviadas</span>
               <span className="flex items-center gap-2"><BadgeCheck size={16} /> {applications.filter((item) => item.status === "Aprovada").length} aceitas</span>
@@ -183,7 +183,7 @@ function Metric({ icon, label, value }: { icon: ReactNode; label: string; value:
   return (
     <article className="metric-card">
       <div className="mb-3 text-aqua-700">{icon}</div>
-      <strong className="block text-2xl font-black text-navy-950">{value}</strong>
+      <strong className="block text-2xl font-black text-white">{value}</strong>
       <span className="text-sm font-semibold text-slate-500">{label}</span>
     </article>
   );

@@ -115,7 +115,7 @@ export function JobsPage() {
           <span className="section-eyebrow">Busca inteligente</span>
           <h2>Encontre vagas que combinam com o seu perfil</h2>
           <p>
-            O Free Floripa cruza profissão, distância, urgência e valor da diária para colocar as melhores oportunidades no topo.
+            O PONT cruza profissão, distância, urgência e valor da diária para colocar as melhores oportunidades no topo.
           </p>
         </div>
         <div className="jobs-hero-metrics">
@@ -130,15 +130,15 @@ export function JobsPage() {
         <section className="mb-5 rounded-lg border border-aqua-200 bg-aqua-50 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="flex items-center gap-2 font-black text-navy-950">
+              <h3 className="flex items-center gap-2 font-black text-white">
                 <Lock size={18} /> Use moedas para liberar vagas completas
               </h3>
               <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
-                No gratuito você vê uma prévia. Com moedas, você libera detalhes completos e envia candidaturas conforme usa.
+                No gratuito você vê uma prévia. Com moedas, você libera detalhes completos antes de se candidatar.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="badge bg-white text-aqua-700">Saldo: {state.subscription.creditsRemaining} moeda(s)</span>
+              <span className="badge bg-aqua-50 text-aqua-700">Saldo: {state.subscription.creditsRemaining} moeda(s)</span>
               <Link to="/app/planos" className="primary">Comprar moedas</Link>
             </div>
           </div>

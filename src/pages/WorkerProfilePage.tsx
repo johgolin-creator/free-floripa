@@ -65,10 +65,10 @@ export function WorkerProfilePage() {
         <div className="h-36 bg-[url('https://images.unsplash.com/photo-1523755231516-e43fd2e8dca5?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
         <div className="p-5">
           <div className="profile-main-row">
-            <img src={currentWorker.avatarUrl} alt="" className="h-28 w-28 rounded-lg border-4 border-white object-cover shadow-soft" />
+            <img src={currentWorker.avatarUrl} alt="" className="h-28 w-28 rounded-lg border-4 border-brand-dark object-cover shadow-soft" />
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-2xl font-black text-navy-950">{currentWorker.name}</h2>
+                <h2 className="text-2xl font-black text-white">{currentWorker.name}</h2>
                 {currentWorker.verified && <span className="badge bg-aqua-100 text-aqua-700"><BadgeCheck size={15} /> Perfil verificado</span>}
               </div>
               <p className="mt-1 text-sm font-semibold text-slate-600">{currentWorker.functions.join(", ")}</p>
@@ -100,7 +100,7 @@ export function WorkerProfilePage() {
               </div>
             </div>
             <div className="profile-score-card">
-              <strong className="block text-3xl font-black text-navy-950">{reliability}%</strong>
+              <strong className="block text-3xl font-black text-white">{reliability}%</strong>
               <span className="text-sm font-bold text-slate-600">Índice de Confiabilidade</span>
             </div>
           </div>
@@ -118,15 +118,15 @@ export function WorkerProfilePage() {
 
           <div className="profile-section-grid">
             <div className="profile-panel">
-              <h3 className="font-black text-navy-950">Descrição</h3>
+              <h3 className="font-black text-white">Descrição</h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">{currentWorker.description}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">Disponibilidade: {currentWorker.availability}</p>
-              <h3 className="mt-5 font-black text-navy-950">Nível por profissão</h3>
+              <h3 className="mt-5 font-black text-white">Nível por profissão</h3>
               <div className="mt-2 grid gap-2">
                 {functionExperiences.map((experience) => (
                   <div key={experience.function} className="rounded-lg bg-slate-50 p-3">
                     <span className="text-xs font-black uppercase text-slate-500">{experience.function}</span>
-                    <strong className="mt-1 block text-sm text-navy-950">{getExperienceLabel(experience.level)}</strong>
+                    <strong className="mt-1 block text-sm text-white">{getExperienceLabel(experience.level)}</strong>
                     <p className="mt-1 text-xs font-semibold text-slate-500">
                       {experience.months} meses informados
                       {experience.verified ? " - verificado" : ""}
@@ -136,7 +136,7 @@ export function WorkerProfilePage() {
               </div>
             </div>
             <div className="profile-panel">
-              <h3 className="font-black text-navy-950">Validação e segurança</h3>
+              <h3 className="font-black text-white">Validação e segurança</h3>
               <div className="mt-3 grid gap-2">
                 <ValidationRow
                   icon={blocked ? <AlertTriangle size={16} /> : <ShieldCheck size={16} />}
@@ -153,11 +153,11 @@ export function WorkerProfilePage() {
               </div>
             </div>
             <div className="profile-panel">
-              <h3 className="font-black text-navy-950">Avaliações recebidas</h3>
+              <h3 className="font-black text-white">Avaliações recebidas</h3>
               <div className="mt-2 grid gap-2">
                 {currentWorker.reviews.map((review) => (
                   <div key={review.id} className="rounded-lg bg-slate-50 p-3">
-                    <span className="flex items-center gap-1 text-sm font-bold text-navy-950"><Star size={15} /> {review.rating} - {review.authorName}</span>
+                    <span className="flex items-center gap-1 text-sm font-bold text-white"><Star size={15} /> {review.rating} - {review.authorName}</span>
                     <p className="mt-1 text-sm text-slate-600">{review.comment}</p>
                   </div>
                 ))}
@@ -277,7 +277,7 @@ export function WorkerProfilePage() {
                   const selected = selectedFunctions.includes(functionName);
                   const existing = currentWorker.functionExperience.find((item) => item.function === functionName);
                   return (
-                    <div key={functionName} className="rounded-lg border border-slate-200 bg-white p-3">
+                    <div key={functionName} className="rounded-lg border border-slate-200 bg-brand-charcoal p-3">
                       <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
                         <input
                           type="checkbox"
@@ -347,7 +347,7 @@ function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="profile-info-tile">
       <span className="text-xs font-black uppercase text-slate-500">{label}</span>
-      <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
+      <strong className="mt-1 block text-sm text-white">{value}</strong>
     </div>
   );
 }
@@ -374,7 +374,7 @@ function ValidationRow({
     <div className={`grid gap-2 rounded-lg border p-3 sm:grid-cols-[auto_1fr] ${toneClass}`}>
       <span className="mt-0.5">{icon}</span>
       <div>
-        <strong className="block text-sm text-navy-950">{title}</strong>
+        <strong className="block text-sm text-white">{title}</strong>
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{text}</p>
       </div>
     </div>
@@ -385,7 +385,7 @@ function SignupLikeTitle({ number, title }: { number: string; title: string }) {
   return (
     <div className="signup-step flex items-center gap-2 rounded-lg border border-aqua-100 bg-aqua-50 px-3 py-2 md:col-span-2">
       <span className="grid h-7 w-7 place-items-center rounded-full bg-navy-950 text-xs font-black text-aqua-300">{number}</span>
-      <strong className="text-sm text-navy-950">{title}</strong>
+      <strong className="text-sm text-white">{title}</strong>
     </div>
   );
 }

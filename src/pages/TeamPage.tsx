@@ -121,7 +121,7 @@ function InviteForm({ jobs, onSubmit }: { jobs: Job[]; onSubmit: (jobId: string)
     >
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-        <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+        <div className="flex items-center gap-2 text-sm font-black text-white">
           <BriefcaseBusiness size={17} /> Vaga para confirmação
         </div>
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
@@ -177,7 +177,7 @@ function ReviewForm({ onSubmit }: { onSubmit: (review: { rating: number; comment
     >
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-        <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+        <div className="flex items-center gap-2 text-sm font-black text-white">
           <Star size={17} /> Itens obrigatórios da avaliação
         </div>
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">

@@ -117,7 +117,7 @@ function getMeta(notification: NotificationItem, role: UserRole): NotificationMe
     Icon: ShieldCheck,
     href: role === "empresa" ? "/app/empresa" : "/app/trabalhador",
     actionLabel: "Ver painel",
-    helper: "Aviso geral do Free Floripa para manter sua operação em dia."
+    helper: "Aviso geral do PONT para manter sua operação em dia."
   };
 }
 
@@ -270,7 +270,7 @@ export function NotificationsPage() {
                   </div>
                 </div>
                 <div className="worker-next-step">
-                  <strong className="text-navy-950">Próximo passo:</strong>{" "}
+                  <strong className="text-white">Próximo passo:</strong>{" "}
                   <span className="font-semibold text-slate-600">{meta.helper}</span>
                 </div>
               </article>

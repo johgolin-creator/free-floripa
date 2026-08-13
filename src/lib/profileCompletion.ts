@@ -1,7 +1,7 @@
 import type { CompanyProfile, WorkerProfile } from "./types";
 
-const DEFAULT_WORKER_TEXTS = ["Perfil recém-criado no Free Floripa.", "Perfil recÃ©m-criado no Free Floripa."];
-const DEFAULT_COMPANY_TEXTS = ["Empresa cadastrada no Free Floripa."];
+const DEFAULT_WORKER_TEXTS = ["Perfil recém-criado no PONT.", "Perfil recÃ©m-criado no PONT."];
+const DEFAULT_COMPANY_TEXTS = ["Empresa cadastrada no PONT."];
 
 function filled(value: string | undefined | null) {
   return Boolean(value?.trim());
@@ -36,7 +36,7 @@ export function getWorkerProfileCompletion(worker: WorkerProfile) {
 export function getCompanyProfileCompletion(company: CompanyProfile) {
   const missing: string[] = [];
 
-  if (!filled(company.establishmentName) || company.establishmentName === "Empresa Free Floripa") missing.push("nome do estabelecimento");
+  if (!filled(company.establishmentName) || company.establishmentName === "Empresa PONT") missing.push("nome do estabelecimento");
   if (!filled(company.responsibleName) || company.responsibleName === "Responsável" || company.responsibleName === "ResponsÃ¡vel") {
     missing.push("responsável");
   }

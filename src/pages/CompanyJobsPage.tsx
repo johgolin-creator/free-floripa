@@ -8,11 +8,13 @@ import {
   ClipboardList,
   Copy,
   PartyPopper,
+  Plus,
   RotateCcw,
   Square,
   UsersRound,
   WalletCards,
-  XCircle
+  XCircle,
+  Zap
 } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { EmptyState } from "../components/EmptyState";
@@ -104,7 +106,17 @@ export function CompanyJobsPage() {
         </div>
       )}
       {jobs.length === 0 ? (
-        <EmptyState title="Nenhuma vaga publicada" text="Crie uma nova vaga no painel da empresa." />
+        <EmptyState title="Nenhuma vaga publicada" text="Crie uma vaga comum, uma reposição urgente ou monte um evento para começar a receber candidatos.">
+          <Link to="/app/empresa?acao=criar-vaga" className="primary">
+            <Plus size={17} /> Criar vaga
+          </Link>
+          <Link to="/app/empresa?acao=urgente" className="danger">
+            <Zap size={17} /> Vaga urgente
+          </Link>
+          <Link to="/app/eventos" className="secondary">
+            <PartyPopper size={17} /> Montar evento
+          </Link>
+        </EmptyState>
       ) : (
         <div className="grid gap-4">
           <section className="company-jobs-hero">
@@ -120,6 +132,14 @@ export function CompanyJobsPage() {
               <HeroMetric icon={<AlertTriangle size={19} />} label="urgentes" value={String(dashboard.urgent)} />
               <HeroMetric icon={<UsersRound size={19} />} label="candidatos" value={String(dashboard.candidates)} />
               <HeroMetric icon={<WalletCards size={19} />} label="previsto" value={formatCurrency(dashboard.expected)} />
+            </div>
+            <div className="company-hero-actions">
+              <Link to="/app/empresa?acao=criar-vaga" className="company-action company-action-primary">
+                <Plus size={17} /> Criar vaga
+              </Link>
+              <Link to="/app/eventos" className="company-action">
+                <PartyPopper size={17} /> Montar evento
+              </Link>
             </div>
           </section>
 
@@ -380,9 +400,9 @@ function JobHistory({ job, applications }: { job: Job; applications: Application
         const worker = state.workers.find((item) => item.id === application.workerId);
         const shift = state.shifts.find((item) => item.jobId === job.id && item.workerId === application.workerId);
         return (
-          <div key={application.id} className="grid gap-2 rounded-lg bg-white p-3 md:grid-cols-[1fr_auto] md:items-center">
+          <div key={application.id} className="grid gap-2 rounded-lg bg-brand-dark p-3 md:grid-cols-[1fr_auto] md:items-center">
             <div>
-              <strong className="text-sm text-navy-950">{worker?.name ?? "Profissional"}</strong>
+              <strong className="text-sm text-white">{worker?.name ?? "Profissional"}</strong>
               <p className="text-xs font-semibold text-slate-500">
                 {application.status} - inscrição em {formatDate(application.createdAt.slice(0, 10))}
                 {shift?.checkinAt ? ` - check-in ${new Date(shift.checkinAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}

@@ -172,7 +172,7 @@ export function CompanyEventsPage() {
         neighborhood,
         uniform: eventType === "Casamento" ? "Social preto ou conforme orientação dos noivos" : "A combinar com a organização",
         requiredExperience: "Experiência compatível com evento social e atendimento ao público",
-        description: `${eventType} para aproximadamente ${guests} convidados. Equipe criada pela aba Eventos do Free Floripa.`,
+        description: `${eventType} para aproximadamente ${guests} convidados. Equipe criada pela aba Eventos do PONT.`,
         benefits: ["Contato liberado após confirmação", "Equipe organizada por função"],
         urgent: false
       });
@@ -290,7 +290,7 @@ export function CompanyEventsPage() {
       <section className="event-team-card">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="font-black text-navy-950">Equipe necessária</h3>
+            <h3 className="font-black text-white">Equipe necessária</h3>
             <p className="mt-1 text-sm font-semibold text-slate-600">Ajuste quantas pessoas você precisa em cada função.</p>
           </div>
           <button type="button" onClick={applySuggestion} className="secondary">
@@ -300,7 +300,7 @@ export function CompanyEventsPage() {
         <div className="event-needs-grid">
           {eventFunctions.map((item) => (
             <label key={item} className="event-need-card">
-              <span className="text-sm font-black text-navy-950">{item}</span>
+              <span className="text-sm font-black text-white">{item}</span>
               <span className="mt-2 flex items-center gap-2">
                 <input
                   value={needs[item]}
@@ -354,7 +354,7 @@ export function CompanyEventsPage() {
 
       <section className="grid gap-4 xl:grid-cols-[320px_1fr]">
         <aside className="card p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-black text-navy-950">
+          <div className="mb-3 flex items-center gap-2 text-sm font-black text-white">
             <Search size={17} /> Ver profissionais por função
           </div>
           <div className="grid gap-2">
@@ -378,7 +378,7 @@ export function CompanyEventsPage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="section-eyebrow">Disponíveis</p>
-              <h3 className="text-xl font-black text-navy-950">{selectedFunction}</h3>
+              <h3 className="text-xl font-black text-white">{selectedFunction}</h3>
             </div>
             <p className="flex items-center gap-1.5 text-sm font-bold text-slate-600">
               <MapPin size={16} /> Ordenado por confiabilidade
@@ -403,7 +403,7 @@ function Metric({ icon, label, value }: { icon: JSX.Element; label: string; valu
   return (
     <article className="card p-4">
       <div className="mb-3 text-aqua-700">{icon}</div>
-      <strong className="block text-2xl font-black text-navy-950">{value}</strong>
+      <strong className="block text-2xl font-black text-white">{value}</strong>
       <span className="text-sm font-semibold text-slate-500">{label}</span>
     </article>
   );
@@ -416,15 +416,15 @@ function WorkerOption({ worker, functionFocus }: { worker: WorkerProfile; functi
       <WorkerCard worker={worker} showActions={false} functionFocus={functionFocus} />
       <div className="grid grid-cols-3 gap-2 text-sm">
         <span className="metric-tile">
-          <strong className="block text-navy-950">{worker.rating.toFixed(1)}</strong>
+          <strong className="block text-white">{worker.rating.toFixed(1)}</strong>
           <span className="text-slate-500">nota</span>
         </span>
         <span className="metric-tile">
-          <strong className="block text-navy-950">{worker.completedJobs}</strong>
+          <strong className="block text-white">{worker.completedJobs}</strong>
           <span className="text-slate-500">trabalhos</span>
         </span>
         <span className="metric-tile bg-aqua-50">
-          <strong className="block text-navy-950">{reliability}%</strong>
+          <strong className="block text-white">{reliability}%</strong>
           <span className="text-slate-600">confiável</span>
         </span>
       </div>

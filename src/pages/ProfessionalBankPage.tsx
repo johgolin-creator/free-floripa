@@ -87,7 +87,7 @@ export function ProfessionalBankPage() {
       </section>
 
       <section className="card p-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-black text-navy-950">
+        <div className="mb-3 flex items-center gap-2 text-sm font-black text-white">
           <Filter size={17} /> Filtros de busca
         </div>
         <div className="grid gap-3 md:grid-cols-[1.4fr_1fr_1fr_0.8fr]">
@@ -203,7 +203,7 @@ function Metric({ icon, label, value }: { icon: JSX.Element; label: string; valu
   return (
     <article className="card p-4">
       <div className="mb-3 text-aqua-700">{icon}</div>
-      <strong className="block text-2xl font-black text-navy-950">{value}</strong>
+      <strong className="block text-2xl font-black text-white">{value}</strong>
       <span className="text-sm font-semibold text-slate-500">{label}</span>
     </article>
   );
@@ -232,7 +232,7 @@ function InviteForm({ jobs, worker, onSubmit }: { jobs: Job[]; worker: WorkerPro
       <div className="grid gap-3 rounded-lg border border-aqua-100 bg-aqua-50 p-3 md:grid-cols-[auto_1fr]">
         <img src={worker.avatarUrl} alt="" className="h-16 w-16 rounded-lg object-cover" />
         <div>
-          <strong className="block text-navy-950">{worker.name}</strong>
+          <strong className="block text-white">{worker.name}</strong>
           <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-slate-600">
             <MapPin size={15} /> {worker.neighborhood} - {worker.functions.join(", ")}
           </p>
@@ -255,7 +255,7 @@ function InviteForm({ jobs, worker, onSubmit }: { jobs: Job[]; worker: WorkerPro
 
       {selectedJob && (
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm font-semibold leading-6 text-slate-600">
-          <strong className="block text-navy-950">{selectedJob.function}</strong>
+          <strong className="block text-white">{selectedJob.function}</strong>
           {selectedJob.neighborhood} - {selectedJob.startsAt} às {selectedJob.endsAt}. O convite confirma o profissional nesta vaga e cria o turno.
         </div>
       )}

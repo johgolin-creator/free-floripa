@@ -176,7 +176,7 @@ export function CompanySchedulePage() {
       <section className="schedule-section">
         <div className="schedule-section-heading">
           <div>
-            <h3 className="text-lg font-black text-navy-950">Escalas criadas pelo contratante</h3>
+            <h3 className="text-lg font-black text-white">Escalas criadas pelo contratante</h3>
             <p className="text-sm font-semibold text-slate-600">Use para planejar equipe antes de publicar vaga ou antes de alguém se candidatar.</p>
           </div>
           <button type="button" onClick={() => setCreating(true)} disabled={companyBlocked} className="company-action"><Plus size={17} /> Nova escala</button>
@@ -200,7 +200,7 @@ export function CompanySchedulePage() {
 
       <section className="schedule-section">
         <div>
-          <h3 className="text-lg font-black text-navy-950">Escala das vagas aprovadas</h3>
+          <h3 className="text-lg font-black text-white">Escala das vagas aprovadas</h3>
           <p className="text-sm font-semibold text-slate-600">Preenchida automaticamente quando candidatos forem aprovados em vagas.</p>
         </div>
         {companyJobs.length === 0 ? (
@@ -310,7 +310,7 @@ function ManualScheduleCard({
             <span className="badge">{schedule.function}</span>
             <span className="badge">{schedule.quantity} vaga{schedule.quantity === 1 ? "" : "s"}</span>
           </div>
-          <h3 className="font-black text-navy-950">{schedule.title}</h3>
+          <h3 className="font-black text-white">{schedule.title}</h3>
           <p className="text-sm font-semibold text-slate-600">
             {formatDate(schedule.date)} - {schedule.startsAt} às {schedule.endsAt} - {schedule.neighborhood}
           </p>
@@ -328,7 +328,7 @@ function ManualScheduleCard({
           <p className="mt-1 text-sm font-semibold text-slate-500">Nenhum nome adicionado ainda.</p>
         ) : (
           <div className="mt-2 flex flex-wrap gap-2">
-            {schedule.workerNames.map((name) => <span key={name} className="badge bg-white">{name}</span>)}
+            {schedule.workerNames.map((name) => <span key={name} className="badge">{name}</span>)}
           </div>
         )}
       </div>
@@ -443,7 +443,7 @@ function ScheduleWorker({
         <img src={worker.avatarUrl} alt="" className="h-14 w-14 rounded-lg object-cover" />
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <strong className="text-sm text-navy-950">{worker.name}</strong>
+            <strong className="text-sm text-white">{worker.name}</strong>
             <span className="badge">{application.status}</span>
             <span className="badge">{shift?.status ?? "Aguardando presença"}</span>
             <span className="badge bg-aqua-50 text-aqua-700">Código {verificationCode}</span>

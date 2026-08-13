@@ -63,10 +63,10 @@ export function SubscriptionPage() {
   const walletLabel = isCompany ? "Saldo empresarial" : "Saldo do trabalhador";
   const pageDescription = isCompany
     ? "Use moedas empresariais para ações da empresa, como cancelar vagas que já foram preenchidas."
-    : "Use moedas para liberar vagas completas e enviar candidaturas sem mensalidade fixa.";
+    : "Use moedas para liberar vagas completas antes de se candidatar, sem mensalidade fixa.";
   const heroText = isCompany
     ? "As moedas da empresa ficam separadas das moedas do trabalhador. Assim cada lado tem controle próprio de uso e custo."
-    : "O gratuito deixa você conhecer as oportunidades. As moedas liberam a vaga inteira e a candidatura apenas quando você decidir usar.";
+    : "O gratuito deixa você conhecer as oportunidades. A moeda libera a vaga inteira e, naquela vaga, a candidatura não cobra de novo.";
   const localTransactions = state.coinLedger.filter((transaction) => transaction.role === state.activeRole);
   const statementTransactions = transactions.length > 0 ? transactions : localTransactions;
 
@@ -186,7 +186,7 @@ export function SubscriptionPage() {
           featured
           title="Profissional"
           price="R$ 19,90"
-          description="Pacote com 20 moedas para liberar vagas e candidaturas."
+          description="Pacote com 20 moedas para liberar vagas completas."
           current={isProfessional}
           benefits={professionalBenefits}
           action={
@@ -223,12 +223,12 @@ export function SubscriptionPage() {
 
       <section className="plan-note">
         <div>
-          <span className="badge bg-white text-aqua-700">
+          <span className="badge bg-aqua-50 text-aqua-700">
             <ShieldCheck size={15} /> Moedas
           </span>
           <h3>Recargas em preparação</h3>
           <p>
-            As moedas organizam ações importantes dentro do app. Por enquanto, as recargas ficam sob controle da administração do Free Floripa.
+            As moedas organizam ações importantes dentro do app. Por enquanto, as recargas ficam sob controle da administração do PONT.
           </p>
         </div>
         <div className="plan-note-list">
@@ -264,7 +264,7 @@ function CoinStatement({
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <span className="section-eyebrow">Extrato</span>
-          <h3 className="text-xl font-black text-navy-950">{isCompany ? "Histórico de moedas da empresa" : "Histórico de moedas do trabalhador"}</h3>
+          <h3 className="text-xl font-black text-white">{isCompany ? "Histórico de moedas da empresa" : "Histórico de moedas do trabalhador"}</h3>
           <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
             {isCompany
               ? "Acompanhe compras e cobranças empresariais, separadas do saldo do trabalhador."
@@ -282,11 +282,11 @@ function CoinStatement({
         <div className="rounded-lg bg-red-50 p-4 text-sm font-bold text-alert">{error}</div>
       ) : transactions.length === 0 ? (
         <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5">
-          <strong className="text-navy-950">Nenhuma movimentação registrada ainda.</strong>
+          <strong className="text-white">Nenhuma movimentação registrada ainda.</strong>
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
             {isCompany
               ? "Quando a empresa comprar moedas ou tiver uma cobrança empresarial, o histórico aparecerá aqui."
-              : "Quando você comprar moedas, liberar uma vaga ou enviar candidatura, o histórico aparecerá aqui."}
+              : "Quando você comprar moedas ou liberar uma vaga, o histórico aparecerá aqui."}
           </p>
         </div>
       ) : (
@@ -314,12 +314,12 @@ function CoinTransactionRow({ transaction }: { transaction: CoinTransaction }) {
               <span className={`badge ${positive ? "bg-aqua-50 text-aqua-700" : ""}`}>{positive ? "Entrada" : "Uso"}</span>
               <span className="badge">{formatDateTime(transaction.createdAt)}</span>
             </div>
-            <h4 className="font-black text-navy-950">{getTransactionTitle(transaction)}</h4>
+            <h4 className="font-black text-white">{getTransactionTitle(transaction)}</h4>
             <p className="text-sm font-semibold leading-6 text-slate-600">{getTransactionDescription(transaction)}</p>
           </div>
         </div>
         <div className="text-right">
-          <strong className={`block text-lg font-black ${positive ? "text-aqua-700" : "text-navy-950"}`}>
+          <strong className={`block text-lg font-black ${positive ? "text-aqua-700" : "text-white"}`}>
             {positive ? "+" : ""}{transaction.amount} moeda{Math.abs(transaction.amount) === 1 ? "" : "s"}
           </strong>
           <span className="text-xs font-black uppercase text-slate-500">Saldo: {transaction.balanceAfter}</span>
@@ -346,14 +346,14 @@ function getTransactionDescription(transaction: CoinTransaction) {
   if (transaction.reason === "apply_job" && transaction.applicationId) return `Candidatura ${transaction.applicationId}.`;
   if (transaction.reason === "cancel_filled_job" && transaction.jobId) return `Taxa de cancelamento da vaga preenchida ${transaction.jobId}.`;
   if (transaction.amount > 0) return "Moedas adicionadas ao saldo da sua conta.";
-  return "Moedas utilizadas dentro do Free Floripa.";
+  return "Moedas utilizadas dentro do PONT.";
 }
 
 function PlanStat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="metric-card">
       <div className="mb-2 text-aqua-700">{icon}</div>
-      <strong className="block text-sm text-navy-950">{value}</strong>
+      <strong className="block text-sm text-white">{value}</strong>
       <span className="text-xs font-black uppercase text-slate-500">{label}</span>
     </div>
   );

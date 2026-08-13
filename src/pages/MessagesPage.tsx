@@ -75,7 +75,7 @@ export function MessagesPage() {
       <SectionHeader
         eyebrow="Mensagens"
         title="Chat interno"
-        description="Converse dentro do Free Floripa depois que a candidatura for aprovada."
+        description="Converse dentro do PONT depois que a candidatura for aprovada."
       />
 
       {feedback && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{feedback}</div>}
@@ -106,7 +106,7 @@ export function MessagesPage() {
                   >
                     <MessageCircle size={17} />
                     <span className="min-w-0 flex-1">
-                      <strong className="block truncate text-navy-950">{conversation.participant}</strong>
+                      <strong className="block truncate text-white">{conversation.participant}</strong>
                       <small className="block truncate text-xs font-bold text-slate-500">{conversation.title}</small>
                     </span>
                     {unread > 0 && <span className="badge bg-aqua-100 text-aqua-700">{unread}</span>}
@@ -123,7 +123,7 @@ export function MessagesPage() {
                   <div className="flex items-center gap-2 text-sm font-black text-aqua-700">
                     <UserRound size={17} /> {selected.participant}
                   </div>
-                  <h3 className="mt-1 text-xl font-black text-navy-950">{selected.title}</h3>
+                  <h3 className="mt-1 text-xl font-black text-white">{selected.title}</h3>
                   <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-slate-600">
                     <CalendarDays size={15} /> {selected.subtitle}
                   </p>
@@ -149,7 +149,7 @@ export function MessagesPage() {
                     const mine = item.senderRole === state.activeRole;
                     return (
                       <div key={item.id} className={`grid ${mine ? "justify-items-end" : "justify-items-start"}`}>
-                        <div className={`max-w-[82%] rounded-lg p-3 ${mine ? "bg-navy-950 text-white" : "bg-slate-50 text-navy-950"}`}>
+                        <div className={`max-w-[82%] rounded-lg p-3 ${mine ? "bg-navy-950 text-white" : "bg-slate-50 text-white"}`}>
                           <strong className="block text-xs">{item.senderName}</strong>
                           <p className="mt-1 text-sm font-semibold leading-6">{item.body}</p>
                           <span className={`mt-2 block text-[0.68rem] font-bold ${mine ? "text-slate-300" : "text-slate-500"}`}>

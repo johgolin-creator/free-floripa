@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 :root {
-  color: #08263d;
-  background: #f6fafb;
+  color: #f5f6f8;
+  background: #111318;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    "Space Grotesk", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -20,7 +20,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    linear-gradient(180deg, #f7fbfc 0%, #eef6f7 46%, #f8fafc 100%);
+    radial-gradient(circle at 12% -10%, rgba(200, 255, 56, 0.08), transparent 42%),
+    #111318;
 }
 
 button,
@@ -40,21 +41,21 @@ a {
 }
 
 ::selection {
-  background: rgba(22, 199, 167, 0.22);
-  color: #061827;
+  background: rgba(200, 255, 56, 0.28);
+  color: #111318;
 }
 
 @layer components {
 .card {
-  @apply rounded-lg border border-slate-200/70 bg-white/95 shadow-soft ring-1 ring-white/70 transition duration-200;
+  @apply rounded-lg border border-white/10 bg-brand-charcoal shadow-soft ring-1 ring-white/5 transition duration-200;
 }
 
 .soft-panel {
-  @apply rounded-lg border border-aqua-100/80 bg-gradient-to-r from-white to-aqua-50/70 shadow-soft ring-1 ring-white/80;
+  @apply rounded-lg border border-aqua-100/80 bg-gradient-to-r from-brand-charcoal to-aqua-50/40 shadow-soft ring-1 ring-white/5;
 }
 
 .input {
-  @apply min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-navy-950 outline-none transition placeholder:text-slate-400 focus:border-aqua-500 focus:ring-4 focus:ring-aqua-100;
+  @apply min-h-11 w-full rounded-lg border border-white/10 bg-brand-charcoal px-3 text-sm font-semibold text-white outline-none transition placeholder:text-slate-400 focus:border-aqua-500 focus:ring-4 focus:ring-aqua-100;
 }
 
 .label {
@@ -66,7 +67,7 @@ a {
 }
 
 .secondary {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-navy-900 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-aqua-200 hover:bg-aqua-50 active:translate-y-0;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-brand-charcoal px-4 text-sm font-black text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-aqua-200 hover:bg-aqua-50 active:translate-y-0;
 }
 
 .danger {
@@ -74,7 +75,7 @@ a {
 }
 
 .badge {
-  @apply inline-flex min-h-7 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 shadow-sm;
+  @apply inline-flex min-h-7 items-center gap-1.5 rounded-full border border-slate-200 bg-brand-charcoal px-3 text-xs font-black text-slate-700 shadow-sm;
 }
 
 .urgent {
@@ -93,7 +94,7 @@ a {
   width: 76px;
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #16c7a7 0%, #f4b740 58%, #ff6b57 100%);
+  background: linear-gradient(90deg, #c8ff38 0%, #f4b740 58%, #ff6b57 100%);
 }
 
 .section-eyebrow {
@@ -101,7 +102,7 @@ a {
 }
 
 .metric-card {
-  @apply relative overflow-hidden rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70 transition duration-200;
+  @apply relative overflow-hidden rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5 transition duration-200;
 }
 
 .metric-card::before {
@@ -109,7 +110,7 @@ a {
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
-  background: linear-gradient(180deg, #16c7a7, #f4b740);
+  background: linear-gradient(180deg, #c8ff38, #f4b740);
 }
 
 .metric-tile {
@@ -126,11 +127,12 @@ a {
 
 .app-shell {
   background:
-    linear-gradient(180deg, rgba(8, 38, 61, 0.04) 0%, rgba(22, 199, 167, 0.07) 42%, rgba(248, 250, 252, 1) 100%);
+    radial-gradient(circle at 50% 0%, rgba(200, 255, 56, 0.06) 0%, transparent 46%),
+    #111318;
 }
 
 .app-mobile-header {
-  @apply relative overflow-hidden bg-navy-950 px-4 pb-5 pt-4 text-white shadow-lift;
+  @apply relative overflow-hidden border-b border-white/5 bg-navy-950 px-4 pb-5 pt-4 text-white shadow-lift;
   border-radius: 0 0 24px 24px;
 }
 
@@ -139,8 +141,8 @@ a {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(135deg, rgba(22, 199, 167, 0.18), transparent 38%),
-    linear-gradient(315deg, rgba(244, 183, 64, 0.14), transparent 42%);
+    linear-gradient(135deg, rgba(200, 255, 56, 0.14), transparent 38%),
+    linear-gradient(315deg, rgba(244, 183, 64, 0.12), transparent 42%);
   pointer-events: none;
 }
 
@@ -166,11 +168,11 @@ a {
 }
 
 .app-mobile-search {
-  @apply mt-4 flex min-h-12 items-center justify-between gap-3 rounded-lg bg-white px-4 text-sm font-bold text-slate-500 shadow-lift ring-1 ring-white/70;
+  @apply mt-4 flex min-h-12 items-center justify-between gap-3 rounded-lg bg-brand-charcoal px-4 text-sm font-bold text-slate-400 shadow-lift ring-1 ring-white/10;
 }
 
 .app-mobile-search svg {
-  @apply shrink-0 text-navy-950;
+  @apply shrink-0 text-slate-300;
 }
 
 .app-bottom-nav {
@@ -182,7 +184,7 @@ a {
 }
 
 .hero-brand-logo {
-  @apply h-auto w-full max-w-[210px] rounded-lg bg-white p-3 shadow-lift md:max-w-[230px];
+  @apply mb-2 h-20 w-20 rounded-lg bg-brand-charcoal p-3 shadow-lift ring-1 ring-white/10;
 }
 
 .hero-section {
@@ -202,7 +204,7 @@ a {
 }
 
 .hero-copy {
-  @apply mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-200 md:text-lg;
+  @apply mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-300 md:text-lg;
 }
 
 .hero-actions {
@@ -218,7 +220,7 @@ a {
 }
 
 .phone-mockup {
-  @apply relative grid min-h-[330px] content-start gap-3 overflow-hidden rounded-[2rem] border-[7px] border-slate-950 bg-white p-3 text-navy-950 shadow-lift ring-1 ring-white/20;
+  @apply relative grid min-h-[330px] content-start gap-3 overflow-hidden rounded-[2rem] border-[7px] border-slate-950 bg-brand-charcoal p-3 text-white shadow-lift ring-1 ring-white/10;
 }
 
 .phone-mockup::after {
@@ -230,7 +232,7 @@ a {
   height: 4px;
   transform: translateX(-50%);
   border-radius: 999px;
-  background: rgba(8, 38, 61, 0.18);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .phone-mockup.is-featured {
@@ -250,7 +252,7 @@ a {
 }
 
 .phone-mockup h3 {
-  @apply text-base font-black leading-tight text-navy-950;
+  @apply text-base font-black leading-tight text-white;
 }
 
 .phone-search {
@@ -262,7 +264,7 @@ a {
 }
 
 .phone-category-row span {
-  @apply rounded-lg border border-slate-100 bg-slate-50 p-2 text-center text-[0.62rem] font-black text-navy-950;
+  @apply rounded-lg border border-slate-100 bg-slate-50 p-2 text-center text-[0.62rem] font-black text-white;
 }
 
 .phone-job-card,
@@ -272,7 +274,7 @@ a {
 
 .phone-job-card strong,
 .phone-event-card strong {
-  @apply inline-flex items-center gap-1.5 font-black text-navy-950;
+  @apply inline-flex items-center gap-1.5 font-black text-white;
 }
 
 .phone-job-card svg {
@@ -287,7 +289,7 @@ a {
 .phone-cover {
   @apply h-24 rounded-lg bg-cover bg-center shadow-sm;
   background-image:
-    linear-gradient(180deg, rgba(8, 38, 61, 0.04), rgba(8, 38, 61, 0.28)),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.5)),
     url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=500&q=80");
 }
 
@@ -312,7 +314,7 @@ a {
 }
 
 .phone-metric-grid strong {
-  @apply block text-xl font-black text-navy-950;
+  @apply block text-xl font-black text-white;
 }
 
 .phone-step-row {
@@ -320,11 +322,11 @@ a {
 }
 
 .phone-step-row span {
-  @apply grid h-8 place-items-center rounded-full bg-slate-100 text-xs font-black text-navy-950;
+  @apply grid h-8 place-items-center rounded-full bg-slate-100 text-xs font-black text-white;
 }
 
 .phone-step-row span:first-child {
-  @apply bg-aqua-500;
+  @apply bg-aqua-500 text-navy-950;
 }
 
 .phone-price {
@@ -352,7 +354,7 @@ a {
 }
 
 .auth-content-panel {
-  @apply bg-white p-5 md:p-6;
+  @apply bg-brand-charcoal p-5 md:p-6;
 }
 
 .auth-form {
@@ -368,7 +370,7 @@ a {
 }
 
 .auth-alert-info {
-  @apply bg-aqua-100 text-navy-950;
+  @apply bg-aqua-100 text-white;
 }
 
 .auth-required-panel {
@@ -384,7 +386,7 @@ a {
 }
 
 .role-choice span {
-  @apply flex min-h-12 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-navy-900 shadow-sm transition;
+  @apply flex min-h-12 items-center gap-2 rounded-lg border border-slate-200 bg-brand-charcoal px-3 text-sm font-black text-white shadow-sm transition;
 }
 
 .role-choice input:checked + span {
@@ -392,7 +394,7 @@ a {
 }
 
 .signup-step {
-  @apply bg-white shadow-sm;
+  @apply bg-brand-charcoal shadow-sm;
 }
 
 .plan-hero {
@@ -404,7 +406,7 @@ a {
 }
 
 .plan-hero-copy p {
-  @apply mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-200 md:text-base;
+  @apply mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-300 md:text-base;
 }
 
 .plan-unlock-grid {
@@ -416,7 +418,7 @@ a {
 }
 
 .plan-price-card {
-  @apply rounded-lg border border-white/15 bg-white p-5 text-navy-950 shadow-lift;
+  @apply rounded-lg border border-white/15 bg-brand-charcoal p-5 text-white shadow-lift;
 }
 
 .plan-star {
@@ -424,7 +426,7 @@ a {
 }
 
 .plan-price-card h3 {
-  @apply mt-4 text-2xl font-black text-navy-950;
+  @apply mt-4 text-2xl font-black text-white;
 }
 
 .plan-price {
@@ -432,7 +434,7 @@ a {
 }
 
 .plan-price strong {
-  @apply text-4xl font-black text-navy-950;
+  @apply text-4xl font-black text-white;
 }
 
 .plan-price span {
@@ -444,7 +446,7 @@ a {
 }
 
 .plan-card {
-  @apply grid gap-4 rounded-lg border border-slate-200/70 bg-white/95 p-5 shadow-soft ring-1 ring-white/70;
+  @apply grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-5 shadow-soft ring-1 ring-white/5;
 }
 
 .plan-card-featured {
@@ -452,7 +454,7 @@ a {
 }
 
 .plan-card h3 {
-  @apply mt-3 text-2xl font-black text-navy-950;
+  @apply mt-3 text-2xl font-black text-white;
 }
 
 .plan-card p {
@@ -460,7 +462,7 @@ a {
 }
 
 .plan-card-price {
-  @apply rounded-lg bg-white px-3 py-2 text-lg font-black text-navy-950 shadow-sm;
+  @apply rounded-lg bg-brand-dark px-3 py-2 text-lg font-black text-white shadow-sm;
 }
 
 .plan-benefit {
@@ -472,11 +474,11 @@ a {
 }
 
 .plan-note {
-  @apply grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-soft lg:grid-cols-[0.9fr_1.1fr] lg:items-start;
+  @apply grid gap-5 rounded-lg border border-slate-200 bg-brand-charcoal p-5 shadow-soft lg:grid-cols-[0.9fr_1.1fr] lg:items-start;
 }
 
 .plan-note h3 {
-  @apply mt-3 text-2xl font-black text-navy-950;
+  @apply mt-3 text-2xl font-black text-white;
 }
 
 .plan-note p {
@@ -496,7 +498,7 @@ a {
 }
 
 .plan-mini-feature strong {
-  @apply text-sm font-black text-navy-950;
+  @apply text-sm font-black text-white;
 }
 
 .plan-mini-feature p {
@@ -508,7 +510,7 @@ a {
 }
 
 .job-plan-modal h3 {
-  @apply mt-3 text-2xl font-black text-navy-950;
+  @apply mt-3 text-2xl font-black text-white;
 }
 
 .job-plan-modal p {
@@ -520,7 +522,7 @@ a {
 }
 
 .job-plan-option strong {
-  @apply text-2xl font-black text-navy-950;
+  @apply text-2xl font-black text-white;
 }
 
 .job-plan-option small {
@@ -532,12 +534,12 @@ a {
 }
 
 .job-preview-card {
-  @apply grid gap-5 rounded-lg border border-slate-200/70 bg-white/95 p-5 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_340px];
+  @apply grid gap-5 rounded-lg border border-white/10 bg-brand-charcoal p-5 shadow-soft ring-1 ring-white/5 lg:grid-cols-[1fr_340px];
 }
 
 .job-preview-main h2,
 .job-detail-card h2 {
-  @apply text-2xl font-black leading-tight text-navy-950 md:text-3xl;
+  @apply text-2xl font-black leading-tight text-white md:text-3xl;
 }
 
 .job-preview-main p,
@@ -559,7 +561,7 @@ a {
 }
 
 .job-lock-panel h3 {
-  @apply text-xl font-black text-navy-950;
+  @apply text-xl font-black text-white;
 }
 
 .job-lock-panel p {
@@ -571,11 +573,11 @@ a {
 }
 
 .job-unlock-list span {
-  @apply flex items-center gap-2 rounded-lg border border-white bg-white p-2 text-sm font-bold text-slate-600;
+  @apply flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 p-2 text-sm font-bold text-slate-600;
 }
 
 .job-detail-card {
-  @apply overflow-hidden rounded-lg border border-slate-200/70 bg-white/95 shadow-soft ring-1 ring-white/70;
+  @apply overflow-hidden rounded-lg border border-white/10 bg-brand-charcoal shadow-soft ring-1 ring-white/5;
 }
 
 .job-detail-grid {
@@ -591,23 +593,23 @@ a {
 }
 
 .contact-card {
-  @apply grid gap-2 rounded-lg border border-aqua-100 bg-white p-3;
+  @apply grid gap-2 rounded-lg border border-aqua-100 bg-brand-charcoal p-3;
 }
 
 .contact-locked {
-  @apply flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 text-sm font-bold text-slate-500;
+  @apply flex items-center gap-2 rounded-lg border border-slate-200 bg-brand-charcoal p-3 text-sm font-bold text-slate-500;
 }
 
 .worker-match-card {
-  @apply rounded-lg border border-slate-200 bg-white p-3;
+  @apply rounded-lg border border-slate-200 bg-brand-charcoal p-3;
 }
 
 .job-info-tile {
-  @apply rounded-lg border border-slate-200 bg-white p-3 shadow-sm;
+  @apply rounded-lg border border-slate-200 bg-brand-charcoal p-3 shadow-sm;
 }
 
 .event-stepper {
-  @apply grid grid-cols-4 gap-2 rounded-lg border border-slate-200/70 bg-white/95 p-3 shadow-soft ring-1 ring-white/70;
+  @apply grid grid-cols-4 gap-2 rounded-lg border border-white/10 bg-brand-charcoal p-3 shadow-soft ring-1 ring-white/5;
 }
 
 .event-step {
@@ -636,11 +638,11 @@ a {
 
 .event-form-card,
 .event-team-card {
-  @apply rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+  @apply rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5;
 }
 
 .event-form-title {
-  @apply mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-sm font-black text-navy-950;
+  @apply mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-sm font-black text-white;
 }
 
 .event-preset-grid {
@@ -648,11 +650,11 @@ a {
 }
 
 .event-preset-button {
-  @apply grid min-h-20 gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left shadow-sm transition hover:border-aqua-200 hover:bg-aqua-50 hover:shadow-soft;
+  @apply grid min-h-20 gap-1 rounded-lg border border-slate-200 bg-brand-charcoal px-3 py-2 text-left shadow-sm transition hover:border-aqua-200 hover:bg-aqua-50 hover:shadow-soft;
 }
 
 .event-preset-button strong {
-  @apply text-sm font-black text-navy-950;
+  @apply text-sm font-black text-white;
 }
 
 .event-preset-button span {
@@ -697,7 +699,7 @@ a {
 }
 
 .event-review-panel h3 {
-  @apply text-lg font-black text-navy-950;
+  @apply text-lg font-black text-white;
 }
 
 .event-review-panel p:not(.section-eyebrow) {
@@ -709,7 +711,7 @@ a {
 }
 
 .event-review-list span {
-  @apply flex min-h-10 items-center gap-2 rounded-lg border border-white bg-white/85 px-3 text-sm font-black text-navy-950 shadow-sm;
+  @apply flex min-h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-3 text-sm font-black text-white shadow-sm;
 }
 
 .event-review-list strong {
@@ -717,7 +719,7 @@ a {
 }
 
 .event-review-footer {
-  @apply flex flex-wrap items-center justify-between gap-2 border-t border-aqua-100 pt-3 text-sm font-black text-navy-950;
+  @apply flex flex-wrap items-center justify-between gap-2 border-t border-aqua-100 pt-3 text-sm font-black text-white;
 }
 
 .event-review-footer span {
@@ -730,12 +732,12 @@ a {
 
 .company-jobs-hero,
 .candidate-board-hero {
-  @apply grid gap-4 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_440px] lg:items-center;
+  @apply grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5 lg:grid-cols-[1fr_440px] lg:items-center;
 }
 
 .company-jobs-hero h2,
 .candidate-board-hero h2 {
-  @apply mt-1 text-2xl font-black leading-tight text-navy-950;
+  @apply mt-1 text-2xl font-black leading-tight text-white;
 }
 
 .company-jobs-hero p,
@@ -746,6 +748,10 @@ a {
 .company-hero-metrics,
 .candidate-hero-metrics {
   @apply grid grid-cols-2 gap-2;
+}
+
+.company-hero-actions {
+  @apply flex flex-wrap gap-2 lg:col-span-2;
 }
 
 .company-hero-metric,
@@ -760,7 +766,7 @@ a {
 
 .company-hero-metric strong,
 .candidate-hero-metric strong {
-  @apply text-xl font-black text-navy-950;
+  @apply text-xl font-black text-white;
 }
 
 .company-hero-metric small,
@@ -770,7 +776,7 @@ a {
 
 .company-filter-bar,
 .candidate-selector-panel {
-  @apply grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-3 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_auto] lg:items-end;
+  @apply grid gap-3 rounded-lg border border-white/10 bg-brand-charcoal p-3 shadow-soft ring-1 ring-white/5 lg:grid-cols-[1fr_auto] lg:items-end;
 }
 
 .company-filter-stats,
@@ -785,7 +791,7 @@ a {
 
 .company-stat-tile strong,
 .candidate-stat-tile strong {
-  @apply block text-lg font-black text-navy-950;
+  @apply block text-lg font-black text-white;
 }
 
 .company-stat-tile span,
@@ -798,7 +804,7 @@ a {
 }
 
 .company-filter-button {
-  @apply min-h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700;
+  @apply min-h-9 rounded-lg border border-slate-200 bg-brand-charcoal px-3 text-sm font-black text-slate-600 transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700;
 }
 
 .company-filter-button.is-active {
@@ -806,7 +812,7 @@ a {
 }
 
 .event-package-panel {
-  @apply grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+  @apply grid gap-3 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5;
 }
 
 .event-package-heading {
@@ -814,7 +820,7 @@ a {
 }
 
 .event-package-heading h3 {
-  @apply text-xl font-black text-navy-950;
+  @apply text-xl font-black text-white;
 }
 
 .event-package-heading p {
@@ -834,7 +840,7 @@ a {
 }
 
 .event-package-title strong {
-  @apply block text-base font-black text-navy-950;
+  @apply block text-base font-black text-white;
 }
 
 .event-package-title span:not(.badge) {
@@ -850,11 +856,11 @@ a {
 }
 
 .event-package-functions span {
-  @apply rounded-lg border border-aqua-100 bg-white px-2.5 py-1 text-xs font-black text-aqua-800;
+  @apply rounded-lg border border-aqua-100 bg-brand-charcoal px-2.5 py-1 text-xs font-black text-aqua-800;
 }
 
 .company-job-card {
-  @apply grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-3 shadow-sm ring-1 ring-white/70;
+  @apply grid gap-3 rounded-lg border border-white/10 bg-brand-charcoal p-3 shadow-sm ring-1 ring-white/5;
 }
 
 .company-job-head {
@@ -862,7 +868,7 @@ a {
 }
 
 .company-job-head h3 {
-  @apply text-base font-black leading-snug text-navy-950 md:text-lg;
+  @apply text-base font-black leading-snug text-white md:text-lg;
 }
 
 .company-job-head p {
@@ -878,7 +884,7 @@ a {
 }
 
 .company-mini-tile strong {
-  @apply block truncate text-sm font-black text-navy-950;
+  @apply block truncate text-sm font-black text-white;
 }
 
 .company-mini-tile span {
@@ -890,7 +896,7 @@ a {
 }
 
 .company-job-progress > div:first-child {
-  @apply flex items-center justify-between gap-3 text-sm font-black text-navy-950;
+  @apply flex items-center justify-between gap-3 text-sm font-black text-white;
 }
 
 .company-job-progress small {
@@ -898,7 +904,7 @@ a {
 }
 
 .company-progress-track {
-  @apply h-2 overflow-hidden rounded-lg bg-white;
+  @apply h-2 overflow-hidden rounded-lg bg-white/10;
 }
 
 .company-progress-track span {
@@ -911,7 +917,7 @@ a {
 }
 
 .company-action {
-  @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-center text-xs font-black text-navy-950 shadow-sm transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700 disabled:cursor-not-allowed disabled:opacity-45;
+  @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-brand-charcoal px-3 text-center text-xs font-black text-white shadow-sm transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700 disabled:cursor-not-allowed disabled:opacity-45;
 }
 
 .company-action-primary {
@@ -927,11 +933,11 @@ a {
 }
 
 .company-history summary {
-  @apply flex cursor-pointer items-center gap-2 text-sm font-black text-navy-950;
+  @apply flex cursor-pointer items-center gap-2 text-sm font-black text-white;
 }
 
 .candidate-job-summary {
-  @apply rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+  @apply rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5;
 }
 
 .candidate-job-main {
@@ -943,7 +949,7 @@ a {
 }
 
 .candidate-job-result strong {
-  @apply text-xl font-black text-navy-950;
+  @apply text-xl font-black text-white;
 }
 
 .candidate-card {
@@ -951,7 +957,7 @@ a {
 }
 
 .candidate-control-panel {
-  @apply grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-3 shadow-soft ring-1 ring-white/70;
+  @apply grid gap-3 rounded-lg border border-white/10 bg-brand-charcoal p-3 shadow-soft ring-1 ring-white/5;
 }
 
 .candidate-event-context {
@@ -963,7 +969,7 @@ a {
 }
 
 .candidate-event-context strong {
-  @apply text-sm font-black text-navy-950;
+  @apply text-sm font-black text-white;
 }
 
 .candidate-event-context small {
@@ -988,7 +994,7 @@ a {
 }
 
 .candidate-review-panel {
-  @apply border-slate-200 bg-white;
+  @apply border-slate-200 bg-brand-charcoal;
 }
 
 .candidate-locked-note {
@@ -996,11 +1002,11 @@ a {
 }
 
 .schedule-hero {
-  @apply mb-4 grid gap-5 rounded-lg border border-slate-200/70 bg-white/95 p-5 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_520px] lg:items-center;
+  @apply mb-4 grid gap-5 rounded-lg border border-white/10 bg-brand-charcoal p-5 shadow-soft ring-1 ring-white/5 lg:grid-cols-[1fr_520px] lg:items-center;
 }
 
 .schedule-hero h2 {
-  @apply mt-2 text-2xl font-black leading-tight text-navy-950 md:text-3xl;
+  @apply mt-2 text-2xl font-black leading-tight text-white md:text-3xl;
 }
 
 .schedule-hero p {
@@ -1020,7 +1026,7 @@ a {
 }
 
 .schedule-hero-metric strong {
-  @apply text-2xl font-black text-navy-950;
+  @apply text-2xl font-black text-white;
 }
 
 .schedule-hero-metric small {
@@ -1028,7 +1034,7 @@ a {
 }
 
 .schedule-filter-panel {
-  @apply mb-5 grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70 xl:grid-cols-[1fr_auto] xl:items-end;
+  @apply mb-5 grid gap-3 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5 xl:grid-cols-[1fr_auto] xl:items-end;
 }
 
 .schedule-stat-grid {
@@ -1040,7 +1046,7 @@ a {
 }
 
 .schedule-stat-tile strong {
-  @apply block text-lg font-black text-navy-950;
+  @apply block text-lg font-black text-white;
 }
 
 .schedule-stat-tile span {
@@ -1056,7 +1062,7 @@ a {
 }
 
 .schedule-filter-button {
-  @apply min-h-10 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700;
+  @apply min-h-10 rounded-lg border border-slate-200 bg-brand-charcoal px-4 text-sm font-black text-slate-600 transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700;
 }
 
 .schedule-filter-button.is-active {
@@ -1073,7 +1079,7 @@ a {
 
 .schedule-manual-card,
 .schedule-job-card {
-  @apply grid gap-4 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+  @apply grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5;
 }
 
 .schedule-job-head {
@@ -1081,7 +1087,7 @@ a {
 }
 
 .schedule-job-head h3 {
-  @apply text-lg font-black text-navy-950;
+  @apply text-lg font-black text-white;
 }
 
 .schedule-card-actions {
@@ -1101,7 +1107,7 @@ a {
 }
 
 .schedule-mini-tile strong {
-  @apply block truncate text-sm font-black text-navy-950;
+  @apply block truncate text-sm font-black text-white;
 }
 
 .schedule-mini-tile span {
@@ -1113,7 +1119,7 @@ a {
 }
 
 .schedule-worker-card {
-  @apply grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm lg:grid-cols-[1fr_auto] lg:items-center;
+  @apply grid gap-3 rounded-lg border border-slate-200 bg-brand-charcoal p-3 shadow-sm lg:grid-cols-[1fr_auto] lg:items-center;
 }
 
 .schedule-worker-actions {
@@ -1121,11 +1127,11 @@ a {
 }
 
 .worker-hero {
-  @apply mb-4 grid gap-5 rounded-lg border border-slate-200/70 bg-white/95 p-5 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_520px] lg:items-center;
+  @apply mb-4 grid gap-5 rounded-lg border border-white/10 bg-brand-charcoal p-5 shadow-soft ring-1 ring-white/5 lg:grid-cols-[1fr_520px] lg:items-center;
 }
 
 .worker-hero h2 {
-  @apply mt-2 text-2xl font-black leading-tight text-navy-950 md:text-3xl;
+  @apply mt-2 text-2xl font-black leading-tight text-white md:text-3xl;
 }
 
 .worker-hero p {
@@ -1145,7 +1151,7 @@ a {
 }
 
 .worker-hero-metric strong {
-  @apply text-2xl font-black text-navy-950;
+  @apply text-2xl font-black text-white;
 }
 
 .worker-hero-metric small {
@@ -1153,7 +1159,7 @@ a {
 }
 
 .worker-filter-panel {
-  @apply grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+  @apply grid gap-3 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5;
 }
 
 .worker-filter-summary {
@@ -1161,7 +1167,7 @@ a {
 }
 
 .worker-filter-summary strong {
-  @apply block text-sm font-black text-navy-950;
+  @apply block text-sm font-black text-white;
 }
 
 .worker-filter-summary span {
@@ -1173,7 +1179,7 @@ a {
 }
 
 .worker-filter-button {
-  @apply min-h-10 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700;
+  @apply min-h-10 rounded-lg border border-slate-200 bg-brand-charcoal px-4 text-sm font-black text-slate-600 transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700;
 }
 
 .worker-filter-button.is-active {
@@ -1181,7 +1187,7 @@ a {
 }
 
 .worker-application-card {
-  @apply grid gap-4 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+  @apply grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5;
 }
 
 .worker-card-head {
@@ -1189,11 +1195,11 @@ a {
 }
 
 .worker-card-head h3 {
-  @apply text-xl font-black text-navy-950;
+  @apply text-xl font-black text-white;
 }
 
 .worker-next-step {
-  @apply grid max-w-sm gap-1 rounded-lg border border-aqua-100 bg-aqua-50 px-3 py-2 text-sm text-navy-950;
+  @apply grid max-w-sm gap-1 rounded-lg border border-aqua-100 bg-aqua-50 px-3 py-2 text-sm text-white;
 }
 
 .worker-next-step small {
@@ -1201,7 +1207,7 @@ a {
 }
 
 .worker-next-step strong {
-  @apply text-sm font-black text-navy-950;
+  @apply text-sm font-black text-white;
 }
 
 .worker-next-step span {
@@ -1225,7 +1231,7 @@ a {
 }
 
 .worker-info-tile {
-  @apply rounded-lg border border-slate-200 bg-white p-3 shadow-sm;
+  @apply rounded-lg border border-slate-200 bg-brand-charcoal p-3 shadow-sm;
 }
 
 .worker-contact-panel {
@@ -1241,11 +1247,11 @@ a {
 }
 
 .home-entry-section {
-  @apply border-b border-slate-200 bg-white;
+  @apply border-b border-white/10 bg-brand-dark;
 }
 
 .home-entry-card {
-  @apply grid gap-2 rounded-lg border border-slate-200 bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-aqua-200 hover:bg-aqua-50 hover:shadow-lift;
+  @apply grid gap-2 rounded-lg border border-slate-200 bg-brand-charcoal p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-aqua-200 hover:bg-aqua-50 hover:shadow-lift;
 }
 
 .home-entry-card > span {
@@ -1253,7 +1259,7 @@ a {
 }
 
 .home-entry-card strong {
-  @apply text-base font-black text-navy-950;
+  @apply text-base font-black text-white;
 }
 
 .home-entry-card p {
@@ -1265,7 +1271,7 @@ a {
 }
 
 .profile-card {
-  @apply overflow-hidden rounded-lg border border-slate-200/70 bg-white/95 shadow-soft ring-1 ring-white/70;
+  @apply overflow-hidden rounded-lg border border-white/10 bg-brand-charcoal shadow-soft ring-1 ring-white/5;
 }
 
 .profile-main-row {
@@ -1309,7 +1315,7 @@ a {
 }
 
 .profile-edit-note strong {
-  @apply block font-black text-navy-950;
+  @apply block font-black text-white;
 }
 
 .profile-edit-note p {
@@ -1325,11 +1331,11 @@ a {
 }
 
 .job-wizard-progress-card strong {
-  @apply mt-1 block text-sm font-black text-navy-950;
+  @apply mt-1 block text-sm font-black text-white;
 }
 
 .job-wizard-progress-track {
-  @apply h-2 overflow-hidden rounded-full bg-white;
+  @apply h-2 overflow-hidden rounded-full bg-white/10;
 }
 
 .job-wizard-progress-track span {
@@ -1341,11 +1347,11 @@ a {
 }
 
 .job-wizard-step {
-  @apply grid min-h-16 content-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-center text-xs font-black text-slate-500 transition hover:border-aqua-200 hover:bg-aqua-50;
+  @apply grid min-h-16 content-center gap-1 rounded-lg border border-slate-200 bg-brand-charcoal px-2 text-center text-xs font-black text-slate-500 transition hover:border-aqua-200 hover:bg-aqua-50;
 }
 
 .job-wizard-step span {
-  @apply mx-auto grid h-6 w-6 place-items-center rounded-full bg-slate-100 text-[0.7rem] text-navy-950;
+  @apply mx-auto grid h-6 w-6 place-items-center rounded-full bg-slate-100 text-[0.7rem] text-white;
 }
 
 .job-wizard-step.is-active {
@@ -1361,11 +1367,11 @@ a {
 }
 
 .job-wizard-panel {
-  @apply grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-sm;
+  @apply grid gap-3 rounded-lg border border-slate-200/70 bg-brand-charcoal p-4 shadow-sm;
 }
 
 .job-wizard-panel h3 {
-  @apply mt-1 text-xl font-black text-navy-950;
+  @apply mt-1 text-xl font-black text-white;
 }
 
 .job-wizard-panel .label {
@@ -1373,7 +1379,7 @@ a {
 }
 
 .job-wizard-panel .input {
-  @apply bg-white;
+  @apply bg-brand-dark;
 }
 
 .job-wizard-toggle-card {
@@ -1389,15 +1395,15 @@ a {
 }
 
 .job-wizard-actions {
-  @apply sticky bottom-0 grid gap-2 border-t border-slate-200 bg-white/95 py-3 backdrop-blur sm:grid-cols-2;
+  @apply sticky bottom-0 grid gap-2 border-t border-slate-200 bg-brand-charcoal/95 py-3 backdrop-blur sm:grid-cols-2;
 }
 
 .job-review-card {
-  @apply grid gap-4 rounded-lg border border-aqua-100 bg-gradient-to-br from-aqua-50 to-white p-4;
+  @apply grid gap-4 rounded-lg border border-aqua-100 bg-gradient-to-br from-aqua-50 to-brand-charcoal p-4;
 }
 
 .job-review-card h4 {
-  @apply mt-2 text-xl font-black text-navy-950;
+  @apply mt-2 text-xl font-black text-white;
 }
 
 .job-review-card p {
@@ -1409,7 +1415,7 @@ a {
 }
 
 .job-review-item {
-  @apply rounded-lg border border-slate-100 bg-white p-3 shadow-sm;
+  @apply rounded-lg border border-slate-100 bg-brand-dark p-3 shadow-sm;
 }
 
 .job-review-item span {
@@ -1417,7 +1423,7 @@ a {
 }
 
 .job-review-item strong {
-  @apply mt-1 block text-sm text-navy-950;
+  @apply mt-1 block text-sm text-white;
 }
 
 .urgent-form-hero {
@@ -1429,7 +1435,7 @@ a {
 }
 
 .urgent-form-hero strong {
-  @apply block font-black text-navy-950;
+  @apply block font-black text-white;
 }
 
 .urgent-form-hero p {
@@ -1437,11 +1443,11 @@ a {
 }
 
 .jobs-hero {
-  @apply mb-5 grid gap-5 rounded-lg border border-slate-200/70 bg-white/95 p-5 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_520px] lg:items-center;
+  @apply mb-5 grid gap-5 rounded-lg border border-white/10 bg-brand-charcoal p-5 shadow-soft ring-1 ring-white/5 lg:grid-cols-[1fr_520px] lg:items-center;
 }
 
 .jobs-hero h2 {
-  @apply mt-2 text-2xl font-black leading-tight text-navy-950 md:text-3xl;
+  @apply mt-2 text-2xl font-black leading-tight text-white md:text-3xl;
 }
 
 .jobs-hero p {
@@ -1461,7 +1467,7 @@ a {
 }
 
 .jobs-hero-metric strong {
-  @apply text-2xl font-black text-navy-950;
+  @apply text-2xl font-black text-white;
 }
 
 .jobs-hero-metric small {
@@ -1469,7 +1475,7 @@ a {
 }
 
 .jobs-filter-panel {
-  @apply mb-5 grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+  @apply mb-5 grid gap-3 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5;
 }
 
 .jobs-filter-title {
@@ -1477,7 +1483,7 @@ a {
 }
 
 .jobs-filter-title h3 {
-  @apply flex items-center gap-2 font-black text-navy-950;
+  @apply flex items-center gap-2 font-black text-white;
 }
 
 .jobs-filter-title p {
@@ -1501,11 +1507,11 @@ a {
 }
 
 .job-match-bar strong {
-  @apply text-sm text-navy-950;
+  @apply text-sm text-white;
 }
 
 .job-match-bar > div:last-child {
-  @apply h-2 overflow-hidden rounded-lg bg-white;
+  @apply h-2 overflow-hidden rounded-lg bg-white/10;
 }
 
 .job-match-bar > div:last-child span {
@@ -1513,11 +1519,11 @@ a {
 }
 
 .smart-dashboard-hero {
-  @apply grid gap-5 rounded-lg border border-slate-200/70 bg-white/95 p-5 shadow-soft ring-1 ring-white/70 lg:grid-cols-[1fr_520px] lg:items-center;
+  @apply grid gap-5 rounded-lg border border-white/10 bg-brand-charcoal p-5 shadow-soft ring-1 ring-white/5 lg:grid-cols-[1fr_520px] lg:items-center;
 }
 
 .smart-dashboard-hero h2 {
-  @apply mt-2 text-2xl font-black leading-tight text-navy-950 md:text-3xl;
+  @apply mt-2 text-2xl font-black leading-tight text-white md:text-3xl;
 }
 
 .smart-dashboard-hero p {
@@ -1545,7 +1551,7 @@ a {
 }
 
 .smart-dashboard-metric strong {
-  @apply text-2xl font-black text-navy-950;
+  @apply text-2xl font-black text-white;
 }
 
 .smart-dashboard-metric small {
@@ -1553,7 +1559,7 @@ a {
 }
 
 .smart-panel {
-  @apply grid gap-3 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft ring-1 ring-white/70;
+  @apply grid gap-3 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5;
 }
 
 .smart-panel-head {
@@ -1561,7 +1567,7 @@ a {
 }
 
 .smart-panel-head h3 {
-  @apply font-black text-navy-950;
+  @apply font-black text-white;
 }
 
 .smart-panel-head span {
@@ -1586,7 +1592,7 @@ a {
   }
 
   .section-heading {
-    @apply mb-4 rounded-lg border border-slate-200/70 bg-white/95 p-4 shadow-soft;
+    @apply mb-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft;
   }
 
   .section-heading::after {
@@ -1607,7 +1613,7 @@ a {
   .candidate-job-summary,
   .candidate-control-panel,
   .profile-card {
-    @apply border-white bg-white shadow-lift ring-1 ring-slate-100;
+    @apply border-white/10 bg-brand-charcoal shadow-lift ring-1 ring-white/5;
   }
 
   .smart-dashboard-metric,

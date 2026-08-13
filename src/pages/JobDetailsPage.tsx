@@ -80,11 +80,6 @@ export function JobDetailsPage() {
       setShowPlans(true);
       return;
     }
-    if (state.subscription.creditsRemaining <= 0) {
-      setMessage("Você não possui moedas suficientes para enviar candidatura.");
-      setShowPlans(true);
-      return;
-    }
     setShowApplyConfirm(true);
   }
 
@@ -130,7 +125,7 @@ export function JobDetailsPage() {
             <CreditCard size={15} /> Saldo: {state.subscription.creditsRemaining} moeda(s)
           </span>
           <h3>Escolha um pacote de moedas</h3>
-          <p>Use moedas para liberar vagas completas e enviar candidaturas conforme precisar.</p>
+          <p>Use moedas para liberar vagas completas. Depois de liberar, a candidatura naquela vaga não cobra de novo.</p>
         </div>
         <button
           type="button"
@@ -172,18 +167,18 @@ export function JobDetailsPage() {
     <Modal title="Confirmar candidatura" onClose={() => setShowApplyConfirm(false)}>
       <div className="grid gap-4">
         <div className="rounded-lg border border-aqua-100 bg-aqua-50 p-4">
-          <span className="badge bg-white text-aqua-700">
+          <span className="badge bg-aqua-50 text-aqua-700">
             <CreditCard size={15} /> Saldo: {state.subscription.creditsRemaining} moeda(s)
           </span>
-          <h3 className="mt-3 text-xl font-black text-navy-950">Enviar candidatura para esta vaga?</h3>
+          <h3 className="mt-3 text-xl font-black text-white">Enviar candidatura para esta vaga?</h3>
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-            Esta candidatura usará 1 moeda. Depois do envio, a empresa poderá analisar seu perfil e responder pela plataforma.
+            A vaga já está liberada. Depois do envio, a empresa poderá analisar seu perfil e responder pela plataforma sem nova cobrança de moeda.
           </p>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           <button type="button" onClick={() => setShowApplyConfirm(false)} className="secondary">Cancelar</button>
           <button type="button" onClick={confirmApply} disabled={isApplying} className="primary">
-            {isApplying ? "Enviando..." : "Usar 1 moeda e candidatar-se"}
+            {isApplying ? "Enviando..." : "Enviar candidatura"}
           </button>
         </div>
       </div>
@@ -300,7 +295,7 @@ export function JobDetailsPage() {
 
       {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       <SafetyNotice title="Contratação protegida">
-        Confirme dados, horário, uniforme e pagamento dentro do Free Floripa antes de combinar detalhes externos. O contato completo só deve ser usado após aprovação.
+        Confirme dados, horário, uniforme e pagamento dentro do PONT antes de combinar detalhes externos. O contato completo só deve ser usado após aprovação.
       </SafetyNotice>
       {(workerBlocked || companyBlocked) && (
         <SafetyNotice title="Ação bloqueada por segurança" tone="warning">
@@ -357,7 +352,7 @@ export function JobDetailsPage() {
             <div className="flex items-center gap-3">
               <img src={company?.logoUrl} alt="" className="h-16 w-16 rounded-lg object-cover" />
               <div>
-                <strong className="block text-navy-950">{company?.establishmentName}</strong>
+                <strong className="block text-white">{company?.establishmentName}</strong>
                 <span className="flex items-center gap-1 text-sm text-slate-600"><Star size={15} /> {company?.rating.toFixed(1)} de avaliação</span>
               </div>
             </div>
@@ -368,7 +363,7 @@ export function JobDetailsPage() {
             </div>
             {confirmed && company ? (
               <div className="contact-card">
-                <strong className="text-sm text-navy-950">Contato liberado</strong>
+                <strong className="text-sm text-white">Contato liberado</strong>
                 <span className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Phone size={16} /> {company.phone}</span>
                 <span className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Mail size={16} /> {company.email}</span>
                 <a
@@ -387,14 +382,14 @@ export function JobDetailsPage() {
             )}
             <div className="worker-match-card">
               <span className="text-xs font-black uppercase text-slate-500">Seu nível nesta função</span>
-              <strong className="mt-1 block text-sm text-navy-950">
+              <strong className="mt-1 block text-sm text-white">
                 {workerExperience ? getExperienceLabel(workerExperience.level) : "Função não declarada"}
               </strong>
               <p className="mt-1 text-xs font-semibold text-slate-500">{getCompatibilityLabel(currentWorker, currentJob.function)}</p>
             </div>
             {application && (
               <div className="rounded-lg border border-aqua-100 bg-aqua-50 p-3">
-                <strong className="block text-sm text-navy-950">Candidatura enviada</strong>
+                <strong className="block text-sm text-white">Candidatura enviada</strong>
                 <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">Status atual: {application.status}. Acompanhe a resposta da empresa em Minhas candidaturas.</p>
                 <Link to="/app/candidaturas" className="secondary mt-3 w-full">
                   Ver minhas candidaturas <ArrowRight size={17} />
@@ -405,7 +400,7 @@ export function JobDetailsPage() {
               {application ? `Status: ${application.status}` : workerBlocked || companyBlocked ? "Bloqueado por segurança" : isApplying ? "Enviando..." : isJobOpenForApplications(currentJob) ? "Candidatar-se" : `Vaga ${jobStatus}`}
             </button>
             <p className="text-xs leading-5 text-slate-500">
-              Cadastro gratuito com prévia das vagas. Use moedas para liberar vaga completa e enviar candidaturas.
+              Cadastro gratuito com prévia das vagas. Use moedas para liberar a vaga completa antes de se candidatar.
             </p>
             <button type="button" onClick={() => setShowReport(true)} className="secondary">
               <Flag size={17} /> Relatar problema
@@ -427,7 +422,7 @@ function Info({ label, value, icon }: { label: string; value: string; icon?: Rea
       <span className="flex items-center gap-1.5 text-xs font-black uppercase text-slate-500">
         {icon} {label}
       </span>
-      <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
+      <strong className="mt-1 block text-sm text-white">{value}</strong>
     </div>
   );
 }
@@ -445,14 +440,14 @@ function CompanyReputation({
   reportCount: number;
   compact?: boolean;
 }) {
-  const ratingTone = rating >= 4.5 ? "text-aqua-700" : rating >= 4 ? "text-navy-950" : "text-amber-700";
+  const ratingTone = rating >= 4.5 ? "text-aqua-700" : rating >= 4 ? "text-white" : "text-amber-700";
 
   return (
-    <section className={`rounded-lg border border-slate-200 bg-white p-4 shadow-sm ${compact ? "" : "grid gap-3"}`}>
+    <section className={`rounded-lg border border-slate-200 bg-brand-charcoal p-4 shadow-sm ${compact ? "" : "grid gap-3"}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <span className="section-eyebrow">Reputação da empresa</span>
-          <h3 className="mt-1 font-black text-navy-950">{companyName}</h3>
+          <h3 className="mt-1 font-black text-white">{companyName}</h3>
           <p className="mt-1 text-sm font-semibold text-slate-600">
             Avaliações feitas por trabalhadores depois de turnos concluídos.
           </p>
@@ -482,7 +477,7 @@ function CompanyReputation({
           ) : (
             reviews.slice(0, 3).map((review) => (
               <article key={review.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <strong className="flex items-center gap-1 text-sm text-navy-950">
+                <strong className="flex items-center gap-1 text-sm text-white">
                   <Star size={15} /> {review.rating} estrelas - {review.workerName}
                 </strong>
                 <p className="mt-1 text-sm leading-6 text-slate-600">{review.comment}</p>

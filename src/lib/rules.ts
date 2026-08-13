@@ -70,7 +70,7 @@ export function getCompatibilityLabel(worker: WorkerProfile, functionName: JobFu
   return "Nível declarado";
 }
 
-export function canApply(job: Job, applications: Application[], worker: WorkerProfile, creditsRemaining: number) {
+export function canApply(job: Job, applications: Application[], worker: WorkerProfile) {
   if (!isJobOpenForApplications(job)) {
     return { allowed: false, reason: "Esta vaga não está mais aberta para candidatura." };
   }
@@ -85,10 +85,6 @@ export function canApply(job: Job, applications: Application[], worker: WorkerPr
       allowed: false,
       reason: "Antes de se candidatar, adicione esta função ao perfil e informe seu nível de experiência."
     };
-  }
-
-  if (creditsRemaining <= 0) {
-    return { allowed: false, reason: "Você não possui moedas suficientes para enviar candidatura." };
   }
 
   return { allowed: true, reason: "" };

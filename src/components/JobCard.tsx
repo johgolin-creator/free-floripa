@@ -36,7 +36,7 @@ export function JobCard({
             <span className="badge">{job.paymentMethod}</span>
             {matchLabel && <span className={matchScore && matchScore >= 62 ? "badge bg-aqua-100 text-aqua-700" : "badge bg-slate-100 text-slate-600"}><Star size={14} /> {matchLabel}</span>}
           </div>
-          <h3 className="text-lg font-black leading-snug text-navy-950">{job.title}</h3>
+          <h3 className="text-lg font-black leading-snug text-white">{job.title}</h3>
           <p className="text-sm font-semibold text-slate-600">{canViewFullJob ? company?.establishmentName : "Empresa verificada"}</p>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-xs font-black text-slate-500">
             <span className="inline-flex items-center gap-1"><Star size={14} /> {company?.rating.toFixed(1) ?? "0.0"}</span>

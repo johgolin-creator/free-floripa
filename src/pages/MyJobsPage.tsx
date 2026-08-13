@@ -141,7 +141,7 @@ export function MyJobsPage() {
       {actionItems.length > 0 && (
         <section className="candidate-selector-panel mb-4 border-aqua-200 bg-aqua-50/70">
           <div>
-            <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+            <div className="flex items-center gap-2 text-sm font-black text-white">
               <Clock size={18} /> Ações rápidas
             </div>
             <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
@@ -160,10 +160,10 @@ export function MyJobsPage() {
                 state.adminModeration.blockedCompanyIds.includes(job.companyId);
 
               return (
-                <article key={application.id} className="rounded-lg border border-white bg-white p-3 shadow-sm">
+                <article key={application.id} className="rounded-lg border border-white/10 bg-brand-dark p-3 shadow-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <strong className="block truncate text-sm text-navy-950">{job.title}</strong>
+                      <strong className="block truncate text-sm text-white">{job.title}</strong>
                       <p className="mt-1 truncate text-xs font-bold text-slate-500">
                         {company?.establishmentName ?? "Empresa"} - {formatDate(job.date)} - {job.startsAt}
                       </p>
@@ -374,7 +374,7 @@ function CompanyReviewForm({ onSubmit }: { onSubmit: (review: { rating: number; 
     >
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
       <div className="rounded-lg border border-aqua-100 bg-aqua-50 p-3">
-        <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+        <div className="flex items-center gap-2 text-sm font-black text-white">
           <Star size={17} /> Avaliação da empresa
         </div>
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
@@ -440,7 +440,7 @@ function Info({ label, value, icon }: { label: string; value: string; icon?: Rea
       <span className="flex items-center gap-1.5 text-xs font-black uppercase text-slate-500">
         {icon} {label}
       </span>
-      <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
+      <strong className="mt-1 block text-sm text-white">{value}</strong>
     </div>
   );
 }

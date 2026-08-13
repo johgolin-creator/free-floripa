@@ -55,23 +55,23 @@ body {
 }
 
 .app-sidebar {
-  background: linear-gradient(180deg, #061827 0%, #08263d 52%, #0d866f 150%);
+  background: linear-gradient(180deg, #111318 0%, #1b1e24 52%, #2e3a20 150%);
 }
 
 .hero-overlay {
-  background: linear-gradient(90deg, rgba(6, 24, 39, 0.94) 0%, rgba(8, 38, 61, 0.78) 48%, rgba(6, 24, 39, 0.42) 100%);
+  background: linear-gradient(90deg, rgba(17, 19, 24, 0.94) 0%, rgba(17, 19, 24, 0.78) 48%, rgba(17, 19, 24, 0.42) 100%);
 }
 
 .cta-section {
-  background: linear-gradient(135deg, #061827 0%, #08263d 62%, #0d866f 150%);
+  background: linear-gradient(135deg, #111318 0%, #1b1e24 62%, #3a4a20 150%);
 }
 
 .auth-bg {
-  background: linear-gradient(180deg, #f6fafb 0%, #eef7f6 100%);
+  background: #111318;
 }
 
 .color-strip {
-  background: linear-gradient(90deg, #16c7a7 0%, #f4b740 52%, #ff6b57 100%);
+  background: linear-gradient(90deg, #c8ff38 0%, #f4b740 52%, #ff6b57 100%);
 }
 
 .card {

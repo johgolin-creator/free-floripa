@@ -9,7 +9,7 @@ const lastUpdated = "31 de julho de 2026";
 const termsSections = [
   {
     title: "Uso da plataforma",
-    text: "O Free Floripa conecta empresas que precisam de mão de obra temporária com trabalhadores freelancers. A plataforma organiza cadastro, vagas, candidaturas, escalas, mensagens, moedas internas e histórico de avaliações."
+    text: "O PONT conecta empresas que precisam de mão de obra temporária com trabalhadores freelancers. A plataforma organiza cadastro, vagas, candidaturas, escalas, mensagens, moedas internas e histórico de avaliações."
   },
   {
     title: "Responsabilidade das empresas",
@@ -21,7 +21,7 @@ const termsSections = [
   },
   {
     title: "Moedas internas",
-    text: "As moedas do Free Floripa são usadas para liberar detalhes de vagas e candidaturas dentro da plataforma. Nesta fase, elas não representam saldo bancário, investimento, dinheiro eletrônico ou promessa de saque."
+    text: "As moedas do PONT são usadas para liberar detalhes completos de vagas antes da candidatura. Nesta fase, elas não representam saldo bancário, investimento, dinheiro eletrônico ou promessa de saque."
   },
   {
     title: "Avaliações e moderação",
@@ -29,7 +29,7 @@ const termsSections = [
   },
   {
     title: "Limitacao de responsabilidade",
-    text: "O Free Floripa ajuda na organização e na aproximação entre as partes, mas não garante contratação, pagamento, disponibilidade de vagas, comparecimento, qualidade do serviço ou ausência de conflitos entre usuários."
+    text: "O PONT ajuda na organização e na aproximação entre as partes, mas não garante contratação, pagamento, disponibilidade de vagas, comparecimento, qualidade do serviço ou ausência de conflitos entre usuários."
   }
 ];
 
@@ -48,7 +48,7 @@ const privacySections = [
   },
   {
     title: "Serviços de tecnologia",
-    text: "O aplicativo usa serviços de infraestrutura para autenticação, banco de dados e armazenamento de informações. Futuramente poderemos usar provedores de e-mail, notificação e pagamento, sempre para operar o próprio Free Floripa."
+    text: "O aplicativo usa serviços de infraestrutura para autenticação, banco de dados e armazenamento de informações. Futuramente poderemos usar provedores de e-mail, notificação e pagamento, sempre para operar o próprio PONT."
   },
   {
     title: "Segurança e retenção",
@@ -64,13 +64,13 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
   const isPrivacy = kind === "privacy";
   const title = isPrivacy ? "Política de Privacidade" : "Termos de Uso";
   const subtitle = isPrivacy
-    ? "Como o Free Floripa trata dados de trabalhadores, empresas, vagas, mensagens e moedas internas."
-    : "Regras principais para usar o Free Floripa com mais clareza entre empresas e trabalhadores.";
+    ? "Como o PONT trata dados de trabalhadores, empresas, vagas, mensagens e moedas internas."
+    : "Regras principais para usar o PONT com mais clareza entre empresas e trabalhadores.";
   const sections = isPrivacy ? privacySections : termsSections;
 
   return (
     <div className="min-h-screen bg-ice">
-      <header className="border-b border-white/80 bg-white/90 shadow-sm backdrop-blur-xl">
+      <header className="border-b border-white/10 bg-brand-charcoal/90 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <Link to="/" className="min-w-0">
             <BrandLogo compact />
@@ -82,20 +82,20 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8 md:py-12">
-        <section className="overflow-hidden rounded-lg border border-white bg-white shadow-soft">
+        <section className="overflow-hidden rounded-lg border border-white/10 bg-brand-charcoal shadow-soft">
           <div className="color-strip h-2" />
           <div className="grid gap-6 p-5 md:grid-cols-[1.1fr_0.9fr] md:p-8">
             <div>
               <p className="inline-flex items-center gap-2 rounded-full border border-aqua-100 bg-aqua-50 px-3 py-1 text-xs font-black uppercase text-aqua-700">
                 {isPrivacy ? <LockKeyhole size={15} /> : <FileText size={15} />}
-                Free Floripa
+                PONT
               </p>
-              <h1 className="mt-4 text-3xl font-black text-navy-950 md:text-5xl">{title}</h1>
+              <h1 className="mt-4 text-3xl font-black text-white md:text-5xl">{title}</h1>
               <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-slate-600 md:text-base">{subtitle}</p>
               <p className="mt-4 text-xs font-black uppercase text-slate-500">Última atualização: {lastUpdated}</p>
             </div>
             <aside className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-              <div className="flex items-center gap-2 text-navy-950">
+              <div className="flex items-center gap-2 text-white">
                 <ShieldCheck size={20} />
                 <strong>Resumo rápido</strong>
               </div>
@@ -111,7 +111,7 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
         <section className="mt-5 grid gap-4">
           {sections.map((section) => (
             <article key={section.title} className="card p-5">
-              <h2 className="text-lg font-black text-navy-950">{section.title}</h2>
+              <h2 className="text-lg font-black text-white">{section.title}</h2>
               <p className="mt-2 text-sm font-semibold leading-7 text-slate-600">{section.text}</p>
             </article>
           ))}
@@ -123,7 +123,7 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
             <strong>Contato e ajustes antes da publicacao final</strong>
           </div>
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
-            Antes de publicar na Play Store, defina o e-mail oficial de suporte do Free Floripa e substitua este aviso pelo canal definitivo de atendimento.
+            Antes de publicar na Play Store, defina o e-mail oficial de suporte do PONT e substitua este aviso pelo canal definitivo de atendimento.
           </p>
         </section>
 

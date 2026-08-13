@@ -47,9 +47,9 @@ export function CompanyProfilePage() {
         <div className="h-36 bg-[url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
         <div className="p-5">
           <div className="profile-main-row">
-            <img src={currentCompany.logoUrl} alt="" className="h-28 w-28 rounded-lg border-4 border-white object-cover shadow-soft" />
+            <img src={currentCompany.logoUrl} alt="" className="h-28 w-28 rounded-lg border-4 border-brand-dark object-cover shadow-soft" />
             <div className="flex-1">
-              <h2 className="text-2xl font-black text-navy-950">{currentCompany.establishmentName}</h2>
+              <h2 className="text-2xl font-black text-white">{currentCompany.establishmentName}</h2>
               <p className="text-sm font-semibold text-slate-600">{currentCompany.category} - {currentCompany.neighborhood}</p>
               <p className="mt-1 flex items-center gap-1 text-sm text-slate-600"><Star size={15} /> {currentCompany.rating.toFixed(1)} de avaliação</p>
               <div className="profile-quick-actions">
@@ -72,11 +72,11 @@ export function CompanyProfilePage() {
           </div>
           <div className="profile-section-grid">
             <div className="profile-panel">
-              <h3 className="font-black text-navy-950">Sobre a empresa</h3>
+              <h3 className="font-black text-white">Sobre a empresa</h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">{currentCompany.description}</p>
             </div>
             <div className="profile-panel">
-              <h3 className="font-black text-navy-950">Validação e segurança</h3>
+              <h3 className="font-black text-white">Validação e segurança</h3>
               <div className="mt-3 grid gap-2">
                 <ValidationRow
                   icon={blocked ? <AlertTriangle size={16} /> : <ShieldCheck size={16} />}
@@ -93,14 +93,14 @@ export function CompanyProfilePage() {
               </div>
             </div>
             <div className="profile-panel">
-              <h3 className="font-black text-navy-950">Avaliações dos trabalhadores</h3>
+              <h3 className="font-black text-white">Avaliações dos trabalhadores</h3>
               {companyReviews.length === 0 ? (
                 <p className="mt-2 text-sm leading-6 text-slate-600">Nenhum trabalhador avaliou esta empresa ainda.</p>
               ) : (
                 <div className="mt-3 grid gap-2">
                   {companyReviews.slice(0, 4).map((review) => (
                     <div key={review.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                      <strong className="flex items-center gap-1 text-sm text-navy-950">
+                      <strong className="flex items-center gap-1 text-sm text-white">
                         <Star size={15} /> {review.rating} estrelas - {review.workerName}
                       </strong>
                       <p className="mt-1 text-sm leading-6 text-slate-600">{review.comment}</p>
@@ -213,7 +213,7 @@ function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="profile-info-tile">
       <span className="text-xs font-black uppercase text-slate-500">{label}</span>
-      <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
+      <strong className="mt-1 block text-sm text-white">{value}</strong>
     </div>
   );
 }
@@ -240,7 +240,7 @@ function ValidationRow({
     <div className={`grid gap-2 rounded-lg border p-3 sm:grid-cols-[auto_1fr] ${toneClass}`}>
       <span className="mt-0.5">{icon}</span>
       <div>
-        <strong className="block text-sm text-navy-950">{title}</strong>
+        <strong className="block text-sm text-white">{title}</strong>
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{text}</p>
       </div>
     </div>
@@ -251,7 +251,7 @@ function SignupLikeTitle({ number, title }: { number: string; title: string }) {
   return (
     <div className="signup-step flex items-center gap-2 rounded-lg border border-aqua-100 bg-aqua-50 px-3 py-2 md:col-span-2">
       <span className="grid h-7 w-7 place-items-center rounded-full bg-navy-950 text-xs font-black text-aqua-300">{number}</span>
-      <strong className="text-sm text-navy-950">{title}</strong>
+      <strong className="text-sm text-white">{title}</strong>
     </div>
   );
 }

@@ -38,7 +38,7 @@ export function WorkerCard({
         <img src={worker.avatarUrl} alt="" className="h-16 w-16 rounded-lg object-cover ring-4 ring-aqua-50" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="truncate font-black text-navy-950">{worker.name}</h3>
+            <h3 className="truncate font-black text-white">{worker.name}</h3>
             {worker.verified && (
               <span className="inline-flex items-center gap-1 text-xs font-bold text-aqua-700">
                 <CheckCircle2 size={14} /> Verificado
@@ -94,21 +94,21 @@ export function WorkerCard({
 
       <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
         <span className="metric-tile">
-          <strong className="block text-navy-950">{worker.rating.toFixed(1)}</strong>
+          <strong className="block text-white">{worker.rating.toFixed(1)}</strong>
           <span className="flex items-center gap-1 text-slate-500">
             <Star size={14} /> nota
           </span>
         </span>
         <span className="metric-tile">
-          <strong className="block text-navy-950">{worker.completedJobs}</strong>
+          <strong className="block text-white">{worker.completedJobs}</strong>
           <span className="text-slate-500">trabalhos</span>
         </span>
         <span className="metric-tile">
-          <strong className="block text-navy-950">{worker.attendanceRate}%</strong>
+          <strong className="block text-white">{worker.attendanceRate}%</strong>
           <span className="text-slate-500">comparecimento</span>
         </span>
         <span className="metric-tile bg-aqua-50">
-          <strong className="block text-navy-950">{reliability}%</strong>
+          <strong className="block text-white">{reliability}%</strong>
           <span className="text-slate-600">confiabilidade</span>
         </span>
       </div>
@@ -166,7 +166,7 @@ export function WorkerCard({
             <div className="grid gap-2">
               {worker.reviews.map((review) => (
                 <div key={review.id} className="rounded-lg bg-slate-50 p-3">
-                  <strong className="text-sm text-navy-950">{review.rating} estrelas - {review.authorName}</strong>
+                  <strong className="text-sm text-white">{review.rating} estrelas - {review.authorName}</strong>
                   <p className="mt-1 text-sm text-slate-600">{review.comment}</p>
                 </div>
               ))}
@@ -221,7 +221,7 @@ function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
       <span className="text-xs font-black uppercase text-slate-500">{label}</span>
-      <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
+      <strong className="mt-1 block text-sm text-white">{value}</strong>
     </div>
   );
 }

@@ -56,7 +56,7 @@ export function ShiftReceipt({
         <div className="flex items-center gap-2 text-sm font-black text-aqua-700">
           <ClipboardCheck size={18} /> Comprovante do turno
         </div>
-        <h3 className="mt-2 text-xl font-black text-navy-950">{job.title}</h3>
+        <h3 className="mt-2 text-xl font-black text-white">{job.title}</h3>
         <p className="mt-1 text-sm font-semibold text-slate-600">
           {company.establishmentName} confirmou o registro do trabalho de {worker.name}.
         </p>
@@ -75,7 +75,7 @@ export function ShiftReceipt({
         <span className="flex items-center gap-1.5 text-xs font-black uppercase text-slate-500">
           <Star size={15} /> Avaliação
         </span>
-        <strong className="mt-1 block text-sm text-navy-950">
+        <strong className="mt-1 block text-sm text-white">
           {review ? `${review.rating} estrelas - ${review.authorName}` : "Avaliação ainda pendente"}
         </strong>
         {review && <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">{review.comment}</p>}
@@ -90,11 +90,11 @@ export function ShiftReceipt({
 
 function ReceiptItem({ icon, label, value }: { icon?: ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+    <div className="rounded-lg border border-slate-200 bg-brand-charcoal p-3 shadow-sm">
       <span className="flex items-center gap-1.5 text-xs font-black uppercase text-slate-500">
         {icon} {label}
       </span>
-      <strong className="mt-1 block text-sm text-navy-950">{value}</strong>
+      <strong className="mt-1 block text-sm text-white">{value}</strong>
     </div>
   );
 }

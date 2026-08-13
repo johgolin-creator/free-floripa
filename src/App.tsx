@@ -85,7 +85,7 @@ function PageLoading() {
     <div className="grid min-h-screen place-items-center bg-ice px-4 text-center">
       <div className="card max-w-sm p-5">
         <strong className="text-lg text-navy-950">Carregando</strong>
-        <p className="mt-2 text-sm text-slate-600">Abrindo esta área do Free Floripa.</p>
+        <p className="mt-2 text-sm text-slate-600">Abrindo esta área do PONT.</p>
       </div>
     </div>
   );
@@ -113,7 +113,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
       <div className="grid min-h-screen place-items-center bg-slate-100 px-4 text-center">
         <div className="card max-w-md p-5">
           <strong className="text-lg text-navy-950">Carregando sua conta</strong>
-          <p className="mt-2 text-sm text-slate-600">Estamos verificando sua sessão no Free Floripa.</p>
+          <p className="mt-2 text-sm text-slate-600">Estamos verificando sua sessão no PONT.</p>
         </div>
       </div>
     );

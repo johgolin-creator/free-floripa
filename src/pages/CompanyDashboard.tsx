@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   AlertTriangle,
@@ -17,7 +17,7 @@ import {
   WalletCards,
   Zap
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
@@ -91,6 +91,7 @@ function createUrgentReplacementKey(input: UrgentReplacementInput) {
 
 export function CompanyDashboard() {
   const { state, currentCompany, createJob, createUrgentReplacement } = useAppStore();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showJobForm, setShowJobForm] = useState(false);
   const [showUrgentForm, setShowUrgentForm] = useState(false);
   const [message, setMessage] = useState("");
@@ -117,6 +118,18 @@ export function CompanyDashboard() {
     .filter((job) => getOpenSlots(job) > 0)
     .sort((a, b) => getOpenSlots(b) - getOpenSlots(a));
   const nextJob = todayJobs[0] ?? [...openJobs].sort((a, b) => `${a.date} ${a.startsAt}`.localeCompare(`${b.date} ${b.startsAt}`))[0];
+
+  useEffect(() => {
+    const action = searchParams.get("acao");
+    if (action === "criar-vaga") {
+      setShowJobForm(true);
+      setSearchParams({}, { replace: true });
+    }
+    if (action === "urgente") {
+      setShowUrgentForm(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   return (
     <div className="grid gap-5">
@@ -174,7 +187,7 @@ export function CompanyDashboard() {
 
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="card p-4">
-          <h3 className="mb-3 font-black text-navy-950">Vagas abertas</h3>
+          <h3 className="mb-3 font-black text-white">Vagas abertas</h3>
           {companyJobs.length === 0 ? (
             <EmptyState title="Nenhuma vaga publicada" text="Use os botões acima para criar uma vaga comum ou uma reposição urgente." />
           ) : (
@@ -184,7 +197,7 @@ export function CompanyDashboard() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     {job.urgent ? <UrgentBadge /> : <span className="badge">{job.function}</span>}
-                    <h4 className="mt-2 font-black text-navy-950">{job.title}</h4>
+                    <h4 className="mt-2 font-black text-white">{job.title}</h4>
                     <p className="text-sm text-slate-600">{job.neighborhood} - {job.startsAt} às {job.endsAt} - {formatCurrency(job.dailyValue)}</p>
                   </div>
                   <span className="text-sm font-bold text-slate-600">{job.filled}/{job.quantity} confirmados</span>
@@ -236,7 +249,7 @@ export function CompanyDashboard() {
           </section>
 
           <section className="soft-panel p-4">
-            <h3 className="mb-3 font-black text-navy-950">Operação</h3>
+            <h3 className="mb-3 font-black text-white">Operação</h3>
             <div className="grid gap-2 text-sm font-semibold">
               <Link to="/app/candidatos" className="secondary justify-start"><UsersRound size={17} /> Candidatos recebidos</Link>
               <Link to="/app/eventos" className="secondary justify-start"><CalendarDays size={17} /> Montar evento</Link>
@@ -296,7 +309,7 @@ function Metric({ icon, label, value }: { icon: ReactNode; label: string; value:
   return (
     <article className="metric-card">
       <div className="mb-3 text-aqua-700">{icon}</div>
-      <strong className="block text-2xl font-black text-navy-950">{value}</strong>
+      <strong className="block text-2xl font-black text-white">{value}</strong>
       <span className="text-sm font-semibold text-slate-500">{label}</span>
     </article>
   );
@@ -650,12 +663,12 @@ function ReviewItem({ icon, label, value }: { icon: ReactNode; label: string; va
 function RequiredFieldSummary() {
   return (
     <section className="rounded-lg border border-aqua-100 bg-aqua-100 p-3">
-      <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+      <div className="flex items-center gap-2 text-sm font-black text-white">
         <ClipboardList size={17} /> Campos obrigatórios
       </div>
       <div className="mt-3 grid gap-2 md:grid-cols-2">
         {requiredJobFieldGroups.map((group) => (
-          <div key={group.title} className="rounded-lg bg-white p-3">
+          <div key={group.title} className="rounded-lg bg-brand-dark p-3">
             <strong className="text-xs uppercase text-aqua-700">{group.title}</strong>
             <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{group.fields.join(", ")}</p>
           </div>

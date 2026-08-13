@@ -185,7 +185,7 @@ export function CandidatesPage() {
           {pendingReviews.length > 0 && (
             <section className="candidate-selector-panel border-aqua-200 bg-aqua-50/70">
               <div>
-                <div className="flex items-center gap-2 text-sm font-black text-navy-950">
+                <div className="flex items-center gap-2 text-sm font-black text-white">
                   <Star size={18} /> Avaliações pendentes
                 </div>
                 <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
@@ -194,10 +194,10 @@ export function CandidatesPage() {
               </div>
               <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                 {pendingReviews.slice(0, 6).map(({ application, job, worker }) => (
-                  <article key={application.id} className="rounded-lg border border-white bg-white p-3 shadow-sm">
+                  <article key={application.id} className="rounded-lg border border-white/10 bg-brand-dark p-3 shadow-sm">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <strong className="block truncate text-sm text-navy-950">{worker.name}</strong>
+                        <strong className="block truncate text-sm text-white">{worker.name}</strong>
                         <p className="mt-1 truncate text-xs font-bold text-slate-500">{job.title}</p>
                         <span className="mt-2 inline-flex rounded-full bg-aqua-50 px-2 py-1 text-[0.7rem] font-black uppercase text-aqua-700">
                           Trabalho concluído
@@ -278,7 +278,7 @@ export function CandidatesPage() {
                     ))}
                   </select>
                 </label>
-                <label className="flex min-h-11 items-center gap-2 self-end rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-600">
+                <label className="flex min-h-11 items-center gap-2 self-end rounded-lg border border-slate-200 bg-brand-charcoal px-3 py-2 text-sm font-bold text-slate-600">
                   <input
                     type="checkbox"
                     checked={trustedCandidatesOnly}
@@ -302,7 +302,7 @@ export function CandidatesPage() {
                       {selectedEvent ? `${selectedJobs.length} vagas` : formatCurrency(selectedJob?.dailyValue ?? 0)}
                     </span>
                   </div>
-                  <h3 className="text-lg font-black text-navy-950">{selectedEvent ? selectedEvent.name : selectedJob?.title}</h3>
+                  <h3 className="text-lg font-black text-white">{selectedEvent ? selectedEvent.name : selectedJob?.title}</h3>
                   <p className="text-sm font-semibold text-slate-600">
                     {selectedEvent && selectedJobs[0]
                       ? `${selectedJobs[0].neighborhood} - ${formatDate(selectedJobs[0].date)} - ${selectedJobs[0].startsAt} até ${selectedJobs[0].endsAt}`
@@ -450,7 +450,7 @@ export function CandidatesPage() {
                       {contactUnlocked ? (
                         <div className="candidate-contact-card">
                           <div>
-                            <strong className="text-sm text-navy-950">Contato liberado</strong>
+                            <strong className="text-sm text-white">Contato liberado</strong>
                             <div className="mt-1 flex flex-wrap gap-3 text-sm font-semibold text-slate-600">
                               <span className="flex items-center gap-1.5"><Phone size={15} /> {worker.phone}</span>
                               <span className="flex items-center gap-1.5"><Mail size={15} /> {worker.email}</span>
@@ -474,7 +474,7 @@ export function CandidatesPage() {
                       {completed && (
                         <div className="candidate-review-panel">
                           <div>
-                            <strong className="text-sm text-navy-950">
+                            <strong className="text-sm text-white">
                               {reviewed ? "Avaliação registrada" : "Avaliação pendente"}
                             </strong>
                             <p className="mt-1 text-sm font-semibold text-slate-500">
@@ -514,7 +514,7 @@ export function CandidatesPage() {
           <form className="grid gap-3" onSubmit={submitReview}>
             {reviewError && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{reviewError}</div>}
             <div className="grid gap-2">
-              <span className="text-sm font-black text-navy-950">Nota</span>
+              <span className="text-sm font-black text-white">Nota</span>
               <div className="flex flex-wrap gap-2">
                 {[1, 2, 3, 4, 5].map((rating) => (
                   <button
@@ -674,7 +674,7 @@ function HiringFlow({
   return (
     <div className="hiring-flow">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <strong className="text-sm text-navy-950">Fluxo da contratação</strong>
+        <strong className="text-sm text-white">Fluxo da contratação</strong>
         <span className="text-xs font-black uppercase text-slate-500">{getNextAction(application, shift, reviewed)}</span>
       </div>
       <div className="hiring-step-grid">
@@ -725,7 +725,7 @@ function getStepClass(state: StepState) {
   if (state === "done") return "border-aqua-200 bg-aqua-100 text-aqua-700";
   if (state === "current") return "border-navy-200 bg-white text-navy-950";
   if (state === "blocked") return "border-red-100 bg-red-50 text-alert";
-  return "border-slate-200 bg-white text-slate-500";
+  return "border-slate-200 bg-brand-charcoal text-slate-500";
 }
 
 function getNextAction(application: Application, shift: WorkShift | undefined, reviewed: boolean) {

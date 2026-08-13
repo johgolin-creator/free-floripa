@@ -22,7 +22,6 @@ import {
 } from "./supabaseMarketplace";
 import { getSupabaseStateKey, loadSupabaseState, saveSupabaseState, supabaseStateEnabled } from "./supabaseState";
 import {
-  applyRemoteToJobWithCoin,
   grantRemoteCoins,
   loadRemoteCoinAccount,
   supabaseCoinsEnabled,
@@ -264,7 +263,7 @@ function createWorkerForUser(user: User): WorkerProfile {
 
   return {
     id: user.id,
-    name: getMetadataString(user, "name", user.email ?? "Trabalhador Free Floripa"),
+    name: getMetadataString(user, "name", user.email ?? "Trabalhador PONT"),
     phone: getMetadataString(user, "phone", ""),
     email: user.email ?? getMetadataString(user, "email", ""),
     avatarUrl: getMetadataString(user, "avatarUrl", DEFAULT_WORKER_AVATAR),
@@ -293,7 +292,7 @@ function createWorkerForUser(user: User): WorkerProfile {
       };
     }),
     experience: getMetadataString(user, "experience", ""),
-    description: getMetadataString(user, "description", "Perfil recém-criado no Free Floripa."),
+    description: getMetadataString(user, "description", "Perfil recém-criado no PONT."),
     availability: getMetadataString(user, "availability", "A combinar"),
     hasTransport: getMetadataBoolean(user, "hasTransport", false),
     maxDistanceKm: getMetadataNumber(user, "maxDistanceKm", 10),
@@ -310,7 +309,7 @@ function createWorkerForUser(user: User): WorkerProfile {
 function createCompanyForUser(user: User): CompanyProfile {
   return {
     id: user.id,
-    establishmentName: getMetadataString(user, "establishmentName", "Empresa Free Floripa"),
+    establishmentName: getMetadataString(user, "establishmentName", "Empresa PONT"),
     responsibleName: getMetadataString(user, "responsibleName", "Responsável"),
     cnpj: getMetadataString(user, "cnpj", ""),
     phone: getMetadataString(user, "phone", ""),
@@ -318,7 +317,7 @@ function createCompanyForUser(user: User): CompanyProfile {
     category: getMetadataString(user, "category", "Outro") as CompanyProfile["category"],
     address: getMetadataString(user, "address", ""),
     neighborhood: getMetadataString(user, "neighborhood", "Centro") as Neighborhood,
-    description: getMetadataString(user, "description", "Empresa cadastrada no Free Floripa."),
+    description: getMetadataString(user, "description", "Empresa cadastrada no PONT."),
     logoUrl: getMetadataString(user, "logoUrl", DEFAULT_COMPANY_LOGO),
     rating: 0
   };
@@ -573,7 +572,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   function queueEmail(input: EmailNotificationInput) {
     if (!emailNotificationsEnabled) return;
     enqueueEmailNotification(input).catch((error) => {
-      console.warn("Falha ao enfileirar email do Free Floripa.", error);
+      console.warn("Falha ao enfileirar email do PONT.", error);
     });
   }
 
@@ -583,9 +582,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       recipientUserId: user?.id ?? currentWorker.id,
       recipientEmail: currentWorker.email,
       recipientName: currentWorker.name,
-      subject: "Suas moedas Free Floripa estão acabando",
+      subject: "Suas moedas PONT estão acabando",
       preview: `Você tem ${nextBalance} moeda${nextBalance === 1 ? "" : "s"} disponível${nextBalance === 1 ? "" : "is"}.`,
-      body: `Oi, ${currentWorker.name}. Seu saldo atual é de ${nextBalance} moeda${nextBalance === 1 ? "" : "s"}. Recarregue para continuar liberando vagas e enviando candidaturas.`,
+      body: `Oi, ${currentWorker.name}. Seu saldo atual é de ${nextBalance} moeda${nextBalance === 1 ? "" : "s"}. Recarregue para continuar liberando vagas completas.`,
       eventType: "low_coins",
       metadata: { balance: nextBalance }
     });
@@ -826,7 +825,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             body: `${currentCompany.establishmentName} publicou uma vaga urgente para ${input.function} em ${input.neighborhood}, com diária de ${input.dailyValue.toLocaleString("pt-BR", {
               style: "currency",
               currency: "BRL"
-            })}. Entre no Free Floripa para ver os detalhes e se candidatar.`,
+            })}. Entre no PONT para ver os detalhes e se candidatar.`,
             eventType: "urgent_job",
             metadata: { jobId: id, companyId: currentCompany.id, function: input.function, neighborhood: input.neighborhood }
           });
@@ -1014,7 +1013,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               recipientName: worker.name,
               subject: status === "Cancelada" ? "Uma vaga foi cancelada" : "Uma vaga foi encerrada",
               preview: `${job.title}: ${status}.`,
-              body: `${worker.name}, a vaga ${job.title} foi marcada como ${status}. Entre no Free Floripa para acompanhar seus próximos turnos e candidaturas.`,
+              body: `${worker.name}, a vaga ${job.title} foi marcada como ${status}. Entre no PONT para acompanhar seus próximos turnos e candidaturas.`,
               eventType: "application_status",
               metadata: { jobId, applicationId: application.id, workerId: worker.id, status }
             });
@@ -1141,9 +1140,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           };
         }
 
-        const result = canApply(job, state.applications, currentWorker, state.subscription.creditsRemaining);
+        const result = canApply(job, state.applications, currentWorker);
         if (!result.allowed) {
-          return { ok: false, message: result.reason, requiresPlan: state.subscription.creditsRemaining <= 0 };
+          return { ok: false, message: result.reason };
         }
         if (pendingApplicationKeys.current.has(pendingKey)) {
           return { ok: false, message: "Sua candidatura já está sendo enviada. Aguarde alguns segundos." };
@@ -1170,22 +1169,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ...current,
           applications: [application, ...current.applications],
           jobs: current.jobs.map((item) => (item.id === jobId ? { ...item, candidates: item.candidates + 1 } : item)),
-          subscription: {
-            ...current.subscription,
-            creditsRemaining: Math.max(0, current.subscription.creditsRemaining - 1)
-          },
-          coinLedger: [
-            coinLedgerEntry({
-              role: "trabalhador",
-              kind: "spend",
-              reason: "apply_job",
-              amount: -1,
-              balanceAfter: Math.max(0, current.subscription.creditsRemaining - 1),
-              jobId,
-              applicationId: application.id
-            }),
-            ...current.coinLedger
-          ],
           notifications: [
             companyNotification,
             ...current.notifications
@@ -1198,40 +1181,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             recipientName: company.establishmentName,
             subject: "Nova candidatura recebida",
             preview: `${currentWorker.name} se candidatou para ${job.title}.`,
-            body: `${currentWorker.name} enviou candidatura para ${job.title}. Entre no Free Floripa para analisar o perfil, aprovar ou recusar.`,
+            body: `${currentWorker.name} enviou candidatura para ${job.title}. Entre no PONT para analisar o perfil, aprovar ou recusar.`,
             eventType: "application_status",
             metadata: { jobId, applicationId: application.id, workerId: currentWorker.id, companyId: company.id }
           });
         }
-        queueLowCoinsEmail(Math.max(0, state.subscription.creditsRemaining - 1));
-        if (supabaseCoinsEnabled && user) {
-          setSyncStatus("salvando");
-          applyRemoteToJobWithCoin(user.id, currentWorker.id, jobId, application.id)
-            .then((account) => {
-              applyCoinAccount(account);
-              publishRemoteNotification(job.companyId, companyNotification);
-              setSyncError("");
-              setSyncStatus("sincronizado");
-            })
-            .catch(() => {
-              pendingApplicationKeys.current.delete(pendingKey);
-              commit((current) => ({
-                ...current,
-                applications: current.applications.filter((item) => item.id !== application.id),
-                coinLedger: current.coinLedger.filter((item) => item.applicationId !== application.id),
-                jobs: current.jobs.map((item) =>
-                  item.id === jobId ? { ...item, candidates: Math.max(0, item.candidates - 1) } : item
-                ),
-                subscription: {
-                  ...current.subscription,
-                  creditsRemaining: current.subscription.creditsRemaining + 1
-                },
-                notifications: current.notifications.filter((item) => item.id !== companyNotification.id)
-              }));
-              setSyncError("Falha ao enviar candidatura com moeda.");
-              setSyncStatus("erro");
-            });
-        } else if (supabaseMarketplaceEnabled) {
+        if (supabaseMarketplaceEnabled) {
           publishApplication(currentWorker, jobId, application.id).catch(() => {
             setSyncError("Falha ao enviar candidatura.");
             setSyncStatus("erro");
@@ -1240,7 +1195,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         window.setTimeout(() => pendingApplicationKeys.current.delete(pendingKey), 1500);
 
-        return { ok: true, message: "Candidatura enviada com sucesso. 1 moeda foi utilizada." };
+        return { ok: true, message: "Candidatura enviada com sucesso. A vaga já estava liberada e nenhuma nova moeda foi usada." };
       },
       updateApplicationStatus(applicationId, status) {
         const application = state.applications.find((item) => item.id === applicationId);
@@ -1342,8 +1297,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             subject: approved ? "Sua candidatura foi aprovada" : "Sua candidatura foi atualizada",
             preview: `${job.title}: status ${status}.`,
             body: approved
-              ? `Boa notícia, ${worker.name}. Sua candidatura para ${job.title} foi aprovada. Entre no Free Floripa para ver os próximos passos e falar com a empresa.`
-              : `${worker.name}, sua candidatura para ${job.title} foi atualizada para ${status}. Entre no Free Floripa para acompanhar os detalhes.`,
+              ? `Boa notícia, ${worker.name}. Sua candidatura para ${job.title} foi aprovada. Entre no PONT para ver os próximos passos e falar com a empresa.`
+              : `${worker.name}, sua candidatura para ${job.title} foi atualizada para ${status}. Entre no PONT para acompanhar os detalhes.`,
             eventType: "application_status",
             metadata: { jobId: job.id, applicationId, workerId: worker.id, status }
           });
@@ -1471,7 +1426,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             recipientName: worker.name,
             subject: "Você foi convidado para uma vaga",
             preview: `${currentCompany.establishmentName} confirmou você em ${job.title}.`,
-            body: `${currentCompany.establishmentName} confirmou você em ${job.title}. Entre no Free Floripa para ver horário, local e detalhes do turno.`,
+            body: `${currentCompany.establishmentName} confirmou você em ${job.title}. Entre no PONT para ver horário, local e detalhes do turno.`,
             eventType: "application_status",
             metadata: { jobId, applicationId: invitedApplication.id, workerId, companyId: currentCompany.id, status: "Aprovada" }
           });
@@ -1641,9 +1596,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             recipientUserId: recipient.id,
             recipientEmail: recipient.email,
             recipientName: recipient.name,
-            subject: "Nova mensagem no Free Floripa",
+            subject: "Nova mensagem no PONT",
             preview: `${chatMessage.senderName}: ${text.slice(0, 90)}${text.length > 90 ? "..." : ""}`,
-            body: `${chatMessage.senderName} enviou uma mensagem sobre ${job.title}: "${text}". Entre no Free Floripa para responder.`,
+            body: `${chatMessage.senderName} enviou uma mensagem sobre ${job.title}: "${text}". Entre no PONT para responder.`,
             eventType: "chat_message",
             metadata: { applicationId: application.id, jobId: job.id, senderRole, targetRole }
           });
@@ -1900,7 +1855,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ]
         }));
 
-        return { ok: true, message: "Relato enviado para a administração. Obrigado por ajudar a manter o Free Floripa seguro." };
+        return { ok: true, message: "Relato enviado para a administração. Obrigado por ajudar a manter o PONT seguro." };
       },
       resolveTrustReport(reportId) {
         commit((current) => ({

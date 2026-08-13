@@ -82,7 +82,7 @@ export function AppLayout() {
   const coinLabel = state.activeRole === "trabalhador" ? "Moedas" : "Moedas da empresa";
   const coinHelp =
     state.activeRole === "trabalhador"
-      ? "Use moedas para liberar vagas completas e enviar candidaturas."
+      ? "Use moedas para liberar vagas completas antes de se candidatar."
       : "Use moedas para ações empresariais, como cancelar vagas já preenchidas.";
 
   if (!completion.complete && location.pathname !== profilePath && !(isAdmin && location.pathname.startsWith("/app/admin"))) {
@@ -103,7 +103,7 @@ export function AppLayout() {
           className="mt-3 rounded-lg border border-aqua-300/25 bg-aqua-300/10 p-3 text-white shadow-soft transition hover:bg-aqua-300/15"
         >
           <div className="flex items-center justify-between gap-3">
-            <span className="flex items-center gap-2 text-xs font-black text-aqua-200">
+            <span className="flex items-center gap-2 text-xs font-black text-aqua-300">
               <WalletCards size={16} /> {coinLabel}
             </span>
             <strong className="rounded-md bg-aqua-300 px-2.5 py-1 text-base font-black text-navy-950">{coinBalance}</strong>
@@ -141,8 +141,8 @@ export function AppLayout() {
           <p className="mt-1.5 text-xs leading-5 text-slate-300">Central de avisos para convites, vagas e avaliações.</p>
         </NavLink>
         <div className="mt-4 flex flex-wrap gap-3 text-xs font-black text-slate-400">
-          <Link to="/termos" className="hover:text-aqua-200">Termos</Link>
-          <Link to="/privacidade" className="hover:text-aqua-200">Privacidade</Link>
+          <Link to="/termos" className="hover:text-aqua-300">Termos</Link>
+          <Link to="/privacidade" className="hover:text-aqua-300">Privacidade</Link>
         </div>
       </aside>
 
@@ -153,8 +153,8 @@ export function AppLayout() {
               <BrandLogo compact inverted />
             </NavLink>
             <div className="hidden">
-              <p className="text-xs font-bold uppercase text-aqua-700">A equipe que você precisa, quando você precisa.</p>
-              <h1 className="text-xl font-black text-navy-950">{identityName || areaLabel}</h1>
+              <p className="text-xs font-bold uppercase text-aqua-700">Conecta. Oportunidades. Talentos.</p>
+              <h1 className="text-xl font-black text-white">{identityName || areaLabel}</h1>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <Link
@@ -183,7 +183,7 @@ export function AppLayout() {
             </div>
           </div>
           <div className="mt-5">
-            <p className="text-xs font-bold text-aqua-200">
+            <p className="text-xs font-bold text-aqua-300">
               Olá, {identityName?.split(" ")[0] || (state.activeRole === "trabalhador" ? "profissional" : "empresa")}!
             </p>
             <h1 className="mt-1 text-2xl font-black leading-tight text-white">{areaLabel}</h1>
@@ -194,11 +194,11 @@ export function AppLayout() {
           </Link>
         </header>
 
-        <header className="hidden border-b border-white/80 bg-white/85 px-4 py-2 shadow-sm backdrop-blur-xl md:block md:px-8">
+        <header className="hidden border-b border-white/10 bg-brand-charcoal/90 px-4 py-2 shadow-sm backdrop-blur-xl md:block md:px-8">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase text-aqua-700">A equipe que você precisa, quando você precisa.</p>
-              <h1 className="text-xl font-black text-navy-950">{identityName || areaLabel}</h1>
+              <p className="text-xs font-bold uppercase text-aqua-700">Conecta. Oportunidades. Talentos.</p>
+              <h1 className="text-xl font-black text-white">{identityName || areaLabel}</h1>
             </div>
             <div className="flex min-w-0 items-center gap-2">
               <Link
@@ -230,7 +230,7 @@ export function AppLayout() {
         </div>
       </main>
 
-      <nav className="app-bottom-nav fixed bottom-0 left-0 right-0 z-30 flex gap-1 overflow-x-auto border-t border-white/80 bg-white/95 px-2 py-1 shadow-lift backdrop-blur-xl md:hidden">
+      <nav className="app-bottom-nav fixed bottom-0 left-0 right-0 z-30 flex gap-1 overflow-x-auto border-t border-white/10 bg-brand-charcoal/95 px-2 py-1 shadow-lift backdrop-blur-xl md:hidden">
         {links.map((link) => {
           const Icon = link.icon;
           const active = location.pathname === link.to;
@@ -239,7 +239,7 @@ export function AppLayout() {
               key={link.to}
               to={link.to}
               className={`grid min-h-14 min-w-[4.15rem] flex-1 place-items-center gap-0.5 rounded-lg px-1 text-center text-[0.58rem] font-black leading-tight transition ${
-                active ? "text-navy-950" : "text-slate-500"
+                active ? "text-white" : "text-slate-500"
               }`}
             >
               <span className={`mobile-nav-icon ${active ? "is-active" : ""}`}>
