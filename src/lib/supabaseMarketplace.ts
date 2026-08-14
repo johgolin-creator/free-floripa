@@ -92,6 +92,17 @@ interface FunctionExperienceRow {
   verified: boolean | null;
 }
 
+interface WorkerReviewRow {
+  id: string;
+  worker_id: string;
+  application_id: string | null;
+  job_id: string | null;
+  author_name: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+}
+
 interface CompanyProfileRow {
   id: string;
   user_id?: string | null;
@@ -198,7 +209,19 @@ function toNumber(value: number | string | null | undefined, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function mapPublicWorker(row: WorkerProfileRow, experiences: FunctionExperienceRow[]): WorkerProfile {
+function mapWorkerReview(row: WorkerReviewRow): Review {
+  return {
+    id: row.id,
+    authorName: row.author_name,
+    rating: row.rating,
+    comment: row.comment,
+    jobId: row.job_id ?? undefined,
+    applicationId: row.application_id ?? undefined,
+    createdAt: row.created_at
+  };
+}
+
+function mapPublicWorker(row: WorkerProfileRow, experiences: FunctionExperienceRow[], reviews: WorkerReviewRow[]): WorkerProfile {
   const functions = (row.professions ?? []).map(toJobFunction).filter((item): item is JobFunction => Boolean(item));
   const fallbackFunctions: JobFunction[] = functions.length > 0 ? functions : ["Garçom"];
   const functionExperience = fallbackFunctions.map((functionName) => {
@@ -233,7 +256,10 @@ function mapPublicWorker(row: WorkerProfileRow, experiences: FunctionExperienceR
     attendanceRate: Math.max(0, Number(row.attendance_rate ?? 100)),
     punctualityRate: Math.max(0, Number(row.punctuality_rate ?? 100)),
     cancellations: Math.max(0, Number(row.cancellations ?? 0)),
-    reviews: [],
+    reviews: reviews
+      .filter((review) => review.worker_id === row.id)
+      .map(mapWorkerReview)
+      .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? "")),
     verified: Boolean(row.verified)
   };
 }
@@ -371,14 +397,23 @@ export async function loadPublicWorkerProfiles(excludeUserId?: string | null) {
   const ids = profiles.map((row) => row.id);
   if (ids.length === 0) return [];
 
-  const { data: experienceRows, error: experienceError } = await supabase
-    .from("worker_function_experience")
-    .select("worker_id,function_name,level,months,accepts_assistant,verified")
-    .in("worker_id", ids);
+  const [{ data: experienceRows, error: experienceError }, { data: reviewRows, error: reviewError }] = await Promise.all([
+    supabase
+      .from("worker_function_experience")
+      .select("worker_id,function_name,level,months,accepts_assistant,verified")
+      .in("worker_id", ids),
+    supabase
+      .from("worker_reviews")
+      .select("id,worker_id,application_id,job_id,author_name,rating,comment,created_at")
+      .in("worker_id", ids)
+  ]);
 
   if (experienceError) throw new Error(experienceError.message);
+  if (reviewError) throw new Error(reviewError.message);
 
-  return profiles.map((row) => mapPublicWorker(row, (experienceRows ?? []) as FunctionExperienceRow[]));
+  return profiles.map((row) =>
+    mapPublicWorker(row, (experienceRows ?? []) as FunctionExperienceRow[], (reviewRows ?? []) as WorkerReviewRow[])
+  );
 }
 
 export async function publishWorkerProfile(user: User, worker: WorkerProfile) {
