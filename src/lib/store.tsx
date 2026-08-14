@@ -12,10 +12,12 @@ import {
   markRemoteRoleNotificationsRead,
   publishApplication,
   publishCompanyProfile,
+  publishCompanyReview,
   publishInvitedApplication,
   publishJob,
   publishNotification,
   publishWorkerProfile,
+  publishWorkerReview,
   supabaseMarketplaceEnabled,
   updateRemoteApplicationStatus,
   type MarketplaceJobsPayload
@@ -1741,28 +1743,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       },
       addReview(workerId, review) {
+        const worker = state.workers.find((item) => item.id === workerId);
+        if (!worker) return;
+        const alreadyReviewed =
+          review.applicationId && worker.reviews.some((item) => item.applicationId === review.applicationId);
+        if (alreadyReviewed) return;
+
+        const reviewId = crypto.randomUUID();
         commit((current) => ({
           ...current,
-          workers: current.workers.map((worker) =>
-            worker.id === workerId
-              ? (() => {
-                  const alreadyReviewed =
-                    review.applicationId &&
-                    worker.reviews.some((item) => item.applicationId === review.applicationId);
-                  if (alreadyReviewed) return worker;
-
-                  const reviews = [{ id: crypto.randomUUID(), ...review }, ...worker.reviews];
-                  const rating = reviews.reduce((total, item) => total + item.rating, 0) / reviews.length;
-                  return {
-                    ...worker,
-                    rating: Number(rating.toFixed(1)),
-                    completedJobs: worker.completedJobs + 1,
-                    reviews
-                  };
-                })()
-              : worker
-            )
+          workers: current.workers.map((item) => {
+            if (item.id !== workerId) return item;
+            const reviews = [{ id: reviewId, ...review }, ...item.reviews];
+            const rating = reviews.reduce((total, entry) => total + entry.rating, 0) / reviews.length;
+            return {
+              ...item,
+              rating: Number(rating.toFixed(1)),
+              completedJobs: item.completedJobs + 1,
+              reviews
+            };
+          })
         }));
+
+        if (supabaseMarketplaceEnabled && user) {
+          publishWorkerReview(currentCompany.id, workerId, { id: reviewId, ...review }).catch(() => {
+            setSyncError("Falha ao publicar avaliação.");
+            setSyncStatus("erro");
+          });
+        }
       },
       addCompanyReview(companyId, review) {
         const company = state.companies.find((item) => item.id === companyId);
@@ -1778,14 +1786,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return { ok: false, message: "Você já avaliou esta empresa neste turno." };
         }
 
+        const nextReview: CompanyReview = {
+          id: crypto.randomUUID(),
+          companyId,
+          ...review,
+          comment: review.comment.trim(),
+          createdAt: new Date().toISOString()
+        };
+
         commit((current) => {
-          const nextReview: CompanyReview = {
-            id: crypto.randomUUID(),
-            companyId,
-            ...review,
-            comment: review.comment.trim(),
-            createdAt: new Date().toISOString()
-          };
           const companyReviews = [nextReview, ...current.companyReviews];
           const reviewsForCompany = companyReviews.filter((item) => item.companyId === companyId);
           const rating = reviewsForCompany.reduce((total, item) => total + item.rating, 0) / reviewsForCompany.length;
@@ -1803,6 +1812,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
             )
           };
         });
+
+        if (supabaseMarketplaceEnabled && user) {
+          publishCompanyReview(nextReview).catch(() => {
+            setSyncError("Falha ao publicar avaliação da empresa.");
+            setSyncStatus("erro");
+          });
+        }
 
         return { ok: true, message: "Avaliação da empresa registrada. Obrigado por fortalecer a reputação da plataforma." };
       },

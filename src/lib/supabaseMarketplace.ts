@@ -4,6 +4,7 @@ import type {
   Application,
   ApplicationStatus,
   CompanyProfile,
+  CompanyReview,
   FunctionExperience,
   Job,
   JobFunction,
@@ -11,6 +12,7 @@ import type {
   Neighborhood,
   NotificationItem,
   PaymentMethod,
+  Review,
   UserRole,
   WorkerProfile,
   WorkShift
@@ -718,5 +720,47 @@ export async function markRemoteRoleNotificationsRead(userId: string, role: User
   if (!supabase) return;
 
   const { error } = await supabase.from("notifications").update({ read: true }).eq("user_id", userId).eq("role", role);
+  if (error) throw new Error(error.message);
+}
+
+export async function publishWorkerReview(companyId: string, workerId: string, review: Review) {
+  if (!supabase) return;
+
+  const { error } = await supabase.from("worker_reviews").upsert(
+    {
+      id: review.id,
+      worker_id: workerId,
+      company_id: companyId,
+      application_id: review.applicationId ?? null,
+      job_id: review.jobId ?? null,
+      author_name: review.authorName,
+      rating: review.rating,
+      comment: review.comment,
+      created_at: review.createdAt ?? new Date().toISOString()
+    },
+    { onConflict: "id" }
+  );
+
+  if (error) throw new Error(error.message);
+}
+
+export async function publishCompanyReview(review: CompanyReview) {
+  if (!supabase) return;
+
+  const { error } = await supabase.from("company_reviews").upsert(
+    {
+      id: review.id,
+      company_id: review.companyId,
+      worker_id: review.workerId,
+      worker_name: review.workerName,
+      application_id: review.applicationId ?? null,
+      job_id: review.jobId ?? null,
+      rating: review.rating,
+      comment: review.comment,
+      created_at: review.createdAt
+    },
+    { onConflict: "id" }
+  );
+
   if (error) throw new Error(error.message);
 }
