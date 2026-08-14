@@ -46,6 +46,22 @@ a {
 }
 
 @layer components {
+.app-sidebar {
+  background: linear-gradient(180deg, #111318 0%, #1b1e24 52%, #2e3a20 150%);
+}
+
+.hero-overlay {
+  background: linear-gradient(90deg, rgba(17, 19, 24, 0.94) 0%, rgba(17, 19, 24, 0.78) 48%, rgba(17, 19, 24, 0.42) 100%);
+}
+
+.cta-section {
+  background: linear-gradient(135deg, #111318 0%, #1b1e24 62%, #3a4a20 150%);
+}
+
+.color-strip {
+  background: linear-gradient(90deg, #c8ff38 0%, #f4b740 52%, #ff6b57 100%);
+}
+
 .card {
   @apply rounded-lg border border-white/10 bg-brand-charcoal shadow-soft ring-1 ring-white/5 transition duration-200;
 }

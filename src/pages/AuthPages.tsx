@@ -462,7 +462,7 @@ export function CompanySignupPage() {
 
 function AuthShell({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
-    <div className="auth-bg min-h-screen px-4 py-6">
+    <div className="min-h-screen bg-brand-dark px-4 py-6">
       <main className="mx-auto max-w-6xl">
         <Link to="/" className="mb-5 inline-flex items-center gap-2 rounded-full bg-brand-charcoal px-3 py-2 text-sm font-black text-white shadow-sm transition hover:bg-aqua-50">
           <ArrowLeft size={17} /> Voltar

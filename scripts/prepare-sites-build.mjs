@@ -10,7 +10,7 @@ copyFileSync(join(root, ".openai", "hosting.json"), join(dist, ".openai", "hosti
 
 let indexHtml = readFileSync(join(dist, "index.html"), "utf8");
 const scriptMatch = indexHtml.match(/<script[^>]+src="([^"]+)"[^>]*><\/script>/);
-const styleMatch = indexHtml.match(/<link[^>]+href="([^"]+)"[^>]*>/);
+const styleMatch = indexHtml.match(/<link[^>]*rel="stylesheet"[^>]*href="((?:\.\/|\/)[^"]+\.css)"[^>]*>/);
 
 if (scriptMatch) {
   const script = readFileSync(join(dist, scriptMatch[1].replace(/^\//, "")), "utf8");
