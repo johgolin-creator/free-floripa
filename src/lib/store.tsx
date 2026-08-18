@@ -468,10 +468,27 @@ function mergeWorkerMarketplaceState(state: AppState, workerId: string, payload:
 }
 
 function mergeModerationState(state: AppState, overview: Awaited<ReturnType<typeof loadModerationOverview>>) {
+  // Keep the moderator's own worker/company entry as the SAME object reference
+  // (instead of the freshly-fetched copy) so currentWorker/currentCompany stay
+  // referentially stable. Otherwise the effect that auto-republishes the
+  // logged-in worker's profile on every currentWorker change (store.tsx,
+  // "publishWorkerProfile(user, currentWorker)") re-fires right after this
+  // merge, racing its own DELETE+INSERT of worker_function_experience against
+  // the in-flight one and failing with a 409, which surfaces as "Falha ao
+  // salvar" even though nothing is actually wrong.
+  const ownWorker = state.workers.find((worker) => worker.id === state.selectedWorkerId);
+  const ownCompany = state.companies.find((company) => company.id === state.selectedCompanyId);
+  const workers = ownWorker
+    ? [ownWorker, ...overview.workers.filter((worker) => worker.id !== ownWorker.id)]
+    : overview.workers;
+  const companies = ownCompany
+    ? [ownCompany, ...overview.companies.filter((company) => company.id !== ownCompany.id)]
+    : overview.companies;
+
   return {
     ...state,
-    workers: overview.workers,
-    companies: overview.companies,
+    workers,
+    companies,
     jobs: applyApplicationCounts(overview.jobs, overview.applications),
     applications: overview.applications,
     trustReports: overview.trustReports,
