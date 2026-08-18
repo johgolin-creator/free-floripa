@@ -233,6 +233,21 @@ export interface TrustReport {
   resolvedAt?: string;
 }
 
+export type BugReportStatus = "Aberto" | "Em andamento" | "Resolvido";
+
+export interface BugReport {
+  id: string;
+  reporterId: string;
+  reporterEmail: string;
+  reporterName: string;
+  title: string;
+  description: string;
+  pagePath: string;
+  status: BugReportStatus;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
 export interface AppState {
   activeRole: UserRole;
   selectedWorkerId: string;

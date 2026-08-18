@@ -24,6 +24,13 @@ import {
 } from "./supabaseMarketplace";
 import { getSupabaseStateKey, loadSupabaseState, saveSupabaseState, supabaseStateEnabled } from "./supabaseState";
 import {
+  loadModerationOverview,
+  publishTrustReport,
+  resolveTrustReportRemote,
+  setModerationBlock,
+  supabaseModerationEnabled
+} from "./supabaseModeration";
+import {
   grantRemoteCoins,
   loadRemoteCoinAccount,
   supabaseCoinsEnabled,
@@ -460,6 +467,18 @@ function mergeWorkerMarketplaceState(state: AppState, workerId: string, payload:
   };
 }
 
+function mergeModerationState(state: AppState, overview: Awaited<ReturnType<typeof loadModerationOverview>>) {
+  return {
+    ...state,
+    workers: overview.workers,
+    companies: overview.companies,
+    jobs: applyApplicationCounts(overview.jobs, overview.applications),
+    applications: overview.applications,
+    trustReports: overview.trustReports,
+    adminModeration: overview.adminModeration
+  };
+}
+
 function mergeNotifications(state: AppState, notifications: AppState["notifications"]) {
   const incomingIds = new Set(notifications.map((notification) => notification.id));
   return {
@@ -530,7 +549,7 @@ function ensureAccountProfile(state: AppState, user: User | null, role: UserRole
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const { loading: authLoading, role, user } = useAuth();
+  const { loading: authLoading, role, user, isAdmin, isModerator } = useAuth();
   const accountState = useMemo(() => createStateForUser(user, role), [role, user]);
   const localStorageKey = getLocalStorageKey(user?.id);
   const remoteStateKey = getSupabaseStateKey(user?.id);
@@ -694,6 +713,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       active = false;
     };
   }, [authLoading, currentCompany?.id, role, user?.id]);
+
+  useEffect(() => {
+    if (authLoading || !(isAdmin || isModerator) || !supabaseModerationEnabled) return;
+
+    let active = true;
+    loadModerationOverview()
+      .then((overview) => {
+        if (!active) return;
+        setState((current) => mergeModerationState(current, overview));
+        setSyncError("");
+      })
+      .catch(() => {
+        if (!active) return;
+        setSyncError("Falha ao carregar o painel de moderação.");
+        setSyncStatus("erro");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authLoading, isAdmin, isModerator]);
 
   useEffect(() => {
     if (authLoading || role !== "trabalhador" || !user || !currentWorker || !supabaseMarketplaceEnabled) return;
@@ -1871,6 +1911,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ]
         }));
 
+        if (supabaseModerationEnabled) {
+          publishTrustReport(report).catch(() => {
+            setSyncError("Falha ao enviar o relato para a administração.");
+            setSyncStatus("erro");
+          });
+        }
+
         return { ok: true, message: "Relato enviado para a administração. Obrigado por ajudar a manter o PONT seguro." };
       },
       resolveTrustReport(reportId) {
@@ -1886,8 +1933,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
               : report
           )
         }));
+
+        if (supabaseModerationEnabled && (isAdmin || isModerator)) {
+          resolveTrustReportRemote(reportId).catch(() => {
+            setSyncError("Falha ao atualizar o relato.");
+            setSyncStatus("erro");
+          });
+        }
       },
       toggleWorkerBlock(workerId) {
+        const nextBlocked = !state.adminModeration.blockedWorkerIds.includes(workerId);
+
         commit((current) => {
           const blockedWorkerIds = current.adminModeration.blockedWorkerIds.includes(workerId)
             ? current.adminModeration.blockedWorkerIds.filter((id) => id !== workerId)
@@ -1901,8 +1957,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
           };
         });
+
+        if (supabaseModerationEnabled && (isAdmin || isModerator)) {
+          setModerationBlock("worker", workerId, nextBlocked, user?.id).catch(() => {
+            setSyncError("Falha ao atualizar o bloqueio.");
+            setSyncStatus("erro");
+          });
+        }
       },
       toggleCompanyBlock(companyId) {
+        const nextBlocked = !state.adminModeration.blockedCompanyIds.includes(companyId);
+
         commit((current) => {
           const blockedCompanyIds = current.adminModeration.blockedCompanyIds.includes(companyId)
             ? current.adminModeration.blockedCompanyIds.filter((id) => id !== companyId)
@@ -1916,9 +1981,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
           };
         });
+
+        if (supabaseModerationEnabled && (isAdmin || isModerator)) {
+          setModerationBlock("company", companyId, nextBlocked, user?.id).catch(() => {
+            setSyncError("Falha ao atualizar o bloqueio.");
+            setSyncStatus("erro");
+          });
+        }
       }
     }),
-    [state, syncStatus, syncError, currentWorker, currentCompany, user, localStorageKey]
+    [state, syncStatus, syncError, currentWorker, currentCompany, user, localStorageKey, isAdmin, isModerator]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

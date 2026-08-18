@@ -34,13 +34,19 @@ const LegalPage = lazy(() => import("./pages/LegalPage").then(({ LegalPage }) =>
 
 export default function App() {
   const { state, setRole } = useAppStore();
-  const { user, role } = useAuth();
+  const { user, role, isAdmin, isModerator } = useAuth();
 
   useEffect(() => {
     if (user && role && state.activeRole !== role) {
       setRole(role);
     }
   }, [role, setRole, state.activeRole, user]);
+
+  const landingPath = isAdmin || isModerator
+    ? "/app/admin"
+    : state.activeRole === "empresa"
+      ? "/app/empresa"
+      : "/app/trabalhador";
 
   return (
     <Suspense fallback={<PageLoading />}>
@@ -53,7 +59,7 @@ export default function App() {
         <Route path="/termos" element={<LegalPage kind="terms" />} />
         <Route path="/privacidade" element={<LegalPage kind="privacy" />} />
         <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-          <Route index element={<Navigate to={state.activeRole === "empresa" ? "/app/empresa" : "/app/trabalhador"} replace />} />
+          <Route index element={<Navigate to={landingPath} replace />} />
           <Route path="trabalhador" element={<RoleRoute role="trabalhador"><WorkerDashboard /></RoleRoute>} />
           <Route path="vagas" element={<RoleRoute role="trabalhador"><JobsPage /></RoleRoute>} />
           <Route path="vagas/:id" element={<RoleRoute role="trabalhador"><JobDetailsPage /></RoleRoute>} />
@@ -127,9 +133,9 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: ReactNode }) {
-  const { authEnabled, isAdmin } = useAuth();
+  const { authEnabled, isAdmin, isModerator } = useAuth();
 
-  if (authEnabled && !isAdmin) {
+  if (authEnabled && !isAdmin && !isModerator) {
     return <Navigate to="/app" replace />;
   }
 

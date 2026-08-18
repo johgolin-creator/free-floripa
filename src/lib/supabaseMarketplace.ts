@@ -103,7 +103,7 @@ interface WorkerReviewRow {
   created_at: string;
 }
 
-interface CompanyProfileRow {
+export interface CompanyProfileRow {
   id: string;
   user_id?: string | null;
   establishment_name: string;
@@ -119,7 +119,7 @@ interface CompanyProfileRow {
   rating?: number | string | null;
 }
 
-interface JobRow {
+export interface JobRow {
   id: string;
   company_id: string;
   title: string;
@@ -144,7 +144,7 @@ interface JobRow {
   company_profiles?: CompanyProfileRow | CompanyProfileRow[] | null;
 }
 
-interface ApplicationRow {
+export interface ApplicationRow {
   id: string;
   job_id: string;
   worker_id: string;
@@ -269,7 +269,7 @@ function normalizeTime(value?: string | null) {
   return value.slice(0, 5);
 }
 
-function mapCompany(row: CompanyProfileRow): CompanyProfile {
+export function mapCompany(row: CompanyProfileRow): CompanyProfile {
   return {
     id: row.id,
     establishmentName: row.establishment_name || "Empresa PONT",
@@ -286,7 +286,7 @@ function mapCompany(row: CompanyProfileRow): CompanyProfile {
   };
 }
 
-function mapJob(row: JobRow): Job {
+export function mapJob(row: JobRow): Job {
   return {
     id: row.id,
     companyId: row.company_id,
@@ -314,7 +314,7 @@ function mapJob(row: JobRow): Job {
   };
 }
 
-function mapApplication(row: ApplicationRow): Application {
+export function mapApplication(row: ApplicationRow): Application {
   return {
     id: row.id,
     jobId: row.job_id,
@@ -346,7 +346,7 @@ function mapNotification(row: NotificationRow): NotificationItem {
   };
 }
 
-function getNestedCompany(row: JobRow) {
+export function getNestedCompany(row: JobRow) {
   const company = Array.isArray(row.company_profiles) ? row.company_profiles[0] : row.company_profiles;
   return company ? mapCompany(company) : null;
 }

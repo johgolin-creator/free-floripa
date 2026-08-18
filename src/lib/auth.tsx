@@ -27,6 +27,7 @@ interface AuthContextValue {
   user: User | null;
   role: UserRole | null;
   isAdmin: boolean;
+  isModerator: boolean;
   email: string;
   signIn: (input: SignInInput) => Promise<{ role: UserRole }>;
   signUp: (input: SignUpInput) => Promise<{ role: UserRole; needsEmailConfirmation: boolean }>;
@@ -86,6 +87,30 @@ function getAuthErrorMessage(message: string) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(Boolean(supabase));
+  const [dbRole, setDbRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!supabase || !userId) {
+      setDbRole(null);
+      return;
+    }
+
+    let active = true;
+    const authClient = supabase;
+    authClient
+      .from("users")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active) setDbRole((data as { role?: string } | null)?.role ?? null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (!supabase) {
@@ -141,7 +166,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       user,
       role,
-      isAdmin: getIsAdmin(user),
+      isAdmin: getIsAdmin(user) || dbRole === "admin",
+      isModerator: !supabase || dbRole === "moderador",
       email: user?.email ?? "",
       async signIn({ email, password, fallbackRole }) {
         if (!supabase) return { role: fallbackRole };
@@ -198,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw new Error(getAuthErrorMessage(error.message));
       }
     };
-  }, [loading, session]);
+  }, [loading, session, dbRole]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

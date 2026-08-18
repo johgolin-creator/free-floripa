@@ -20,6 +20,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
 import { RoleSwitcher } from "./RoleSwitcher";
+import { ReportBugButton } from "./ReportBugButton";
 import { useAppStore } from "../lib/store";
 import { useAuth } from "../lib/auth";
 import { getCompanyProfileCompletion, getWorkerProfileCompletion } from "../lib/profileCompletion";
@@ -51,11 +52,11 @@ const companyLinks = [
 
 export function AppLayout() {
   const { state, storageMode, syncStatus, syncError, currentWorker, currentCompany } = useAppStore();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isModerator } = useAuth();
   const location = useLocation();
   const links = [
     ...(state.activeRole === "trabalhador" ? workerLinks : companyLinks),
-    ...(isAdmin ? [{ to: "/app/admin", label: "Admin", mobileLabel: "Admin", icon: ShieldCheck }] : [])
+    ...(isAdmin || isModerator ? [{ to: "/app/admin", label: "Admin", mobileLabel: "Admin", icon: ShieldCheck }] : [])
   ];
   const profilePath = state.activeRole === "trabalhador" ? "/app/perfil-trabalhador" : "/app/perfil-empresa";
   const completion =
@@ -85,7 +86,11 @@ export function AppLayout() {
       ? "Use moedas para liberar vagas completas antes de se candidatar."
       : "Use moedas para ações empresariais, como cancelar vagas já preenchidas.";
 
-  if (!completion.complete && location.pathname !== profilePath && !(isAdmin && location.pathname.startsWith("/app/admin"))) {
+  if (isModerator && (location.pathname === "/app/trabalhador" || location.pathname === "/app/empresa")) {
+    return <Navigate to="/app/admin" replace />;
+  }
+
+  if (!isAdmin && !isModerator && !completion.complete && location.pathname !== profilePath) {
     return <Navigate to={profilePath} replace />;
   }
 
@@ -140,6 +145,11 @@ export function AppLayout() {
           </div>
           <p className="mt-1.5 text-xs leading-5 text-slate-300">Central de avisos para convites, vagas e avaliações.</p>
         </NavLink>
+        {isModerator && (
+          <div className="mt-4">
+            <ReportBugButton />
+          </div>
+        )}
         <div className="mt-4 flex flex-wrap gap-3 text-xs font-black text-slate-400">
           <Link to="/termos" className="hover:text-aqua-300">Termos</Link>
           <Link to="/privacidade" className="hover:text-aqua-300">Privacidade</Link>
@@ -177,6 +187,7 @@ export function AppLayout() {
                 <Bell size={18} />
                 {unread > 0 && <span>{unread}</span>}
               </NavLink>
+              {isModerator && <ReportBugButton compact />}
               <div className="hidden">
                 <RoleSwitcher compact />
               </div>
