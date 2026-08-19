@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
@@ -18,7 +18,11 @@ import {
 } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { EmptyState } from "../components/EmptyState";
+import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
+import { StatTile } from "../components/StatTile";
+import { StatusBadge, StatusLegend } from "../components/StatusBadge";
+import { TermHint } from "../components/TermHint";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate } from "../lib/format";
@@ -46,6 +50,7 @@ export function CompanyJobsPage() {
   const { state, currentCompany, updateJobStatus, duplicateJob } = useAppStore();
   const [filter, setFilter] = useState<JobFilter>("Todas");
   const [message, setMessage] = useState("");
+  const [confirmCancelJobId, setConfirmCancelJobId] = useState<string | null>(null);
   const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
   const jobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const companyApplications = state.applications.filter((application) => jobs.some((job) => job.id === application.jobId));
@@ -67,23 +72,28 @@ export function CompanyJobsPage() {
   function runStatus(jobId: string, status: JobStatus) {
     const job = jobs.find((item) => item.id === jobId);
     if (job && status === "Cancelada" && isFilledJob(job, state.applications)) {
-      const confirmed = state.applications.filter(
-        (application) =>
-          application.jobId === job.id &&
-          (application.status === "Aprovada" || application.status === "Trabalho concluído")
-      ).length;
-      const confirmedText = `${confirmed}/${job.quantity}`;
-      if (
-        !window.confirm(
-          `Esta vaga já está preenchida (${confirmedText}). Para cancelar agora, serão cobradas 10 moedas da empresa. Deseja continuar?`
-        )
-      ) {
-        return;
-      }
+      setConfirmCancelJobId(jobId);
+      return;
     }
     const result = updateJobStatus(jobId, status);
     setMessage(result.message);
   }
+
+  function confirmCancelJob() {
+    if (!confirmCancelJobId) return;
+    const result = updateJobStatus(confirmCancelJobId, "Cancelada");
+    setMessage(result.message);
+    setConfirmCancelJobId(null);
+  }
+
+  const confirmCancelJobTarget = confirmCancelJobId ? jobs.find((item) => item.id === confirmCancelJobId) : null;
+  const confirmCancelConfirmedCount = confirmCancelJobTarget
+    ? state.applications.filter(
+        (application) =>
+          application.jobId === confirmCancelJobTarget.id &&
+          (application.status === "Aprovada" || application.status === "Trabalho concluído")
+      ).length
+    : 0;
 
   function runDuplicate(jobId: string) {
     const result = duplicateJob(jobId);
@@ -97,7 +107,8 @@ export function CompanyJobsPage() {
         title="Operação das vagas"
         description="Controle status, candidatos, encerramento, cancelamento, duplicação e histórico."
       />
-      {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+      <StatusLegend type="job" />
+      {message && <div className="mb-4 mt-3 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       {companyBlocked && (
         <div className="mb-4">
           <SafetyNotice title="Vagas em revisão" tone="warning">
@@ -128,10 +139,10 @@ export function CompanyJobsPage() {
               </p>
             </div>
             <div className="company-hero-metrics">
-              <HeroMetric icon={<BriefcaseBusiness size={19} />} label="ativas" value={String(dashboard.active)} />
-              <HeroMetric icon={<AlertTriangle size={19} />} label="urgentes" value={String(dashboard.urgent)} />
-              <HeroMetric icon={<UsersRound size={19} />} label="candidatos" value={String(dashboard.candidates)} />
-              <HeroMetric icon={<WalletCards size={19} />} label="previsto" value={formatCurrency(dashboard.expected)} />
+              <StatTile variant="primary" icon={<BriefcaseBusiness size={19} />} label="ativas" value={dashboard.active} />
+              <StatTile tone={dashboard.urgent > 0 ? "alert" : "normal"} icon={<AlertTriangle size={19} />} label="urgentes" value={dashboard.urgent} />
+              <StatTile icon={<UsersRound size={19} />} label="candidatos" value={dashboard.candidates} />
+              <StatTile icon={<WalletCards size={19} />} label="previsto" value={formatCurrency(dashboard.expected)} />
             </div>
             <div className="company-hero-actions">
               <Link to="/app/empresa?acao=criar-vaga" className="company-action company-action-primary">
@@ -152,7 +163,7 @@ export function CompanyJobsPage() {
               <Stat label="moedas empresa" value={String(state.subscription.companyCreditsRemaining)} />
             </div>
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-800 lg:col-span-2">
-              Cancelar uma vaga já preenchida custa 10 moedas da empresa. Vagas sem equipe completa podem ser canceladas sem taxa.
+              Cancelar uma vaga já preenchida custa 10 <TermHint term="moedas" role="empresa">moedas</TermHint> da empresa. Vagas sem equipe completa podem ser canceladas sem taxa.
             </p>
             <div className="company-filter-buttons">
               {filters.map((item) => (
@@ -233,7 +244,7 @@ export function CompanyJobsPage() {
                     <div className="company-job-head">
                       <div>
                         <div className="mb-2 flex flex-wrap gap-2">
-                          {status === "Urgente" ? <UrgentBadge /> : <span className={getStatusClass(status)}>{status}</span>}
+                          {status === "Urgente" ? <UrgentBadge /> : <StatusBadge type="job" status={status} />}
                           {job.urgent && status !== "Urgente" && status !== "Cancelada" && status !== "Concluída" && <UrgentBadge />}
                           <span className="badge">{job.function}</span>
                         </div>
@@ -301,6 +312,24 @@ export function CompanyJobsPage() {
           )}
         </div>
       )}
+
+      {confirmCancelJobTarget && (
+        <Modal title="Cancelar vaga preenchida?" onClose={() => setConfirmCancelJobId(null)}>
+          <p className="text-sm leading-6 text-slate-600">
+            Esta vaga já está preenchida ({confirmCancelConfirmedCount}/{confirmCancelJobTarget.quantity}). Cancelar agora vai
+            cobrar 10 <TermHint term="moedas" role="empresa">moedas</TermHint> da empresa. Vagas sem equipe completa podem ser
+            canceladas sem taxa.
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <button type="button" className="secondary" onClick={() => setConfirmCancelJobId(null)}>
+              Voltar
+            </button>
+            <button type="button" className="danger" onClick={confirmCancelJob}>
+              Cancelar vaga
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -349,16 +378,6 @@ function getEventPackageName(job: Job) {
   return job.title.slice(0, separatorIndex).trim();
 }
 
-function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <span className="company-hero-metric">
-      <span>{icon}</span>
-      <strong>{value}</strong>
-      <small>{label}</small>
-    </span>
-  );
-}
-
 function matchesFilter(job: Job, filter: JobFilter) {
   const status = getJobStatus(job);
   if (filter === "Ativas") return isActiveStatus(status);
@@ -378,13 +397,6 @@ function isFilledJob(job: Job, applications: Application[]) {
       (application.status === "Aprovada" || application.status === "Trabalho concluído")
   ).length;
   return confirmed >= job.quantity;
-}
-
-function getStatusClass(status: ReturnType<typeof getJobStatus>) {
-  if (status === "Cancelada") return "badge bg-red-50 text-alert";
-  if (status === "Concluída") return "badge bg-aqua-100 text-aqua-700";
-  if (status === "Rascunho") return "badge bg-slate-200 text-slate-700";
-  return "badge";
 }
 
 function JobHistory({ job, applications }: { job: Job; applications: Application[] }) {
@@ -409,7 +421,7 @@ function JobHistory({ job, applications }: { job: Job; applications: Application
                 {shift?.checkoutAt ? ` - saída ${new Date(shift.checkoutAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}
               </p>
             </div>
-            <span className="badge justify-center">{shift?.status ?? "Sem turno"}</span>
+            {shift ? <StatusBadge type="shift" status={shift.status} /> : <span className="badge justify-center">Sem turno</span>}
           </div>
         );
       })}

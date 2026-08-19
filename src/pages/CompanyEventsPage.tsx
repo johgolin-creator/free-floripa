@@ -3,6 +3,7 @@ import { CalendarDays, CheckCircle2, ClipboardList, Clock3, MapPin, PartyPopper,
 import { EmptyState } from "../components/EmptyState";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
+import { StatTile } from "../components/StatTile";
 import { WorkerCard } from "../components/WorkerCard";
 import { functions, neighborhoods } from "../data/demoData";
 import { formatCurrency } from "../lib/format";
@@ -183,6 +184,14 @@ export function CompanyEventsPage() {
     setMessage(`${requestedFunctions.length} vaga${requestedFunctions.length === 1 ? "" : "s"} criada${requestedFunctions.length === 1 ? "" : "s"} para ${eventName}. Agora você pode acompanhar os candidatos em Minhas vagas.`);
   }
 
+  const eventStepStatuses = [
+    { label: "Tipo de evento", done: Boolean(eventType) },
+    { label: "Equipe", done: totalProfessionals > 0 },
+    { label: "Detalhes", done: Boolean(date && location.trim() && guests > 0) },
+    { label: "Revisão", done: false }
+  ];
+  const eventCurrentStepIndex = eventStepStatuses.findIndex((step) => !step.done);
+
   return (
     <div className="grid gap-5">
       <SectionHeader
@@ -199,10 +208,13 @@ export function CompanyEventsPage() {
       </SafetyNotice>
 
       <div className="event-stepper" aria-label="Etapas para criar evento">
-        {["Tipo de evento", "Equipe", "Detalhes", "Revisão"].map((step, index) => (
-          <div key={step} className={`event-step ${index === 0 ? "is-current" : ""}`}>
+        {eventStepStatuses.map((step, index) => (
+          <div
+            key={step.label}
+            className={`event-step ${step.done ? "is-done" : index === eventCurrentStepIndex ? "is-current" : ""}`}
+          >
             <span>{index + 1}</span>
-            <strong>{step}</strong>
+            <strong>{step.label}</strong>
           </div>
         ))}
       </div>
@@ -280,10 +292,10 @@ export function CompanyEventsPage() {
         </div>
 
         <aside className="event-summary-panel">
-          <Metric icon={<UsersRound />} label="Profissionais na equipe" value={totalProfessionals} />
-          <Metric icon={<ClipboardList />} label="Funções com vagas" value={requestedFunctions.length} />
-          <Metric icon={<Star />} label="Custo estimado" value={formatCurrency(estimatedEventCost)} />
-          <Metric icon={<Clock3 />} label="Horário do evento" value={`${startsAt} - ${endsAt}`} />
+          <StatTile variant="primary" icon={<UsersRound />} label="Profissionais na equipe" value={totalProfessionals} />
+          <StatTile icon={<ClipboardList />} label="Funções com vagas" value={requestedFunctions.length} />
+          <StatTile icon={<Star />} label="Custo estimado" value={formatCurrency(estimatedEventCost)} />
+          <StatTile icon={<Clock3 />} label="Horário do evento" value={`${startsAt} - ${endsAt}`} />
         </aside>
       </section>
 
@@ -396,16 +408,6 @@ export function CompanyEventsPage() {
         </div>
       </section>
     </div>
-  );
-}
-
-function Metric({ icon, label, value }: { icon: JSX.Element; label: string; value: string | number }) {
-  return (
-    <article className="card p-4">
-      <div className="mb-3 text-aqua-700">{icon}</div>
-      <strong className="block text-2xl font-black text-white">{value}</strong>
-      <span className="text-sm font-semibold text-slate-500">{label}</span>
-    </article>
   );
 }
 

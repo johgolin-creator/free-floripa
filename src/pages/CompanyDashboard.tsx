@@ -22,7 +22,9 @@ import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
+import { StatTile } from "../components/StatTile";
 import { UrgentBadge } from "../components/UrgentBadge";
+import { useWizardStep, WizardActions, WizardPanel, WizardProgress, WizardSteps } from "../components/Wizard";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 import type { CreateJobInput, UrgentReplacementInput } from "../lib/store";
@@ -150,10 +152,10 @@ export function CompanyDashboard() {
       />
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Metric icon={<BriefcaseBusiness />} label="Vagas abertas" value={openJobs.length} />
-        <Metric icon={<CheckCircle2 />} label="Profissionais confirmados" value={confirmed} />
-        <Metric icon={<ClipboardList />} label="Candidaturas recebidas" value={companyApplications.length} />
-        <Metric icon={<AlertTriangle />} label="Faltas registradas" value={absences} />
+        <StatTile variant="primary" icon={<BriefcaseBusiness />} label="Vagas abertas" value={openJobs.length} />
+        <StatTile icon={<CheckCircle2 />} label="Profissionais confirmados" value={confirmed} />
+        <StatTile icon={<ClipboardList />} label="Candidaturas recebidas" value={companyApplications.length} />
+        <StatTile tone="alert" icon={<AlertTriangle />} label="Faltas registradas" value={absences} />
       </div>
 
       {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
@@ -305,16 +307,6 @@ export function CompanyDashboard() {
   );
 }
 
-function Metric({ icon, label, value }: { icon: ReactNode; label: string; value: string | number }) {
-  return (
-    <article className="metric-card">
-      <div className="mb-3 text-aqua-700">{icon}</div>
-      <strong className="block text-2xl font-black text-white">{value}</strong>
-      <span className="text-sm font-semibold text-slate-500">{label}</span>
-    </article>
-  );
-}
-
 function SmartMetric({
   icon,
   label,
@@ -363,7 +355,7 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => Subm
   const [isPublishing, setIsPublishing] = useState(false);
   const isPublishingRef = useRef(false);
   const lastSubmittedKey = useRef("");
-  const [step, setStep] = useState(0);
+  const { step, isFirst, isLast, goTo, goNext: goToNext, goBack } = useWizardStep(jobSteps.length);
   const [draft, setDraft] = useState<JobDraft>({
     title: "",
     function: functions[0],
@@ -403,25 +395,29 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => Subm
     draft.description.trim()
   ];
   const completedFields = requiredFields.filter(Boolean).length;
-  const completionPercent = Math.round((completedFields / requiredFields.length) * 100);
 
   function setField<Key extends keyof JobDraft>(field: Key, value: JobDraft[Key]) {
     setDraft((current) => ({ ...current, [field]: value }));
   }
 
-  function goNext() {
+  function handleNext() {
     const result = validateJobDraft(draft, step);
     if (!result.ok) {
       setError(result.message);
       return;
     }
     setError("");
-    setStep((current) => Math.min(jobSteps.length - 1, current + 1));
+    goToNext();
   }
 
-  function goBack() {
+  function handleBack() {
     setError("");
-    setStep((current) => Math.max(0, current - 1));
+    goBack();
+  }
+
+  function handleStepSelect(index: number) {
+    setError("");
+    goTo(index);
   }
 
   function publish() {
@@ -471,7 +467,7 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => Subm
 
   return (
     <form
-      className="job-wizard"
+      className="wizard"
       onSubmit={(event) => {
         event.preventDefault();
         publish();
@@ -479,40 +475,15 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => Subm
     >
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
       <RequiredFieldSummary />
-      <div className="job-wizard-progress-card">
-        <div>
-          <span className="section-eyebrow">Preenchimento</span>
-          <strong>{completedFields}/{requiredFields.length} itens obrigatórios completos</strong>
-        </div>
-        <div className="job-wizard-progress-track">
-          <span style={{ width: `${completionPercent}%` }} />
-        </div>
-      </div>
-      <div className="job-wizard-steps">
-        {jobSteps.map((item, index) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => {
-              if (index <= step) {
-                setError("");
-                setStep(index);
-              }
-            }}
-            className={`job-wizard-step ${index === step ? "is-active" : ""} ${index < step ? "is-done" : ""}`}
-          >
-            <span>{index + 1}</span>
-            {item}
-          </button>
-        ))}
-      </div>
+      <WizardProgress
+        completed={completedFields}
+        total={requiredFields.length}
+        label={`${completedFields}/${requiredFields.length} itens obrigatórios completos`}
+      />
+      <WizardSteps steps={jobSteps} current={step} onSelect={handleStepSelect} />
 
       {step === 0 && (
-        <section className="job-wizard-panel">
-          <div>
-            <span className="section-eyebrow">Etapa 1</span>
-            <h3>Que vaga você precisa preencher?</h3>
-          </div>
+        <WizardPanel eyebrow="Etapa 1" title="Que vaga você precisa preencher?">
           <label className="label">Título<input value={draft.title} onChange={(event) => setField("title", event.target.value)} className="input" placeholder="Garçom para beach club" /></label>
           <div className="grid gap-3 md:grid-cols-2">
             <label className="label">
@@ -523,18 +494,14 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => Subm
             </label>
             <label className="label">Quantidade<input value={draft.quantity} onChange={(event) => setField("quantity", event.target.value)} type="number" min="1" className="input" /></label>
           </div>
-          <label className="job-wizard-toggle-card">
+          <label className="wizard-toggle-card">
             <input checked={draft.urgent} onChange={(event) => setField("urgent", event.target.checked)} type="checkbox" className="h-5 w-5 accent-alert" /> Marcar como vaga urgente
           </label>
-        </section>
+        </WizardPanel>
       )}
 
       {step === 1 && (
-        <section className="job-wizard-panel">
-          <div>
-            <span className="section-eyebrow">Etapa 2</span>
-            <h3>Quando será o turno?</h3>
-          </div>
+        <WizardPanel eyebrow="Etapa 2" title="Quando será o turno?">
           <div className="grid gap-3 md:grid-cols-2">
             <label className="label">Data<input value={draft.date} onChange={(event) => setField("date", event.target.value)} type="date" className="input" /></label>
             <label className="label">Valor da diária<input value={draft.dailyValue} onChange={(event) => setField("dailyValue", event.target.value)} type="number" min="1" className="input" placeholder="250" /></label>
@@ -550,15 +517,11 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => Subm
               </select>
             </label>
           </div>
-        </section>
+        </WizardPanel>
       )}
 
       {step === 2 && (
-        <section className="job-wizard-panel">
-          <div>
-            <span className="section-eyebrow">Etapa 3</span>
-            <h3>Onde a pessoa vai trabalhar?</h3>
-          </div>
+        <WizardPanel eyebrow="Etapa 3" title="Onde a pessoa vai trabalhar?">
           <label className="label">
             Bairro
             <select value={draft.neighborhood} onChange={(event) => setField("neighborhood", event.target.value as Neighborhood)} className="input">
@@ -567,29 +530,21 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => Subm
           </label>
           <label className="label">Endereço aproximado<input value={draft.approximateAddress} onChange={(event) => setField("approximateAddress", event.target.value)} className="input" placeholder="Jurerê, próximo à praia" /></label>
           <label className="label">Endereço completo<input value={draft.fullAddress} onChange={(event) => setField("fullAddress", event.target.value)} className="input" placeholder="Rua, número e referência. Só aparece após aprovação." /></label>
-          <div className="job-wizard-note"><MapPin size={17} /> O endereço completo continua protegido até a confirmação do profissional.</div>
-        </section>
+          <div className="wizard-note"><MapPin size={17} /> O endereço completo continua protegido até a confirmação do profissional.</div>
+        </WizardPanel>
       )}
 
       {step === 3 && (
-        <section className="job-wizard-panel">
-          <div>
-            <span className="section-eyebrow">Etapa 4</span>
-            <h3>Quais requisitos a vaga precisa ter?</h3>
-          </div>
+        <WizardPanel eyebrow="Etapa 4" title="Quais requisitos a vaga precisa ter?">
           <label className="label">Uniforme<input value={draft.uniform} onChange={(event) => setField("uniform", event.target.value)} className="input" placeholder="Camisa preta e calça preta" /></label>
           <label className="label">Experiência exigida<input value={draft.requiredExperience} onChange={(event) => setField("requiredExperience", event.target.value)} className="input" placeholder="Experiência com atendimento em salão" /></label>
           <label className="label">Descrição<textarea value={draft.description} onChange={(event) => setField("description", event.target.value)} className="input min-h-24 py-3" placeholder="Explique a rotina, ritmo do turno e tarefas principais." /></label>
           <label className="label">Benefícios<input value={draft.benefits} onChange={(event) => setField("benefits", event.target.value)} className="input" placeholder="Alimentação, transporte" /></label>
-        </section>
+        </WizardPanel>
       )}
 
       {step === 4 && (
-        <section className="job-wizard-panel">
-          <div>
-            <span className="section-eyebrow">Etapa 5</span>
-            <h3>Revise antes de publicar</h3>
-          </div>
+        <WizardPanel eyebrow="Etapa 5" title="Revise antes de publicar">
           <div className="job-review-card">
             <div>
               {draft.urgent ? <UrgentBadge /> : <span className="badge">{draft.function}</span>}
@@ -605,20 +560,11 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => Subm
               <ReviewItem icon={<CheckCircle2 size={16} />} label="Benefícios" value={benefits.length > 0 ? benefits.join(", ") : "não preenchido"} />
             </div>
           </div>
-          <div className="job-wizard-note"><ShieldCheck size={17} /> Ao publicar, a vaga aparece para freelancers compatíveis. Contato e endereço completo só liberam após aprovação.</div>
-        </section>
+          <div className="wizard-note"><ShieldCheck size={17} /> Ao publicar, a vaga aparece para freelancers compatíveis. Contato e endereço completo só liberam após aprovação.</div>
+        </WizardPanel>
       )}
 
-      <div className="job-wizard-actions">
-        <button type="button" onClick={goBack} disabled={step === 0} className="company-action">Voltar</button>
-        {step < jobSteps.length - 1 ? (
-          <button type="button" onClick={goNext} className="company-action company-action-primary">Continuar</button>
-        ) : (
-          <button type="submit" disabled={isPublishing} className="company-action company-action-primary">
-            {isPublishing ? "Publicando..." : "Publicar vaga"}
-          </button>
-        )}
-      </div>
+      <WizardActions isFirst={isFirst} isLast={isLast} onBack={handleBack} onNext={handleNext} submitLabel="Publicar vaga" pendingLabel="Publicando..." pending={isPublishing} />
     </form>
   );
 }

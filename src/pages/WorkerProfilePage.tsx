@@ -5,6 +5,7 @@ import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
+import { TermHint } from "../components/TermHint";
 import { experienceLevels, functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 import { getWorkerProfileCompletion } from "../lib/profileCompletion";
@@ -101,7 +102,7 @@ export function WorkerProfilePage() {
             </div>
             <div className="profile-score-card">
               <strong className="block text-3xl font-black text-white">{reliability}%</strong>
-              <span className="text-sm font-bold text-slate-600">Índice de Confiabilidade</span>
+              <span className="text-sm font-bold text-slate-600"><TermHint term="confiabilidade">Índice de Confiabilidade</TermHint></span>
             </div>
           </div>
 

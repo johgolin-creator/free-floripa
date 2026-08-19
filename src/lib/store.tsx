@@ -570,7 +570,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const accountState = useMemo(() => createStateForUser(user, role), [role, user]);
   const localStorageKey = getLocalStorageKey(user?.id);
   const remoteStateKey = getSupabaseStateKey(user?.id);
-  const [state, setState] = useState<AppState>(() => loadInitialState(STORAGE_KEY, initialState));
+  // Deliberately NOT reading localStorage here: at mount time we don't yet
+  // know which account is signed in (Supabase session resolution is async),
+  // so there is no correct per-user key to read. Reading the old unscoped
+  // STORAGE_KEY risked seeding the very first render with a stale
+  // activeRole left over from a *different* account that once used this
+  // browser (e.g. "empresa"), which could bounce a real "trabalhador" user
+  // out of role-gated routes like /app/vagas for a frame before the
+  // effect below corrects it. Starting from the plain demo default and
+  // letting that effect hydrate the right state per-user avoids the race.
+  const [state, setState] = useState<AppState>(() => initialState);
   const [syncStatus, setSyncStatus] = useState<AppContextValue["syncStatus"]>(
     supabaseStateEnabled ? "carregando" : "local"
   );

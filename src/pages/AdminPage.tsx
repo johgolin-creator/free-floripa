@@ -12,6 +12,7 @@ import {
   WalletCards
 } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
+import { StatusBadge } from "../components/StatusBadge";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { formatCurrency, formatDate } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
@@ -194,7 +195,7 @@ export function AdminPage() {
                 <div className="worker-card-head">
                   <div>
                     <div className="mb-2 flex flex-wrap gap-2">
-                      {job.urgent ? <UrgentBadge /> : <span className="badge">{getJobStatus(job)}</span>}
+                      {job.urgent ? <UrgentBadge /> : <StatusBadge type="job" status={getJobStatus(job)} />}
                       <span className="badge">{job.function}</span>
                       <span className="badge">{formatDate(job.date)}</span>
                       {reportCount > 0 && <span className="badge border-red-100 bg-red-50 text-alert">{reportCount} relato(s)</span>}

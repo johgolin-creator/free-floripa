@@ -20,6 +20,8 @@ import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { ShiftReceipt } from "../components/ShiftReceipt";
+import { StatTile } from "../components/StatTile";
+import { TermHint } from "../components/TermHint";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, formatDateTime, getWhatsAppUrl } from "../lib/format";
 import { getShiftVerificationCode } from "../lib/shiftVerification";
@@ -127,10 +129,10 @@ export function MyJobsPage() {
           </p>
         </div>
         <div className="worker-hero-metrics">
-          <HeroMetric icon={<CalendarDays size={19} />} label="próximos" value={String(agendaStats.next)} />
-          <HeroMetric icon={<Clock size={19} />} label="em andamento" value={String(agendaStats.active)} />
-          <HeroMetric icon={<ClipboardCheck size={19} />} label="concluídos" value={String(agendaStats.done)} />
-          <HeroMetric icon={<UserCheck size={19} />} label="ocorrências" value={String(agendaStats.issues)} />
+          <StatTile variant="primary" icon={<CalendarDays size={19} />} label="próximos" value={agendaStats.next} />
+          <StatTile icon={<Clock size={19} />} label="em andamento" value={agendaStats.active} />
+          <StatTile icon={<ClipboardCheck size={19} />} label="concluídos" value={agendaStats.done} />
+          <StatTile tone={agendaStats.issues > 0 ? "alert" : "normal"} icon={<UserCheck size={19} />} label="ocorrências" value={agendaStats.issues} />
         </div>
       </section>
 
@@ -169,7 +171,7 @@ export function MyJobsPage() {
                       </p>
                       <span className={getStatusClass(application, shift)}>{getWorkStatus(application, shift)}</span>
                       <span className="mt-2 inline-flex rounded-full bg-aqua-50 px-2 py-1 text-xs font-black text-aqua-700">
-                        Código {verificationCode}
+                        <TermHint term="codigoVerificacao">Código {verificationCode}</TermHint>
                       </span>
                     </div>
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-navy-950 text-aqua-300">
@@ -230,7 +232,7 @@ export function MyJobsPage() {
                       <span className={getStatusClass(application, shift)}>{getWorkStatus(application, shift)}</span>
                       <span className="badge">{job.function}</span>
                       <span className="badge">{formatCurrency(job.dailyValue)}</span>
-                      <span className="badge bg-aqua-50 text-aqua-700">Código {verificationCode}</span>
+                      <span className="badge bg-aqua-50 text-aqua-700"><TermHint term="codigoVerificacao">Código {verificationCode}</TermHint></span>
                     </div>
                     <h3>{job.title}</h3>
                     <p className="text-sm font-semibold text-slate-600">
@@ -442,15 +444,5 @@ function Info({ label, value, icon }: { label: string; value: string; icon?: Rea
       </span>
       <strong className="mt-1 block text-sm text-white">{value}</strong>
     </div>
-  );
-}
-
-function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <span className="worker-hero-metric">
-      <span>{icon}</span>
-      <strong>{value}</strong>
-      <small>{label}</small>
-    </span>
   );
 }

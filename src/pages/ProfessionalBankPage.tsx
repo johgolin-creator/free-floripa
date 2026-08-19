@@ -5,6 +5,8 @@ import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
+import { StatTile } from "../components/StatTile";
+import { TermHint } from "../components/TermHint";
 import { WorkerCard } from "../components/WorkerCard";
 import { functions, neighborhoods } from "../data/demoData";
 import { formatCurrency, formatDate } from "../lib/format";
@@ -81,9 +83,9 @@ export function ProfessionalBankPage() {
       </SafetyNotice>
 
       <section className="grid gap-3 md:grid-cols-3">
-        <Metric icon={<UsersRound size={21} />} label="Profissionais disponíveis" value={realWorkers.length} />
-        <Metric icon={<UserCheck size={21} />} label="Perfis verificados" value={verifiedCount} />
-        <Metric icon={<Heart size={21} />} label="Favoritos salvos" value={favoriteCount} />
+        <StatTile variant="primary" icon={<UsersRound size={21} />} label="Profissionais disponíveis" value={realWorkers.length} />
+        <StatTile icon={<UserCheck size={21} />} label="Perfis verificados" value={verifiedCount} />
+        <StatTile icon={<Heart size={21} />} label="Favoritos salvos" value={favoriteCount} />
       </section>
 
       <section className="card p-4">
@@ -199,16 +201,6 @@ export function ProfessionalBankPage() {
   );
 }
 
-function Metric({ icon, label, value }: { icon: JSX.Element; label: string; value: string | number }) {
-  return (
-    <article className="card p-4">
-      <div className="mb-3 text-aqua-700">{icon}</div>
-      <strong className="block text-2xl font-black text-white">{value}</strong>
-      <span className="text-sm font-semibold text-slate-500">{label}</span>
-    </article>
-  );
-}
-
 function InviteForm({ jobs, worker, onSubmit }: { jobs: Job[]; worker: WorkerProfile; onSubmit: (jobId: string) => void }) {
   const [selectedJobId, setSelectedJobId] = useState(jobs[0]?.id ?? "");
   const [error, setError] = useState("");
@@ -237,7 +229,7 @@ function InviteForm({ jobs, worker, onSubmit }: { jobs: Job[]; worker: WorkerPro
             <MapPin size={15} /> {worker.neighborhood} - {worker.functions.join(", ")}
           </p>
           <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-slate-600">
-            <Star size={15} /> {worker.rating.toFixed(1)} de nota - {reliability}% de confiabilidade
+            <Star size={15} /> {worker.rating.toFixed(1)} de nota - <TermHint term="confiabilidade">{reliability}% de confiabilidade</TermHint>
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AlertTriangle, Award, CheckCircle2, Flag, Heart, MapPin, Star } from "lucide-react";
 import { Modal } from "./Modal";
+import { TermHint } from "./TermHint";
 import { useAppStore } from "../lib/store";
 import { calculateReliability, getCompatibilityLabel, getExperienceLabel, getFunctionExperience } from "../lib/rules";
 import { getTrustBadges } from "../lib/trust";
@@ -109,7 +110,7 @@ export function WorkerCard({
         </span>
         <span className="metric-tile bg-aqua-50">
           <strong className="block text-white">{reliability}%</strong>
-          <span className="text-slate-600">confiabilidade</span>
+          <span className="text-slate-600"><TermHint term="confiabilidade">confiabilidade</TermHint></span>
         </span>
       </div>
 

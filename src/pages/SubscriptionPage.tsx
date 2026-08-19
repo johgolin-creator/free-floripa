@@ -14,6 +14,7 @@ import {
   Zap
 } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
+import { StatTile } from "../components/StatTile";
 import { useAppStore } from "../lib/store";
 import { useAuth } from "../lib/auth";
 import { formatDateTime } from "../lib/format";
@@ -156,9 +157,9 @@ export function SubscriptionPage() {
       </section>
 
       <div className="grid gap-3 md:grid-cols-3">
-        <PlanStat icon={<WalletCards size={18} />} label={walletLabel} value={`${activeBalance} moeda(s)`} />
-        <PlanStat icon={<Lock size={18} />} label={isCompany ? "Cancelar vaga preenchida" : "Desbloqueio de vaga"} value={isCompany ? "10 moedas" : "1 moeda"} />
-        <PlanStat icon={<CreditCard size={18} />} label={isCompany ? "Carteira separada" : "Candidatura"} value={isCompany ? "Empresa" : "1 moeda"} />
+        <StatTile variant="primary" icon={<WalletCards size={18} />} label={walletLabel} value={`${activeBalance} moeda(s)`} />
+        <StatTile icon={<Lock size={18} />} label={isCompany ? "Cancelar vaga preenchida" : "Desbloqueio de vaga"} value={isCompany ? "10 moedas" : "1 moeda"} />
+        <StatTile icon={<CreditCard size={18} />} label={isCompany ? "Carteira separada" : "Candidatura"} value={isCompany ? "Empresa" : "1 moeda"} />
       </div>
 
       <CoinStatement
@@ -347,16 +348,6 @@ function getTransactionDescription(transaction: CoinTransaction) {
   if (transaction.reason === "cancel_filled_job" && transaction.jobId) return `Taxa de cancelamento da vaga preenchida ${transaction.jobId}.`;
   if (transaction.amount > 0) return "Moedas adicionadas ao saldo da sua conta.";
   return "Moedas utilizadas dentro do PONT.";
-}
-
-function PlanStat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <div className="metric-card">
-      <div className="mb-2 text-aqua-700">{icon}</div>
-      <strong className="block text-sm text-white">{value}</strong>
-      <span className="text-xs font-black uppercase text-slate-500">{label}</span>
-    </div>
-  );
 }
 
 function PlanCard({

@@ -120,7 +120,7 @@ a {
 }
 
 .metric-card {
-  @apply relative overflow-hidden rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5 transition duration-200;
+  @apply relative rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5 transition duration-200;
 }
 
 .metric-card::before {
@@ -128,11 +128,61 @@ a {
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
+  border-radius: 0.5rem 0 0 0.5rem;
   background: linear-gradient(180deg, #c8ff38, #f4b740);
+}
+
+.metric-card.is-secondary {
+  @apply p-3;
+}
+
+.metric-card.is-secondary::before {
+  background: rgba(255, 255, 255, 0.15);
+  width: 2px;
+}
+
+.metric-card.is-alert::before {
+  background: linear-gradient(180deg, #ff6b57, #f4b740);
+}
+
+.metric-card.is-positive::before {
+  background: linear-gradient(180deg, #c8ff38, #4ade80);
 }
 
 .metric-tile {
   @apply rounded-lg border border-slate-100 bg-slate-50/80 p-3;
+}
+
+.term-hint {
+  @apply relative inline-block align-middle;
+}
+
+.term-hint-trigger {
+  @apply inline-flex cursor-pointer list-none items-center gap-1 text-inherit;
+}
+
+.term-hint-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.term-hint-trigger svg {
+  @apply text-aqua-300;
+}
+
+.term-hint-bubble {
+  @apply absolute left-0 z-20 mt-1.5 w-64 max-w-[80vw] rounded-lg border border-white/10 bg-navy-950 p-3 text-xs font-semibold leading-5 text-slate-200 shadow-lift;
+}
+
+.status-legend {
+  @apply mt-2 block;
+}
+
+.status-legend .term-hint-trigger {
+  @apply text-xs font-black uppercase text-slate-500 hover:text-aqua-300;
+}
+
+.status-legend-bubble {
+  @apply w-72;
 }
 
 .meta-pill {
@@ -648,6 +698,14 @@ a {
 
 .event-step.is-current span {
   @apply bg-aqua-500 text-navy-950;
+}
+
+.event-step.is-done {
+  @apply border-aqua-200 bg-aqua-50/60 text-aqua-700;
+}
+
+.event-step.is-done span {
+  @apply bg-aqua-300 text-navy-950;
 }
 
 .event-builder-grid {
@@ -1340,79 +1398,83 @@ a {
   @apply mt-1 font-semibold leading-5 text-slate-600;
 }
 
-.job-wizard {
+.wizard {
   @apply grid max-h-[72vh] gap-3 overflow-auto pr-1;
 }
 
-.job-wizard-progress-card {
+.wizard-progress-card {
   @apply grid gap-3 rounded-lg border border-aqua-100 bg-aqua-50/80 p-3 md:grid-cols-[220px_1fr] md:items-center;
 }
 
-.job-wizard-progress-card strong {
+.wizard-progress-card strong {
   @apply mt-1 block text-sm font-black text-white;
 }
 
-.job-wizard-progress-track {
+.wizard-progress-track {
   @apply h-2 overflow-hidden rounded-full bg-white/10;
 }
 
-.job-wizard-progress-track span {
+.wizard-progress-track span {
   @apply block h-full rounded-full bg-aqua-500 transition-all duration-300;
 }
 
-.job-wizard-steps {
+.wizard-steps {
   @apply grid grid-cols-2 gap-2 md:grid-cols-5;
 }
 
-.job-wizard-step {
+.wizard-step {
   @apply grid min-h-16 content-center gap-1 rounded-lg border border-slate-200 bg-brand-charcoal px-2 text-center text-xs font-black text-slate-500 transition hover:border-aqua-200 hover:bg-aqua-50;
 }
 
-.job-wizard-step span {
+.wizard-step span {
   @apply mx-auto grid h-6 w-6 place-items-center rounded-full bg-slate-100 text-[0.7rem] text-white;
 }
 
-.job-wizard-step.is-active {
+.wizard-step.is-active {
   @apply border-navy-950 bg-navy-950 text-white;
 }
 
-.job-wizard-step.is-active span {
+.wizard-step.is-active span {
   @apply bg-aqua-300 text-navy-950;
 }
 
-.job-wizard-step.is-done {
+.wizard-step.is-done {
   @apply border-aqua-200 bg-aqua-50 text-aqua-700;
 }
 
-.job-wizard-panel {
+.wizard-panel {
   @apply grid gap-3 rounded-lg border border-slate-200/70 bg-brand-charcoal p-4 shadow-sm;
 }
 
-.job-wizard-panel h3 {
+.wizard-panel h3 {
   @apply mt-1 text-xl font-black text-white;
 }
 
-.job-wizard-panel .label {
+.wizard-panel-hint {
+  @apply mt-1 text-sm font-semibold leading-5 text-slate-500;
+}
+
+.wizard-panel .label {
   @apply rounded-lg border border-slate-100 bg-slate-50/80 p-3;
 }
 
-.job-wizard-panel .input {
+.wizard-panel .input {
   @apply bg-brand-dark;
 }
 
-.job-wizard-toggle-card {
+.wizard-toggle-card {
   @apply flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-black text-alert;
 }
 
-.job-wizard-note {
+.wizard-note {
   @apply flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-600;
 }
 
-.job-wizard-note svg {
+.wizard-note svg {
   @apply mt-0.5 shrink-0 text-aqua-700;
 }
 
-.job-wizard-actions {
+.wizard-actions {
   @apply sticky bottom-0 grid gap-2 border-t border-slate-200 bg-brand-charcoal/95 py-3 backdrop-blur sm:grid-cols-2;
 }
 

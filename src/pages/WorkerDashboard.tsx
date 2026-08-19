@@ -16,6 +16,8 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { JobCard } from "../components/JobCard";
 import { SectionHeader } from "../components/SectionHeader";
+import { StatTile } from "../components/StatTile";
+import { TermHint } from "../components/TermHint";
 import { useAppStore } from "../lib/store";
 import { calculateReliability, getFunctionExperience, isJobOpenForApplications } from "../lib/rules";
 import { formatCurrency, formatDate } from "../lib/format";
@@ -54,10 +56,19 @@ export function WorkerDashboard() {
       />
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Metric icon={<ClipboardList />} label="Acesso a vagas" value={state.subscription.creditsRemaining > 0 ? "Com moedas" : "Prévia"} />
-        <Metric icon={<CreditCard />} label="Moedas" value={state.subscription.creditsRemaining} />
-        <Metric icon={<Star />} label="Avaliação" value={currentWorker.rating.toFixed(1)} />
-        <Metric icon={<BadgeCheck />} label="Índice de confiabilidade" value={`${reliability}%`} />
+        <StatTile
+          variant="primary"
+          icon={<BadgeCheck />}
+          label={<TermHint term="confiabilidade">Índice de confiabilidade</TermHint>}
+          value={`${reliability}%`}
+        />
+        <StatTile icon={<Star />} label="Avaliação" value={currentWorker.rating.toFixed(1)} />
+        <StatTile
+          icon={<CreditCard />}
+          label={<TermHint term="moedas" role="trabalhador">Moedas</TermHint>}
+          value={state.subscription.creditsRemaining}
+        />
+        <StatTile icon={<ClipboardList />} label="Acesso a vagas" value={state.subscription.creditsRemaining > 0 ? "Com moedas" : "Prévia"} />
       </div>
 
       <section className="smart-dashboard-hero">
@@ -176,15 +187,5 @@ function getWorkerJobScore(job: { function: Parameters<typeof getFunctionExperie
     (job.dailyValue >= 250 ? 10 : 0) +
     (experience?.verified ? 10 : 0) +
     (experience && experience.level !== "Iniciante" ? 7 : 0)
-  );
-}
-
-function Metric({ icon, label, value }: { icon: ReactNode; label: string; value: string | number }) {
-  return (
-    <article className="metric-card">
-      <div className="mb-3 text-aqua-700">{icon}</div>
-      <strong className="block text-2xl font-black text-white">{value}</strong>
-      <span className="text-sm font-semibold text-slate-500">{label}</span>
-    </article>
   );
 }

@@ -24,6 +24,8 @@ import {
 import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
+import { StatusBadge } from "../components/StatusBadge";
+import { TermHint } from "../components/TermHint";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
@@ -259,7 +261,7 @@ export function JobDetailsPage() {
               <Lock size={24} />
             </span>
             <h3>Vaga completa bloqueada</h3>
-            <p>As moedas liberam os detalhes que ajudam você a decidir com segurança.</p>
+            <p><TermHint term="moedas" role="trabalhador">As moedas</TermHint> liberam os detalhes que ajudam você a decidir com segurança.</p>
             <div className="job-unlock-list">
               {unlockItems.map((item) => (
                 <span key={item}>
@@ -318,7 +320,7 @@ export function JobDetailsPage() {
           <div>
             <div className="mb-3 flex flex-wrap gap-2">
               {currentJob.urgent && <UrgentBadge />}
-              <span className="badge">{jobStatus}</span>
+              <StatusBadge type="job" status={jobStatus} />
               <span className="badge">{currentJob.function}</span>
               <span className="badge">{currentJob.paymentMethod}</span>
             </div>

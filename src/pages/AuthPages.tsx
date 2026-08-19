@@ -1,40 +1,18 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, type ReactNode } from "react";
-import { ArrowLeft, BriefcaseBusiness, Building2, CheckCircle2, ClipboardList, KeyRound, LogIn, Mail, ShieldCheck, UserRound, UsersRound } from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import { ArrowLeft, BriefcaseBusiness, Building2, CheckCircle2, KeyRound, LogIn, Mail, ShieldCheck, UserRound, UsersRound } from "lucide-react";
 import { BrandLogo } from "../components/BrandLogo";
+import { ProfileImageUploader } from "../components/ProfileImageUploader";
+import { useWizardStep, WizardActions, WizardPanel, WizardSteps } from "../components/Wizard";
 import { experienceLevels, functions, neighborhoods } from "../data/demoData";
 import { useAuth } from "../lib/auth";
 import { useAppStore } from "../lib/store";
 import type { JobFunction, UserRole } from "../lib/types";
 
-const workerRequiredFields = [
-  "Nome completo",
-  "Telefone",
-  "E-mail",
-  "Senha",
-  "Data de nascimento",
-  "Cidade",
-  "Bairro",
-  "Profissões",
-  "Nível de experiência",
-  "Experiência profissional",
-  "Descrição",
-  "Disponibilidade",
-  "Distância máxima"
-];
-
-const companyRequiredFields = [
-  "Nome do estabelecimento",
-  "Responsável",
-  "CNPJ",
-  "Telefone",
-  "E-mail",
-  "Senha",
-  "Categoria",
-  "Bairro",
-  "Endereço",
-  "Descrição"
-];
+const DEFAULT_WORKER_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
+const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=500&q=80";
+const workerSteps = ["Acesso", "Onde você está", "Suas profissões", "Disponibilidade"] as const;
+const companySteps = ["Acesso e responsável", "Seu estabelecimento", "Imagem e revisão"] as const;
 
 export function LoginPage() {
   const { setRole } = useAppStore();
@@ -209,15 +187,58 @@ export function WorkerSignupPage() {
   const { setRole } = useAppStore();
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const formRef = useRef<HTMLFormElement>(null);
+  const wizard = useWizardStep(workerSteps.length);
   const [selectedFunctions, setSelectedFunctions] = useState<JobFunction[]>(["Garçom"]);
+  const [avatarUrl, setAvatarUrl] = useState(DEFAULT_WORKER_AVATAR);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
 
+  function validateStep(index: number) {
+    const data = new FormData(formRef.current ?? undefined);
+    if (index === 0) {
+      if (!String(data.get("name") || "").trim()) return "Informe seu nome completo.";
+      if (!String(data.get("phone") || "").trim()) return "Informe seu telefone.";
+      if (!String(data.get("email") || "").trim()) return "Informe um e-mail válido.";
+      if (!String(data.get("password") || "").trim()) return "Crie uma senha.";
+    }
+    if (index === 1) {
+      if (!String(data.get("birthDate") || "").trim()) return "Informe sua data de nascimento.";
+      if (!String(data.get("city") || "").trim()) return "Informe sua cidade.";
+      if (!String(data.get("neighborhood") || "").trim()) return "Informe seu bairro.";
+    }
+    if (index === 2 && selectedFunctions.length === 0) {
+      return "Selecione pelo menos uma profissão.";
+    }
+    return "";
+  }
+
+  function handleNext() {
+    const message = validateStep(wizard.step);
+    if (message) {
+      setError(message);
+      return;
+    }
+    setError("");
+    wizard.goNext();
+  }
+
+  function handleBack() {
+    setError("");
+    wizard.goBack();
+  }
+
+  function handleStepSelect(index: number) {
+    setError("");
+    wizard.goTo(index);
+  }
+
   return (
     <AuthShell title="Cadastro do trabalhador" description="Crie seu perfil para receber vagas de turnos, diárias e eventos.">
       <form
-        className="auth-form"
+        ref={formRef}
+        className="wizard"
         onSubmit={async (event) => {
           event.preventDefault();
           const form = new FormData(event.currentTarget);
@@ -228,7 +249,6 @@ export function WorkerSignupPage() {
           const city = String(form.get("city") || "").trim();
           const neighborhood = String(form.get("neighborhood") || "").trim();
           const birthDate = String(form.get("birthDate") || "").trim();
-          const avatarUrl = String(form.get("avatarUrl") || "").trim();
           const experience = String(form.get("experience") || "").trim();
           const description = String(form.get("description") || "").trim();
           const availability = String(form.get("availability") || "").trim();
@@ -284,87 +304,104 @@ export function WorkerSignupPage() {
       >
         {error && <div className="auth-alert auth-alert-error">{error}</div>}
         {message && <div className="auth-alert auth-alert-info">{message}</div>}
-        <section className="auth-required-panel">
-          <div className="flex items-center gap-2 text-sm font-black text-white">
-            <ClipboardList size={17} /> Dados obrigatórios do cadastro
+        <WizardSteps steps={workerSteps} current={wizard.step} onSelect={handleStepSelect} />
+
+        <WizardPanel eyebrow="Etapa 1" title="Acesso" hint="Para você entrar na sua conta depois." hidden={wizard.step !== 0}>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="label">Nome completo<input name="name" className="input" required /></label>
+            <label className="label">Telefone<input name="phone" className="input" required placeholder="(48) 99999-9999" /></label>
+            <label className="label">E-mail<input name="email" className="input" type="email" required /></label>
+            <label className="label">Senha<input name="password" className="input" type="password" required /></label>
           </div>
-          <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">{workerRequiredFields.join(", ")}.</p>
-        </section>
-        <SignupStep number="1" title="Acesso e contato" />
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="label">Nome completo<input name="name" className="input" required /></label>
-          <label className="label">Telefone<input name="phone" className="input" required placeholder="(48) 99999-9999" /></label>
-          <label className="label">E-mail<input name="email" className="input" type="email" required /></label>
-          <label className="label">Senha<input name="password" className="input" type="password" required /></label>
-        </div>
-        <SignupStep number="2" title="Localização e foto" />
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="label">Foto de perfil<input name="avatarUrl" className="input" placeholder="Cole um link da foto ou envie depois no perfil" /></label>
-          <label className="label">Data de nascimento<input name="birthDate" className="input" type="date" required /></label>
-          <label className="label">Cidade<input name="city" className="input" defaultValue="Florianópolis" required /></label>
-          <label className="label">
-            Bairro
-            <select name="neighborhood" className="input" required defaultValue="Centro">
-              {neighborhoods.map((item) => <option key={item}>{item}</option>)}
-            </select>
-          </label>
-        </div>
-        <SignupStep number="3" title="Profissões e experiência" />
-        <fieldset className="rounded-lg border border-slate-200 bg-brand-charcoal/70 p-3">
-          <legend className="px-1 text-sm font-black text-slate-600">Profissões e nível de experiência</legend>
-          <div className="mt-2 grid gap-2 md:grid-cols-2">
-            {functions.map((item) => (
-              <div key={item} className="rounded-lg border border-slate-200 bg-brand-charcoal p-3 shadow-sm">
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-                  <input
-                    type="checkbox"
-                    name="functions"
-                    value={item}
-                    checked={selectedFunctions.includes(item)}
-                    onChange={(event) => {
-                      setSelectedFunctions((current) =>
-                        event.target.checked ? [...current, item] : current.filter((value) => value !== item)
-                      );
-                    }}
-                    className="h-4 w-4 accent-aqua-500"
-                  />
-                  {item}
-                </label>
-                {selectedFunctions.includes(item) && (
-                  <div className="mt-3 grid gap-2">
-                    <label className="label">
-                      Nível nesta função
-                      <select name={`level-${item}`} className="input">
-                        {experienceLevels.map((level) => (
-                          <option key={level.value} value={level.value}>
-                            {level.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="label">
-                      Meses de experiência
-                      <input name={`months-${item}`} type="number" min="0" className="input" defaultValue={0} />
-                    </label>
-                  </div>
-                )}
-              </div>
-            ))}
+        </WizardPanel>
+
+        <WizardPanel eyebrow="Etapa 2" title="Onde você está" hint="Para mostrarmos vagas perto de você." hidden={wizard.step !== 1}>
+          <div className="grid gap-3 md:grid-cols-2">
+            <ProfileImageUploader label="Foto de perfil (opcional)" value={avatarUrl} kind="trabalhadores" previewAlt="Foto de perfil" onChange={setAvatarUrl} />
+            <label className="label">Data de nascimento<input name="birthDate" className="input" type="date" required /></label>
+            <label className="label">Cidade<input name="city" className="input" defaultValue="Florianópolis" required /></label>
+            <label className="label">
+              Bairro
+              <select name="neighborhood" className="input" required defaultValue="Centro">
+                {neighborhoods.map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </label>
           </div>
-          <p className="mt-3 text-xs font-semibold leading-5 text-slate-500">
-            Informe com sinceridade. Avaliações ruins podem limitar novas vagas nessa função.
-          </p>
-        </fieldset>
-        <SignupStep number="4" title="Disponibilidade" />
-        <label className="label">Experiência profissional<textarea name="experience" className="input min-h-20 py-3" required /></label>
-        <label className="label">Pequena descrição<textarea name="description" className="input min-h-20 py-3" required /></label>
-        <div className="grid gap-3 md:grid-cols-3">
-          <label className="label">Disponibilidade<input name="availability" className="input" required placeholder="Noites e fins de semana" /></label>
-          <label className="label">Transporte próprio<select name="hasTransport" className="input"><option>Sim</option><option>Não</option></select></label>
-          <label className="label">Distância máxima<input name="maxDistanceKm" className="input" type="number" min="1" required placeholder="20 km" /></label>
-        </div>
-        <LegalConsentText />
-        <button type="submit" disabled={pending} className="primary"><UserRound size={17} /> {pending ? "Criando..." : "Criar perfil"}</button>
+        </WizardPanel>
+
+        <WizardPanel eyebrow="Etapa 3" title="Suas profissões" hint="Para te enviar vagas certas para o seu talento." hidden={wizard.step !== 2}>
+          <fieldset className="rounded-lg border border-slate-200 bg-brand-charcoal/70 p-3">
+            <legend className="px-1 text-sm font-black text-slate-600">Profissões e nível de experiência</legend>
+            <div className="mt-2 grid gap-2 md:grid-cols-2">
+              {functions.map((item) => (
+                <div key={item} className="rounded-lg border border-slate-200 bg-brand-charcoal p-3 shadow-sm">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+                    <input
+                      type="checkbox"
+                      name="functions"
+                      value={item}
+                      checked={selectedFunctions.includes(item)}
+                      onChange={(event) => {
+                        setSelectedFunctions((current) =>
+                          event.target.checked ? [...current, item] : current.filter((value) => value !== item)
+                        );
+                      }}
+                      className="h-4 w-4 accent-aqua-500"
+                    />
+                    {item}
+                  </label>
+                  {selectedFunctions.includes(item) && (
+                    <div className="mt-3 grid gap-2">
+                      <label className="label">
+                        Nível nesta função
+                        <select name={`level-${item}`} className="input">
+                          {experienceLevels.map((level) => (
+                            <option key={level.value} value={level.value}>
+                              {level.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="label">
+                        Meses de experiência <span className="text-xs font-semibold text-slate-500">(opcional — pode completar depois no perfil)</span>
+                        <input name={`months-${item}`} type="number" min="0" className="input" defaultValue={0} />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-xs font-semibold leading-5 text-slate-500">
+              Informe com sinceridade. Avaliações ruins podem limitar novas vagas nessa função.
+            </p>
+          </fieldset>
+        </WizardPanel>
+
+        <WizardPanel eyebrow="Etapa 4" title="Disponibilidade e revisão" hint="Pra empresa saber quando e onde você topa trabalhar." hidden={wizard.step !== 3}>
+          <label className="label">Experiência profissional<textarea name="experience" className="input min-h-20 py-3" required /></label>
+          <label className="label">Pequena descrição<textarea name="description" className="input min-h-20 py-3" required /></label>
+          <div className="grid gap-3 md:grid-cols-3">
+            <label className="label">Disponibilidade<input name="availability" className="input" required placeholder="Noites e fins de semana" /></label>
+            <label className="label">
+              Transporte próprio <span className="text-xs font-semibold text-slate-500">(opcional)</span>
+              <select name="hasTransport" className="input"><option>Sim</option><option>Não</option></select>
+            </label>
+            <label className="label">Distância máxima<input name="maxDistanceKm" className="input" type="number" min="1" required placeholder="20 km" /></label>
+          </div>
+          <LegalConsentText />
+        </WizardPanel>
+
+        <WizardActions
+          isFirst={wizard.isFirst}
+          isLast={wizard.isLast}
+          onBack={handleBack}
+          onNext={handleNext}
+          submitLabel="Criar perfil"
+          pendingLabel="Criando..."
+          pending={pending}
+          backClassName="secondary"
+          nextClassName="primary"
+        />
       </form>
     </AuthShell>
   );
@@ -377,17 +414,57 @@ export function CompanySignupPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const wizard = useWizardStep(companySteps.length);
+  const [logoUrl, setLogoUrl] = useState(DEFAULT_COMPANY_LOGO);
+
+  function validateStep(index: number) {
+    const data = new FormData(formRef.current ?? undefined);
+    if (index === 0) {
+      if (!String(data.get("establishmentName") || "").trim()) return "Informe o nome do estabelecimento.";
+      if (!String(data.get("responsibleName") || "").trim()) return "Informe o nome do responsável.";
+      if (!String(data.get("cnpj") || "").trim()) return "Informe o CNPJ.";
+      if (!String(data.get("phone") || "").trim()) return "Informe um telefone de contato.";
+      if (!String(data.get("email") || "").trim()) return "Informe um e-mail válido.";
+      if (!String(data.get("password") || "").trim()) return "Crie uma senha.";
+    }
+    if (index === 1) {
+      if (!String(data.get("address") || "").trim()) return "Informe o endereço.";
+      if (!String(data.get("description") || "").trim()) return "Descreva rapidamente o estabelecimento.";
+    }
+    return "";
+  }
+
+  function handleNext() {
+    const message = validateStep(wizard.step);
+    if (message) {
+      setError(message);
+      return;
+    }
+    setError("");
+    wizard.goNext();
+  }
+
+  function handleBack() {
+    setError("");
+    wizard.goBack();
+  }
+
+  function handleStepSelect(index: number) {
+    setError("");
+    wizard.goTo(index);
+  }
 
   return (
     <AuthShell title="Cadastro da empresa" description="Cadastre seu estabelecimento para publicar vagas temporárias em poucos minutos.">
       <form
-        className="auth-form"
+        ref={formRef}
+        className="wizard"
         onSubmit={async (event) => {
           event.preventDefault();
           const form = new FormData(event.currentTarget);
           const email = String(form.get("email") || "").trim();
           const password = String(form.get("password") || "");
-          const logoUrl = String(form.get("logoUrl") || "").trim();
 
           try {
             setPending(true);
@@ -424,37 +501,49 @@ export function CompanySignupPage() {
       >
         {error && <div className="auth-alert auth-alert-error">{error}</div>}
         {message && <div className="auth-alert auth-alert-info">{message}</div>}
-        <section className="auth-required-panel">
-          <div className="flex items-center gap-2 text-sm font-black text-white">
-            <ClipboardList size={17} /> Dados obrigatórios da empresa
+        <WizardSteps steps={companySteps} current={wizard.step} onSelect={handleStepSelect} />
+
+        <WizardPanel eyebrow="Etapa 1" title="Acesso e responsável" hint="Para você entrar na conta e a gente saber quem responde pela empresa." hidden={wizard.step !== 0}>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="label">Nome do estabelecimento<input name="establishmentName" className="input" required /></label>
+            <label className="label">Nome do responsável<input name="responsibleName" className="input" required /></label>
+            <label className="label">CNPJ<input name="cnpj" className="input" required placeholder="00.000.000/0000-00" /></label>
+            <label className="label">Telefone<input name="phone" className="input" required placeholder="(48) 99999-9999" /></label>
+            <label className="label">E-mail<input name="email" className="input" type="email" required /></label>
+            <label className="label">Senha<input name="password" className="input" type="password" required /></label>
           </div>
-          <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">{companyRequiredFields.join(", ")}.</p>
-        </section>
-        <SignupStep number="1" title="Acesso e responsável" />
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="label">Nome do estabelecimento<input name="establishmentName" className="input" required /></label>
-          <label className="label">Nome do responsável<input name="responsibleName" className="input" required /></label>
-          <label className="label">CNPJ<input name="cnpj" className="input" required placeholder="00.000.000/0000-00" /></label>
-          <label className="label">Telefone<input name="phone" className="input" required placeholder="(48) 99999-9999" /></label>
-          <label className="label">E-mail<input name="email" className="input" type="email" required /></label>
-          <label className="label">Senha<input name="password" className="input" type="password" required /></label>
-        </div>
-        <SignupStep number="2" title="Estabelecimento" />
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="label">Categoria<select name="category" className="input" required><option>Restaurante</option><option>Bar</option><option>Beach club</option><option>Hotel</option><option>Casa noturna</option><option>Buffet</option><option>Agência de eventos</option><option>Outro</option></select></label>
-          <label className="label">
-            Bairro
-            <select name="neighborhood" className="input" required defaultValue="Centro">
-              {neighborhoods.map((item) => <option key={item}>{item}</option>)}
-            </select>
-          </label>
-        </div>
-        <label className="label">Endereço<input name="address" className="input" required /></label>
-        <label className="label">Descrição<textarea name="description" className="input min-h-20 py-3" required /></label>
-        <SignupStep number="3" title="Imagem da empresa" />
-        <label className="label">Foto ou logotipo<input name="logoUrl" className="input" placeholder="Cole um link do logotipo ou envie depois no perfil" /></label>
-        <LegalConsentText />
-        <button type="submit" disabled={pending} className="primary"><Building2 size={17} /> {pending ? "Criando..." : "Criar conta da empresa"}</button>
+        </WizardPanel>
+
+        <WizardPanel eyebrow="Etapa 2" title="Seu estabelecimento" hint="Para os profissionais entenderem onde e do que se trata a vaga." hidden={wizard.step !== 1}>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="label">Categoria<select name="category" className="input" required><option>Restaurante</option><option>Bar</option><option>Beach club</option><option>Hotel</option><option>Casa noturna</option><option>Buffet</option><option>Agência de eventos</option><option>Outro</option></select></label>
+            <label className="label">
+              Bairro
+              <select name="neighborhood" className="input" required defaultValue="Centro">
+                {neighborhoods.map((item) => <option key={item}>{item}</option>)}
+              </select>
+            </label>
+          </div>
+          <label className="label">Endereço<input name="address" className="input" required /></label>
+          <label className="label">Descrição<textarea name="description" className="input min-h-20 py-3" required /></label>
+        </WizardPanel>
+
+        <WizardPanel eyebrow="Etapa 3" title="Imagem e revisão" hint="Opcional — ajuda os profissionais a reconhecerem sua marca." hidden={wizard.step !== 2}>
+          <ProfileImageUploader label="Foto ou logotipo (opcional)" value={logoUrl} kind="empresas" previewAlt="Logotipo da empresa" onChange={setLogoUrl} />
+          <LegalConsentText />
+        </WizardPanel>
+
+        <WizardActions
+          isFirst={wizard.isFirst}
+          isLast={wizard.isLast}
+          onBack={handleBack}
+          onNext={handleNext}
+          submitLabel="Criar conta da empresa"
+          pendingLabel="Criando..."
+          pending={pending}
+          backClassName="secondary"
+          nextClassName="primary"
+        />
       </form>
     </AuthShell>
   );
@@ -518,14 +607,5 @@ function LegalConsentText() {
       <Link to="/privacidade" className="font-black text-aqua-700 hover:text-aqua-800">Política de Privacidade</Link>
       {" "}do PONT.
     </p>
-  );
-}
-
-function SignupStep({ number, title }: { number: string; title: string }) {
-  return (
-    <div className="signup-step mt-2 flex items-center gap-2 rounded-lg border border-aqua-100 bg-aqua-50 px-3 py-2">
-      <span className="grid h-7 w-7 place-items-center rounded-full bg-navy-950 text-xs font-black text-aqua-300">{number}</span>
-      <strong className="text-sm text-white">{title}</strong>
-    </div>
   );
 }

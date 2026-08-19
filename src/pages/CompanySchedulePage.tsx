@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
@@ -20,6 +20,9 @@ import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
+import { StatTile } from "../components/StatTile";
+import { StatusBadge, StatusLegend } from "../components/StatusBadge";
+import { TermHint } from "../components/TermHint";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore, type CompanyScheduleInput } from "../lib/store";
@@ -144,10 +147,10 @@ export function CompanySchedulePage() {
           </p>
         </div>
         <div className="schedule-hero-metrics">
-          <HeroMetric icon={<ClipboardList size={19} />} label="manuais" value={String(manualTotal)} />
-          <HeroMetric icon={<CalendarDays size={19} />} label="hoje" value={String(todayTotal)} />
-          <HeroMetric icon={<Clock3 size={19} />} label="em turno" value={String(checkedInCount)} />
-          <HeroMetric icon={<AlertTriangle size={19} />} label="a preencher" value={String(openDemand)} />
+          <StatTile variant="primary" icon={<CalendarDays size={19} />} label="hoje" value={todayTotal} />
+          <StatTile icon={<ClipboardList size={19} />} label="manuais" value={manualTotal} />
+          <StatTile icon={<Clock3 size={19} />} label="em turno" value={checkedInCount} />
+          <StatTile tone={openDemand > 0 ? "alert" : "normal"} icon={<AlertTriangle size={19} />} label="a preencher" value={openDemand} />
         </div>
       </section>
 
@@ -178,6 +181,7 @@ export function CompanySchedulePage() {
           <div>
             <h3 className="text-lg font-black text-white">Escalas criadas pelo contratante</h3>
             <p className="text-sm font-semibold text-slate-600">Use para planejar equipe antes de publicar vaga ou antes de alguém se candidatar.</p>
+            <StatusLegend type="schedule" />
           </div>
           <button type="button" onClick={() => setCreating(true)} disabled={companyBlocked} className="company-action"><Plus size={17} /> Nova escala</button>
         </div>
@@ -220,7 +224,7 @@ export function CompanySchedulePage() {
                     <div>
                       <div className="mb-2 flex flex-wrap gap-2">
                         {job.urgent && <UrgentBadge />}
-                        <span className="badge">{getJobStatus(job)}</span>
+                        <StatusBadge type="job" status={getJobStatus(job)} />
                         <span className="badge">{job.function}</span>
                         <span className="badge">{formatCurrency(job.dailyValue)}</span>
                       </div>
@@ -306,7 +310,7 @@ function ManualScheduleCard({
       <div className="schedule-job-head">
         <div>
           <div className="mb-2 flex flex-wrap gap-2">
-            <span className={getManualStatusClass(schedule.status)}>{schedule.status}</span>
+            <StatusBadge type="schedule" status={schedule.status} />
             <span className="badge">{schedule.function}</span>
             <span className="badge">{schedule.quantity} vaga{schedule.quantity === 1 ? "" : "s"}</span>
           </div>
@@ -444,9 +448,9 @@ function ScheduleWorker({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <strong className="text-sm text-white">{worker.name}</strong>
-            <span className="badge">{application.status}</span>
-            <span className="badge">{shift?.status ?? "Aguardando presença"}</span>
-            <span className="badge bg-aqua-50 text-aqua-700">Código {verificationCode}</span>
+            <StatusBadge type="application" status={application.status} />
+            {shift ? <StatusBadge type="shift" status={shift.status} /> : <span className="badge">Aguardando presença</span>}
+            <span className="badge bg-aqua-50 text-aqua-700"><TermHint term="codigoVerificacao">Código {verificationCode}</TermHint></span>
           </div>
           <p className="mt-1 text-sm font-semibold text-slate-600">
             {worker.functions.join(", ")} - {worker.neighborhood}
@@ -519,13 +523,6 @@ function isScheduled(application: Application) {
   return application.status === "Aprovada" || application.status === "Trabalho concluído";
 }
 
-function getManualStatusClass(status: CompanyScheduleStatus) {
-  if (status === "Cancelada") return "badge bg-red-50 text-alert";
-  if (status === "Concluída") return "badge bg-aqua-100 text-aqua-700";
-  if (status === "Confirmada") return "badge bg-aqua-100 text-aqua-700";
-  return "badge";
-}
-
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <span className="schedule-stat-tile">
@@ -540,16 +537,6 @@ function Mini({ label, value }: { label: string; value: string }) {
     <span className="schedule-mini-tile">
       <strong>{value}</strong>
       <span>{label}</span>
-    </span>
-  );
-}
-
-function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <span className="schedule-hero-metric">
-      <span>{icon}</span>
-      <strong>{value}</strong>
-      <small>{label}</small>
     </span>
   );
 }

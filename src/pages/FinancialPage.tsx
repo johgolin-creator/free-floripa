@@ -2,6 +2,9 @@ import { AlertTriangle, BriefcaseBusiness, CalendarCheck, Clock3, CreditCard, Tr
 import type { ReactNode } from "react";
 import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
+import { StatTile } from "../components/StatTile";
+import { StatusBadge, StatusLegend } from "../components/StatusBadge";
+import { TermHint } from "../components/TermHint";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, formatDateTime } from "../lib/format";
@@ -51,10 +54,10 @@ export function FinancialPage() {
         ]}
       >
         <section className="mb-4 grid gap-3 md:grid-cols-4">
-          <FinanceTile icon={<WalletCards size={18} />} label="Moedas compradas" value={`${coinPurchases} moeda${coinPurchases === 1 ? "" : "s"}`} />
-          <FinanceTile icon={<CreditCard size={18} />} label="Moedas usadas" value={`${coinSpent} moeda${coinSpent === 1 ? "" : "s"}`} />
-          <FinanceTile icon={<AlertTriangle size={18} />} label="Taxas de cancelamento" value={`${cancellationFees} moeda${cancellationFees === 1 ? "" : "s"}`} />
-          <FinanceTile icon={<TrendingUp size={18} />} label="Custo por confirmado" value={formatCurrency(costPerConfirmed)} />
+          <StatTile variant="primary" icon={<WalletCards size={18} />} label={<TermHint term="moedas" role="empresa">Moedas compradas</TermHint>} value={`${coinPurchases} moeda${coinPurchases === 1 ? "" : "s"}`} />
+          <StatTile icon={<CreditCard size={18} />} label="Moedas usadas" value={`${coinSpent} moeda${coinSpent === 1 ? "" : "s"}`} />
+          <StatTile tone={cancellationFees > 0 ? "alert" : "normal"} icon={<AlertTriangle size={18} />} label="Taxas de cancelamento" value={`${cancellationFees} moeda${cancellationFees === 1 ? "" : "s"}`} />
+          <StatTile icon={<TrendingUp size={18} />} label="Custo por confirmado" value={formatCurrency(costPerConfirmed)} />
         </section>
 
         <section className="mb-4 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
@@ -68,7 +71,7 @@ export function FinancialPage() {
                 </p>
               </div>
               <span className="badge bg-aqua-50 text-aqua-700">
-                <WalletCards size={15} /> Saldo: {state.subscription.companyCreditsRemaining}
+                <WalletCards size={15} /> <TermHint term="moedas" role="empresa">Saldo: {state.subscription.companyCreditsRemaining}</TermHint>
               </span>
             </div>
             <div className="grid gap-2 md:grid-cols-3">
@@ -182,6 +185,7 @@ export function FinancialPage() {
         { icon: <CreditCard size={18} />, label: "plano", value: state.subscription.plan }
       ]}
     >
+      {workerApplications.length > 0 && <StatusLegend type="application" />}
       {workerApplications.length === 0 ? (
         <EmptyState title="Nenhum valor ainda" text="Quando suas candidaturas forem aprovadas, os valores aparecerão aqui." />
       ) : (
@@ -195,7 +199,7 @@ export function FinancialPage() {
                 <div className="worker-card-head">
                   <div>
                     <div className="mb-2 flex flex-wrap gap-2">
-                      <span className="badge">{application.status}</span>
+                      <StatusBadge type="application" status={application.status} />
                       <span className="badge">{job.function}</span>
                       <span className="badge">{formatDate(job.date)}</span>
                     </div>
@@ -244,16 +248,6 @@ function FinancialShell({
         </div>
       </section>
       {children}
-    </div>
-  );
-}
-
-function FinanceTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <div className="metric-card">
-      <div className="mb-2 text-aqua-700">{icon}</div>
-      <strong className="block text-sm text-white">{value}</strong>
-      <span className="text-xs font-black uppercase text-slate-500">{label}</span>
     </div>
   );
 }

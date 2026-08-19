@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   BriefcaseBusiness,
@@ -22,6 +22,9 @@ import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { ShiftReceipt } from "../components/ShiftReceipt";
+import { StatTile } from "../components/StatTile";
+import { StatusBadge, StatusLegend } from "../components/StatusBadge";
+import { TermHint } from "../components/TermHint";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
@@ -161,7 +164,8 @@ export function CandidatesPage() {
         title="Gerenciar candidatos"
         description="Aprove profissionais, acompanhe presença, finalize turnos e registre a avaliação do serviço."
       />
-      {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+      <StatusLegend type="application" />
+      {message && <div className="mb-4 mt-3 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       {companyJobs.length === 0 ? (
         <EmptyState title="Nenhuma vaga publicada" text="Crie uma vaga para começar a receber candidatos." />
       ) : (
@@ -175,10 +179,10 @@ export function CandidatesPage() {
               </p>
             </div>
             <div className="candidate-hero-metrics">
-              <HeroMetric icon={<BriefcaseBusiness size={19} />} label="vagas" value={String(companyJobs.length)} />
-              <HeroMetric icon={<UsersRound size={19} />} label="candidatos" value={String(generalStats.total)} />
-              <HeroMetric icon={<Clock3 size={19} />} label="em análise" value={String(generalStats.pending)} />
-              <HeroMetric icon={<CalendarCheck size={19} />} label="aprovados" value={String(generalStats.approved)} />
+              <StatTile variant="primary" icon={<UsersRound size={19} />} label="candidatos" value={generalStats.total} />
+              <StatTile icon={<BriefcaseBusiness size={19} />} label="vagas" value={companyJobs.length} />
+              <StatTile icon={<Clock3 size={19} />} label="em análise" value={generalStats.pending} />
+              <StatTile tone="positive" icon={<CalendarCheck size={19} />} label="aprovados" value={generalStats.approved} />
             </div>
           </section>
 
@@ -370,10 +374,10 @@ export function CandidatesPage() {
                       )}
                       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                         <div className="flex flex-wrap gap-2">
-                          <span className="badge bg-aqua-100 text-aqua-700">{application.status}</span>
+                          <StatusBadge type="application" status={application.status} />
                           <span className="badge">{getShiftLabel(application, shift)}</span>
                           <span className="badge">Inscrito em {formatDate(application.createdAt.slice(0, 10))}</span>
-                          <span className="badge bg-aqua-50 text-aqua-700">Código {verificationCode}</span>
+                          <span className="badge bg-aqua-50 text-aqua-700"><TermHint term="codigoVerificacao">Código {verificationCode}</TermHint></span>
                         </div>
                         <button type="button" onClick={() => toggleFavorite(worker.id)} className="secondary">
                           <Heart size={17} fill={favorite ? "currentColor" : "none"} /> {favorite ? "Favorito" : "Favoritar"}
@@ -745,16 +749,6 @@ function Stat({ label, value }: { label: string; value: string }) {
     <span className="candidate-stat-tile">
       <strong>{value}</strong>
       <span>{label}</span>
-    </span>
-  );
-}
-
-function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <span className="candidate-hero-metric">
-      <span>{icon}</span>
-      <strong>{value}</strong>
-      <small>{label}</small>
     </span>
   );
 }

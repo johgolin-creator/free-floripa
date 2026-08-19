@@ -14,10 +14,13 @@ import {
   XCircle
 } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
+import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
+import { StatTile } from "../components/StatTile";
+import { StatusBadge, StatusLegend } from "../components/StatusBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, formatDateTime, getWhatsAppUrl } from "../lib/format";
-import type { Application, Job, WorkShift } from "../lib/types";
+import type { Application, WorkShift } from "../lib/types";
 
 const cancelableStatuses: Application["status"][] = ["Enviada", "Em análise"];
 const filters = ["Todas", "Ativas", "Aprovadas", "Finalizadas"] as const;
@@ -26,6 +29,7 @@ export function ApplicationsPage() {
   const { state, currentWorker, updateApplicationStatus } = useAppStore();
   const [message, setMessage] = useState("");
   const [filter, setFilter] = useState<(typeof filters)[number]>("Todas");
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const applications = state.applications
     .filter((application) => application.workerId === currentWorker.id)
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
@@ -38,10 +42,11 @@ export function ApplicationsPage() {
     unlockedJobs: applications.filter((application) => state.subscription.unlockedJobIds.includes(application.jobId)).length
   };
 
-  function cancelApplication(application: Application) {
-    if (!window.confirm("Cancelar esta candidatura? Essa ação avisa a empresa e remove você da seleção desta vaga.")) return;
-    const result = updateApplicationStatus(application.id, "Cancelada");
+  function confirmCancelApplication() {
+    if (!confirmCancelId) return;
+    const result = updateApplicationStatus(confirmCancelId, "Cancelada");
     setMessage(result.message);
+    setConfirmCancelId(null);
   }
 
   return (
@@ -51,7 +56,8 @@ export function ApplicationsPage() {
         title="Candidaturas enviadas"
         description="Acompanhe cada vaga, veja próximos passos e acesse o contato quando for aprovado."
       />
-      {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+      <StatusLegend type="application" />
+      {message && <div className="mb-4 mt-3 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       {applications.length === 0 ? (
         <EmptyState title="Nenhuma candidatura enviada" text="Busque vagas disponíveis e envie sua primeira candidatura." />
       ) : (
@@ -65,10 +71,10 @@ export function ApplicationsPage() {
               </p>
             </div>
             <div className="worker-hero-metrics">
-              <HeroMetric icon={<ClipboardCheck size={19} />} label="enviadas" value={String(stats.total)} />
-              <HeroMetric icon={<Clock3 size={19} />} label="aguardando" value={String(stats.waiting)} />
-              <HeroMetric icon={<UserCheck size={19} />} label="aprovadas" value={String(stats.approved)} />
-              <HeroMetric icon={<CreditCard size={19} />} label="vagas liberadas" value={String(stats.unlockedJobs)} />
+              <StatTile variant="primary" icon={<ClipboardCheck size={19} />} label="enviadas" value={stats.total} />
+              <StatTile tone={stats.waiting > 0 ? "alert" : "normal"} icon={<Clock3 size={19} />} label="aguardando" value={stats.waiting} />
+              <StatTile tone="positive" icon={<UserCheck size={19} />} label="aprovadas" value={stats.approved} />
+              <StatTile icon={<CreditCard size={19} />} label="vagas liberadas" value={stats.unlockedJobs} />
             </div>
           </section>
 
@@ -111,7 +117,7 @@ export function ApplicationsPage() {
                 <div className="worker-card-head">
                   <div>
                     <div className="mb-2 flex flex-wrap gap-2">
-                      <span className={getStatusClass(application.status)}>{application.status}</span>
+                      <StatusBadge type="application" status={application.status} />
                       <span className="badge">{job.function}</span>
                       <span className="badge">{formatCurrency(job.dailyValue)}</span>
                       <span className="badge bg-aqua-50 text-aqua-700"><CreditCard size={14} /> Vaga liberada</span>
@@ -162,7 +168,7 @@ export function ApplicationsPage() {
                     </Link>
                     <button
                       type="button"
-                      onClick={() => cancelApplication(application)}
+                      onClick={() => setConfirmCancelId(application.id)}
                       disabled={!canCancel}
                       className="company-action company-action-danger"
                     >
@@ -174,6 +180,22 @@ export function ApplicationsPage() {
             );
           })}
         </div>
+      )}
+
+      {confirmCancelId && (
+        <Modal title="Cancelar candidatura?" onClose={() => setConfirmCancelId(null)}>
+          <p className="text-sm leading-6 text-slate-600">
+            Essa ação avisa a empresa e remove você da seleção desta vaga.
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <button type="button" className="secondary" onClick={() => setConfirmCancelId(null)}>
+              Voltar
+            </button>
+            <button type="button" className="danger" onClick={confirmCancelApplication}>
+              Cancelar candidatura
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );
@@ -263,12 +285,6 @@ function getStatusDescription(status: Application["status"], contactUnlocked: bo
   return "A empresa escolheu seguir com outros profissionais.";
 }
 
-function getStatusClass(status: Application["status"]) {
-  if (status === "Aprovada" || status === "Trabalho concluído") return "badge bg-aqua-100 text-aqua-700";
-  if (status === "Recusada" || status === "Cancelada" || status === "Falta registrada") return "badge bg-red-50 text-alert";
-  return "badge";
-}
-
 function getStepClass(state: StepState) {
   if (state === "done") return "border-aqua-200 bg-aqua-100 text-aqua-700";
   if (state === "current") return "border-navy-200 bg-white text-navy-950";
@@ -284,15 +300,5 @@ function Info({ icon, label, value }: { icon: ReactNode; label: string; value: s
       </span>
       <strong className="mt-1 block text-sm text-white">{value}</strong>
     </div>
-  );
-}
-
-function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <span className="worker-hero-metric">
-      <span>{icon}</span>
-      <strong>{value}</strong>
-      <small>{label}</small>
-    </span>
   );
 }

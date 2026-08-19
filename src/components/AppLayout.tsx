@@ -9,6 +9,7 @@ import {
   CreditCard,
   Home,
   MessageCircle,
+  MoreHorizontal,
   Search,
   ShieldCheck,
   Star,
@@ -16,34 +17,44 @@ import {
   UsersRound,
   WalletCards
 } from "lucide-react";
+import { useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
+import { Modal } from "./Modal";
 import { RoleSwitcher } from "./RoleSwitcher";
 import { ReportBugButton } from "./ReportBugButton";
 import { useAppStore } from "../lib/store";
 import { useAuth } from "../lib/auth";
 import { getCompanyProfileCompletion, getWorkerProfileCompletion } from "../lib/profileCompletion";
 
-const workerLinks = [
+const MENSAGENS_LINK = { to: "/app/mensagens", label: "Mensagens", mobileLabel: "Chat", icon: MessageCircle };
+
+const workerPrimaryLinks = [
   { to: "/app/trabalhador", label: "Início", mobileLabel: "Início", icon: Home },
   { to: "/app/vagas", label: "Vagas", mobileLabel: "Vagas", icon: Search },
   { to: "/app/candidaturas", label: "Candidaturas", mobileLabel: "Candid.", icon: ClipboardList },
-  { to: "/app/trabalhos", label: "Meus trabalhos", mobileLabel: "Trabalhos", icon: CalendarCheck },
-  { to: "/app/mensagens", label: "Mensagens", mobileLabel: "Chat", icon: MessageCircle },
+  { to: "/app/trabalhos", label: "Meus trabalhos", mobileLabel: "Trabalhos", icon: CalendarCheck }
+];
+
+const workerSecondaryLinks = [
+  MENSAGENS_LINK,
   { to: "/app/financeiro", label: "Financeiro", mobileLabel: "R$", icon: WalletCards },
   { to: "/app/planos", label: "Planos", mobileLabel: "Planos", icon: CreditCard },
   { to: "/app/perfil-trabalhador", label: "Perfil", mobileLabel: "Perfil", icon: UserRound }
 ];
 
-const companyLinks = [
+const companyPrimaryLinks = [
   { to: "/app/empresa", label: "Painel", mobileLabel: "Painel", icon: Home },
   { to: "/app/eventos", label: "Eventos", mobileLabel: "Eventos", icon: CalendarDays },
   { to: "/app/minhas-vagas", label: "Minhas vagas", mobileLabel: "Vagas", icon: BriefcaseBusiness },
+  { to: "/app/candidatos", label: "Candidatos", mobileLabel: "Cand.", icon: UsersRound }
+];
+
+const companySecondaryLinks = [
   { to: "/app/profissionais", label: "Banco", mobileLabel: "Banco", icon: Search },
-  { to: "/app/candidatos", label: "Candidatos", mobileLabel: "Cand.", icon: UsersRound },
   { to: "/app/escala", label: "Escala", mobileLabel: "Escala", icon: CalendarDays },
-  { to: "/app/mensagens", label: "Mensagens", mobileLabel: "Chat", icon: MessageCircle },
+  MENSAGENS_LINK,
   { to: "/app/financeiro", label: "Financeiro", mobileLabel: "R$", icon: WalletCards },
   { to: "/app/planos", label: "Moedas", mobileLabel: "Moedas", icon: CreditCard },
   { to: "/app/equipe", label: "Minha equipe", mobileLabel: "Equipe", icon: Star },
@@ -54,10 +65,14 @@ export function AppLayout() {
   const { state, storageMode, syncStatus, syncError, currentWorker, currentCompany } = useAppStore();
   const { isAdmin, isModerator } = useAuth();
   const location = useLocation();
-  const links = [
-    ...(state.activeRole === "trabalhador" ? workerLinks : companyLinks),
+  const [showMoreNav, setShowMoreNav] = useState(false);
+  const primaryLinks = state.activeRole === "trabalhador" ? workerPrimaryLinks : companyPrimaryLinks;
+  const secondaryLinks = [
+    ...(state.activeRole === "trabalhador" ? workerSecondaryLinks : companySecondaryLinks),
     ...(isAdmin || isModerator ? [{ to: "/app/admin", label: "Admin", mobileLabel: "Admin", icon: ShieldCheck }] : [])
   ];
+  const mobilePrimaryLinks = [...primaryLinks, MENSAGENS_LINK];
+  const mobileMoreLinks = secondaryLinks.filter((link) => link.to !== MENSAGENS_LINK.to);
   const profilePath = state.activeRole === "trabalhador" ? "/app/perfil-trabalhador" : "/app/perfil-empresa";
   const completion =
     state.activeRole === "trabalhador"
@@ -103,23 +118,8 @@ export function AppLayout() {
 
         <RoleSwitcher />
 
-        <Link
-          to="/app/planos"
-          className="mt-3 rounded-lg border border-aqua-300/25 bg-aqua-300/10 p-3 text-white shadow-soft transition hover:bg-aqua-300/15"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <span className="flex items-center gap-2 text-xs font-black text-aqua-300">
-              <WalletCards size={16} /> {coinLabel}
-            </span>
-            <strong className="rounded-md bg-aqua-300 px-2.5 py-1 text-base font-black text-navy-950">{coinBalance}</strong>
-          </div>
-          <p className="mt-1.5 text-[0.7rem] font-semibold leading-4 text-slate-300">
-            {coinHelp}
-          </p>
-        </Link>
-
         <nav className="mt-4 grid gap-1.5">
-          {links.map((link) => {
+          {primaryLinks.map((link) => {
             const Icon = link.icon;
             return (
               <NavLink
@@ -136,7 +136,41 @@ export function AppLayout() {
               </NavLink>
             );
           })}
+
+          <p className="mb-0.5 mt-3 px-2.5 text-[0.65rem] font-black uppercase tracking-wide text-slate-500">Mais</p>
+          {secondaryLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `flex min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-xs font-bold transition duration-200 ${
+                    isActive ? "bg-white text-navy-950 shadow-glow" : "text-slate-400 hover:bg-white/10 hover:text-white"
+                  }`
+                }
+              >
+                <Icon size={14} />
+                {link.label}
+              </NavLink>
+            );
+          })}
         </nav>
+
+        <Link
+          to="/app/planos"
+          className="mt-4 rounded-lg border border-white/10 bg-white/10 p-3 text-white shadow-soft transition hover:bg-white/15"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <span className="flex items-center gap-2 text-xs font-black text-aqua-300">
+              <WalletCards size={16} /> {coinLabel}
+            </span>
+            <strong className="rounded-md bg-aqua-300 px-2.5 py-1 text-base font-black text-navy-950">{coinBalance}</strong>
+          </div>
+          <p className="mt-1.5 text-[0.7rem] font-semibold leading-4 text-slate-300">
+            {coinHelp}
+          </p>
+        </Link>
 
         <NavLink to="/app/notificacoes" className="mt-auto rounded-lg border border-white/10 bg-white/10 p-3 shadow-soft transition hover:bg-white/15">
           <div className="flex items-center gap-2 text-sm text-aqua-300">
@@ -241,15 +275,15 @@ export function AppLayout() {
         </div>
       </main>
 
-      <nav className="app-bottom-nav fixed bottom-0 left-0 right-0 z-30 flex gap-1 overflow-x-auto border-t border-white/10 bg-brand-charcoal/95 px-2 py-1 shadow-lift backdrop-blur-xl md:hidden">
-        {links.map((link) => {
+      <nav className="app-bottom-nav fixed bottom-0 left-0 right-0 z-30 grid grid-cols-6 gap-1 border-t border-white/10 bg-brand-charcoal/95 px-2 py-1 shadow-lift backdrop-blur-xl md:hidden">
+        {mobilePrimaryLinks.map((link) => {
           const Icon = link.icon;
           const active = location.pathname === link.to;
           return (
             <NavLink
               key={link.to}
               to={link.to}
-              className={`grid min-h-14 min-w-[4.15rem] flex-1 place-items-center gap-0.5 rounded-lg px-1 text-center text-[0.58rem] font-black leading-tight transition ${
+              className={`grid min-h-14 place-items-center gap-0.5 rounded-lg px-1 text-center text-[0.65rem] font-black leading-tight transition ${
                 active ? "text-white" : "text-slate-500"
               }`}
             >
@@ -260,7 +294,37 @@ export function AppLayout() {
             </NavLink>
           );
         })}
+        <button
+          type="button"
+          onClick={() => setShowMoreNav(true)}
+          className="grid min-h-14 place-items-center gap-0.5 rounded-lg px-1 text-center text-[0.65rem] font-black leading-tight text-slate-500 transition"
+        >
+          <span className="mobile-nav-icon">
+            <MoreHorizontal size={16} />
+          </span>
+          <span className="w-full truncate px-0.5">Mais</span>
+        </button>
       </nav>
+
+      {showMoreNav && (
+        <Modal title="Mais opções" onClose={() => setShowMoreNav(false)}>
+          <div className="grid gap-1.5">
+            {mobileMoreLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setShowMoreNav(false)}
+                  className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold text-white hover:bg-white/10"
+                >
+                  <Icon size={18} /> {link.label}
+                </NavLink>
+              );
+            })}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BriefcaseBusiness, CalendarDays, Filter, Lock, MapPin, RotateCcw, Search, ShieldCheck, Star, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { JobCard } from "../components/JobCard";
 import { SectionHeader } from "../components/SectionHeader";
+import { StatTile } from "../components/StatTile";
+import { TermHint } from "../components/TermHint";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 import { getFunctionExperience, isJobOpenForApplications } from "../lib/rules";
@@ -119,10 +121,10 @@ export function JobsPage() {
           </p>
         </div>
         <div className="jobs-hero-metrics">
-          <HeroMetric icon={<BriefcaseBusiness size={19} />} label="abertas" value={String(dashboard.open)} />
-          <HeroMetric icon={<Star size={19} />} label="boas combinações" value={String(dashboard.compatible)} />
-          <HeroMetric icon={<Zap size={19} />} label="urgentes" value={String(dashboard.urgent)} />
-          <HeroMetric icon={<ShieldCheck size={19} />} label="empresas confiáveis" value={String(dashboard.trusted)} />
+          <StatTile variant="primary" icon={<BriefcaseBusiness size={19} />} label="abertas" value={dashboard.open} />
+          <StatTile icon={<Star size={19} />} label="boas combinações" value={dashboard.compatible} />
+          <StatTile icon={<Zap size={19} />} label="urgentes" value={dashboard.urgent} />
+          <StatTile icon={<ShieldCheck size={19} />} label="empresas confiáveis" value={dashboard.trusted} />
         </div>
       </section>
 
@@ -131,7 +133,7 @@ export function JobsPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="flex items-center gap-2 font-black text-white">
-                <Lock size={18} /> Use moedas para liberar vagas completas
+                <Lock size={18} /> Use <TermHint term="moedas" role="trabalhador">moedas</TermHint> para liberar vagas completas
               </h3>
               <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
                 No gratuito você vê uma prévia. Com moedas, você libera detalhes completos antes de se candidatar.
@@ -295,14 +297,4 @@ function isTrustedCompanyJob(job: Job, state: AppState) {
   );
 
   return Boolean(company && company.rating >= 4.5 && !hasOpenReport);
-}
-
-function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <span className="jobs-hero-metric">
-      <span>{icon}</span>
-      <strong>{value}</strong>
-      <small>{label}</small>
-    </span>
-  );
 }
