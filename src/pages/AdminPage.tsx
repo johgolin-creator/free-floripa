@@ -46,6 +46,9 @@ export function AdminPage() {
     const job = state.jobs.find((item) => item.id === application.jobId);
     return total + (job?.dailyValue ?? 0);
   }, 0);
+  const coinRevenue = state.coinLedger
+    .filter((entry) => entry.kind === "purchase")
+    .reduce((total, entry) => total + coinPackagePrice(entry.reason), 0);
   const alerts = useMemo(() => buildAlerts(state), [state]);
   const openReports = state.trustReports.filter((report) => report.status === "Aberto");
   const resolvedReports = state.trustReports.filter((report) => report.status === "Resolvido").slice(0, 8);
@@ -127,6 +130,7 @@ export function AdminPage() {
               <InfoTile icon={<CheckCircle2 />} label="Candidaturas confirmadas" value={String(approvedApplications.length)} />
               <InfoTile icon={<WalletCards />} label="Volume previsto" value={formatCurrency(plannedVolume)} />
               <InfoTile icon={<WalletCards />} label="Volume confirmado" value={formatCurrency(confirmedVolume)} />
+              <InfoTile icon={<WalletCards />} label="Receita de moedas" value={formatCurrency(coinRevenue)} />
             </div>
           </div>
           <div className="card p-4">
@@ -521,6 +525,13 @@ function getReportTargetLabel(targetType: TrustReport["targetType"]) {
   if (targetType === "worker") return "Profissional";
   if (targetType === "company") return "Empresa";
   return "Vaga";
+}
+
+function coinPackagePrice(reason: string) {
+  if (reason === "package_professional") return 19.9;
+  if (reason === "package_plus") return 29.9;
+  if (reason === "coin_pack") return 4.95;
+  return 0;
 }
 
 function getCoinAdminTitle(reason: string) {
