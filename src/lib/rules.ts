@@ -75,7 +75,9 @@ export function canApply(job: Job, applications: Application[], worker: WorkerPr
     return { allowed: false, reason: "Esta vaga não está mais aberta para candidatura." };
   }
 
-  const duplicated = applications.some((application) => application.jobId === job.id && application.workerId === worker.id);
+  const duplicated = applications.some(
+    (application) => application.jobId === job.id && application.workerId === worker.id && application.status !== "Cancelada"
+  );
   if (duplicated) {
     return { allowed: false, reason: "Você já se candidatou para esta vaga." };
   }

@@ -19,6 +19,7 @@ import {
   Star,
   Users,
   WalletCards,
+  XCircle,
   Zap
 } from "lucide-react";
 import { Modal } from "../components/Modal";
@@ -33,13 +34,14 @@ import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getJo
 
 export function JobDetailsPage() {
   const { id } = useParams();
-  const { state, currentWorker, applyToJob, submitTrustReport, unlockJobWithCoins, subscribeProfessional, subscribePlus } = useAppStore();
+  const { state, currentWorker, applyToJob, updateApplicationStatus, submitTrustReport, unlockJobWithCoins, subscribeProfessional, subscribePlus } = useAppStore();
   const [message, setMessage] = useState("");
   const [showPlans, setShowPlans] = useState(false);
   const [showApplyConfirm, setShowApplyConfirm] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [isApplying, setIsApplying] = useState(false);
+  const [showCancelApply, setShowCancelApply] = useState(false);
   const applyingRef = useRef(false);
   const job = state.jobs.find((item) => item.id === id);
 
@@ -47,7 +49,9 @@ export function JobDetailsPage() {
 
   const currentJob = job;
   const company = state.companies.find((item) => item.id === currentJob.companyId);
-  const application = state.applications.find((item) => item.jobId === currentJob.id && item.workerId === state.selectedWorkerId);
+  const application = state.applications.find(
+    (item) => item.jobId === currentJob.id && item.workerId === state.selectedWorkerId && item.status !== "Cancelada"
+  );
   const companyReviews = state.companyReviews.filter((review) => review.companyId === currentJob.companyId);
   const companyReportCount = state.trustReports.filter(
     (report) =>
@@ -63,6 +67,7 @@ export function JobDetailsPage() {
   const workerBlocked = state.adminModeration.blockedWorkerIds.includes(currentWorker.id);
   const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentJob.companyId);
   const unlockItems = ["Descrição completa", "Requisitos e benefícios", "Candidatura liberada", "Dados protegidos no momento certo"];
+  const canCancelApplication = Boolean(application) && (application?.status === "Enviada" || application?.status === "Em análise");
 
   function handleApply() {
     if (workerBlocked || companyBlocked) {
@@ -96,6 +101,13 @@ export function JobDetailsPage() {
     if (result.requiresPlan) setShowPlans(true);
     applyingRef.current = false;
     setIsApplying(false);
+  }
+
+  function confirmCancelApplication() {
+    if (!application) return;
+    const result = updateApplicationStatus(application.id, "Cancelada");
+    setMessage(result.message);
+    setShowCancelApply(false);
   }
 
   function handleUnlockJob() {
@@ -183,6 +195,19 @@ export function JobDetailsPage() {
             {isApplying ? "Enviando..." : "Enviar candidatura"}
           </button>
         </div>
+      </div>
+    </Modal>
+  ) : null;
+  const cancelApplyModal = showCancelApply ? (
+    <Modal title="Cancelar candidatura?" onClose={() => setShowCancelApply(false)}>
+      <p className="text-sm leading-6 text-slate-600">
+        Isso avisa a empresa e remove você da seleção desta vaga. Você pode se candidatar de novo depois, se ainda houver vagas abertas.
+      </p>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <button type="button" onClick={() => setShowCancelApply(false)} className="secondary">Voltar</button>
+        <button type="button" onClick={confirmCancelApplication} className="danger">
+          <XCircle size={17} /> Cancelar candidatura
+        </button>
       </div>
     </Modal>
   ) : null;
@@ -396,6 +421,11 @@ export function JobDetailsPage() {
                 <Link to="/app/candidaturas" className="secondary mt-3 w-full">
                   Ver minhas candidaturas <ArrowRight size={17} />
                 </Link>
+                {canCancelApplication && (
+                  <button type="button" onClick={() => setShowCancelApply(true)} className="danger mt-2 w-full">
+                    <XCircle size={17} /> Cancelar candidatura
+                  </button>
+                )}
               </div>
             )}
             <button type="button" onClick={handleApply} disabled={Boolean(application) || isApplying || workerBlocked || companyBlocked || !isJobOpenForApplications(currentJob)} className="primary">
@@ -412,6 +442,7 @@ export function JobDetailsPage() {
       </section>
 
       {applyConfirmModal}
+      {cancelApplyModal}
       {plansModal}
       {reportModal}
     </div>
