@@ -662,18 +662,15 @@ export async function loadRemoteNotifications(userId: string) {
 export async function publishNotification(userId: string, notification: NotificationItem) {
   if (!supabase) return;
 
-  const { error } = await supabase.from("notifications").upsert(
-    {
-      id: notification.id,
-      user_id: userId,
-      role: notification.role,
-      title: notification.title,
-      body: notification.body,
-      read: notification.read,
-      created_at: notification.createdAt
-    },
-    { onConflict: "id" }
-  );
+  const { error } = await supabase.from("notifications").insert({
+    id: notification.id,
+    user_id: userId,
+    role: notification.role,
+    title: notification.title,
+    body: notification.body,
+    read: notification.read,
+    created_at: notification.createdAt
+  });
 
   if (error) throw new Error(error.message);
 }
@@ -695,20 +692,17 @@ export async function markRemoteRoleNotificationsRead(userId: string, role: User
 export async function publishWorkerReview(companyId: string, workerId: string, review: Review) {
   if (!supabase) return;
 
-  const { error } = await supabase.from("worker_reviews").upsert(
-    {
-      id: review.id,
-      worker_id: workerId,
-      company_id: companyId,
-      application_id: review.applicationId ?? null,
-      job_id: review.jobId ?? null,
-      author_name: review.authorName,
-      rating: review.rating,
-      comment: review.comment,
-      created_at: review.createdAt ?? new Date().toISOString()
-    },
-    { onConflict: "id" }
-  );
+  const { error } = await supabase.from("worker_reviews").insert({
+    id: review.id,
+    worker_id: workerId,
+    company_id: companyId,
+    application_id: review.applicationId ?? null,
+    job_id: review.jobId ?? null,
+    author_name: review.authorName,
+    rating: review.rating,
+    comment: review.comment,
+    created_at: review.createdAt ?? new Date().toISOString()
+  });
 
   if (error) throw new Error(error.message);
 }
@@ -716,20 +710,17 @@ export async function publishWorkerReview(companyId: string, workerId: string, r
 export async function publishCompanyReview(review: CompanyReview) {
   if (!supabase) return;
 
-  const { error } = await supabase.from("company_reviews").upsert(
-    {
-      id: review.id,
-      company_id: review.companyId,
-      worker_id: review.workerId,
-      worker_name: review.workerName,
-      application_id: review.applicationId ?? null,
-      job_id: review.jobId ?? null,
-      rating: review.rating,
-      comment: review.comment,
-      created_at: review.createdAt
-    },
-    { onConflict: "id" }
-  );
+  const { error } = await supabase.from("company_reviews").insert({
+    id: review.id,
+    company_id: review.companyId,
+    worker_id: review.workerId,
+    worker_name: review.workerName,
+    application_id: review.applicationId ?? null,
+    job_id: review.jobId ?? null,
+    rating: review.rating,
+    comment: review.comment,
+    created_at: review.createdAt
+  });
 
   if (error) throw new Error(error.message);
 }
