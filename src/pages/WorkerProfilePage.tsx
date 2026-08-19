@@ -59,7 +59,7 @@ export function WorkerProfilePage() {
       />
       {blocked && (
         <SafetyNotice title="Perfil em revisão pela administração" tone="warning">
-          Enquanto a revisão estiver ativa, novas candidaturas, chat e check-in ficam pausados por segurança.
+          Enquanto a revisão estiver ativa, novas candidaturas e chat ficam pausados por segurança.
         </SafetyNotice>
       )}
       <section className="profile-card">

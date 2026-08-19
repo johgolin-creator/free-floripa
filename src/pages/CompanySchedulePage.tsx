@@ -5,7 +5,6 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
-  Clock3,
   Edit3,
   Mail,
   MessageCircle,
@@ -13,7 +12,6 @@ import {
   Plus,
   Save,
   Trash2,
-  UserCheck,
   UserX
 } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
@@ -29,7 +27,7 @@ import { useAppStore, type CompanyScheduleInput } from "../lib/store";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
 import { getShiftVerificationCode } from "../lib/shiftVerification";
-import type { Application, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, Neighborhood, WorkShift } from "../lib/types";
+import type { Application, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, Neighborhood } from "../lib/types";
 
 type ScheduleFilter = "Todas" | "Hoje" | "Futuras" | "Concluídas";
 
@@ -40,8 +38,6 @@ export function CompanySchedulePage() {
   const {
     state,
     currentCompany,
-    checkIn,
-    checkOut,
     updateApplicationStatus,
     createCompanySchedule,
     updateCompanySchedule,
@@ -73,9 +69,6 @@ export function CompanySchedulePage() {
     companyJobs.some((job) => job.id === application.jobId)
   );
   const confirmedCount = scheduleApplications.filter((application) => isScheduled(application)).length;
-  const checkedInCount = state.shifts.filter((shift) =>
-    companyJobs.some((job) => job.id === shift.jobId) && shift.status === "Fez check-in"
-  ).length;
   const completedCount =
     scheduleApplications.filter((application) => application.status === "Trabalho concluído").length +
     companySchedules.filter((schedule) => schedule.companyId === currentCompany.id && schedule.status === "Concluída").length;
@@ -143,13 +136,12 @@ export function CompanySchedulePage() {
           <span className="section-eyebrow">Planejamento da operação</span>
           <h2>Monte a equipe antes, acompanhe durante e feche depois</h2>
           <p>
-            Separe escalas planejadas pela empresa das escalas automáticas das vagas, com check-in, conclusão e faltas no mesmo lugar.
+            Separe escalas planejadas pela empresa das escalas automáticas das vagas, com aprovação, conclusão e faltas no mesmo lugar.
           </p>
         </div>
         <div className="schedule-hero-metrics">
           <StatTile variant="primary" icon={<CalendarDays size={19} />} label="hoje" value={todayTotal} />
           <StatTile icon={<ClipboardList size={19} />} label="manuais" value={manualTotal} />
-          <StatTile icon={<Clock3 size={19} />} label="em turno" value={checkedInCount} />
           <StatTile tone={openDemand > 0 ? "alert" : "normal"} icon={<AlertTriangle size={19} />} label="a preencher" value={openDemand} />
         </div>
       </section>
@@ -158,7 +150,6 @@ export function CompanySchedulePage() {
         <div className="schedule-stat-grid">
           <Stat label="escalas criadas" value={String(manualTotal)} />
           <Stat label="confirmados" value={String(confirmedCount)} />
-          <Stat label="em turno" value={String(checkedInCount)} />
           <Stat label="concluídos" value={String(completedCount)} />
         </div>
         <div className="schedule-filter-controls">
@@ -216,7 +207,7 @@ export function CompanySchedulePage() {
             {scheduleJobs.map((job) => {
               const applications = state.applications.filter((application) => application.jobId === job.id && isRelevantToSchedule(application));
               const confirmed = applications.filter((application) => isScheduled(application)).length;
-              const shifts = state.shifts.filter((shift) => shift.jobId === job.id);
+              const concluded = applications.filter((application) => application.status === "Trabalho concluído").length;
 
               return (
                 <section key={job.id} className="schedule-job-card">
@@ -236,8 +227,7 @@ export function CompanySchedulePage() {
                     <div className="schedule-mini-grid">
                       <Mini label="confirmados" value={`${confirmed}/${job.quantity}`} />
                       <Mini label="em aberto" value={String(getOpenSlots(job))} />
-                      <Mini label="check-in" value={String(shifts.filter((shift) => shift.status === "Fez check-in").length)} />
-                      <Mini label="finalizados" value={String(shifts.filter((shift) => shift.status === "Finalizou o turno").length)} />
+                      <Mini label="concluídos" value={String(concluded)} />
                     </div>
                   </div>
 
@@ -257,16 +247,8 @@ export function CompanySchedulePage() {
                           key={application.id}
                           application={application}
                           job={job}
-                          shift={state.shifts.find((item) => item.jobId === job.id && item.workerId === application.workerId)}
                           disabled={companyBlocked}
-                          onCheckIn={() => {
-                            checkIn(job.id, application.workerId);
-                            setMessage("Check-in registrado na escala.");
-                          }}
-                          onCheckOut={() => {
-                            checkOut(job.id, application.workerId);
-                            runStatus(application.id, "Trabalho concluído");
-                          }}
+                          onComplete={() => runStatus(application.id, "Trabalho concluído")}
                           onAbsence={() => runStatus(application.id, "Falta registrada")}
                         />
                       ))}
@@ -418,18 +400,14 @@ function ScheduleForm({
 function ScheduleWorker({
   application,
   job,
-  shift,
   disabled,
-  onCheckIn,
-  onCheckOut,
+  onComplete,
   onAbsence
 }: {
   application: Application;
   job: Job;
-  shift?: WorkShift;
   disabled?: boolean;
-  onCheckIn: () => void;
-  onCheckOut: () => void;
+  onComplete: () => void;
   onAbsence: () => void;
 }) {
   const { state, currentCompany } = useAppStore();
@@ -449,7 +427,6 @@ function ScheduleWorker({
           <div className="flex flex-wrap items-center gap-2">
             <strong className="text-sm text-white">{worker.name}</strong>
             <StatusBadge type="application" status={application.status} />
-            {shift ? <StatusBadge type="shift" status={shift.status} /> : <span className="badge">Aguardando presença</span>}
             <span className="badge bg-aqua-50 text-aqua-700"><TermHint term="codigoVerificacao">Código {verificationCode}</TermHint></span>
           </div>
           <p className="mt-1 text-sm font-semibold text-slate-600">
@@ -472,16 +449,8 @@ function ScheduleWorker({
       <div className="schedule-worker-actions">
         <button
           type="button"
-          onClick={onCheckIn}
-          disabled={disabled || !active || shift?.status !== "Ainda não chegou"}
-          className="secondary"
-        >
-          <UserCheck size={17} /> Check-in
-        </button>
-        <button
-          type="button"
-          onClick={onCheckOut}
-          disabled={disabled || !active || shift?.status !== "Fez check-in"}
+          onClick={onComplete}
+          disabled={disabled || !active}
           className="primary"
         >
           <CheckCircle2 size={17} /> Concluir
@@ -489,7 +458,7 @@ function ScheduleWorker({
         <button
           type="button"
           onClick={onAbsence}
-          disabled={disabled || !active || completed || absence || shift?.status !== "Ainda não chegou"}
+          disabled={disabled || !active || completed || absence}
           className="danger"
         >
           <UserX size={17} /> Falta

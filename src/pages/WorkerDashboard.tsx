@@ -35,11 +35,9 @@ export function WorkerDashboard() {
     .map((application) => {
       const job = state.jobs.find((item) => item.id === application.jobId);
       const company = state.companies.find((item) => item.id === job?.companyId);
-      const shift = state.shifts.find((item) => item.jobId === job?.id && item.workerId === currentWorker.id);
-      return job ? { application, job, company, shift } : null;
+      return job ? { application, job, company } : null;
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
-    .filter((item) => item.shift?.status !== "Finalizou o turno")
     .sort((a, b) => `${a.job.date} ${a.job.startsAt}`.localeCompare(`${b.job.date} ${b.job.startsAt}`))[0];
   const bestMatches = openJobs
     .map((job) => ({ job, score: getWorkerJobScore(job, currentWorker) }))
@@ -147,7 +145,7 @@ export function WorkerDashboard() {
             <div className="grid gap-2 text-sm text-slate-600">
               <span className="flex items-center gap-2"><ClipboardList size={16} /> {applications.length} candidaturas enviadas</span>
               <span className="flex items-center gap-2"><BadgeCheck size={16} /> {applications.filter((item) => item.status === "Aprovada").length} aceitas</span>
-              <span className="flex items-center gap-2"><CalendarCheck size={16} /> {state.shifts.filter((shift) => shift.workerId === currentWorker.id).length} próximos trabalhos</span>
+              <span className="flex items-center gap-2"><CalendarCheck size={16} /> {approvedApplications.length} próximos trabalhos</span>
               <span className="flex items-center gap-2"><Zap size={16} /> {urgentJobs.length} vagas urgentes abertas</span>
               <span className="flex items-center gap-2"><MapPin size={16} /> {nearbyJobs.length} vagas dentro da distância</span>
             </div>

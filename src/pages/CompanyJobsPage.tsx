@@ -303,7 +303,7 @@ export function CompanyJobsPage() {
 
                     <details className="company-history">
                       <summary><CalendarCheck size={16} /> Histórico da vaga</summary>
-                      <JobHistory job={job} applications={applications} />
+                      <JobHistory applications={applications} />
                     </details>
                   </article>
                 );
@@ -399,7 +399,7 @@ function isFilledJob(job: Job, applications: Application[]) {
   return confirmed >= job.quantity;
 }
 
-function JobHistory({ job, applications }: { job: Job; applications: Application[] }) {
+function JobHistory({ applications }: { applications: Application[] }) {
   const { state } = useAppStore();
 
   if (applications.length === 0) {
@@ -410,18 +410,15 @@ function JobHistory({ job, applications }: { job: Job; applications: Application
     <div className="mt-3 grid gap-2">
       {applications.map((application) => {
         const worker = state.workers.find((item) => item.id === application.workerId);
-        const shift = state.shifts.find((item) => item.jobId === job.id && item.workerId === application.workerId);
         return (
           <div key={application.id} className="grid gap-2 rounded-lg bg-brand-dark p-3 md:grid-cols-[1fr_auto] md:items-center">
             <div>
               <strong className="text-sm text-white">{worker?.name ?? "Profissional"}</strong>
               <p className="text-xs font-semibold text-slate-500">
                 {application.status} - inscrição em {formatDate(application.createdAt.slice(0, 10))}
-                {shift?.checkinAt ? ` - check-in ${new Date(shift.checkinAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}
-                {shift?.checkoutAt ? ` - saída ${new Date(shift.checkoutAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}
               </p>
             </div>
-            {shift ? <StatusBadge type="shift" status={shift.status} /> : <span className="badge justify-center">Sem turno</span>}
+            <StatusBadge type="application" status={application.status} />
           </div>
         );
       })}

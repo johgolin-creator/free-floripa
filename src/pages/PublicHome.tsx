@@ -168,7 +168,7 @@ export function PublicHome() {
             {[
               ["1", "Vaga com critério", "A empresa informa função, valor, horário, bairro e experiência esperada."],
               ["2", "Candidatura transparente", "O trabalhador aparece com nível de experiência por profissão."],
-              ["3", "Equipe confirmada", "Aprovação, check-in, check-out e avaliações ficam organizados no histórico."]
+              ["3", "Equipe confirmada", "Aprovação, conclusão do turno e avaliações ficam organizadas no histórico."]
             ].map(([step, title, text]) => (
               <article key={step} className="card p-5 hover:-translate-y-0.5 hover:shadow-lift">
                 <span className="grid h-10 w-10 place-items-center rounded-lg bg-navy-950 font-black text-aqua-300">{step}</span>

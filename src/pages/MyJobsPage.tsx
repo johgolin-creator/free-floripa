@@ -4,8 +4,6 @@ import {
   CheckCircle2,
   Clock,
   ClipboardCheck,
-  LogIn,
-  LogOut,
   Mail,
   MapPin,
   MessageCircle,
@@ -23,17 +21,16 @@ import { ShiftReceipt } from "../components/ShiftReceipt";
 import { StatTile } from "../components/StatTile";
 import { TermHint } from "../components/TermHint";
 import { useAppStore } from "../lib/store";
-import { formatCurrency, formatDate, formatDateTime, getWhatsAppUrl } from "../lib/format";
+import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
 import { getShiftVerificationCode } from "../lib/shiftVerification";
-import type { Application, CompanyProfile, Job, WorkShift } from "../lib/types";
+import type { Application, CompanyProfile, Job } from "../lib/types";
 
-const tabs = ["Próximos", "Em andamento", "Concluídos", "Ocorrências"] as const;
+const tabs = ["Próximos", "Concluídos", "Ocorrências"] as const;
 const ratingOptions = [5, 4, 3, 2, 1];
 
 type WorkItem = {
   application: Application;
   job: Job;
-  shift: WorkShift | undefined;
 };
 
 type ReceiptItem = WorkItem & {
@@ -41,7 +38,7 @@ type ReceiptItem = WorkItem & {
 };
 
 export function MyJobsPage() {
-  const { state, currentWorker, addCompanyReview, checkIn, checkOut } = useAppStore();
+  const { state, currentWorker, addCompanyReview } = useAppStore();
   const [tab, setTab] = useState<(typeof tabs)[number]>("Próximos");
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
   const [receiptItem, setReceiptItem] = useState<ReceiptItem | null>(null);
@@ -58,108 +55,71 @@ export function MyJobsPage() {
         .map((application) => {
           const job = state.jobs.find((item) => item.id === application.jobId);
           if (!job) return null;
-          const shift = state.shifts.find((item) => item.jobId === job.id && item.workerId === currentWorker.id);
-          return { application, job, shift };
+          return { application, job };
         })
         .filter((item): item is WorkItem => Boolean(item))
         .sort((a, b) => `${a.job.date} ${a.job.startsAt}`.localeCompare(`${b.job.date} ${b.job.startsAt}`)),
-    [currentWorker.id, state.applications, state.jobs, state.shifts]
+    [currentWorker.id, state.applications, state.jobs]
   );
 
   const filtered = workItems.filter((item) => {
-    if (tab === "Próximos") return item.application.status === "Aprovada" && item.shift?.status === "Ainda não chegou";
-    if (tab === "Em andamento") return item.shift?.status === "Fez check-in";
-    if (tab === "Concluídos") return item.application.status === "Trabalho concluído" || item.shift?.status === "Finalizou o turno";
+    if (tab === "Próximos") return item.application.status === "Aprovada";
+    if (tab === "Concluídos") return item.application.status === "Trabalho concluído";
     return item.application.status === "Cancelada" || item.application.status === "Falta registrada";
   });
   const actionItems = workItems
-    .filter(
-      (item) =>
-        item.shift?.status === "Fez check-in" ||
-        item.shift?.status === "Finalizou o turno" ||
-        (item.application.status === "Aprovada" && item.shift?.status === "Ainda não chegou")
-    )
-    .sort((a, b) => {
-      const priorityA = getActionPriority(a.application, a.shift);
-      const priorityB = getActionPriority(b.application, b.shift);
-      if (priorityA !== priorityB) return priorityA - priorityB;
-      return `${a.job.date} ${a.job.startsAt}`.localeCompare(`${b.job.date} ${b.job.startsAt}`);
-    })
+    .filter((item) => item.application.status === "Aprovada")
+    .sort((a, b) => `${a.job.date} ${a.job.startsAt}`.localeCompare(`${b.job.date} ${b.job.startsAt}`))
     .slice(0, 3);
   const agendaStats = {
-    next: workItems.filter((item) => item.application.status === "Aprovada" && item.shift?.status === "Ainda não chegou").length,
-    active: workItems.filter((item) => item.shift?.status === "Fez check-in").length,
-    done: workItems.filter((item) => item.application.status === "Trabalho concluído" || item.shift?.status === "Finalizou o turno").length,
+    next: workItems.filter((item) => item.application.status === "Aprovada").length,
+    done: workItems.filter((item) => item.application.status === "Trabalho concluído").length,
     issues: workItems.filter((item) => item.application.status === "Cancelada" || item.application.status === "Falta registrada").length
   };
-
-  function doCheckIn(item: WorkItem) {
-    if (state.adminModeration.blockedWorkerIds.includes(currentWorker.id) || state.adminModeration.blockedCompanyIds.includes(item.job.companyId)) {
-      setMessage("Check-in bloqueado enquanto o perfil passa por revisão de segurança.");
-      return;
-    }
-    checkIn(item.job.id, currentWorker.id);
-    setMessage(`Check-in registrado para ${item.job.title}.`);
-  }
-
-  function doCheckOut(item: WorkItem) {
-    if (state.adminModeration.blockedWorkerIds.includes(currentWorker.id) || state.adminModeration.blockedCompanyIds.includes(item.job.companyId)) {
-      setMessage("Check-out bloqueado enquanto o perfil passa por revisão de segurança.");
-      return;
-    }
-    checkOut(item.job.id, currentWorker.id);
-    setMessage("Check-out registrado. A empresa ainda pode concluir e avaliar o serviço.");
-  }
 
   return (
     <div>
       <SectionHeader
         eyebrow="Meus trabalhos"
         title="Agenda de turnos"
-        description="Acompanhe seus turnos confirmados, registre presença e confira os detalhes combinados."
+        description="Acompanhe seus turnos confirmados e confira os detalhes combinados."
       />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
 
       <section className="worker-hero">
         <div>
           <span className="section-eyebrow">Agenda do freelancer</span>
-          <h2>Turnos confirmados com ação rápida no dia do serviço</h2>
+          <h2>Turnos confirmados com detalhes prontos para o dia do serviço</h2>
           <p>
-            Veja próximos trabalhos, faça check-in, registre check-out e consulte endereço, uniforme e contato da empresa.
+            Veja próximos trabalhos e consulte endereço, uniforme e contato da empresa.
           </p>
         </div>
         <div className="worker-hero-metrics">
           <StatTile variant="primary" icon={<CalendarDays size={19} />} label="próximos" value={agendaStats.next} />
-          <StatTile icon={<Clock size={19} />} label="em andamento" value={agendaStats.active} />
           <StatTile icon={<ClipboardCheck size={19} />} label="concluídos" value={agendaStats.done} />
           <StatTile tone={agendaStats.issues > 0 ? "alert" : "normal"} icon={<UserCheck size={19} />} label="ocorrências" value={agendaStats.issues} />
         </div>
       </section>
 
       <SafetyNotice title="Presença segura">
-        Faça check-in somente ao chegar no local combinado e registre o check-out no fim do turno. Use o chat para manter endereço, uniforme e pagamento documentados.
+        Confirme endereço, horário e uniforme antes do turno. Use o chat para manter combinados e pagamento documentados.
       </SafetyNotice>
 
       {actionItems.length > 0 && (
         <section className="candidate-selector-panel mb-4 border-aqua-200 bg-aqua-50/70">
           <div>
             <div className="flex items-center gap-2 text-sm font-black text-white">
-              <Clock size={18} /> Ações rápidas
+              <Clock size={18} /> Próximos turnos
             </div>
             <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
-              Atalhos para os turnos que precisam de check-in, check-out ou acompanhamento imediato.
+              Atalhos para os turnos confirmados que estão chegando.
             </p>
           </div>
           <div className="grid gap-2 md:grid-cols-3">
             {actionItems.map((item) => {
-              const { application, job, shift } = item;
+              const { application, job } = item;
               const company = state.companies.find((companyItem) => companyItem.id === job.companyId);
-              const checkedIn = shift?.status === "Fez check-in";
-              const waiting = application.status === "Aprovada" && shift?.status === "Ainda não chegou";
               const verificationCode = getShiftVerificationCode(job.id, application.workerId);
-              const blockedAction =
-                state.adminModeration.blockedWorkerIds.includes(currentWorker.id) ||
-                state.adminModeration.blockedCompanyIds.includes(job.companyId);
 
               return (
                 <article key={application.id} className="rounded-lg border border-white/10 bg-brand-dark p-3 shadow-sm">
@@ -169,31 +129,19 @@ export function MyJobsPage() {
                       <p className="mt-1 truncate text-xs font-bold text-slate-500">
                         {company?.establishmentName ?? "Empresa"} - {formatDate(job.date)} - {job.startsAt}
                       </p>
-                      <span className={getStatusClass(application, shift)}>{getWorkStatus(application, shift)}</span>
+                      <span className={getStatusClass(application)}>{getWorkStatus(application)}</span>
                       <span className="mt-2 inline-flex rounded-full bg-aqua-50 px-2 py-1 text-xs font-black text-aqua-700">
                         <TermHint term="codigoVerificacao">Código {verificationCode}</TermHint>
                       </span>
                     </div>
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-navy-950 text-aqua-300">
-                      {checkedIn ? <LogOut size={17} /> : <LogIn size={17} />}
+                      <UserCheck size={17} />
                     </span>
                   </div>
                   <div className="mt-3 grid gap-2">
-                    {waiting && (
-                      <button type="button" onClick={() => doCheckIn(item)} disabled={blockedAction} className="primary w-full">
-                        <LogIn size={17} /> Fazer check-in
-                      </button>
-                    )}
-                    {checkedIn && (
-                      <button type="button" onClick={() => doCheckOut(item)} disabled={blockedAction} className="primary w-full">
-                        <LogOut size={17} /> Fazer check-out
-                      </button>
-                    )}
-                    {!waiting && !checkedIn && (
-                      <button type="button" onClick={() => setSelectedItem(item)} className="secondary w-full">
-                        <Clock size={17} /> Ver detalhes
-                      </button>
-                    )}
+                    <button type="button" onClick={() => setSelectedItem(item)} className="secondary w-full">
+                      <Clock size={17} /> Ver detalhes
+                    </button>
                   </div>
                 </article>
               );
@@ -215,12 +163,10 @@ export function MyJobsPage() {
       ) : (
         <div className="grid gap-3">
           {filtered.map((item) => {
-            const { application, job, shift } = item;
+            const { application, job } = item;
             const company = state.companies.find((companyItem) => companyItem.id === job.companyId);
-            const checkedIn = shift?.status === "Fez check-in";
-            const waiting = application.status === "Aprovada" && shift?.status === "Ainda não chegou";
-            const done = application.status === "Trabalho concluído" || shift?.status === "Finalizou o turno";
-            const blockedAction = state.adminModeration.blockedWorkerIds.includes(currentWorker.id) || state.adminModeration.blockedCompanyIds.includes(job.companyId);
+            const waiting = application.status === "Aprovada";
+            const done = application.status === "Trabalho concluído";
             const alreadyReviewedCompany = state.companyReviews.some((review) => review.applicationId === application.id && review.workerId === currentWorker.id);
             const verificationCode = getShiftVerificationCode(job.id, application.workerId);
 
@@ -229,7 +175,7 @@ export function MyJobsPage() {
                 <div className="worker-card-head">
                   <div>
                     <div className="mb-2 flex flex-wrap gap-2">
-                      <span className={getStatusClass(application, shift)}>{getWorkStatus(application, shift)}</span>
+                      <span className={getStatusClass(application)}>{getWorkStatus(application)}</span>
                       <span className="badge">{job.function}</span>
                       <span className="badge">{formatCurrency(job.dailyValue)}</span>
                       <span className="badge bg-aqua-50 text-aqua-700"><TermHint term="codigoVerificacao">Código {verificationCode}</TermHint></span>
@@ -238,19 +184,9 @@ export function MyJobsPage() {
                     <p className="text-sm font-semibold text-slate-600">
                       {company?.establishmentName ?? "Empresa"} - {job.neighborhood} - {formatDate(job.date)}
                     </p>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">{getGuidance(application, shift)}</p>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">{getGuidance(application)}</p>
                   </div>
                   <div className="worker-action-row">
-                    {waiting && (
-                      <button type="button" onClick={() => doCheckIn(item)} disabled={blockedAction} className="company-action company-action-primary">
-                        <LogIn size={17} /> Check-in
-                      </button>
-                    )}
-                    {checkedIn && (
-                      <button type="button" onClick={() => doCheckOut(item)} disabled={blockedAction} className="company-action company-action-primary">
-                        <LogOut size={17} /> Check-out
-                      </button>
-                    )}
                     <button type="button" onClick={() => setSelectedItem(item)} className="company-action">
                       <Clock size={17} /> Detalhes
                     </button>
@@ -289,12 +225,6 @@ export function MyJobsPage() {
                     </a>
                   </div>
                 )}
-
-                <div className="grid gap-1 text-xs font-semibold text-slate-500">
-                  {shift?.checkinAt && <span>Check-in: {formatDateTime(shift.checkinAt)}</span>}
-                  {shift?.checkoutAt && <span>Check-out: {formatDateTime(shift.checkoutAt)}</span>}
-                  {done && application.status !== "Trabalho concluído" && <span>Aguardando encerramento final pela empresa.</span>}
-                </div>
               </article>
             );
           })}
@@ -311,7 +241,7 @@ export function MyJobsPage() {
             <Info label="Uniforme" value={selectedItem.job.uniform} />
             <Info label="Benefícios" value={selectedItem.job.benefits.join(", ")} />
             <Info label="Código de presença" value={getShiftVerificationCode(selectedItem.job.id, selectedItem.application.workerId)} />
-            <Info label="Status" value={getWorkStatus(selectedItem.application, selectedItem.shift)} icon={<CheckCircle2 size={16} />} />
+            <Info label="Status" value={getWorkStatus(selectedItem.application)} icon={<CheckCircle2 size={16} />} />
           </div>
         </Modal>
       )}
@@ -323,7 +253,6 @@ export function MyJobsPage() {
             job={receiptItem.job}
             worker={currentWorker}
             company={receiptItem.company}
-            shift={receiptItem.shift}
             review={currentWorker.reviews.find(
               (review) => review.jobId === receiptItem.job.id && review.applicationId === receiptItem.application.id
             )}
@@ -404,35 +333,23 @@ function CompanyReviewForm({ onSubmit }: { onSubmit: (review: { rating: number; 
   );
 }
 
-function getWorkStatus(application: Application, shift: WorkShift | undefined) {
+function getWorkStatus(application: Application) {
   if (application.status === "Falta registrada") return "Falta registrada";
   if (application.status === "Cancelada") return "Cancelado";
   if (application.status === "Trabalho concluído") return "Concluído";
-  if (shift?.status === "Finalizou o turno") return "Check-out feito";
-  if (shift?.status === "Fez check-in") return "Em andamento";
   return "Confirmado";
 }
 
-function getGuidance(application: Application, shift: WorkShift | undefined) {
+function getGuidance(application: Application) {
   if (application.status === "Falta registrada") return "A empresa registrou falta para este turno.";
   if (application.status === "Cancelada") return "Este compromisso foi cancelado.";
   if (application.status === "Trabalho concluído") return "Serviço concluído e pronto para histórico.";
-  if (shift?.status === "Finalizou o turno") return "Check-out feito. Aguarde a conclusão da empresa.";
-  if (shift?.status === "Fez check-in") return "Turno em andamento. Faça check-out ao finalizar.";
-  return "Turno confirmado. No dia combinado, registre o check-in.";
+  return "Turno confirmado. Combine os últimos detalhes com a empresa antes do dia.";
 }
 
-function getActionPriority(application: Application, shift: WorkShift | undefined) {
-  if (shift?.status === "Fez check-in") return 1;
-  if (shift?.status === "Finalizou o turno") return 2;
-  if (application.status === "Aprovada") return 3;
-  return 4;
-}
-
-function getStatusClass(application: Application, shift: WorkShift | undefined) {
+function getStatusClass(application: Application) {
   if (application.status === "Falta registrada" || application.status === "Cancelada") return "badge bg-red-50 text-alert";
-  if (application.status === "Trabalho concluído" || shift?.status === "Finalizou o turno") return "badge bg-aqua-100 text-aqua-700";
-  if (shift?.status === "Fez check-in") return "badge bg-navy-950 text-white";
+  if (application.status === "Trabalho concluído") return "badge bg-aqua-100 text-aqua-700";
   return "badge";
 }
 

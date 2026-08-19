@@ -20,7 +20,7 @@ import { StatTile } from "../components/StatTile";
 import { StatusBadge, StatusLegend } from "../components/StatusBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, formatDateTime, getWhatsAppUrl } from "../lib/format";
-import type { Application, WorkShift } from "../lib/types";
+import type { Application } from "../lib/types";
 
 const cancelableStatuses: Application["status"][] = ["Enviada", "Em análise"];
 const filters = ["Todas", "Ativas", "Aprovadas", "Finalizadas"] as const;
@@ -107,7 +107,6 @@ export function ApplicationsPage() {
           ) : filteredApplications.map((application) => {
             const job = state.jobs.find((item) => item.id === application.jobId);
             const company = state.companies.find((item) => item.id === job?.companyId);
-            const shift = state.shifts.find((item) => item.jobId === job?.id && item.workerId === currentWorker.id);
             const contactUnlocked = application.status === "Aprovada" || application.status === "Trabalho concluído";
             const canCancel = cancelableStatuses.includes(application.status);
             if (!job) return null;
@@ -130,12 +129,12 @@ export function ApplicationsPage() {
                   </div>
                   <div className="worker-next-step">
                     <small>Próxima etapa</small>
-                    <strong>{getNextStep(application, shift)}</strong>
+                    <strong>{getNextStep(application)}</strong>
                     <span>{getStatusDescription(application.status, contactUnlocked)}</span>
                   </div>
                 </div>
 
-                <ApplicationFlow application={application} shift={shift} />
+                <ApplicationFlow application={application} />
 
                 <div className="worker-info-grid">
                   <Info icon={<CalendarDays size={16} />} label="Horário" value={`${job.startsAt} às ${job.endsAt}`} />
@@ -201,8 +200,8 @@ export function ApplicationsPage() {
   );
 }
 
-function ApplicationFlow({ application, shift }: { application: Application; shift?: WorkShift }) {
-  const steps = getApplicationSteps(application, shift);
+function ApplicationFlow({ application }: { application: Application }) {
+  const steps = getApplicationSteps(application);
 
   return (
     <div className="worker-flow">
@@ -221,12 +220,10 @@ function ApplicationFlow({ application, shift }: { application: Application; shi
 type StepState = "done" | "current" | "pending" | "blocked";
 type ApplicationStep = { kicker: string; label: string; state: StepState };
 
-function getApplicationSteps(application: Application, shift: WorkShift | undefined): ApplicationStep[] {
+function getApplicationSteps(application: Application): ApplicationStep[] {
   const approved = application.status === "Aprovada" || application.status === "Trabalho concluído";
   const completed = application.status === "Trabalho concluído";
   const rejected = application.status === "Recusada" || application.status === "Cancelada";
-  const absence = application.status === "Falta registrada";
-  const checkedIn = shift?.status === "Fez check-in" || shift?.status === "Finalizou o turno" || completed;
 
   return [
     { kicker: "1", label: "Candidatura enviada", state: "done" },
@@ -237,29 +234,21 @@ function getApplicationSteps(application: Application, shift: WorkShift | undefi
     },
     {
       kicker: "3",
-      label: checkedIn ? "Presença registrada" : absence ? "Falta registrada" : "Check-in no dia",
-      state: checkedIn ? "done" : absence ? "blocked" : approved ? "current" : "pending"
+      label: completed ? "Serviço concluído" : "Finalizar turno",
+      state: completed ? "done" : approved ? "current" : "pending"
     },
     {
       kicker: "4",
-      label: completed ? "Serviço concluído" : "Finalizar turno",
-      state: completed ? "done" : checkedIn ? "current" : "pending"
-    },
-    {
-      kicker: "5",
       label: completed ? "Aguardar avaliação" : "Histórico",
       state: completed ? "current" : "pending"
     }
   ];
 }
 
-function getNextStep(application: Application, shift: WorkShift | undefined) {
+function getNextStep(application: Application) {
   if (application.status === "Enviada") return "Aguardando análise da empresa";
   if (application.status === "Em análise") return "Empresa analisando seu perfil";
-  if (application.status === "Aprovada") {
-    if (shift?.status === "Fez check-in") return "Trabalhando: finalize no fim do turno";
-    return "Aprovado: combine detalhes com a empresa";
-  }
+  if (application.status === "Aprovada") return "Aprovado: combine detalhes com a empresa";
   if (application.status === "Trabalho concluído") return "Serviço concluído";
   if (application.status === "Falta registrada") return "Falta registrada pela empresa";
   if (application.status === "Cancelada") return "Candidatura cancelada";

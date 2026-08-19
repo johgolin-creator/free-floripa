@@ -31,7 +31,7 @@ import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
 import { calculateReliability, getOpenSlots } from "../lib/rules";
 import { getShiftVerificationCode } from "../lib/shiftVerification";
-import type { AppState, Application, Job, WorkShift, WorkerProfile } from "../lib/types";
+import type { AppState, Application, Job, WorkerProfile } from "../lib/types";
 
 const terminalStatuses = ["Recusada", "Cancelada", "Trabalho concluído", "Falta registrada"];
 const candidateStatusFilters = ["Todos", "Enviada", "Em análise", "Aprovada", "Trabalho concluído", "Recusada", "Falta registrada"] as const;
@@ -54,7 +54,6 @@ type ReceiptTarget = {
   application: Application;
   job: Job;
   worker: WorkerProfile;
-  shift?: WorkShift;
 };
 
 type EventCandidateOption = {
@@ -64,7 +63,7 @@ type EventCandidateOption = {
 };
 
 export function CandidatesPage() {
-  const { state, currentCompany, toggleFavorite, updateApplicationStatus, checkIn, checkOut, addReview } = useAppStore();
+  const { state, currentCompany, toggleFavorite, updateApplicationStatus, addReview } = useAppStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [message, setMessage] = useState("");
   const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null);
@@ -342,7 +341,6 @@ export function CandidatesPage() {
                 const worker = state.workers.find((item) => item.id === application.workerId);
                 const jobForApplication = companyJobs.find((job) => job.id === application.jobId);
                 if (!worker || !jobForApplication) return null;
-                const shift = state.shifts.find((item) => item.jobId === jobForApplication.id && item.workerId === worker.id);
                 const favorite = state.favoriteWorkerIds.includes(worker.id);
                 const approved = application.status === "Aprovada";
                 const completed = application.status === "Trabalho concluído";
@@ -375,7 +373,6 @@ export function CandidatesPage() {
                       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                         <div className="flex flex-wrap gap-2">
                           <StatusBadge type="application" status={application.status} />
-                          <span className="badge">{getShiftLabel(application, shift)}</span>
                           <span className="badge">Inscrito em {formatDate(application.createdAt.slice(0, 10))}</span>
                           <span className="badge bg-aqua-50 text-aqua-700"><TermHint term="codigoVerificacao">Código {verificationCode}</TermHint></span>
                         </div>
@@ -384,7 +381,7 @@ export function CandidatesPage() {
                         </button>
                       </div>
 
-                      <HiringFlow application={application} shift={shift} reviewed={reviewed} />
+                      <HiringFlow application={application} reviewed={reviewed} />
 
                       {blockedAction && (
                         <SafetyNotice title="Ações bloqueadas por segurança" tone="warning">
@@ -421,22 +418,8 @@ export function CandidatesPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            checkIn(jobForApplication.id, worker.id);
-                            setMessage(`Check-in registrado para ${worker.name}.`);
-                          }}
-                          disabled={blockedAction || !approved || shift?.status !== "Ainda não chegou"}
-                          className="secondary"
-                        >
-                          Check-in
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            checkOut(jobForApplication.id, worker.id);
-                            runStatus(application.id, "Trabalho concluído");
-                          }}
-                          disabled={blockedAction || !approved || shift?.status !== "Fez check-in"}
+                          onClick={() => runStatus(application.id, "Trabalho concluído")}
+                          disabled={blockedAction || !approved}
                           className="primary"
                         >
                           <CheckCircle2 size={17} /> Concluir
@@ -444,7 +427,7 @@ export function CandidatesPage() {
                         <button
                           type="button"
                           onClick={() => runStatus(application.id, "Falta registrada")}
-                          disabled={blockedAction || !approved || shift?.status !== "Ainda não chegou"}
+                          disabled={blockedAction || !approved}
                           className="danger"
                         >
                           Registrar falta
@@ -497,7 +480,7 @@ export function CandidatesPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setReceiptTarget({ application, job: jobForApplication, worker, shift })}
+                            onClick={() => setReceiptTarget({ application, job: jobForApplication, worker })}
                             className="secondary"
                           >
                             <ClipboardCheck size={17} /> Comprovante
@@ -555,7 +538,6 @@ export function CandidatesPage() {
             job={receiptTarget.job}
             worker={receiptTarget.worker}
             company={currentCompany}
-            shift={receiptTarget.shift}
             review={receiptTarget.worker.reviews.find(
               (review) =>
                 review.jobId === receiptTarget.job.id &&
@@ -651,35 +633,23 @@ function isTrustedCandidate(worker: WorkerProfile, state: AppState) {
   return calculateReliability(worker) >= 85 && worker.attendanceRate >= 90 && worker.cancellations <= 2 && !blocked && !hasOpenReport;
 }
 
-function getShiftLabel(application: Application, shift: WorkShift | undefined) {
-  if (application.status === "Trabalho concluído") return "Turno finalizado";
-  if (application.status === "Falta registrada") return "Falta registrada";
-  if (application.status === "Aprovada") return shift?.status ?? "Aguardando presença";
-  if (application.status === "Em análise") return "Em análise";
-  if (application.status === "Recusada") return "Recusado";
-  if (application.status === "Cancelada") return "Cancelado";
-  return "Novo candidato";
-}
-
 type StepState = "done" | "current" | "pending" | "blocked";
 type HiringStep = { kicker: string; label: string; state: StepState };
 
 function HiringFlow({
   application,
-  shift,
   reviewed
 }: {
   application: Application;
-  shift?: WorkShift;
   reviewed: boolean;
 }) {
-  const steps = getHiringSteps(application, shift, reviewed);
+  const steps = getHiringSteps(application, reviewed);
 
   return (
     <div className="hiring-flow">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <strong className="text-sm text-white">Fluxo da contratação</strong>
-        <span className="text-xs font-black uppercase text-slate-500">{getNextAction(application, shift, reviewed)}</span>
+        <span className="text-xs font-black uppercase text-slate-500">{getNextAction(application, reviewed)}</span>
       </div>
       <div className="hiring-step-grid">
         {steps.map((step) => (
@@ -693,12 +663,10 @@ function HiringFlow({
   );
 }
 
-function getHiringSteps(application: Application, shift: WorkShift | undefined, reviewed: boolean): HiringStep[] {
+function getHiringSteps(application: Application, reviewed: boolean): HiringStep[] {
   const approved = application.status === "Aprovada" || application.status === "Trabalho concluído";
   const completed = application.status === "Trabalho concluído";
-  const absence = application.status === "Falta registrada";
   const rejected = application.status === "Recusada" || application.status === "Cancelada";
-  const checkedIn = shift?.status === "Fez check-in" || shift?.status === "Finalizou o turno" || completed;
 
   return [
     { kicker: "1", label: "Candidatura", state: "done" },
@@ -709,16 +677,11 @@ function getHiringSteps(application: Application, shift: WorkShift | undefined, 
     },
     {
       kicker: "3",
-      label: checkedIn ? "Presença registrada" : absence ? "Falta" : "Check-in",
-      state: checkedIn ? "done" : absence ? "blocked" : approved ? "current" : "pending"
+      label: completed ? "Trabalho concluído" : "Concluir turno",
+      state: completed ? "done" : approved ? "current" : "pending"
     },
     {
       kicker: "4",
-      label: completed ? "Trabalho concluído" : "Concluir turno",
-      state: completed ? "done" : checkedIn ? "current" : "pending"
-    },
-    {
-      kicker: "5",
       label: reviewed ? "Avaliado" : "Avaliar",
       state: reviewed ? "done" : completed ? "current" : "pending"
     }
@@ -732,14 +695,11 @@ function getStepClass(state: StepState) {
   return "border-slate-200 bg-brand-charcoal text-slate-500";
 }
 
-function getNextAction(application: Application, shift: WorkShift | undefined, reviewed: boolean) {
+function getNextAction(application: Application, reviewed: boolean) {
   if (application.status === "Recusada" || application.status === "Cancelada") return "Ciclo encerrado";
   if (application.status === "Falta registrada") return "Falta registrada";
   if (application.status === "Trabalho concluído") return reviewed ? "Contratação concluída" : "Avaliar profissional";
-  if (application.status === "Aprovada") {
-    if (shift?.status === "Fez check-in") return "Concluir turno";
-    return "Aguardar presença";
-  }
+  if (application.status === "Aprovada") return "Concluir quando o turno terminar";
   if (application.status === "Em análise") return "Decidir aprovação";
   return "Novo candidato";
 }

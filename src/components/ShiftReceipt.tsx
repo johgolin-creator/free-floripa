@@ -1,21 +1,19 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { CalendarDays, ClipboardCheck, Copy, MapPin, Star, WalletCards } from "lucide-react";
-import { formatCurrency, formatDate, formatDateTime } from "../lib/format";
-import type { Application, CompanyProfile, Job, Review, WorkShift, WorkerProfile } from "../lib/types";
+import { formatCurrency, formatDate } from "../lib/format";
+import type { Application, CompanyProfile, Job, Review, WorkerProfile } from "../lib/types";
 
 export function ShiftReceipt({
   application,
   job,
   worker,
   company,
-  shift,
   review
 }: {
   application: Application;
   job: Job;
   worker: WorkerProfile;
   company: CompanyProfile;
-  shift?: WorkShift;
   review?: Review;
 }) {
   const [copied, setCopied] = useState(false);
@@ -32,13 +30,11 @@ export function ShiftReceipt({
         `Local: ${job.fullAddress || job.approximateAddress}`,
         `Valor da diária: ${formatCurrency(job.dailyValue)}`,
         `Status: ${application.status}`,
-        shift?.checkinAt ? `Check-in: ${formatDateTime(shift.checkinAt)}` : "",
-        shift?.checkoutAt ? `Check-out: ${formatDateTime(shift.checkoutAt)}` : "",
         review ? `Avaliação: ${review.rating} estrelas - ${review.comment}` : "Avaliação: pendente"
       ]
         .filter(Boolean)
         .join("\n"),
-    [application.status, company.establishmentName, job, review, shift?.checkinAt, shift?.checkoutAt, worker.name]
+    [application.status, company.establishmentName, job, review, worker.name]
   );
 
   async function copyReceipt() {
@@ -67,8 +63,6 @@ export function ShiftReceipt({
         <ReceiptItem icon={<WalletCards size={16} />} label="Valor" value={formatCurrency(job.dailyValue)} />
         <ReceiptItem icon={<MapPin size={16} />} label="Local" value={job.fullAddress || job.approximateAddress} />
         <ReceiptItem icon={<ClipboardCheck size={16} />} label="Status" value={application.status} />
-        {shift?.checkinAt && <ReceiptItem label="Check-in" value={formatDateTime(shift.checkinAt)} />}
-        {shift?.checkoutAt && <ReceiptItem label="Check-out" value={formatDateTime(shift.checkoutAt)} />}
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">

@@ -1,15 +1,9 @@
-export type StatusBadgeType = "application" | "shift" | "schedule" | "job";
+export type StatusBadgeType = "application" | "schedule" | "job";
 
 function toneClass(type: StatusBadgeType, status: string) {
   if (type === "application") {
     if (status === "Aprovada" || status === "Trabalho concluído") return "badge bg-aqua-100 text-aqua-700";
     if (status === "Recusada" || status === "Cancelada" || status === "Falta registrada") return "badge bg-red-50 text-alert";
-    return "badge";
-  }
-
-  if (type === "shift") {
-    if (status === "Fez check-in") return "badge bg-navy-950 text-white";
-    if (status === "Finalizou o turno") return "badge bg-aqua-100 text-aqua-700";
     return "badge";
   }
 
@@ -38,11 +32,6 @@ const legendCopy: Record<StatusBadgeType, { status: string; meaning: string }[]>
     { status: "Cancelada", meaning: "a candidatura foi encerrada" },
     { status: "Trabalho concluído", meaning: "o turno foi realizado" },
     { status: "Falta registrada", meaning: "houve ausência registrada nesse turno" }
-  ],
-  shift: [
-    { status: "Ainda não chegou", meaning: "o turno ainda não começou" },
-    { status: "Fez check-in", meaning: "o profissional confirmou presença no local" },
-    { status: "Finalizou o turno", meaning: "o turno foi encerrado" }
   ],
   schedule: [
     { status: "Planejada", meaning: "escala criada, ainda sem confirmação" },

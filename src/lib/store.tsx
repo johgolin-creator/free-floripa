@@ -46,7 +46,6 @@ const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1511795409834-ef
 const DEMO_WORKER_IDS = new Set(["worker-1", "worker-2", "worker-3", "worker-4"]);
 const DEMO_COMPANY_IDS = new Set(["company-1", "company-2", "company-3"]);
 const DEMO_APPLICATION_IDS = new Set(["application-1", "application-2", "application-3"]);
-const DEMO_SHIFT_IDS = new Set(["shift-1"]);
 
 export interface CreateJobInput {
   title: string;
@@ -111,8 +110,6 @@ interface AppContextValue {
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => { ok: boolean; message: string };
   toggleFavorite: (workerId: string) => void;
   inviteWorkerToJob: (workerId: string, jobId: string) => { ok: boolean; message: string };
-  checkIn: (jobId: string, workerId: string) => void;
-  checkOut: (jobId: string, workerId: string) => void;
   markNotificationRead: (notificationId: string) => void;
   markRoleNotificationsRead: (role: AppState["activeRole"]) => void;
   markChatConversationRead: (applicationId: string) => void;
@@ -153,10 +150,6 @@ function countApproved(applications: Application[], jobId: string) {
     (application) =>
       application.jobId === jobId && (application.status === "Aprovada" || application.status === "Trabalho concluído")
   ).length;
-}
-
-function hasShiftFor(shifts: AppState["shifts"], jobId: string, workerId: string) {
-  return shifts.some((shift) => shift.jobId === jobId && shift.workerId === workerId);
 }
 
 function coinLedgerEntry(input: Omit<AppState["coinLedger"][number], "id" | "createdAt">): AppState["coinLedger"][number] {
@@ -347,7 +340,6 @@ function createStateForUser(user: User | null, role: UserRole | null): AppState 
       jobs: [],
       companySchedules: [],
       applications: [],
-      shifts: [],
       favoriteWorkerIds: [],
       notifications: [],
       chatMessages: []
@@ -361,7 +353,6 @@ function createStateForUser(user: User | null, role: UserRole | null): AppState 
     selectedWorkerId: worker.id,
     workers: [worker],
     applications: [],
-    shifts: [],
     favoriteWorkerIds: [],
     notifications: [],
     chatMessages: []
@@ -376,9 +367,6 @@ function removeDemoWorkers(state: AppState) {
     ...state,
     workers: state.workers.filter((worker) => !DEMO_WORKER_IDS.has(worker.id)),
     applications,
-    shifts: state.shifts.filter(
-      (shift) => !DEMO_SHIFT_IDS.has(shift.id) && !DEMO_WORKER_IDS.has(shift.workerId)
-    ),
     favoriteWorkerIds: state.favoriteWorkerIds.filter((workerId) => !DEMO_WORKER_IDS.has(workerId)),
     notifications: state.notifications.filter((notification) => !notification.id.startsWith("notification-")),
     chatMessages: (state.chatMessages ?? []).filter(
@@ -419,7 +407,6 @@ function mergeCompanyMarketplaceState(state: AppState, companyId: string, payloa
     ...payload.jobs.map((job) => job.id)
   ]);
   const payloadApplicationIds = new Set(payload.applications.map((application) => application.id));
-  const payloadShiftIds = new Set(payload.shifts.map((shift) => shift.id));
   const applications = [
     ...payload.applications,
     ...state.applications.filter(
@@ -433,18 +420,13 @@ function mergeCompanyMarketplaceState(state: AppState, companyId: string, payloa
       [...payload.jobs, ...state.jobs.filter((job) => job.companyId !== companyId)],
       applications
     ),
-    applications,
-    shifts: [
-      ...payload.shifts,
-      ...state.shifts.filter((shift) => !companyJobIds.has(shift.jobId) && !payloadShiftIds.has(shift.id))
-    ]
+    applications
   };
 }
 
 function mergeWorkerMarketplaceState(state: AppState, workerId: string, payload: MarketplaceJobsPayload) {
   const payloadJobIds = new Set(payload.jobs.map((job) => job.id));
   const payloadApplicationIds = new Set(payload.applications.map((application) => application.id));
-  const payloadShiftIds = new Set(payload.shifts.map((shift) => shift.id));
   const applications = [
     ...payload.applications,
     ...state.applications.filter(
@@ -459,11 +441,7 @@ function mergeWorkerMarketplaceState(state: AppState, workerId: string, payload:
       [...payload.jobs, ...state.jobs.filter((job) => !payloadJobIds.has(job.id))],
       applications
     ),
-    applications,
-    shifts: [
-      ...payload.shifts,
-      ...state.shifts.filter((shift) => shift.workerId !== workerId && !payloadShiftIds.has(shift.id))
-    ]
+    applications
   };
 }
 
@@ -521,7 +499,6 @@ function sanitizeAccountState(state: AppState, user: User, role: UserRole): AppS
       companies: [company, ...withoutDemoWorkers.companies.filter((item) => item.id !== company.id && !DEMO_COMPANY_IDS.has(item.id))],
       jobs: companyJobs,
       applications: withoutDemoWorkers.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId)),
-      shifts: withoutDemoWorkers.shifts.filter((shift) => companyJobs.some((job) => job.id === shift.jobId)),
       chatMessages: (withoutDemoWorkers.chatMessages ?? []).filter((message) => companyJobs.some((job) => job.id === message.jobId))
     };
   }
@@ -533,7 +510,6 @@ function sanitizeAccountState(state: AppState, user: User, role: UserRole): AppS
     selectedWorkerId: worker.id,
     workers: [worker, ...withoutDemoWorkers.workers.filter((item) => item.id !== worker.id)],
     applications: withoutDemoWorkers.applications.filter((application) => application.workerId === worker.id),
-    shifts: withoutDemoWorkers.shifts.filter((shift) => shift.workerId === worker.id),
     favoriteWorkerIds: [],
     chatMessages: (withoutDemoWorkers.chatMessages ?? []).filter((message) => message.workerId === worker.id)
   };
@@ -1009,21 +985,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
             return application;
           });
-          const nextShifts =
-            status === "Concluída"
-              ? current.shifts.map((shift) =>
-                  shift.jobId === jobId
-                    ? { ...shift, status: "Finalizou o turno" as const, checkoutAt: shift.checkoutAt ?? new Date().toISOString() }
-                    : shift
-                )
-              : status === "Cancelada"
-                ? current.shifts.filter((shift) => shift.jobId !== jobId)
-                : current.shifts;
 
           return {
             ...current,
             applications: nextApplications,
-            shifts: nextShifts,
             subscription:
               filledCancellationFee > 0
                 ? {
@@ -1297,47 +1262,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         commit((current) => {
           const nextApplications = current.applications.map((item) => (item.id === applicationId ? { ...item, status } : item));
-          const nextShifts =
-            status === "Aprovada"
-              ? hasShiftFor(current.shifts, job.id, application.workerId)
-                ? current.shifts
-                : [
-                    ...current.shifts,
-                    {
-                      id: crypto.randomUUID(),
-                      jobId: job.id,
-                      workerId: application.workerId,
-                      status: "Ainda não chegou" as const
-                    }
-                  ]
-              : status === "Trabalho concluído"
-                ? hasShiftFor(current.shifts, job.id, application.workerId)
-                  ? current.shifts.map((shift) =>
-                      shift.jobId === job.id && shift.workerId === application.workerId
-                        ? {
-                            ...shift,
-                            status: "Finalizou o turno" as const,
-                            checkoutAt: shift.checkoutAt ?? new Date().toISOString()
-                          }
-                        : shift
-                    )
-                  : [
-                      ...current.shifts,
-                      {
-                        id: crypto.randomUUID(),
-                        jobId: job.id,
-                        workerId: application.workerId,
-                        status: "Finalizou o turno" as const,
-                        checkoutAt: new Date().toISOString()
-                      }
-                    ]
-                : status === "Falta registrada"
-                  ? current.shifts.map((shift) =>
-                      shift.jobId === job.id && shift.workerId === application.workerId
-                        ? { ...shift, status: "Ainda não chegou" as const }
-                        : shift
-                    )
-                  : current.shifts.filter((shift) => !(shift.jobId === job.id && shift.workerId === application.workerId));
 
           return {
             ...current,
@@ -1345,7 +1269,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             jobs: current.jobs.map((item) =>
               item.id === job.id ? { ...item, filled: Math.min(item.quantity, countApproved(nextApplications, item.id)) } : item
             ),
-            shifts: nextShifts,
             notifications: [
               {
                 id: crypto.randomUUID(),
@@ -1445,17 +1368,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const nextApplications = existing
             ? current.applications.map((item) => (item.id === existing.id ? invitedApplication : item))
             : [invitedApplication, ...current.applications];
-          const nextShifts = hasShiftFor(current.shifts, jobId, workerId)
-            ? current.shifts
-            : [
-                ...current.shifts,
-                {
-                  id: crypto.randomUUID(),
-                  jobId,
-                  workerId,
-                  status: "Ainda não chegou" as const
-                }
-              ];
 
           return {
             ...current,
@@ -1469,7 +1381,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   }
                 : item
             ),
-            shifts: nextShifts,
             notifications: [
               {
                 id: crypto.randomUUID(),
@@ -1504,60 +1415,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         return { ok: true, message: `${worker.name} foi confirmado em ${job.title}.` };
-      },
-      checkIn(jobId, workerId) {
-        const job = state.jobs.find((item) => item.id === jobId);
-        if (
-          state.adminModeration.blockedWorkerIds.includes(workerId) ||
-          (job && state.adminModeration.blockedCompanyIds.includes(job.companyId))
-        ) {
-          return;
-        }
-        const remoteCheckinNotification: AppState["notifications"][number] = {
-          id: crypto.randomUUID(),
-          title: "O profissional realizou check-in",
-          body: "O inicio do turno foi registrado.",
-          role: "empresa",
-          createdAt: new Date().toISOString(),
-          read: false
-        };
-        commit((current) => ({
-          ...current,
-          shifts: current.shifts.map((shift) =>
-            shift.jobId === jobId && shift.workerId === workerId
-              ? { ...shift, status: "Fez check-in", checkinAt: new Date().toISOString() }
-              : shift
-          ),
-          notifications: [
-            {
-              id: crypto.randomUUID(),
-              title: "O profissional realizou check-in",
-              body: "O início do turno foi registrado.",
-              role: "empresa",
-              createdAt: new Date().toISOString(),
-              read: false
-            },
-            ...current.notifications
-          ]
-        }));
-        publishRemoteNotification(currentCompany.id, remoteCheckinNotification);
-      },
-      checkOut(jobId, workerId) {
-        const job = state.jobs.find((item) => item.id === jobId);
-        if (
-          state.adminModeration.blockedWorkerIds.includes(workerId) ||
-          (job && state.adminModeration.blockedCompanyIds.includes(job.companyId))
-        ) {
-          return;
-        }
-        commit((current) => ({
-          ...current,
-          shifts: current.shifts.map((shift) =>
-            shift.jobId === jobId && shift.workerId === workerId
-              ? { ...shift, status: "Finalizou o turno", checkoutAt: new Date().toISOString() }
-              : shift
-          )
-        }));
       },
       markNotificationRead(notificationId) {
         commit((current) => ({

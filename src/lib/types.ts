@@ -43,8 +43,6 @@ export type ApplicationStatus =
   | "Trabalho concluído"
   | "Falta registrada";
 
-export type ShiftStatus = "Ainda não chegou" | "Fez check-in" | "Finalizou o turno";
-
 export interface WorkerProfile {
   id: string;
   name: string;
@@ -117,15 +115,6 @@ export interface Application {
   workerId: string;
   status: ApplicationStatus;
   createdAt: string;
-}
-
-export interface WorkShift {
-  id: string;
-  jobId: string;
-  workerId: string;
-  status: ShiftStatus;
-  checkinAt?: string;
-  checkoutAt?: string;
 }
 
 export interface CompanySchedule {
@@ -257,7 +246,6 @@ export interface AppState {
   jobs: Job[];
   companySchedules: CompanySchedule[];
   applications: Application[];
-  shifts: WorkShift[];
   favoriteWorkerIds: string[];
   notifications: NotificationItem[];
   chatMessages: ChatMessage[];

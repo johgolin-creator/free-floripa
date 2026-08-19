@@ -14,8 +14,7 @@ import type {
   PaymentMethod,
   Review,
   UserRole,
-  WorkerProfile,
-  WorkShift
+  WorkerProfile
 } from "./types";
 
 const DEFAULT_PUBLIC_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
@@ -152,15 +151,6 @@ export interface ApplicationRow {
   created_at: string;
 }
 
-interface WorkShiftRow {
-  id: string;
-  job_id: string;
-  worker_id: string;
-  status: WorkShift["status"];
-  checkin_at?: string | null;
-  checkout_at?: string | null;
-}
-
 interface NotificationRow {
   id: string;
   role: UserRole;
@@ -174,7 +164,6 @@ export interface MarketplaceJobsPayload {
   jobs: Job[];
   companies: CompanyProfile[];
   applications: Application[];
-  shifts: WorkShift[];
 }
 
 export const supabaseMarketplaceEnabled = Boolean(supabase);
@@ -324,17 +313,6 @@ export function mapApplication(row: ApplicationRow): Application {
   };
 }
 
-function mapShift(row: WorkShiftRow): WorkShift {
-  return {
-    id: row.id,
-    jobId: row.job_id,
-    workerId: row.worker_id,
-    status: row.status,
-    checkinAt: row.checkin_at ?? undefined,
-    checkoutAt: row.checkout_at ?? undefined
-  };
-}
-
 function mapNotification(row: NotificationRow): NotificationItem {
   return {
     id: row.id,
@@ -366,18 +344,6 @@ async function loadApplicationsForJobs(jobIds: string[]) {
 
   if (error) throw new Error(error.message);
   return ((data ?? []) as ApplicationRow[]).map(mapApplication);
-}
-
-async function loadShiftsForJobs(jobIds: string[]) {
-  if (!supabase || jobIds.length === 0) return [] as WorkShift[];
-
-  const { data, error } = await supabase
-    .from("work_shifts")
-    .select("id,job_id,worker_id,status,checkin_at,checkout_at")
-    .in("job_id", jobIds);
-
-  if (error) throw new Error(error.message);
-  return ((data ?? []) as WorkShiftRow[]).map(mapShift);
 }
 
 export async function loadPublicWorkerProfiles(excludeUserId?: string | null) {
@@ -567,7 +533,7 @@ export async function publishJob(user: User | null, company: CompanyProfile, job
 }
 
 export async function loadPublicJobs(): Promise<MarketplaceJobsPayload> {
-  if (!supabase) return { jobs: [], companies: [], applications: [], shifts: [] };
+  if (!supabase) return { jobs: [], companies: [], applications: [] };
 
   const { data, error } = await supabase
     .from("jobs")
@@ -584,13 +550,13 @@ export async function loadPublicJobs(): Promise<MarketplaceJobsPayload> {
   const jobs = rows.map(mapJob);
   const companies = rows.map(getNestedCompany).filter((item): item is CompanyProfile => Boolean(item));
   const jobIds = jobs.map((job) => job.id);
-  const [applications, shifts] = await Promise.all([loadApplicationsForJobs(jobIds), loadShiftsForJobs(jobIds)]);
+  const applications = await loadApplicationsForJobs(jobIds);
 
-  return { jobs, companies, applications, shifts };
+  return { jobs, companies, applications };
 }
 
 export async function loadCompanyMarketplace(companyId: string): Promise<MarketplaceJobsPayload> {
-  if (!supabase) return { jobs: [], companies: [], applications: [], shifts: [] };
+  if (!supabase) return { jobs: [], companies: [], applications: [] };
 
   const { data, error } = await supabase
     .from("jobs")
@@ -605,13 +571,13 @@ export async function loadCompanyMarketplace(companyId: string): Promise<Marketp
 
   const jobs = ((data ?? []) as JobRow[]).map(mapJob);
   const jobIds = jobs.map((job) => job.id);
-  const [applications, shifts] = await Promise.all([loadApplicationsForJobs(jobIds), loadShiftsForJobs(jobIds)]);
+  const applications = await loadApplicationsForJobs(jobIds);
 
-  return { jobs, companies: [], applications, shifts };
+  return { jobs, companies: [], applications };
 }
 
 export async function loadWorkerMarketplace(workerId: string): Promise<MarketplaceJobsPayload> {
-  if (!supabase) return { jobs: [], companies: [], applications: [], shifts: [] };
+  if (!supabase) return { jobs: [], companies: [], applications: [] };
 
   const [{ data: appRows, error: appError }, jobsPayload] = await Promise.all([
     supabase
@@ -626,17 +592,10 @@ export async function loadWorkerMarketplace(workerId: string): Promise<Marketpla
   if (appError) throw new Error(appError.message);
 
   const applications = ((appRows ?? []) as ApplicationRow[]).map(mapApplication);
-  const { data: shiftRows, error: shiftError } = await supabase
-    .from("work_shifts")
-    .select("id,job_id,worker_id,status,checkin_at,checkout_at")
-    .eq("worker_id", workerId);
-
-  if (shiftError) throw new Error(shiftError.message);
 
   return {
     ...jobsPayload,
-    applications,
-    shifts: ((shiftRows ?? []) as WorkShiftRow[]).map(mapShift)
+    applications
   };
 }
 
@@ -667,20 +626,6 @@ export async function updateRemoteApplicationStatus(application: Application, st
     .eq("id", application.id);
 
   if (error) throw new Error(error.message);
-
-  if (status === "Aprovada" || status === "Trabalho concluído") {
-    const { error: shiftError } = await supabase.from("work_shifts").upsert(
-      {
-        job_id: application.jobId,
-        worker_id: application.workerId,
-        status: status === "Trabalho concluído" ? "Finalizou o turno" : "Ainda não chegou",
-        checkout_at: status === "Trabalho concluído" ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: "job_id,worker_id" }
-    );
-    if (shiftError) throw new Error(shiftError.message);
-  }
 }
 
 export async function publishInvitedApplication(jobId: string, workerId: string, applicationId: string) {
@@ -698,17 +643,6 @@ export async function publishInvitedApplication(jobId: string, workerId: string,
     { onConflict: "job_id,worker_id" }
   );
   if (error) throw new Error(error.message);
-
-  const { error: shiftError } = await supabase.from("work_shifts").upsert(
-    {
-      job_id: jobId,
-      worker_id: workerId,
-      status: "Ainda não chegou",
-      updated_at: new Date().toISOString()
-    },
-    { onConflict: "job_id,worker_id" }
-  );
-  if (shiftError) throw new Error(shiftError.message);
 }
 
 export async function loadRemoteNotifications(userId: string) {

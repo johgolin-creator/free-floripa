@@ -50,7 +50,7 @@ function getMeta(notification: NotificationItem, role: UserRole): NotificationMe
   const text = normalizeText(`${notification.title} ${notification.body}`);
   const workerProfilePath = role === "empresa" ? "/app/perfil-empresa" : "/app/perfil-trabalhador";
 
-  if (includesAny(text, ["escala", "turno", "check-in", "checkin", "inicio do turno", "finalizou"])) {
+  if (includesAny(text, ["escala", "turno", "finalizou"])) {
     return {
       kind: "Escala",
       label: "Escala",

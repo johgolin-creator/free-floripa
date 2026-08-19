@@ -377,8 +377,8 @@ export const notifications: NotificationItem[] = [
   },
   {
     id: "notification-3",
-    title: "O profissional realizou check-in",
-    body: "Rafael Pires iniciou o turno confirmado.",
+    title: "Um turno foi confirmado",
+    body: "Rafael Pires está confirmado no turno combinado.",
     role: "empresa",
     createdAt: "2026-01-02T17:05:00.000Z",
     read: true
@@ -397,9 +397,6 @@ export const initialState: AppState = {
     { id: "application-1", jobId: "job-1", workerId: "worker-1", status: "Em análise", createdAt: "2026-01-01T14:00:00.000Z" },
     { id: "application-2", jobId: "job-2", workerId: "worker-2", status: "Aprovada", createdAt: "2026-01-01T16:30:00.000Z" },
     { id: "application-3", jobId: "job-4", workerId: "worker-3", status: "Enviada", createdAt: "2026-01-02T09:20:00.000Z" }
-  ],
-  shifts: [
-    { id: "shift-1", jobId: "job-2", workerId: "worker-2", status: "Ainda não chegou" }
   ],
   favoriteWorkerIds: ["worker-1", "worker-2"],
   notifications,
