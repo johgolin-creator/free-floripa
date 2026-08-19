@@ -1217,12 +1217,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         pendingApplicationKeys.current.add(pendingKey);
 
+        const existingApplication = state.applications.find(
+          (item) => item.jobId === jobId && item.workerId === currentWorker.id
+        );
         const application: Application = {
-          id: crypto.randomUUID(),
+          id: existingApplication?.id ?? crypto.randomUUID(),
           jobId,
           workerId: currentWorker.id,
           status: "Enviada",
-          createdAt: new Date().toISOString()
+          createdAt: existingApplication?.createdAt ?? new Date().toISOString()
         };
         const companyNotification: AppState["notifications"][number] = {
           id: crypto.randomUUID(),
@@ -1235,7 +1238,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         commit((current) => ({
           ...current,
-          applications: [application, ...current.applications],
+          applications: [application, ...current.applications.filter((item) => item.id !== application.id)],
           jobs: current.jobs.map((item) => (item.id === jobId ? { ...item, candidates: item.candidates + 1 } : item)),
           notifications: [
             companyNotification,
