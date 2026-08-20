@@ -29,6 +29,7 @@ interface AuthContextValue {
   isAdmin: boolean;
   isModerator: boolean;
   email: string;
+  sessionError: string | null;
   signIn: (input: SignInInput) => Promise<{ role: UserRole }>;
   signUp: (input: SignUpInput) => Promise<{ role: UserRole; needsEmailConfirmation: boolean }>;
   resetPassword: (input: ResetPasswordInput) => Promise<void>;
@@ -88,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(Boolean(supabase));
   const [dbRole, setDbRole] = useState<string | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -135,10 +137,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return data.session;
     }
 
+    setSessionError(null);
     loadSession()
       .then((nextSession) => {
         if (!active) return;
         setSession(nextSession);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error("Falha ao validar sessão/link de acesso:", error);
+        setSessionError("O link é inválido ou expirou. Solicite um novo.");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -169,6 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: getIsAdmin(user) || dbRole === "admin",
       isModerator: !supabase || dbRole === "moderador",
       email: user?.email ?? "",
+      sessionError,
       async signIn({ email, password, fallbackRole }) {
         if (!supabase) return { role: fallbackRole };
 
@@ -224,7 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw new Error(getAuthErrorMessage(error.message));
       }
     };
-  }, [loading, session, dbRole]);
+  }, [loading, session, dbRole, sessionError]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

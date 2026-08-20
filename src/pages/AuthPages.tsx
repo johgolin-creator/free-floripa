@@ -78,13 +78,15 @@ export function LoginPage() {
 }
 
 export function ResetPasswordPage() {
-  const { authEnabled, loading, user, role, resetPassword, updatePassword } = useAuth();
+  const { authEnabled, loading, user, role, resetPassword, updatePassword, sessionError } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const canSetNewPassword = authEnabled && Boolean(user);
-  const isOpeningRecoveryLink = authEnabled && loading && (window.location.search.includes("code=") || window.location.hash.includes("access_token"));
+  const wasOpeningRecoveryLink = window.location.search.includes("code=") || window.location.hash.includes("access_token");
+  const isOpeningRecoveryLink = authEnabled && loading && wasOpeningRecoveryLink;
+  const recoveryLinkFailed = authEnabled && !loading && !canSetNewPassword && wasOpeningRecoveryLink && Boolean(sessionError);
 
   return (
     <AuthShell
@@ -132,6 +134,11 @@ export function ResetPasswordPage() {
       >
         {error && <div className="auth-alert auth-alert-error">{error}</div>}
         {message && <div className="auth-alert auth-alert-info">{message}</div>}
+        {recoveryLinkFailed && (
+          <div className="auth-alert auth-alert-error">
+            {sessionError} Preencha o e-mail abaixo para receber um novo link de recuperação.
+          </div>
+        )}
         {isOpeningRecoveryLink && (
           <div className="auth-alert auth-alert-info">
             Validando o link de recuperação. Aguarde um instante.
