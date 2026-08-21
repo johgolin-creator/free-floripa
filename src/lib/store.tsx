@@ -574,7 +574,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   const [syncError, setSyncError] = useState("");
   const pendingApplicationKeys = useRef(new Set<string>());
-  const lastPublishedWorkerProfileRef = useRef<string | null>(null);
 
   function commit(updater: (current: AppState) => AppState) {
     setState((current) => {
@@ -768,25 +767,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading || role !== "trabalhador" || !user || !currentWorker || !supabaseMarketplaceEnabled) return;
 
-    // currentWorker/user can get a new object reference for the exact same
-    // account (a redundant Supabase auth event, a state reload that
-    // re-hydrates an identical worker from JSON) without any real change to
-    // publish. Comparing the object reference alone re-fires this effect on
-    // every such churn, racing two concurrent writes against
+    // currentWorker/user can get a new object reference - sometimes with
+    // subtly different content (different key order or defaults from
+    // whichever code path reconstructed it) - for the exact same account
+    // during the burst of renders right after signup (redundant Supabase
+    // auth events, a state reload re-hydrating the same worker from JSON).
+    // Re-firing on every such churn raced two concurrent writes against
     // worker_profiles/worker_function_experience's unique constraints
-    // (reproduced live as a 409 on a fresh signup). Comparing the actual
-    // content instead only republishes when the worker's profile really
-    // changed, which is what a genuine edit through updateWorkerProfile
-    // still needs to keep working.
-    const snapshot = JSON.stringify(currentWorker);
-    if (lastPublishedWorkerProfileRef.current === snapshot) return;
-    lastPublishedWorkerProfileRef.current = snapshot;
+    // (reproduced live as a 400/409 on a fresh signup, even after
+    // deduping by an exact content snapshot - the two objects in that burst
+    // weren't always byte-identical). Debouncing collapses any such burst
+    // into a single publish of whatever currentWorker settles on, the same
+    // way a real edit through updateWorkerProfile should only sync once
+    // typing/selecting settles rather than on every keystroke.
+    const timeoutId = window.setTimeout(() => {
+      publishWorkerProfile(user, currentWorker).catch(() => {
+        setSyncError("Falha ao publicar o perfil no banco de profissionais.");
+        setSyncStatus("erro");
+      });
+    }, 600);
 
-    publishWorkerProfile(user, currentWorker).catch(() => {
-      lastPublishedWorkerProfileRef.current = null;
-      setSyncError("Falha ao publicar o perfil no banco de profissionais.");
-      setSyncStatus("erro");
-    });
+    return () => window.clearTimeout(timeoutId);
   }, [authLoading, currentWorker, role, user]);
 
   useEffect(() => {
