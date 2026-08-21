@@ -100,8 +100,19 @@ function PageLoading() {
 function RoleRoute({ role, children }: { role: UserRole; children: ReactNode }) {
   const { state } = useAppStore();
   const { authEnabled, role: authRole } = useAuth();
-  if (authEnabled && authRole && authRole !== role) {
-    return <Navigate to={authRole === "empresa" ? "/app/empresa" : "/app/trabalhador"} replace />;
+
+  if (authEnabled) {
+    // authRole (from the Supabase session) is the only source of truth once
+    // real accounts are involved. state.activeRole starts from a generic
+    // default and only catches up to authRole a moment later (see the
+    // "Deliberately NOT reading localStorage here" comment in store.tsx), so
+    // checking it here bounced people straight back to their dashboard on
+    // every hard refresh/direct link to a role-gated page other than the
+    // landing one - it just hadn't caught up yet.
+    if (authRole && authRole !== role) {
+      return <Navigate to={authRole === "empresa" ? "/app/empresa" : "/app/trabalhador"} replace />;
+    }
+    return children;
   }
 
   if (state.activeRole !== role) {

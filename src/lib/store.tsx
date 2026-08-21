@@ -543,7 +543,18 @@ function ensureAccountProfile(state: AppState, user: User | null, role: UserRole
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const { loading: authLoading, role, user, isAdmin, isModerator } = useAuth();
-  const accountState = useMemo(() => createStateForUser(user, role), [role, user]);
+  // Keyed on user?.id, not the user object: Supabase fires onAuthStateChange
+  // more than once for the same session (e.g. right after signUp), each time
+  // with a new User object reference for the same account. Depending on the
+  // object itself recomputed this memo on every such event, handing the
+  // hydration effect below a brand-new worker/company object each time and
+  // replacing state.workers/state.companies with it - which changed
+  // currentWorker/currentCompany's identity and re-fired the
+  // publishWorkerProfile/publishCompanyProfile effects concurrently with
+  // themselves, racing on the same row and surfacing as "Falha ao salvar"
+  // right after every signup.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const accountState = useMemo(() => createStateForUser(user, role), [role, user?.id]);
   const localStorageKey = getLocalStorageKey(user?.id);
   const remoteStateKey = getSupabaseStateKey(user?.id);
   // Deliberately NOT reading localStorage here: at mount time we don't yet

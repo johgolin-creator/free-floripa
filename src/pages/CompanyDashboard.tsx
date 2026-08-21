@@ -392,7 +392,10 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => Subm
     parsed.dailyValue > 0,
     draft.approximateAddress.trim(),
     draft.fullAddress.trim(),
-    draft.description.trim()
+    draft.uniform.trim(),
+    draft.requiredExperience.trim(),
+    draft.description.trim(),
+    benefits.length > 0
   ];
   const completedFields = requiredFields.filter(Boolean).length;
 
