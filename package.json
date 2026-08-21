@@ -12,7 +12,13 @@
     "cap:ios": "tsc -b && vite build && node scripts/prepare-sites-build.mjs && cap add ios",
     "cap:sync": "tsc -b && vite build && node scripts/prepare-sites-build.mjs && cap sync",
     "cap:open:android": "cap open android",
-    "cap:open:ios": "cap open ios"
+    "cap:open:ios": "cap open ios",
+    "supabase:login": "supabase login",
+    "supabase:link": "supabase link --project-ref vhicxnrjgirtevtamlzt",
+    "supabase:pull": "supabase db pull",
+    "supabase:new": "supabase migration new",
+    "supabase:diff": "supabase db diff",
+    "supabase:push": "supabase db push"
   },
   "dependencies": {
     "@capacitor/android": "8.4.0",
@@ -35,6 +41,7 @@
     "eslint-plugin-react-refresh": "^0.5.4",
     "globals": "^17.10.0",
     "postcss": "8.5.20",
+    "supabase": "^2.115.0",
     "tailwindcss": "3.4.19",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.67.0",
