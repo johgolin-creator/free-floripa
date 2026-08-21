@@ -574,6 +574,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   const [syncError, setSyncError] = useState("");
   const pendingApplicationKeys = useRef(new Set<string>());
+  const lastPublishedWorkerProfileRef = useRef<string | null>(null);
 
   function commit(updater: (current: AppState) => AppState) {
     setState((current) => {
@@ -767,7 +768,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading || role !== "trabalhador" || !user || !currentWorker || !supabaseMarketplaceEnabled) return;
 
+    // currentWorker/user can get a new object reference for the exact same
+    // account (a redundant Supabase auth event, a state reload that
+    // re-hydrates an identical worker from JSON) without any real change to
+    // publish. Comparing the object reference alone re-fires this effect on
+    // every such churn, racing two concurrent writes against
+    // worker_profiles/worker_function_experience's unique constraints
+    // (reproduced live as a 409 on a fresh signup). Comparing the actual
+    // content instead only republishes when the worker's profile really
+    // changed, which is what a genuine edit through updateWorkerProfile
+    // still needs to keep working.
+    const snapshot = JSON.stringify(currentWorker);
+    if (lastPublishedWorkerProfileRef.current === snapshot) return;
+    lastPublishedWorkerProfileRef.current = snapshot;
+
     publishWorkerProfile(user, currentWorker).catch(() => {
+      lastPublishedWorkerProfileRef.current = null;
       setSyncError("Falha ao publicar o perfil no banco de profissionais.");
       setSyncStatus("erro");
     });
