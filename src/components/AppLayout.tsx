@@ -39,7 +39,6 @@ const workerPrimaryLinks = [
 
 const workerSecondaryLinks = [
   MENSAGENS_LINK,
-  { to: "/app/financeiro", label: "Financeiro", mobileLabel: "R$", icon: WalletCards },
   { to: "/app/planos", label: "Planos", mobileLabel: "Planos", icon: CreditCard },
   { to: "/app/perfil-trabalhador", label: "Perfil", mobileLabel: "Perfil", icon: UserRound }
 ];
@@ -55,7 +54,6 @@ const companySecondaryLinks = [
   { to: "/app/profissionais", label: "Banco", mobileLabel: "Banco", icon: Search },
   { to: "/app/escala", label: "Escala", mobileLabel: "Escala", icon: CalendarDays },
   MENSAGENS_LINK,
-  { to: "/app/financeiro", label: "Financeiro", mobileLabel: "R$", icon: WalletCards },
   { to: "/app/planos", label: "Moedas", mobileLabel: "Moedas", icon: CreditCard },
   { to: "/app/equipe", label: "Minha equipe", mobileLabel: "Equipe", icon: Star },
   { to: "/app/perfil-empresa", label: "Perfil", mobileLabel: "Perfil", icon: Building2 }

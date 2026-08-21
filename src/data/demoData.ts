@@ -10,7 +10,8 @@ export const functions = [
   "Operador de caixa",
   "Limpeza",
   "Montador de eventos",
-  "Promotor"
+  "Promotor",
+  "Repositor"
 ] as const;
 
 export const experienceLevels = [

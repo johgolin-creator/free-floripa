@@ -28,7 +28,6 @@ const TeamPage = lazy(() => import("./pages/TeamPage").then(({ TeamPage }) => ({
 const CompanyProfilePage = lazy(() => import("./pages/CompanyProfilePage").then(({ CompanyProfilePage }) => ({ default: CompanyProfilePage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage").then(({ NotificationsPage }) => ({ default: NotificationsPage })));
 const MessagesPage = lazy(() => import("./pages/MessagesPage").then(({ MessagesPage }) => ({ default: MessagesPage })));
-const FinancialPage = lazy(() => import("./pages/FinancialPage").then(({ FinancialPage }) => ({ default: FinancialPage })));
 const AdminPage = lazy(() => import("./pages/AdminPage").then(({ AdminPage }) => ({ default: AdminPage })));
 const LegalPage = lazy(() => import("./pages/LegalPage").then(({ LegalPage }) => ({ default: LegalPage })));
 
@@ -76,7 +75,6 @@ export default function App() {
           <Route path="equipe" element={<RoleRoute role="empresa"><TeamPage /></RoleRoute>} />
           <Route path="perfil-empresa" element={<RoleRoute role="empresa"><CompanyProfilePage /></RoleRoute>} />
           <Route path="mensagens" element={<MessagesPage />} />
-          <Route path="financeiro" element={<FinancialPage />} />
           <Route path="notificacoes" element={<NotificationsPage />} />
           <Route path="admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
         </Route>

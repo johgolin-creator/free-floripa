@@ -10,7 +10,8 @@ export type JobFunction =
   | "Operador de caixa"
   | "Limpeza"
   | "Montador de eventos"
-  | "Promotor";
+  | "Promotor"
+  | "Repositor";
 
 export type ExperienceLevel = "Iniciante" | "Poucas diárias" | "Experiente" | "Profissional experiente";
 
