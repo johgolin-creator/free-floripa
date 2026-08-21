@@ -41,6 +41,7 @@ import { emailNotificationsEnabled, enqueueEmailNotification, type EmailNotifica
 import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyProfile, CompanyReview, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, TrustReportTargetType, UserRole, WorkerProfile } from "./types";
 
 const STORAGE_KEY = "free-floripa:state";
+const REMOTE_SYNC_POLL_MS = 5000;
 const DEFAULT_WORKER_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
 const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=500&q=80";
 const DEMO_WORKER_IDS = new Set(["worker-1", "worker-2", "worker-3", "worker-4"]);
@@ -711,20 +712,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (authLoading || role !== "empresa" || !currentCompany || !supabaseMarketplaceEnabled) return;
 
     let active = true;
-    Promise.all([loadPublicWorkerProfiles(user?.id), loadCompanyMarketplace(currentCompany.id)])
-      .then(([publicWorkers, companyPayload]) => {
-        if (!active) return;
-        setState((current) => mergeCompanyMarketplaceState(mergePublicWorkers(current, publicWorkers), currentCompany.id, companyPayload));
-        setSyncError("");
-      })
-      .catch(() => {
-        if (!active) return;
-        setSyncError("Falha ao carregar o banco de profissionais.");
-        setSyncStatus("erro");
-      });
+    function refresh() {
+      if (document.visibilityState === "hidden") return;
+      Promise.all([loadPublicWorkerProfiles(user?.id), loadCompanyMarketplace(currentCompany.id)])
+        .then(([publicWorkers, companyPayload]) => {
+          if (!active) return;
+          setState((current) => mergeCompanyMarketplaceState(mergePublicWorkers(current, publicWorkers), currentCompany.id, companyPayload));
+          setSyncError("");
+        })
+        .catch(() => {
+          if (!active) return;
+          setSyncError("Falha ao carregar o banco de profissionais.");
+          setSyncStatus("erro");
+        });
+    }
+
+    refresh();
+    const intervalId = window.setInterval(refresh, REMOTE_SYNC_POLL_MS);
 
     return () => {
       active = false;
+      window.clearInterval(intervalId);
     };
   }, [authLoading, currentCompany?.id, role, user?.id]);
 
@@ -732,20 +740,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (authLoading || !(isAdmin || isModerator) || !supabaseModerationEnabled) return;
 
     let active = true;
-    loadModerationOverview()
-      .then((overview) => {
-        if (!active) return;
-        setState((current) => mergeModerationState(current, overview));
-        setSyncError("");
-      })
-      .catch(() => {
-        if (!active) return;
-        setSyncError("Falha ao carregar o painel de moderação.");
-        setSyncStatus("erro");
-      });
+    function refresh() {
+      if (document.visibilityState === "hidden") return;
+      loadModerationOverview()
+        .then((overview) => {
+          if (!active) return;
+          setState((current) => mergeModerationState(current, overview));
+          setSyncError("");
+        })
+        .catch(() => {
+          if (!active) return;
+          setSyncError("Falha ao carregar o painel de moderação.");
+          setSyncStatus("erro");
+        });
+    }
+
+    refresh();
+    const intervalId = window.setInterval(refresh, REMOTE_SYNC_POLL_MS);
 
     return () => {
       active = false;
+      window.clearInterval(intervalId);
     };
   }, [authLoading, isAdmin, isModerator]);
 
@@ -762,62 +777,85 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (authLoading || role !== "trabalhador" || !currentWorker || !supabaseMarketplaceEnabled) return;
 
     let active = true;
-    loadWorkerMarketplace(currentWorker.id)
-      .then((payload) => {
-        if (!active) return;
-        setState((current) => mergeWorkerMarketplaceState(current, currentWorker.id, payload));
-        setSyncError("");
-      })
-      .catch(() => {
-        if (!active) return;
-        setSyncError("Falha ao carregar vagas e candidaturas.");
-        setSyncStatus("erro");
-      });
+    function refresh() {
+      if (document.visibilityState === "hidden") return;
+      loadWorkerMarketplace(currentWorker.id)
+        .then((payload) => {
+          if (!active) return;
+          setState((current) => mergeWorkerMarketplaceState(current, currentWorker.id, payload));
+          setSyncError("");
+        })
+        .catch(() => {
+          if (!active) return;
+          setSyncError("Falha ao carregar vagas e candidaturas.");
+          setSyncStatus("erro");
+        });
+    }
+
+    refresh();
+    const intervalId = window.setInterval(refresh, REMOTE_SYNC_POLL_MS);
 
     return () => {
       active = false;
+      window.clearInterval(intervalId);
     };
   }, [authLoading, currentWorker?.id, role]);
 
   useEffect(() => {
     if (authLoading || !user || !supabaseMarketplaceEnabled) return;
 
+    const userId = user.id;
     let active = true;
-    loadRemoteNotifications(user.id)
-      .then((notifications) => {
-        if (!active) return;
-        setState((current) => mergeNotifications(current, notifications));
-        setSyncError("");
-      })
-      .catch(() => {
-        if (!active) return;
-        setSyncError("Falha ao carregar notificações.");
-        setSyncStatus("erro");
-      });
+    function refresh() {
+      if (document.visibilityState === "hidden") return;
+      loadRemoteNotifications(userId)
+        .then((notifications) => {
+          if (!active) return;
+          setState((current) => mergeNotifications(current, notifications));
+          setSyncError("");
+        })
+        .catch(() => {
+          if (!active) return;
+          setSyncError("Falha ao carregar notificações.");
+          setSyncStatus("erro");
+        });
+    }
+
+    refresh();
+    const intervalId = window.setInterval(refresh, REMOTE_SYNC_POLL_MS);
 
     return () => {
       active = false;
+      window.clearInterval(intervalId);
     };
   }, [authLoading, user?.id]);
 
   useEffect(() => {
     if (authLoading || !user || !supabaseCoinsEnabled) return;
 
+    const userId = user.id;
     let active = true;
-    loadRemoteCoinAccount(user.id)
-      .then((account) => {
-        if (!active) return;
-        applyCoinAccount(account);
-        setSyncError("");
-      })
-      .catch(() => {
-        if (!active) return;
-        setSyncError("Falha ao carregar carteira de moedas.");
-        setSyncStatus("erro");
-      });
+    function refresh() {
+      if (document.visibilityState === "hidden") return;
+      loadRemoteCoinAccount(userId)
+        .then((account) => {
+          if (!active) return;
+          applyCoinAccount(account);
+          setSyncError("");
+        })
+        .catch(() => {
+          if (!active) return;
+          setSyncError("Falha ao carregar carteira de moedas.");
+          setSyncStatus("erro");
+        });
+    }
+
+    refresh();
+    const intervalId = window.setInterval(refresh, REMOTE_SYNC_POLL_MS);
 
     return () => {
       active = false;
+      window.clearInterval(intervalId);
     };
   }, [authLoading, user?.id, localStorageKey]);
 
