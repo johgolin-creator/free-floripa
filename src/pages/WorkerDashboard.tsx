@@ -29,7 +29,9 @@ export function WorkerDashboard() {
   const openJobs = state.jobs.filter(isJobOpenForApplications);
   const urgentJobs = openJobs.filter((job) => job.urgent).slice(0, 2);
   const nearbyJobs = openJobs.filter((job) => job.distanceKm <= currentWorker.maxDistanceKm).slice(0, 3);
-  const pendingApplications = applications.filter((application) => application.status === "Enviada" || application.status === "Em análise");
+  const pendingApplications = applications.filter(
+    (application) => application.status === "Enviada" || application.status === "Em análise" || application.status === "Convidada"
+  );
   const approvedApplications = applications.filter((application) => application.status === "Aprovada");
   const nextWork = approvedApplications
     .map((application) => {

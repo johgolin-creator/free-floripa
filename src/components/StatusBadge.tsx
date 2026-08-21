@@ -3,7 +3,9 @@ export type StatusBadgeType = "application" | "schedule" | "job";
 function toneClass(type: StatusBadgeType, status: string) {
   if (type === "application") {
     if (status === "Aprovada" || status === "Trabalho concluído") return "badge bg-aqua-100 text-aqua-700";
-    if (status === "Recusada" || status === "Cancelada" || status === "Falta registrada") return "badge bg-red-50 text-alert";
+    if (status === "Recusada" || status === "Cancelada" || status === "Falta registrada" || status === "Convite recusado")
+      return "badge bg-red-50 text-alert";
+    if (status === "Convidada") return "badge bg-amber-50 text-amber-700";
     return "badge";
   }
 
@@ -27,6 +29,8 @@ const legendCopy: Record<StatusBadgeType, { status: string; meaning: string }[]>
   application: [
     { status: "Enviada", meaning: "você se candidatou, aguardando a empresa" },
     { status: "Em análise", meaning: "a empresa está avaliando o seu perfil" },
+    { status: "Convidada", meaning: "a empresa te convidou para a vaga, aguardando sua resposta" },
+    { status: "Convite recusado", meaning: "você recusou o convite da empresa" },
     { status: "Aprovada", meaning: "você foi escalado para o turno" },
     { status: "Recusada", meaning: "a empresa não seguiu com essa candidatura" },
     { status: "Cancelada", meaning: "a candidatura foi encerrada" },

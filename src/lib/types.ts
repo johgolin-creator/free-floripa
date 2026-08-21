@@ -37,6 +37,8 @@ export type CompanyScheduleStatus = "Planejada" | "Confirmada" | "Concluída" | 
 export type ApplicationStatus =
   | "Enviada"
   | "Em análise"
+  | "Convidada"
+  | "Convite recusado"
   | "Aprovada"
   | "Recusada"
   | "Cancelada"

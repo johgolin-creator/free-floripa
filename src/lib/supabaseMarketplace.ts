@@ -48,6 +48,8 @@ const VALID_PAYMENT_METHODS = new Set<PaymentMethod>(["Dinheiro", "Pix", "Transf
 const VALID_APPLICATION_STATUSES = new Set<ApplicationStatus>([
   "Enviada",
   "Em análise",
+  "Convidada",
+  "Convite recusado",
   "Aprovada",
   "Recusada",
   "Cancelada",
@@ -636,7 +638,7 @@ export async function publishInvitedApplication(jobId: string, workerId: string,
       id: applicationId,
       job_id: jobId,
       worker_id: workerId,
-      status: "Aprovada",
+      status: "Convidada",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     },

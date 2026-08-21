@@ -110,6 +110,7 @@ interface AppContextValue {
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => { ok: boolean; message: string };
   toggleFavorite: (workerId: string) => void;
   inviteWorkerToJob: (workerId: string, jobId: string) => { ok: boolean; message: string };
+  respondToInvite: (applicationId: string, accept: boolean) => { ok: boolean; message: string };
   markNotificationRead: (notificationId: string) => void;
   markRoleNotificationsRead: (role: AppState["activeRole"]) => void;
   markChatConversationRead: (applicationId: string) => void;
@@ -1353,58 +1354,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (existing?.status === "Aprovada") {
           return { ok: true, message: `${worker.name} já está confirmado nesta vaga.` };
         }
+        if (existing?.status === "Convidada") {
+          return { ok: true, message: `Convite já enviado para ${worker.name}, aguardando resposta.` };
+        }
         if (approvedCount >= job.quantity) {
           return { ok: false, message: "Não há vagas restantes para confirmar este profissional." };
         }
 
         const invitedApplication: Application = existing
-          ? { ...existing, status: "Aprovada" }
+          ? { ...existing, status: "Convidada" }
           : {
               id: crypto.randomUUID(),
               jobId,
               workerId,
-              status: "Aprovada",
+              status: "Convidada",
               createdAt: new Date().toISOString()
             };
         const remoteInviteNotification: AppState["notifications"][number] = {
           id: crypto.randomUUID(),
           title: "Você foi convidado para uma vaga",
-          body: `${currentCompany.establishmentName} confirmou você em ${job.title}.`,
+          body: `${currentCompany.establishmentName} quer confirmar você em ${job.title}. Aceite ou recuse o convite.`,
           role: "trabalhador",
           createdAt: new Date().toISOString(),
           read: false
         };
 
-        commit((current) => {
-          const nextApplications = existing
+        commit((current) => ({
+          ...current,
+          applications: existing
             ? current.applications.map((item) => (item.id === existing.id ? invitedApplication : item))
-            : [invitedApplication, ...current.applications];
-
-          return {
-            ...current,
-            applications: nextApplications,
-            jobs: current.jobs.map((item) =>
-              item.id === jobId
-                ? {
-                    ...item,
-                    candidates: existing ? item.candidates : item.candidates + 1,
-                    filled: Math.min(item.quantity, countApproved(nextApplications, item.id))
-                  }
-                : item
-            ),
-            notifications: [
-              {
-                id: crypto.randomUUID(),
-                title: "Você foi convidado para uma vaga",
-                body: `${currentCompany.establishmentName} confirmou você em ${job.title}.`,
-                role: "trabalhador",
-                createdAt: new Date().toISOString(),
-                read: false
-              },
-              ...current.notifications
-            ]
-          };
-        });
+            : [invitedApplication, ...current.applications],
+          jobs: current.jobs.map((item) =>
+            item.id === jobId ? { ...item, candidates: existing ? item.candidates : item.candidates + 1 } : item
+          ),
+          notifications: [remoteInviteNotification, ...current.notifications]
+        }));
         if (supabaseMarketplaceEnabled) {
           publishInvitedApplication(jobId, workerId, invitedApplication.id).catch(() => {
             setSyncError("Falha ao enviar convite.");
@@ -1418,14 +1402,89 @@ export function AppProvider({ children }: { children: ReactNode }) {
             recipientEmail: worker.email,
             recipientName: worker.name,
             subject: "Você foi convidado para uma vaga",
-            preview: `${currentCompany.establishmentName} confirmou você em ${job.title}.`,
-            body: `${currentCompany.establishmentName} confirmou você em ${job.title}. Entre no PONT para ver horário, local e detalhes do turno.`,
+            preview: `${currentCompany.establishmentName} quer confirmar você em ${job.title}.`,
+            body: `${currentCompany.establishmentName} quer confirmar você em ${job.title}. Entre no PONT para aceitar ou recusar o convite.`,
             eventType: "application_status",
-            metadata: { jobId, applicationId: invitedApplication.id, workerId, companyId: currentCompany.id, status: "Aprovada" }
+            metadata: { jobId, applicationId: invitedApplication.id, workerId, companyId: currentCompany.id, status: "Convidada" }
           });
         }
 
-        return { ok: true, message: `${worker.name} foi confirmado em ${job.title}.` };
+        return { ok: true, message: `Convite enviado para ${worker.name}. Aguardando a resposta.` };
+      },
+      respondToInvite(applicationId, accept) {
+        const application = state.applications.find((item) => item.id === applicationId);
+        if (!application || application.workerId !== currentWorker.id) {
+          return { ok: false, message: "Convite não encontrado." };
+        }
+        if (application.status !== "Convidada") {
+          return { ok: false, message: "Este convite já foi respondido." };
+        }
+        const job = state.jobs.find((item) => item.id === application.jobId);
+        if (!job) return { ok: false, message: "Vaga não encontrada." };
+        const company = state.companies.find((item) => item.id === job.companyId);
+
+        if (accept) {
+          const approvedCount = state.applications.filter(
+            (item) => item.jobId === job.id && item.id !== application.id && item.status === "Aprovada"
+          ).length;
+          if (approvedCount >= job.quantity) {
+            return { ok: false, message: "Esta vaga não tem mais espaço disponível para confirmar o convite." };
+          }
+        }
+
+        const nextStatus: ApplicationStatus = accept ? "Aprovada" : "Convite recusado";
+        const companyNotification: AppState["notifications"][number] = {
+          id: crypto.randomUUID(),
+          title: accept ? "Convite aceito" : "Convite recusado",
+          body: accept
+            ? `${currentWorker.name} aceitou o convite para ${job.title}.`
+            : `${currentWorker.name} recusou o convite para ${job.title}.`,
+          role: "empresa",
+          createdAt: new Date().toISOString(),
+          read: false
+        };
+
+        commit((current) => {
+          const nextApplications = current.applications.map((item) =>
+            item.id === applicationId ? { ...item, status: nextStatus } : item
+          );
+          return {
+            ...current,
+            applications: nextApplications,
+            jobs: current.jobs.map((item) =>
+              item.id === job.id ? { ...item, filled: Math.min(item.quantity, countApproved(nextApplications, item.id)) } : item
+            ),
+            notifications: [companyNotification, ...current.notifications]
+          };
+        });
+        if (supabaseMarketplaceEnabled) {
+          updateRemoteApplicationStatus(application, nextStatus).catch(() => {
+            setSyncError("Falha ao responder o convite.");
+            setSyncStatus("erro");
+          });
+          publishRemoteNotification(company?.id, companyNotification);
+        }
+        if (company?.email) {
+          queueEmail({
+            recipientUserId: company.id,
+            recipientEmail: company.email,
+            recipientName: company.establishmentName,
+            subject: accept ? "Convite aceito" : "Convite recusado",
+            preview: accept
+              ? `${currentWorker.name} aceitou o convite para ${job.title}.`
+              : `${currentWorker.name} recusou o convite para ${job.title}.`,
+            body: accept
+              ? `${currentWorker.name} aceitou o convite para ${job.title}. Entre no PONT para combinar os detalhes do turno.`
+              : `${currentWorker.name} recusou o convite para ${job.title}. Você pode convidar outro profissional do banco.`,
+            eventType: "application_status",
+            metadata: { jobId: job.id, applicationId, workerId: currentWorker.id, companyId: company.id, status: nextStatus }
+          });
+        }
+
+        return {
+          ok: true,
+          message: accept ? `Convite aceito. Você está confirmado em ${job.title}.` : "Convite recusado."
+        };
       },
       markNotificationRead(notificationId) {
         commit((current) => ({

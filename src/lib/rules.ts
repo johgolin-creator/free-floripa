@@ -76,7 +76,11 @@ export function canApply(job: Job, applications: Application[], worker: WorkerPr
   }
 
   const duplicated = applications.some(
-    (application) => application.jobId === job.id && application.workerId === worker.id && application.status !== "Cancelada"
+    (application) =>
+      application.jobId === job.id &&
+      application.workerId === worker.id &&
+      application.status !== "Cancelada" &&
+      application.status !== "Convite recusado"
   );
   if (duplicated) {
     return { allowed: false, reason: "Você já se candidatou para esta vaga." };

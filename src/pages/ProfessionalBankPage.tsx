@@ -248,12 +248,12 @@ function InviteForm({ jobs, worker, onSubmit }: { jobs: Job[]; worker: WorkerPro
       {selectedJob && (
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm font-semibold leading-6 text-slate-600">
           <strong className="block text-white">{selectedJob.function}</strong>
-          {selectedJob.neighborhood} - {selectedJob.startsAt} às {selectedJob.endsAt}. O convite confirma o profissional nesta vaga e cria o turno.
+          {selectedJob.neighborhood} - {selectedJob.startsAt} às {selectedJob.endsAt}. O profissional recebe o convite e precisa aceitar antes de ser confirmado na vaga.
         </div>
       )}
 
       <button type="submit" className="primary">
-        <UserCheck size={17} /> Confirmar convite
+        <UserCheck size={17} /> Enviar convite
       </button>
     </form>
   );

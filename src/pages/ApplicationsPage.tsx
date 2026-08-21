@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import {
   BriefcaseBusiness,
   CalendarDays,
+  CheckCircle2,
   ClipboardCheck,
   Clock3,
   CreditCard,
@@ -26,7 +27,7 @@ const cancelableStatuses: Application["status"][] = ["Enviada", "Em análise"];
 const filters = ["Todas", "Ativas", "Aprovadas", "Finalizadas"] as const;
 
 export function ApplicationsPage() {
-  const { state, currentWorker, updateApplicationStatus } = useAppStore();
+  const { state, currentWorker, updateApplicationStatus, respondToInvite } = useAppStore();
   const [message, setMessage] = useState("");
   const [filter, setFilter] = useState<(typeof filters)[number]>("Todas");
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
@@ -36,7 +37,9 @@ export function ApplicationsPage() {
   const filteredApplications = applications.filter((application) => matchesFilter(application, filter));
   const stats = {
     total: applications.length,
-    waiting: applications.filter((application) => application.status === "Enviada" || application.status === "Em análise").length,
+    waiting: applications.filter(
+      (application) => application.status === "Enviada" || application.status === "Em análise" || application.status === "Convidada"
+    ).length,
     approved: applications.filter((application) => application.status === "Aprovada").length,
     completed: applications.filter((application) => application.status === "Trabalho concluído").length,
     unlockedJobs: applications.filter((application) => state.subscription.unlockedJobIds.includes(application.jobId)).length
@@ -109,6 +112,7 @@ export function ApplicationsPage() {
             const company = state.companies.find((item) => item.id === job?.companyId);
             const contactUnlocked = application.status === "Aprovada" || application.status === "Trabalho concluído";
             const canCancel = cancelableStatuses.includes(application.status);
+            const isPendingInvite = application.status === "Convidada";
             if (!job) return null;
 
             return (
@@ -135,6 +139,30 @@ export function ApplicationsPage() {
                 </div>
 
                 <ApplicationFlow application={application} />
+
+                {isPendingInvite && (
+                  <div className="grid gap-3 rounded-lg border border-amber-200 bg-amber-50/10 p-3">
+                    <p className="text-sm font-semibold text-slate-600">
+                      {company?.establishmentName} te convidou diretamente para esta vaga. Aceite para confirmar sua presença ou recuse se não puder.
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        className="company-action company-action-danger"
+                        onClick={() => setMessage(respondToInvite(application.id, false).message)}
+                      >
+                        <XCircle size={17} /> Recusar convite
+                      </button>
+                      <button
+                        type="button"
+                        className="primary"
+                        onClick={() => setMessage(respondToInvite(application.id, true).message)}
+                      >
+                        <CheckCircle2 size={17} /> Aceitar convite
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="worker-info-grid">
                   <Info icon={<CalendarDays size={16} />} label="Horário" value={`${job.startsAt} às ${job.endsAt}`} />
@@ -165,14 +193,16 @@ export function ApplicationsPage() {
                     <Link to={`/app/vagas/${job.id}`} className="company-action">
                       Ver detalhes
                     </Link>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmCancelId(application.id)}
-                      disabled={!canCancel}
-                      className="company-action company-action-danger"
-                    >
-                      <XCircle size={17} /> {canCancel ? "Cancelar" : "Cancelamento bloqueado"}
-                    </button>
+                    {!isPendingInvite && (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmCancelId(application.id)}
+                        disabled={!canCancel}
+                        className="company-action company-action-danger"
+                      >
+                        <XCircle size={17} /> {canCancel ? "Cancelar" : "Cancelamento bloqueado"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </article>
@@ -223,13 +253,20 @@ type ApplicationStep = { kicker: string; label: string; state: StepState };
 function getApplicationSteps(application: Application): ApplicationStep[] {
   const approved = application.status === "Aprovada" || application.status === "Trabalho concluído";
   const completed = application.status === "Trabalho concluído";
-  const rejected = application.status === "Recusada" || application.status === "Cancelada";
+  const rejected = application.status === "Recusada" || application.status === "Cancelada" || application.status === "Convite recusado";
+  const isInvite = application.status === "Convidada" || application.status === "Convite recusado";
 
   return [
-    { kicker: "1", label: "Candidatura enviada", state: "done" },
+    { kicker: "1", label: isInvite ? "Convite recebido" : "Candidatura enviada", state: "done" },
     {
       kicker: "2",
-      label: approved ? "Aprovado" : rejected ? "Encerrada" : "Aguardando resposta",
+      label: approved
+        ? "Aprovado"
+        : rejected
+          ? "Encerrada"
+          : application.status === "Convidada"
+            ? "Responda o convite"
+            : "Aguardando resposta",
       state: approved ? "done" : rejected ? "blocked" : "current"
     },
     {
@@ -248,6 +285,8 @@ function getApplicationSteps(application: Application): ApplicationStep[] {
 function getNextStep(application: Application) {
   if (application.status === "Enviada") return "Aguardando análise da empresa";
   if (application.status === "Em análise") return "Empresa analisando seu perfil";
+  if (application.status === "Convidada") return "Aceite ou recuse o convite da empresa";
+  if (application.status === "Convite recusado") return "Você recusou este convite";
   if (application.status === "Aprovada") return "Aprovado: combine detalhes com a empresa";
   if (application.status === "Trabalho concluído") return "Serviço concluído";
   if (application.status === "Falta registrada") return "Falta registrada pela empresa";
@@ -256,10 +295,10 @@ function getNextStep(application: Application) {
 }
 
 function matchesFilter(application: Application, filter: (typeof filters)[number]) {
-  if (filter === "Ativas") return application.status === "Enviada" || application.status === "Em análise";
+  if (filter === "Ativas") return application.status === "Enviada" || application.status === "Em análise" || application.status === "Convidada";
   if (filter === "Aprovadas") return application.status === "Aprovada";
   if (filter === "Finalizadas") {
-    return ["Trabalho concluído", "Recusada", "Cancelada", "Falta registrada"].includes(application.status);
+    return ["Trabalho concluído", "Recusada", "Cancelada", "Falta registrada", "Convite recusado"].includes(application.status);
   }
   return true;
 }
@@ -267,6 +306,8 @@ function matchesFilter(application: Application, filter: (typeof filters)[number
 function getStatusDescription(status: Application["status"], contactUnlocked: boolean) {
   if (status === "Enviada") return "A empresa recebeu sua candidatura e ainda não abriu a decisão.";
   if (status === "Em análise") return "Seu perfil está em avaliação pela empresa.";
+  if (status === "Convidada") return "A empresa te convidou diretamente para esta vaga. Aceite ou recuse abaixo.";
+  if (status === "Convite recusado") return "Você recusou este convite. A empresa foi avisada.";
   if (status === "Aprovada") return contactUnlocked ? "Contato liberado. Combine os detalhes do turno." : "Aprovação registrada. Aguarde liberação dos dados.";
   if (status === "Trabalho concluído") return "Turno finalizado e salvo no histórico.";
   if (status === "Falta registrada") return "A empresa registrou ausência neste turno.";

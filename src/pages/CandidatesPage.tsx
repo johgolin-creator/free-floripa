@@ -33,8 +33,18 @@ import { calculateReliability, getOpenSlots } from "../lib/rules";
 import { getShiftVerificationCode } from "../lib/shiftVerification";
 import type { AppState, Application, Job, WorkerProfile } from "../lib/types";
 
-const terminalStatuses = ["Recusada", "Cancelada", "Trabalho concluído", "Falta registrada"];
-const candidateStatusFilters = ["Todos", "Enviada", "Em análise", "Aprovada", "Trabalho concluído", "Recusada", "Falta registrada"] as const;
+const terminalStatuses = ["Recusada", "Cancelada", "Trabalho concluído", "Falta registrada", "Convite recusado"];
+const candidateStatusFilters = [
+  "Todos",
+  "Enviada",
+  "Em análise",
+  "Convidada",
+  "Aprovada",
+  "Trabalho concluído",
+  "Recusada",
+  "Convite recusado",
+  "Falta registrada"
+] as const;
 type CandidateStatusFilter = (typeof candidateStatusFilters)[number];
 
 type ReviewTarget = {
@@ -350,6 +360,7 @@ export function CandidatesPage() {
                 const contactUnlocked = approved || completed;
                 const refused = terminalStatuses.includes(application.status) && !approved;
                 const noSlots = getOpenSlots(jobForApplication) === 0 && !approved && !completed;
+                const isPendingInvite = application.status === "Convidada";
                 const workerBlocked = state.adminModeration.blockedWorkerIds.includes(worker.id);
                 const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
                 const blockedAction = workerBlocked || companyBlocked;
@@ -391,48 +402,54 @@ export function CandidatesPage() {
                         </SafetyNotice>
                       )}
 
-                      <div className="candidate-action-grid">
-                        <button
-                          type="button"
-                          onClick={() => runStatus(application.id, "Em análise")}
-                          disabled={blockedAction || application.status !== "Enviada"}
-                          className="secondary"
-                        >
-                          <Clock3 size={17} /> Analisar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => runStatus(application.id, "Aprovada")}
-                          disabled={blockedAction || approved || completed || noSlots}
-                          className="primary"
-                        >
-                          <UserCheck size={17} /> {approved || completed ? "Confirmado" : noSlots ? "Sem vaga" : "Aprovar"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => runStatus(application.id, "Recusada")}
-                          disabled={blockedAction || refused || approved || completed}
-                          className="secondary"
-                        >
-                          <UserX size={17} /> Recusar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => runStatus(application.id, "Trabalho concluído")}
-                          disabled={blockedAction || !approved}
-                          className="primary"
-                        >
-                          <CheckCircle2 size={17} /> Concluir
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => runStatus(application.id, "Falta registrada")}
-                          disabled={blockedAction || !approved}
-                          className="danger"
-                        >
-                          Registrar falta
-                        </button>
-                      </div>
+                      {isPendingInvite ? (
+                        <SafetyNotice title="Aguardando resposta do convite">
+                          Você convidou este profissional diretamente. Ele ainda não aceitou nem recusou - as ações de aprovação ficam liberadas depois da resposta dele.
+                        </SafetyNotice>
+                      ) : (
+                        <div className="candidate-action-grid">
+                          <button
+                            type="button"
+                            onClick={() => runStatus(application.id, "Em análise")}
+                            disabled={blockedAction || application.status !== "Enviada"}
+                            className="secondary"
+                          >
+                            <Clock3 size={17} /> Analisar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => runStatus(application.id, "Aprovada")}
+                            disabled={blockedAction || approved || completed || noSlots}
+                            className="primary"
+                          >
+                            <UserCheck size={17} /> {approved || completed ? "Confirmado" : noSlots ? "Sem vaga" : "Aprovar"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => runStatus(application.id, "Recusada")}
+                            disabled={blockedAction || refused || approved || completed}
+                            className="secondary"
+                          >
+                            <UserX size={17} /> Recusar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => runStatus(application.id, "Trabalho concluído")}
+                            disabled={blockedAction || !approved}
+                            className="primary"
+                          >
+                            <CheckCircle2 size={17} /> Concluir
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => runStatus(application.id, "Falta registrada")}
+                            disabled={blockedAction || !approved}
+                            className="danger"
+                          >
+                            Registrar falta
+                          </button>
+                        </div>
+                      )}
 
                       {contactUnlocked ? (
                         <div className="candidate-contact-card">
@@ -666,13 +683,14 @@ function HiringFlow({
 function getHiringSteps(application: Application, reviewed: boolean): HiringStep[] {
   const approved = application.status === "Aprovada" || application.status === "Trabalho concluído";
   const completed = application.status === "Trabalho concluído";
-  const rejected = application.status === "Recusada" || application.status === "Cancelada";
+  const rejected = application.status === "Recusada" || application.status === "Cancelada" || application.status === "Convite recusado";
+  const isPendingInvite = application.status === "Convidada";
 
   return [
-    { kicker: "1", label: "Candidatura", state: "done" },
+    { kicker: "1", label: isPendingInvite ? "Convite enviado" : "Candidatura", state: "done" },
     {
       kicker: "2",
-      label: approved ? "Aprovado" : rejected ? "Encerrado" : "Aprovar",
+      label: approved ? "Aprovado" : rejected ? "Encerrado" : isPendingInvite ? "Aguardando resposta" : "Aprovar",
       state: approved ? "done" : rejected ? "blocked" : "current"
     },
     {
@@ -697,6 +715,8 @@ function getStepClass(state: StepState) {
 
 function getNextAction(application: Application, reviewed: boolean) {
   if (application.status === "Recusada" || application.status === "Cancelada") return "Ciclo encerrado";
+  if (application.status === "Convite recusado") return "Convite recusado pelo profissional";
+  if (application.status === "Convidada") return "Aguardando resposta do profissional";
   if (application.status === "Falta registrada") return "Falta registrada";
   if (application.status === "Trabalho concluído") return reviewed ? "Contratação concluída" : "Avaliar profissional";
   if (application.status === "Aprovada") return "Concluir quando o turno terminar";

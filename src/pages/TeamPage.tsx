@@ -125,7 +125,7 @@ function InviteForm({ jobs, onSubmit }: { jobs: Job[]; onSubmit: (jobId: string)
           <BriefcaseBusiness size={17} /> Vaga para confirmação
         </div>
         <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
-          O profissional será confirmado na vaga escolhida e receberá uma notificação.
+          O profissional recebe o convite para a vaga escolhida e precisa aceitar antes de ser confirmado.
         </p>
       </div>
       <label className="label">
@@ -139,7 +139,7 @@ function InviteForm({ jobs, onSubmit }: { jobs: Job[]; onSubmit: (jobId: string)
         </select>
       </label>
       <button type="submit" className="primary">
-        <RotateCcw size={17} /> Confirmar convite
+        <RotateCcw size={17} /> Enviar convite
       </button>
     </form>
   );
