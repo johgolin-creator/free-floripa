@@ -114,9 +114,7 @@ export function AppLayout() {
           <BrandLogo inverted />
         </NavLink>
 
-        <RoleSwitcher />
-
-        <nav className="mt-4 grid gap-1.5">
+        <nav className="grid gap-1.5">
           {primaryLinks.map((link) => {
             const Icon = link.icon;
             return (

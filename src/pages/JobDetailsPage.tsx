@@ -377,7 +377,7 @@ export function JobDetailsPage() {
 
           <aside className="job-action-panel">
             <div className="flex items-center gap-3">
-              <img src={company?.logoUrl} alt="" className="h-16 w-16 rounded-lg object-cover" />
+              <img src={company?.logoUrl} alt="" className="h-16 w-16 shrink-0 rounded-lg bg-white object-contain" />
               <div>
                 <strong className="block text-white">{company?.establishmentName}</strong>
                 <span className="flex items-center gap-1 text-sm text-slate-600"><Star size={15} /> {company?.rating.toFixed(1)} de avaliação</span>

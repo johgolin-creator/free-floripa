@@ -47,7 +47,11 @@ export function CompanyProfilePage() {
         <div className="h-36 bg-[url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
         <div className="p-5">
           <div className="profile-main-row">
-            <img src={currentCompany.logoUrl} alt="" className="h-28 w-28 rounded-lg border-4 border-brand-dark object-cover shadow-soft" />
+            <img
+              src={currentCompany.logoUrl}
+              alt=""
+              className="h-28 w-28 shrink-0 rounded-lg border-4 border-brand-dark bg-white object-contain shadow-soft"
+            />
             <div className="flex-1">
               <h2 className="text-2xl font-black text-white">{currentCompany.establishmentName}</h2>
               <p className="text-sm font-semibold text-slate-600">{currentCompany.category} - {currentCompany.neighborhood}</p>
