@@ -100,10 +100,11 @@ export function WorkerProfilePage() {
                 </button>
               </div>
             </div>
-            <div className="profile-score-card">
-              <strong className="block text-3xl font-black text-white">{reliability}%</strong>
-              <span className="text-sm font-bold text-slate-600"><TermHint term="confiabilidade">Índice de Confiabilidade</TermHint></span>
-            </div>
+          </div>
+
+          <div className="profile-score-card mt-4 md:ml-32">
+            <strong className="block text-3xl font-black text-white">{reliability}%</strong>
+            <span className="text-sm font-bold text-slate-600"><TermHint term="confiabilidade">Índice de Confiabilidade</TermHint></span>
           </div>
 
           <div className="profile-info-grid">
