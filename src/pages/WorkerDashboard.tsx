@@ -2,17 +2,11 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   CalendarCheck,
-  CalendarDays,
   ClipboardCheck,
   ClipboardList,
-  Clock3,
   CreditCard,
-  MapPin,
-  Star,
-  WalletCards,
-  Zap
+  Star
 } from "lucide-react";
-import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { JobCard } from "../components/JobCard";
 import { SectionHeader } from "../components/SectionHeader";
@@ -20,7 +14,7 @@ import { StatTile } from "../components/StatTile";
 import { TermHint } from "../components/TermHint";
 import { useAppStore } from "../lib/store";
 import { calculateReliability, getFunctionExperience, isJobOpenForApplications } from "../lib/rules";
-import { formatCurrency, formatDate } from "../lib/format";
+import { formatDate } from "../lib/format";
 
 export function WorkerDashboard() {
   const { state, currentWorker } = useAppStore();
@@ -28,7 +22,6 @@ export function WorkerDashboard() {
   const applications = state.applications.filter((application) => application.workerId === currentWorker.id);
   const openJobs = state.jobs.filter(isJobOpenForApplications);
   const urgentJobs = openJobs.filter((job) => job.urgent).slice(0, 2);
-  const nearbyJobs = openJobs.filter((job) => job.distanceKm <= currentWorker.maxDistanceKm).slice(0, 3);
   const pendingApplications = applications.filter(
     (application) => application.status === "Enviada" || application.status === "Em análise" || application.status === "Convidada"
   );
@@ -85,12 +78,6 @@ export function WorkerDashboard() {
             <Link to="/app/vagas" className="company-action"><BriefcaseBusiness size={17} /> Buscar vagas</Link>
           </div>
         </div>
-        <div className="smart-dashboard-metrics">
-          <SmartMetric icon={<Clock3 size={19} />} label="aguardando" value={String(pendingApplications.length)} tone={pendingApplications.length > 0 ? "alert" : "normal"} />
-          <SmartMetric icon={<CalendarDays size={19} />} label="confirmados" value={String(approvedApplications.length)} />
-          <SmartMetric icon={<Zap size={19} />} label="urgentes" value={String(urgentJobs.length)} />
-          <SmartMetric icon={<WalletCards size={19} />} label="melhor diária" value={bestMatches[0] ? formatCurrency(bestMatches[0].job.dailyValue) : "R$ 0"} />
-        </div>
       </section>
 
       <section className="soft-panel grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-center">
@@ -141,40 +128,9 @@ export function WorkerDashboard() {
               ))}
             </div>
           </div>
-
-          <section className="card p-4">
-            <h3 className="mb-3 font-black text-white">Resumo</h3>
-            <div className="grid gap-2 text-sm text-slate-600">
-              <span className="flex items-center gap-2"><ClipboardList size={16} /> {applications.length} candidaturas enviadas</span>
-              <span className="flex items-center gap-2"><BadgeCheck size={16} /> {applications.filter((item) => item.status === "Aprovada").length} aceitas</span>
-              <span className="flex items-center gap-2"><CalendarCheck size={16} /> {approvedApplications.length} próximos trabalhos</span>
-              <span className="flex items-center gap-2"><Zap size={16} /> {urgentJobs.length} vagas urgentes abertas</span>
-              <span className="flex items-center gap-2"><MapPin size={16} /> {nearbyJobs.length} vagas dentro da distância</span>
-            </div>
-          </section>
         </aside>
       </div>
     </div>
-  );
-}
-
-function SmartMetric({
-  icon,
-  label,
-  value,
-  tone = "normal"
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  tone?: "normal" | "alert";
-}) {
-  return (
-    <span className={`smart-dashboard-metric ${tone === "alert" ? "is-alert" : ""}`}>
-      <span>{icon}</span>
-      <strong>{value}</strong>
-      <small>{label}</small>
-    </span>
   );
 }
 

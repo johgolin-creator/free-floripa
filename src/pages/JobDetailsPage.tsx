@@ -344,8 +344,8 @@ export function JobDetailsPage() {
         <div className="job-detail-grid">
           <div>
             <div className="mb-3 flex flex-wrap gap-2">
-              {currentJob.urgent && <UrgentBadge />}
-              <StatusBadge type="job" status={jobStatus} />
+              {jobStatus === "Urgente" ? <UrgentBadge /> : <StatusBadge type="job" status={jobStatus} />}
+              {currentJob.urgent && jobStatus !== "Urgente" && <UrgentBadge />}
               <span className="badge">{currentJob.function}</span>
               <span className="badge">{currentJob.paymentMethod}</span>
             </div>
@@ -354,8 +354,6 @@ export function JobDetailsPage() {
             <p>{currentJob.description}</p>
 
             <div className="job-info-grid">
-              <Info label="Empresa" value={company?.establishmentName ?? "Empresa"} icon={<Building2 size={17} />} />
-              <Info label="Avaliação da empresa" value={`${company?.rating.toFixed(1) ?? "0.0"} estrelas`} icon={<Star size={17} />} />
               <Info label="Quantidade" value={`${currentJob.quantity} profissionais`} icon={<Users size={17} />} />
               <Info label="Vagas restantes" value={`${getOpenSlots(currentJob)} disponíveis`} icon={<BadgeCheck size={17} />} />
               <Info label="Data" value={formatDate(currentJob.date)} icon={<CalendarDays size={17} />} />

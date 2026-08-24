@@ -28,24 +28,7 @@ export function WorkerProfilePage() {
 
   return (
     <div>
-      <SectionHeader
-        eyebrow="Perfil"
-        title="Perfil do trabalhador"
-        action={
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedFunctions(currentWorker.functions);
-              setAvatarUrl(currentWorker.avatarUrl);
-              setError("");
-              setEditing(true);
-            }}
-            className="primary"
-          >
-            <Edit3 size={17} /> Editar perfil
-          </button>
-        }
-      />
+      <SectionHeader eyebrow="Perfil" title="Perfil do trabalhador" />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       <ProfileCompletionAlert
         complete={completion.complete}

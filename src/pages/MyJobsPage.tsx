@@ -86,14 +86,7 @@ export function MyJobsPage() {
       />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
 
-      <section className="worker-hero">
-        <div>
-          <span className="section-eyebrow">Agenda do freelancer</span>
-          <h2>Turnos confirmados com detalhes prontos para o dia do serviço</h2>
-          <p>
-            Veja próximos trabalhos e consulte endereço, uniforme e contato da empresa.
-          </p>
-        </div>
+      <section className="mb-4 grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
         <div className="worker-hero-metrics">
           <StatTile variant="primary" icon={<CalendarDays size={19} />} label="próximos" value={agendaStats.next} />
           <StatTile icon={<ClipboardCheck size={19} />} label="concluídos" value={agendaStats.done} />

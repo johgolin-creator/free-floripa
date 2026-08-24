@@ -112,14 +112,7 @@ export function JobsPage() {
         description="Filtre por função, bairro, data, urgência, valor mínimo e experiência exigida."
       />
 
-      <section className="jobs-hero">
-        <div>
-          <span className="section-eyebrow">Busca inteligente</span>
-          <h2>Encontre vagas que combinam com o seu perfil</h2>
-          <p>
-            O PONT cruza profissão, distância, urgência e valor da diária para colocar as melhores oportunidades no topo.
-          </p>
-        </div>
+      <section className="mb-5 grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
         <div className="jobs-hero-metrics">
           <StatTile variant="primary" icon={<BriefcaseBusiness size={19} />} label="abertas" value={dashboard.open} />
           <StatTile icon={<Star size={19} />} label="boas combinações" value={dashboard.compatible} />

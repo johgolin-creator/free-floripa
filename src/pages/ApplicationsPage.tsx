@@ -65,14 +65,7 @@ export function ApplicationsPage() {
         <EmptyState title="Nenhuma candidatura enviada" text="Busque vagas disponíveis e envie sua primeira candidatura." />
       ) : (
         <div className="grid gap-4">
-          <section className="worker-hero">
-            <div>
-              <span className="section-eyebrow">Sua busca por trabalho</span>
-              <h2>Cada candidatura com status e próximo passo claro</h2>
-              <p>
-                Veja quais empresas ainda estão analisando, quais turnos foram aprovados e onde o contato já está liberado.
-              </p>
-            </div>
+          <section className="mb-4 grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
             <div className="worker-hero-metrics">
               <StatTile variant="primary" icon={<ClipboardCheck size={19} />} label="enviadas" value={stats.total} />
               <StatTile tone={stats.waiting > 0 ? "alert" : "normal"} icon={<Clock3 size={19} />} label="aguardando" value={stats.waiting} />
@@ -123,7 +116,6 @@ export function ApplicationsPage() {
                       <StatusBadge type="application" status={application.status} />
                       <span className="badge">{job.function}</span>
                       <span className="badge">{formatCurrency(job.dailyValue)}</span>
-                      <span className="badge bg-aqua-50 text-aqua-700"><CreditCard size={14} /> Vaga liberada</span>
                     </div>
                     <h3>{job.title}</h3>
                     <p className="text-sm text-slate-600">
@@ -137,8 +129,6 @@ export function ApplicationsPage() {
                     <span>{getStatusDescription(application.status, contactUnlocked)}</span>
                   </div>
                 </div>
-
-                <ApplicationFlow application={application} />
 
                 {isPendingInvite && (
                   <div className="grid gap-3 rounded-lg border border-amber-200 bg-amber-50/10 p-3">
@@ -168,7 +158,6 @@ export function ApplicationsPage() {
                   <Info icon={<CalendarDays size={16} />} label="Horário" value={`${job.startsAt} às ${job.endsAt}`} />
                   <Info icon={<MapPin size={16} />} label="Local" value={contactUnlocked ? job.fullAddress : job.approximateAddress} />
                   <Info icon={<BriefcaseBusiness size={16} />} label="Pagamento" value={job.paymentMethod} />
-                  <Info icon={<CreditCard size={16} />} label="Acesso" value="Vaga liberada" />
                 </div>
 
                 <div className="grid gap-2 md:grid-cols-[1fr_auto] md:items-center">
@@ -230,58 +219,6 @@ export function ApplicationsPage() {
   );
 }
 
-function ApplicationFlow({ application }: { application: Application }) {
-  const steps = getApplicationSteps(application);
-
-  return (
-    <div className="worker-flow">
-      <div className="worker-step-grid">
-        {steps.map((step) => (
-          <span key={step.label} className={`worker-step ${getStepClass(step.state)}`}>
-            <span className="block text-[0.65rem] uppercase text-slate-500">{step.kicker}</span>
-            {step.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-type StepState = "done" | "current" | "pending" | "blocked";
-type ApplicationStep = { kicker: string; label: string; state: StepState };
-
-function getApplicationSteps(application: Application): ApplicationStep[] {
-  const approved = application.status === "Aprovada" || application.status === "Trabalho concluído";
-  const completed = application.status === "Trabalho concluído";
-  const rejected = application.status === "Recusada" || application.status === "Cancelada" || application.status === "Convite recusado";
-  const isInvite = application.status === "Convidada" || application.status === "Convite recusado";
-
-  return [
-    { kicker: "1", label: isInvite ? "Convite recebido" : "Candidatura enviada", state: "done" },
-    {
-      kicker: "2",
-      label: approved
-        ? "Aprovado"
-        : rejected
-          ? "Encerrada"
-          : application.status === "Convidada"
-            ? "Responda o convite"
-            : "Aguardando resposta",
-      state: approved ? "done" : rejected ? "blocked" : "current"
-    },
-    {
-      kicker: "3",
-      label: completed ? "Serviço concluído" : "Finalizar turno",
-      state: completed ? "done" : approved ? "current" : "pending"
-    },
-    {
-      kicker: "4",
-      label: completed ? "Aguardar avaliação" : "Histórico",
-      state: completed ? "current" : "pending"
-    }
-  ];
-}
-
 function getNextStep(application: Application) {
   if (application.status === "Enviada") return "Aguardando análise da empresa";
   if (application.status === "Em análise") return "Empresa analisando seu perfil";
@@ -313,13 +250,6 @@ function getStatusDescription(status: Application["status"], contactUnlocked: bo
   if (status === "Falta registrada") return "A empresa registrou ausência neste turno.";
   if (status === "Cancelada") return "Esta candidatura foi encerrada e não segue mais na seleção.";
   return "A empresa escolheu seguir com outros profissionais.";
-}
-
-function getStepClass(state: StepState) {
-  if (state === "done") return "border-aqua-200 bg-aqua-100 text-aqua-700";
-  if (state === "current") return "border-navy-200 bg-white text-navy-950";
-  if (state === "blocked") return "border-red-100 bg-red-50 text-alert";
-  return "border-slate-200 bg-brand-charcoal text-slate-500";
 }
 
 function Info({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
