@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { BriefcaseBusiness, CalendarDays, Filter, Lock, MapPin, RotateCcw, Search, ShieldCheck, Star, Zap } from "lucide-react";
+import { Filter, Lock, RotateCcw, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { JobCard } from "../components/JobCard";
+import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
-import { StatTile } from "../components/StatTile";
 import { TermHint } from "../components/TermHint";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
@@ -28,6 +28,7 @@ export function JobsPage() {
   const [trustedCompaniesOnly, setTrustedCompaniesOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("Melhor combinação");
   const [visibleCount, setVisibleCount] = useState(JOBS_PAGE_SIZE);
+  const [showFilters, setShowFilters] = useState(false);
   const hasCoins = state.subscription.creditsRemaining > 0;
 
   const scoredJobs = useMemo(() => {
@@ -68,13 +69,6 @@ export function JobsPage() {
   const filteredJobs = scoredJobs.map((item) => item.job);
   const visibleScoredJobs = scoredJobs.slice(0, visibleCount);
   const hasMoreJobs = visibleCount < scoredJobs.length;
-  const openJobs = state.jobs.filter(isJobOpenForApplications);
-  const dashboard = {
-    open: openJobs.length,
-    compatible: openJobs.filter((job) => getJobMatch(job, currentWorker).compatible).length,
-    urgent: openJobs.filter((job) => job.urgent).length,
-    trusted: openJobs.filter((job) => isTrustedCompanyJob(job, state)).length
-  };
 
   const activeFilters = [
     functionFilter !== "Todas" && `Função: ${functionFilter}`,
@@ -112,15 +106,6 @@ export function JobsPage() {
         description="Filtre por função, bairro, data, urgência, valor mínimo e experiência exigida."
       />
 
-      <section className="mb-5 grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
-        <div className="jobs-hero-metrics">
-          <StatTile variant="primary" icon={<BriefcaseBusiness size={19} />} label="abertas" value={dashboard.open} />
-          <StatTile icon={<Star size={19} />} label="boas combinações" value={dashboard.compatible} />
-          <StatTile icon={<Zap size={19} />} label="urgentes" value={dashboard.urgent} />
-          <StatTile icon={<ShieldCheck size={19} />} label="empresas confiáveis" value={dashboard.trusted} />
-        </div>
-      </section>
-
       {!hasCoins && (
         <section className="mb-5 rounded-lg border border-aqua-200 bg-aqua-50 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -146,71 +131,14 @@ export function JobsPage() {
             <h3><Search size={18} /> Buscar oportunidades</h3>
             <p>Use os filtros para encontrar turnos compatíveis e evitar candidaturas fora do seu perfil.</p>
           </div>
-          <span className="badge min-h-11 px-4">
-            <Filter size={17} /> {filteredJobs.length} resultado{filteredJobs.length === 1 ? "" : "s"}
-          </span>
-        </div>
-        <div className="jobs-filter-grid">
-        <label className="label md:col-span-2">
-          Função
-          <select className="input" value={functionFilter} onChange={(event) => setFunctionFilter(event.target.value as JobFunction | "Todas")}>
-            <option>Todas</option>
-            {functions.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
-        <label className="label">
-          Bairro
-          <select className="input" value={neighborhoodFilter} onChange={(event) => setNeighborhoodFilter(event.target.value as Neighborhood | "Todos")}>
-            <option>Todos</option>
-            {neighborhoods.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
-        <label className="label">
-          Data
-          <input className="input" type="date" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} />
-        </label>
-        <label className="label">
-          Valor mínimo
-          <input className="input" type="number" min="0" value={minValue} onChange={(event) => setMinValue(event.target.value)} placeholder="R$" />
-        </label>
-        <label className="label md:col-span-2">
-          Experiência exigida
-          <input
-            className="input"
-            value={experienceFilter}
-            onChange={(event) => setExperienceFilter(event.target.value)}
-            placeholder="Ex.: alto fluxo, drinks, limpeza"
-          />
-        </label>
-        <label className="label">
-          Ordenar
-          <select className="input" value={sortBy} onChange={(event) => setSortBy(event.target.value as SortOption)}>
-            {sortOptions.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex min-h-11 items-center gap-2 text-sm font-bold text-slate-600 md:col-span-2">
-          <input type="checkbox" checked={urgentOnly} onChange={(event) => setUrgentOnly(event.target.checked)} className="h-5 w-5 accent-aqua-500" />
-          Mostrar somente vagas urgentes
-        </label>
-        <label className="flex min-h-11 items-center gap-2 text-sm font-bold text-slate-600 md:col-span-2">
-          <input type="checkbox" checked={compatibleOnly} onChange={(event) => setCompatibleOnly(event.target.checked)} className="h-5 w-5 accent-aqua-500" />
-          Mostrar apenas boa combinação
-        </label>
-        <label className="flex min-h-11 items-center gap-2 text-sm font-bold text-slate-600 md:col-span-2">
-          <input type="checkbox" checked={trustedCompaniesOnly} onChange={(event) => setTrustedCompaniesOnly(event.target.checked)} className="h-5 w-5 accent-aqua-500" />
-          Mostrar apenas empresas com boa reputação
-        </label>
-        <div className="flex flex-wrap items-center gap-2 md:col-span-2 md:justify-end">
-          <button type="button" onClick={clearFilters} className="secondary">
-            <RotateCcw size={17} /> Limpar
-          </button>
-        </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="badge min-h-11 px-4">
+              {filteredJobs.length} resultado{filteredJobs.length === 1 ? "" : "s"}
+            </span>
+            <button type="button" onClick={() => setShowFilters(true)} className="primary min-h-11 px-4">
+              <Filter size={17} /> Filtro
+            </button>
+          </div>
         </div>
         {activeFilters.length > 0 && (
           <div className="jobs-active-filters">
@@ -222,6 +150,76 @@ export function JobsPage() {
           </div>
         )}
       </section>
+
+      {showFilters && (
+        <Modal title="Filtro" onClose={() => setShowFilters(false)}>
+          <div className="jobs-filter-grid">
+            <label className="label md:col-span-2">
+              Função
+              <select className="input" value={functionFilter} onChange={(event) => setFunctionFilter(event.target.value as JobFunction | "Todas")}>
+                <option>Todas</option>
+                {functions.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+            <label className="label">
+              Bairro
+              <select className="input" value={neighborhoodFilter} onChange={(event) => setNeighborhoodFilter(event.target.value as Neighborhood | "Todos")}>
+                <option>Todos</option>
+                {neighborhoods.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+            <label className="label">
+              Data
+              <input className="input" type="date" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} />
+            </label>
+            <label className="label">
+              Valor mínimo
+              <input className="input" type="number" min="0" value={minValue} onChange={(event) => setMinValue(event.target.value)} placeholder="R$" />
+            </label>
+            <label className="label md:col-span-2">
+              Experiência exigida
+              <input
+                className="input"
+                value={experienceFilter}
+                onChange={(event) => setExperienceFilter(event.target.value)}
+                placeholder="Ex.: alto fluxo, drinks, limpeza"
+              />
+            </label>
+            <label className="label">
+              Ordenar
+              <select className="input" value={sortBy} onChange={(event) => setSortBy(event.target.value as SortOption)}>
+                {sortOptions.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex min-h-11 items-center gap-2 text-sm font-bold text-slate-600 md:col-span-2">
+              <input type="checkbox" checked={urgentOnly} onChange={(event) => setUrgentOnly(event.target.checked)} className="h-5 w-5 accent-aqua-500" />
+              Mostrar somente vagas urgentes
+            </label>
+            <label className="flex min-h-11 items-center gap-2 text-sm font-bold text-slate-600 md:col-span-2">
+              <input type="checkbox" checked={compatibleOnly} onChange={(event) => setCompatibleOnly(event.target.checked)} className="h-5 w-5 accent-aqua-500" />
+              Mostrar apenas boa combinação
+            </label>
+            <label className="flex min-h-11 items-center gap-2 text-sm font-bold text-slate-600 md:col-span-2">
+              <input type="checkbox" checked={trustedCompaniesOnly} onChange={(event) => setTrustedCompaniesOnly(event.target.checked)} className="h-5 w-5 accent-aqua-500" />
+              Mostrar apenas empresas com boa reputação
+            </label>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+            <button type="button" onClick={clearFilters} className="secondary">
+              <RotateCcw size={17} /> Limpar
+            </button>
+            <button type="button" onClick={() => setShowFilters(false)} className="primary">
+              Ver {filteredJobs.length} resultado{filteredJobs.length === 1 ? "" : "s"}
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {filteredJobs.length === 0 ? (
         <EmptyState title="Nenhuma vaga encontrada" text="Tente remover um filtro, reduzir o valor mínimo ou desmarcar boa combinação para visualizar mais oportunidades." />
