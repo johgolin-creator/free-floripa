@@ -17,8 +17,8 @@ import {
   UsersRound,
   WalletCards
 } from "lucide-react";
-import { useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
 import { Modal } from "./Modal";
@@ -27,6 +27,7 @@ import { ReportBugButton } from "./ReportBugButton";
 import { useAppStore } from "../lib/store";
 import { useAuth } from "../lib/auth";
 import { getCompanyProfileCompletion, getWorkerProfileCompletion } from "../lib/profileCompletion";
+import { uploadProfileImage } from "../lib/supabaseStorage";
 
 const MENSAGENS_LINK = { to: "/app/mensagens", label: "Mensagens", mobileLabel: "Chat", icon: MessageCircle };
 
@@ -60,10 +61,61 @@ const companySecondaryLinks = [
 ];
 
 export function AppLayout() {
-  const { state, storageMode, syncStatus, syncError, currentWorker, currentCompany } = useAppStore();
+  const { state, storageMode, syncStatus, syncError, currentWorker, currentCompany, updateWorkerProfile, updateCompanyProfile } = useAppStore();
   const { isAdmin, isModerator } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [showMoreNav, setShowMoreNav] = useState(false);
+  const syncStatusRef = useRef(syncStatus);
+
+  useEffect(() => {
+    syncStatusRef.current = syncStatus;
+  }, [syncStatus]);
+
+  useEffect(() => {
+    const pendingAvatarFile = (location.state as { pendingAvatarFile?: File } | null)?.pendingAvatarFile;
+    if (!pendingAvatarFile) return;
+
+    let cancelled = false;
+    const role = state.activeRole;
+
+    function sleep(ms: number) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    (async () => {
+      // Signing up just changed the logged-in user, which makes the store
+      // reload its remote state. If that reload finishes after this upload,
+      // it overwrites the new photo. Wait for that reload to start and then
+      // finish before saving it, so this write is the last one in.
+      const startWaitUntil = Date.now() + 800;
+      while (syncStatusRef.current !== "carregando" && Date.now() < startWaitUntil) {
+        await sleep(50);
+      }
+      const clearWaitUntil = Date.now() + 8000;
+      while (syncStatusRef.current === "carregando" && Date.now() < clearWaitUntil) {
+        await sleep(150);
+      }
+      if (cancelled) return;
+
+      try {
+        const uploadedUrl = await uploadProfileImage(pendingAvatarFile, role === "trabalhador" ? "trabalhadores" : "empresas");
+        if (cancelled) return;
+        if (role === "trabalhador") updateWorkerProfile({ avatarUrl: uploadedUrl });
+        else updateCompanyProfile({ logoUrl: uploadedUrl });
+      } catch {
+        // Non-critical: the account already exists either way, and a photo
+        // can be added later from the profile page.
+      } finally {
+        if (!cancelled) navigate(location.pathname, { replace: true, state: null });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
   const primaryLinks = state.activeRole === "trabalhador" ? workerPrimaryLinks : companyPrimaryLinks;
   const secondaryLinks = [
     ...(state.activeRole === "trabalhador" ? workerSecondaryLinks : companySecondaryLinks),
@@ -72,6 +124,7 @@ export function AppLayout() {
   const mobilePrimaryLinks = [...primaryLinks, MENSAGENS_LINK];
   const mobileMoreLinks = secondaryLinks.filter((link) => link.to !== MENSAGENS_LINK.to);
   const profilePath = state.activeRole === "trabalhador" ? "/app/perfil-trabalhador" : "/app/perfil-empresa";
+  const dashboardPath = state.activeRole === "trabalhador" ? "/app/trabalhador" : "/app/empresa";
   const completion =
     state.activeRole === "trabalhador"
       ? getWorkerProfileCompletion(currentWorker)
@@ -110,7 +163,7 @@ export function AppLayout() {
   return (
     <div className="app-shell min-h-screen bg-ice pb-20 md:grid md:grid-cols-[264px_1fr] md:pb-0">
       <aside className="app-sidebar hidden border-r border-white/10 p-4 text-white shadow-lift md:flex md:flex-col">
-        <NavLink to="/" className="mb-5 flex items-center gap-3">
+        <NavLink to={dashboardPath} className="mb-5 flex items-center gap-3">
           <BrandLogo inverted />
         </NavLink>
 
@@ -189,7 +242,7 @@ export function AppLayout() {
       <main className="min-w-0">
         <header className="app-mobile-header md:hidden">
           <div className="flex items-center justify-between gap-3">
-            <NavLink to="/" className="min-w-0">
+            <NavLink to={dashboardPath} className="min-w-0">
               <BrandLogo compact inverted />
             </NavLink>
             <div className="hidden">

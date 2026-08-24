@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ImageUp } from "lucide-react";
-import { uploadProfileImage, type ProfileImageKind } from "../lib/supabaseStorage";
+import { ACCEPTED_IMAGE_TYPES, MAX_IMAGE_SIZE_MB, uploadProfileImage, type ProfileImageKind } from "../lib/supabaseStorage";
 
 interface ProfileImageUploaderProps {
   label: string;
@@ -8,9 +8,12 @@ interface ProfileImageUploaderProps {
   kind: ProfileImageKind;
   previewAlt: string;
   onChange: (url: string) => void;
+  /** When true, the file is kept locally (preview only) instead of uploaded right away. Use this before the user has an account, e.g. during signup, since uploading requires an active session. Pass the file to onFileSelected so the caller can upload it once the account exists. */
+  deferUpload?: boolean;
+  onFileSelected?: (file: File) => void;
 }
 
-export function ProfileImageUploader({ label, value, kind, previewAlt, onChange }: ProfileImageUploaderProps) {
+export function ProfileImageUploader({ label, value, kind, previewAlt, onChange, deferUpload, onFileSelected }: ProfileImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
 
@@ -31,8 +34,25 @@ export function ProfileImageUploader({ label, value, kind, previewAlt, onChange 
                 const file = input.files?.[0];
                 if (!file) return;
 
-                setUploading(true);
                 setUploadError("");
+
+                if (deferUpload) {
+                  if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+                    setUploadError("Use uma imagem JPG, PNG, WEBP ou GIF.");
+                    input.value = "";
+                    return;
+                  }
+                  if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+                    setUploadError(`A imagem precisa ter até ${MAX_IMAGE_SIZE_MB} MB.`);
+                    input.value = "";
+                    return;
+                  }
+                  onFileSelected?.(file);
+                  onChange(URL.createObjectURL(file));
+                  return;
+                }
+
+                setUploading(true);
                 try {
                   const publicUrl = await uploadProfileImage(file, kind);
                   onChange(publicUrl);
@@ -46,20 +66,11 @@ export function ProfileImageUploader({ label, value, kind, previewAlt, onChange 
             />
           </label>
           <p className="mt-1 text-xs font-semibold text-slate-500">
-            {uploading ? "Enviando imagem..." : "JPG, PNG, WEBP ou GIF até 5 MB."}
+            {uploading ? "Enviando imagem..." : deferUpload ? "JPG, PNG, WEBP ou GIF até 5 MB. Enviada ao criar a conta." : "JPG, PNG, WEBP ou GIF até 5 MB."}
           </p>
         </div>
       </div>
       {uploadError && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{uploadError}</div>}
-      <label className="label">
-        Link da imagem
-        <input
-          className="input"
-          value={value}
-          placeholder="Cole um link ou envie uma imagem acima"
-          onChange={(event) => onChange(event.target.value)}
-        />
-      </label>
     </div>
   );
 }

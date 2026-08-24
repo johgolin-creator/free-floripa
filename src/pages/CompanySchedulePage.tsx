@@ -131,14 +131,7 @@ export function CompanySchedulePage() {
         </div>
       )}
 
-      <section className="schedule-hero">
-        <div>
-          <span className="section-eyebrow">Planejamento da operação</span>
-          <h2>Monte a equipe antes, acompanhe durante e feche depois</h2>
-          <p>
-            Separe escalas planejadas pela empresa das escalas automáticas das vagas, com aprovação, conclusão e faltas no mesmo lugar.
-          </p>
-        </div>
+      <section className="mb-4 grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
         <div className="schedule-hero-metrics">
           <StatTile variant="primary" icon={<CalendarDays size={19} />} label="hoje" value={todayTotal} />
           <StatTile icon={<ClipboardList size={19} />} label="manuais" value={manualTotal} />
@@ -148,7 +141,6 @@ export function CompanySchedulePage() {
 
       <section className="schedule-filter-panel">
         <div className="schedule-stat-grid">
-          <Stat label="escalas criadas" value={String(manualTotal)} />
           <Stat label="confirmados" value={String(confirmedCount)} />
           <Stat label="concluídos" value={String(completedCount)} />
         </div>

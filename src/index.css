@@ -244,7 +244,13 @@ a {
 }
 
 .app-bottom-nav {
-  padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom), var(--android-inset-bottom, 0px));
+}
+
+@media (max-width: 767px) {
+  .app-shell {
+    padding-bottom: calc(5rem + max(env(safe-area-inset-bottom, 0px), var(--android-inset-bottom, 0px)));
+  }
 }
 
 .app-bottom-nav .mobile-nav-icon.is-active {
@@ -721,22 +727,6 @@ a {
   @apply mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-sm font-black text-white;
 }
 
-.event-preset-grid {
-  @apply mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4;
-}
-
-.event-preset-button {
-  @apply grid min-h-20 gap-1 rounded-lg border border-slate-200 bg-brand-charcoal px-3 py-2 text-left shadow-sm transition hover:border-aqua-200 hover:bg-aqua-50 hover:shadow-soft;
-}
-
-.event-preset-button strong {
-  @apply text-sm font-black text-white;
-}
-
-.event-preset-button span {
-  @apply text-xs font-bold text-slate-500;
-}
-
 .event-data-grid {
   @apply grid gap-3 md:grid-cols-2;
 }
@@ -971,10 +961,6 @@ a {
   @apply grid gap-1.5 rounded-lg bg-slate-50 px-3 py-2;
 }
 
-.company-job-progress > div:first-child {
-  @apply flex items-center justify-between gap-3 text-sm font-black text-white;
-}
-
 .company-job-progress small {
   @apply text-xs font-bold text-slate-500;
 }
@@ -1009,6 +995,14 @@ a {
 }
 
 .company-history summary {
+  @apply flex cursor-pointer items-center gap-2 text-sm font-black text-white;
+}
+
+.event-browse-professionals {
+  @apply rounded-lg border border-slate-200 bg-slate-50/70 p-4;
+}
+
+.event-browse-professionals summary {
   @apply flex cursor-pointer items-center gap-2 text-sm font-black text-white;
 }
 

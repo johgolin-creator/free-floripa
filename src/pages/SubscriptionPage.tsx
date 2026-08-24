@@ -156,9 +156,8 @@ export function SubscriptionPage() {
         </div>
       </section>
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <StatTile variant="primary" icon={<WalletCards size={18} />} label={walletLabel} value={`${activeBalance} moeda(s)`} />
-        <StatTile icon={<Lock size={18} />} label={isCompany ? "Cancelar vaga preenchida" : "Desbloqueio de vaga"} value={isCompany ? "10 moedas" : "1 moeda"} />
+      <div className="grid gap-3 md:grid-cols-2">
+        <StatTile variant="primary" icon={<Lock size={18} />} label={isCompany ? "Cancelar vaga preenchida" : "Desbloqueio de vaga"} value={isCompany ? "10 moedas" : "1 moeda"} />
         <StatTile icon={<CreditCard size={18} />} label={isCompany ? "Carteira separada" : "Candidatura"} value={isCompany ? "Empresa" : "1 moeda"} />
       </div>
 

@@ -179,14 +179,7 @@ export function CandidatesPage() {
         <EmptyState title="Nenhuma vaga publicada" text="Crie uma vaga para começar a receber candidatos." />
       ) : (
         <div className="grid gap-4">
-          <section className="candidate-board-hero">
-            <div>
-              <span className="section-eyebrow">Central de candidatos</span>
-              <h2>Decida rápido e mantenha o turno sob controle</h2>
-              <p>
-                Acompanhe quem está aguardando resposta, quem já foi aprovado, quem compareceu e quem precisa de avaliação.
-              </p>
-            </div>
+          <section className="grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
             <div className="candidate-hero-metrics">
               <StatTile variant="primary" icon={<UsersRound size={19} />} label="candidatos" value={generalStats.total} />
               <StatTile icon={<BriefcaseBusiness size={19} />} label="vagas" value={companyJobs.length} />

@@ -31,11 +31,7 @@ export function CompanyProfilePage() {
 
   return (
     <div>
-      <SectionHeader
-        eyebrow="Perfil"
-        title="Perfil da empresa"
-        action={<button type="button" onClick={() => setEditing(true)} className="primary"><Edit3 size={17} /> Editar perfil</button>}
-      />
+      <SectionHeader eyebrow="Perfil" title="Perfil da empresa" />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       <ProfileCompletionAlert complete={completion.complete} missing={completion.missing} onEdit={() => setEditing(true)} />
       {blocked && (

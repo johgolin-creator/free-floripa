@@ -60,7 +60,6 @@ export function CompanyJobsPage() {
     active: jobs.filter((job) => isActiveStatus(getJobStatus(job))).length,
     urgent: jobs.filter((job) => job.urgent && isActiveStatus(getJobStatus(job))).length,
     candidates: companyApplications.length,
-    openSlots: jobs.reduce((total, job) => total + getOpenSlots(job), 0),
     expected: companyApplications
       .filter((application) => application.status === "Aprovada" || application.status === "Trabalho concluído")
       .reduce((total, application) => {
@@ -130,21 +129,14 @@ export function CompanyJobsPage() {
         </EmptyState>
       ) : (
         <div className="grid gap-4">
-          <section className="company-jobs-hero">
-            <div>
-              <span className="section-eyebrow">Painel de controle</span>
-              <h2>Suas vagas organizadas por decisão</h2>
-              <p>
-                Acompanhe equipe confirmada, candidatos em aberto e ações importantes sem precisar entrar vaga por vaga.
-              </p>
-            </div>
+          <section className="grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
             <div className="company-hero-metrics">
               <StatTile variant="primary" icon={<BriefcaseBusiness size={19} />} label="ativas" value={dashboard.active} />
               <StatTile tone={dashboard.urgent > 0 ? "alert" : "normal"} icon={<AlertTriangle size={19} />} label="urgentes" value={dashboard.urgent} />
               <StatTile icon={<UsersRound size={19} />} label="candidatos" value={dashboard.candidates} />
               <StatTile icon={<WalletCards size={19} />} label="previsto" value={formatCurrency(dashboard.expected)} />
             </div>
-            <div className="company-hero-actions">
+            <div className="flex flex-wrap gap-2">
               <Link to="/app/empresa?acao=criar-vaga" className="company-action company-action-primary">
                 <Plus size={17} /> Criar vaga
               </Link>
@@ -155,13 +147,6 @@ export function CompanyJobsPage() {
           </section>
 
           <section className="company-filter-bar">
-            <div className="company-filter-stats">
-              <Stat label="vagas abertas" value={String(dashboard.openSlots)} />
-              <Stat label="rascunhos" value={String(jobs.filter((job) => getJobStatus(job) === "Rascunho").length)} />
-              <Stat label="concluídas" value={String(jobs.filter((job) => getJobStatus(job) === "Concluída").length)} />
-              <Stat label="canceladas" value={String(jobs.filter((job) => getJobStatus(job) === "Cancelada").length)} />
-              <Stat label="moedas empresa" value={String(state.subscription.companyCreditsRemaining)} />
-            </div>
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-800 lg:col-span-2">
               Cancelar uma vaga já preenchida custa 10 <TermHint term="moedas" role="empresa">moedas</TermHint> da empresa. Vagas sem equipe completa podem ser canceladas sem taxa.
             </p>
@@ -263,10 +248,6 @@ export function CompanyJobsPage() {
                     </div>
 
                     <div className="company-job-progress">
-                      <div>
-                        <span>Equipe confirmada</span>
-                        <strong>{confirmed}/{job.quantity}</strong>
-                      </div>
                       <div className="company-progress-track">
                         <span style={{ width: `${progress}%` }} />
                       </div>
@@ -285,21 +266,27 @@ export function CompanyJobsPage() {
                       <button type="button" onClick={() => runStatus(job.id, "Cancelada")} disabled={terminal || companyBlocked} className="company-action company-action-danger">
                         <XCircle size={17} /> Cancelar{filledCancellationFee > 0 ? " (-10 moedas)" : ""}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => runStatus(job.id, "Publicada")}
-                        disabled={status === "Publicada" || status === "Urgente" || status === "Em andamento" || companyBlocked}
-                        className="company-action"
-                      >
-                        <RotateCcw size={17} /> Reabrir
-                      </button>
-                      <button type="button" onClick={() => runDuplicate(job.id)} disabled={companyBlocked} className="company-action">
-                        <Copy size={17} /> Duplicar
-                      </button>
-                      <button type="button" onClick={() => runStatus(job.id, "Rascunho")} disabled={status === "Rascunho" || terminal || companyBlocked} className="company-action">
-                        <Square size={17} /> Rascunho
-                      </button>
                     </div>
+
+                    <details className="company-history">
+                      <summary><Square size={16} /> Mais ações</summary>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                        <button
+                          type="button"
+                          onClick={() => runStatus(job.id, "Publicada")}
+                          disabled={status === "Publicada" || status === "Urgente" || status === "Em andamento" || companyBlocked}
+                          className="company-action"
+                        >
+                          <RotateCcw size={17} /> Reabrir
+                        </button>
+                        <button type="button" onClick={() => runDuplicate(job.id)} disabled={companyBlocked} className="company-action">
+                          <Copy size={17} /> Duplicar
+                        </button>
+                        <button type="button" onClick={() => runStatus(job.id, "Rascunho")} disabled={status === "Rascunho" || terminal || companyBlocked} className="company-action">
+                          <Square size={17} /> Rascunho
+                        </button>
+                      </div>
+                    </details>
 
                     <details className="company-history">
                       <summary><CalendarCheck size={16} /> Histórico da vaga</summary>
@@ -383,7 +370,7 @@ function matchesFilter(job: Job, filter: JobFilter) {
   if (filter === "Ativas") return isActiveStatus(status);
   if (filter === "Rascunhos") return status === "Rascunho";
   if (filter === "Histórico") return status === "Concluída" || status === "Cancelada";
-  return true;
+  return status !== "Concluída" && status !== "Cancelada";
 }
 
 function isActiveStatus(status: ReturnType<typeof getJobStatus>) {
@@ -423,15 +410,6 @@ function JobHistory({ applications }: { applications: Application[] }) {
         );
       })}
     </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="company-stat-tile">
-      <strong>{value}</strong>
-      <span>{label}</span>
-    </span>
   );
 }
 

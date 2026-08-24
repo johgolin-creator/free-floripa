@@ -574,12 +574,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   const [syncError, setSyncError] = useState("");
   const pendingApplicationKeys = useRef(new Set<string>());
+  // Saves used to fire concurrently (`void persistRemote(next)` per commit).
+  // Two commits in quick succession (e.g. account creation followed
+  // immediately by a profile edit) raced their network requests, and
+  // whichever happened to finish last won - occasionally the *older* state
+  // completed after the newer one and silently overwrote it. Chaining every
+  // save onto this queue forces them to land in the same order they were
+  // issued, so the most recent commit is always the one left standing.
+  const persistQueueRef = useRef<Promise<void>>(Promise.resolve());
+  // Same ordering problem as persistQueueRef, but for the marketplace
+  // publish calls (publishWorkerProfile/publishCompanyProfile), which do
+  // their own separate sequence of Supabase requests.
+  const publishQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   function commit(updater: (current: AppState) => AppState) {
     setState((current) => {
       const next = updater(current);
       persist(next, localStorageKey);
-      void persistRemote(next);
+      persistQueueRef.current = persistQueueRef.current.then(() => persistRemote(next));
       return next;
     });
   }
@@ -781,10 +793,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // way a real edit through updateWorkerProfile should only sync once
     // typing/selecting settles rather than on every keystroke.
     const timeoutId = window.setTimeout(() => {
-      publishWorkerProfile(user, currentWorker).catch(() => {
-        setSyncError("Falha ao publicar o perfil no banco de profissionais.");
-        setSyncStatus("erro");
-      });
+      // The debounce above only collapses bursts that happen *before* it
+      // fires. If a fresh burst starts again while the previous publish's
+      // sequence of awaited requests (users, worker_profiles,
+      // worker_function_experience) is still in flight - very possible,
+      // since that's several round trips easily taking longer than the
+      // 600ms debounce - the two publishes still run concurrently and can
+      // hit the same unique-constraint race described above. Chaining onto
+      // publishQueueRef forces each publish to wait for the previous one to
+      // finish first, so they can never overlap.
+      publishQueueRef.current = publishQueueRef.current
+        .then(() => publishWorkerProfile(user, currentWorker))
+        .catch(() => {
+          setSyncError("Falha ao publicar o perfil no banco de profissionais.");
+          setSyncStatus("erro");
+        });
     }, 600);
 
     return () => window.clearTimeout(timeoutId);
@@ -1214,10 +1237,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           )
         }));
         if (supabaseMarketplaceEnabled && user) {
-          publishCompanyProfile(user, nextCompany).catch(() => {
-            setSyncError("Falha ao publicar perfil da empresa.");
-            setSyncStatus("erro");
-          });
+          publishQueueRef.current = publishQueueRef.current
+            .then(() => publishCompanyProfile(user, nextCompany))
+            .catch(() => {
+              setSyncError("Falha ao publicar perfil da empresa.");
+              setSyncStatus("erro");
+            });
         }
       },
       applyToJob(jobId) {

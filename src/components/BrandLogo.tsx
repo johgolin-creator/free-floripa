@@ -1,7 +1,7 @@
 export function PontMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} aria-hidden="true">
-      <path d="M31.5 37 A15 15 0 1 1 16.5 37" stroke="#C8FF38" strokeWidth="5" strokeLinecap="round" />
+      <path d="M31.5 37 A15 15 0 1 0 16.5 37" stroke="#C8FF38" strokeWidth="5" strokeLinecap="round" />
       <circle cx="16.5" cy="37" r="4" fill="#C8FF38" />
       <circle cx="31.5" cy="37" r="4" fill="#C8FF38" />
     </svg>

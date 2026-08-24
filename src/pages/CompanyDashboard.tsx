@@ -2,16 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   AlertTriangle,
-  Bell,
   BriefcaseBusiness,
   CalendarCheck,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
-  Clock3,
   MapPin,
   Plus,
-  Search,
   ShieldCheck,
   UsersRound,
   WalletCards,
@@ -113,9 +110,6 @@ export function CompanyDashboard() {
   const todayJobs = companyJobs
     .filter((job) => job.date === today && getJobStatus(job) !== "Cancelada" && getJobStatus(job) !== "Rascunho")
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
-  const todaySchedules = (state.companySchedules ?? [])
-    .filter((schedule) => schedule.companyId === currentCompany.id && schedule.date === today && schedule.status !== "Cancelada")
-    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const incompleteJobs = openJobs
     .filter((job) => getOpenSlots(job) > 0)
     .sort((a, b) => getOpenSlots(b) - getOpenSlots(a));
@@ -178,12 +172,6 @@ export function CompanyDashboard() {
             <Link to="/app/candidatos" className="company-action company-action-primary"><UsersRound size={17} /> Ver candidatos</Link>
             <Link to="/app/escala" className="company-action"><CalendarCheck size={17} /> Ver escala</Link>
           </div>
-        </div>
-        <div className="smart-dashboard-metrics">
-          <SmartMetric icon={<Bell size={19} />} label="pendentes" value={String(pendingApplications.length)} tone={pendingApplications.length > 0 ? "alert" : "normal"} />
-          <SmartMetric icon={<CalendarDays size={19} />} label="vagas hoje" value={String(todayJobs.length)} />
-          <SmartMetric icon={<Clock3 size={19} />} label="escalas hoje" value={String(todaySchedules.length)} />
-          <SmartMetric icon={<AlertTriangle size={19} />} label="a preencher" value={String(incompleteJobs.reduce((total, job) => total + getOpenSlots(job), 0))} tone={incompleteJobs.length > 0 ? "alert" : "normal"} />
         </div>
       </section>
 
@@ -249,18 +237,6 @@ export function CompanyDashboard() {
               {incompleteJobs.length === 0 && <p className="smart-empty-text">Todas as vagas abertas estão completas ou sem pendência.</p>}
             </div>
           </section>
-
-          <section className="soft-panel p-4">
-            <h3 className="mb-3 font-black text-white">Operação</h3>
-            <div className="grid gap-2 text-sm font-semibold">
-              <Link to="/app/candidatos" className="secondary justify-start"><UsersRound size={17} /> Candidatos recebidos</Link>
-              <Link to="/app/eventos" className="secondary justify-start"><CalendarDays size={17} /> Montar evento</Link>
-              <Link to="/app/profissionais" className="secondary justify-start"><Search size={17} /> Banco de profissionais</Link>
-              <Link to="/app/minhas-vagas" className="secondary justify-start"><BriefcaseBusiness size={17} /> Vagas publicadas</Link>
-              <Link to="/app/equipe" className="secondary justify-start"><CheckCircle2 size={17} /> Favoritos e contratados</Link>
-              <Link to="/app/equipe" className="secondary justify-start"><ClipboardList size={17} /> Histórico de contratações</Link>
-            </div>
-          </section>
         </aside>
       </section>
 
@@ -304,26 +280,6 @@ export function CompanyDashboard() {
         </Modal>
       )}
     </div>
-  );
-}
-
-function SmartMetric({
-  icon,
-  label,
-  value,
-  tone = "normal"
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  tone?: "normal" | "alert";
-}) {
-  return (
-    <span className={`smart-dashboard-metric ${tone === "alert" ? "is-alert" : ""}`}>
-      <span>{icon}</span>
-      <strong>{value}</strong>
-      <small>{label}</small>
-    </span>
   );
 }
 

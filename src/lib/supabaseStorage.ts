@@ -3,8 +3,8 @@ import { supabase } from "./supabase";
 export type ProfileImageKind = "trabalhadores" | "empresas";
 
 const PROFILE_IMAGES_BUCKET = "avatars";
-const MAX_IMAGE_SIZE_MB = 5;
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+export const MAX_IMAGE_SIZE_MB = 5;
+export const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 function getExtension(file: File) {
   const extensionFromName = file.name.split(".").pop()?.toLowerCase();

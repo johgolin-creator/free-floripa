@@ -17,13 +17,6 @@ const eventFunctions = functions.filter((item) =>
   ["Garçom", "Bartender", "Segurança", "Recepcionista", "Auxiliar de cozinha", "Copeiro", "Limpeza", "Promotor"].includes(item)
 );
 
-const eventPresets = [
-  { type: "Casamento", name: "Casamento", guests: 120, startsAt: "17:00", endsAt: "02:00", dailyValue: 220 },
-  { type: "Aniversário", name: "Aniversário", guests: 70, startsAt: "18:00", endsAt: "00:00", dailyValue: 180 },
-  { type: "Evento corporativo", name: "Evento corporativo", guests: 90, startsAt: "14:00", endsAt: "22:00", dailyValue: 200 },
-  { type: "Formatura", name: "Formatura", guests: 160, startsAt: "20:00", endsAt: "04:00", dailyValue: 230 }
-];
-
 type CrewNeeds = Record<JobFunction, number>;
 
 function createEmptyNeeds(): CrewNeeds {
@@ -45,8 +38,8 @@ export function CompanyEventsPage() {
   const { state, currentCompany, createJob } = useAppStore();
   const lastCreatedEventKey = useRef("");
   const today = new Date().toISOString().slice(0, 10);
-  const [eventName, setEventName] = useState("Casamento");
-  const [eventType, setEventType] = useState("Casamento");
+  const [eventName, setEventName] = useState("");
+  const [eventType, setEventType] = useState("");
   const [date, setDate] = useState(today);
   const [startsAt, setStartsAt] = useState("18:00");
   const [endsAt, setEndsAt] = useState("02:00");
@@ -110,21 +103,6 @@ export function CompanyEventsPage() {
     setNeeds((current) => ({ ...current, [functionName]: Math.max(0, quantity) }));
   }
 
-  function applyPreset(preset: (typeof eventPresets)[number]) {
-    const suggested = createEmptyNeeds();
-    eventFunctions.forEach((item) => {
-      suggested[item] = suggestCrewSize(preset.guests, item);
-    });
-    setEventType(preset.type);
-    setEventName(preset.name);
-    setGuests(preset.guests);
-    setStartsAt(preset.startsAt);
-    setEndsAt(preset.endsAt);
-    setDailyValue(preset.dailyValue);
-    setNeeds(suggested);
-    setMessage(`${preset.type} aplicado como base. Confira local, data e equipe antes de criar as vagas.`);
-  }
-
   function applySuggestion() {
     const suggested = createEmptyNeeds();
     eventFunctions.forEach((item) => {
@@ -142,8 +120,8 @@ export function CompanyEventsPage() {
       return;
     }
 
-    if (!eventName.trim() || !date || !startsAt || !endsAt || !location.trim()) {
-      setMessage("Preencha nome, data, horário e local do evento antes de criar as vagas.");
+    if (!eventName.trim() || !eventType || !date || !startsAt || !endsAt || !location.trim()) {
+      setMessage("Preencha nome, tipo, data, horário e local do evento antes de criar as vagas.");
       return;
     }
 
@@ -184,14 +162,6 @@ export function CompanyEventsPage() {
     setMessage(`${requestedFunctions.length} vaga${requestedFunctions.length === 1 ? "" : "s"} criada${requestedFunctions.length === 1 ? "" : "s"} para ${eventName}. Agora você pode acompanhar os candidatos em Minhas vagas.`);
   }
 
-  const eventStepStatuses = [
-    { label: "Tipo de evento", done: Boolean(eventType) },
-    { label: "Equipe", done: totalProfessionals > 0 },
-    { label: "Detalhes", done: Boolean(date && location.trim() && guests > 0) },
-    { label: "Revisão", done: false }
-  ];
-  const eventCurrentStepIndex = eventStepStatuses.findIndex((step) => !step.done);
-
   return (
     <div className="grid gap-5">
       <SectionHeader
@@ -207,32 +177,10 @@ export function CompanyEventsPage() {
           : "Perfis em revisão não entram nas sugestões do evento, mantendo a seleção mais segura para sua equipe."}
       </SafetyNotice>
 
-      <div className="event-stepper" aria-label="Etapas para criar evento">
-        {eventStepStatuses.map((step, index) => (
-          <div
-            key={step.label}
-            className={`event-step ${step.done ? "is-done" : index === eventCurrentStepIndex ? "is-current" : ""}`}
-          >
-            <span>{index + 1}</span>
-            <strong>{step.label}</strong>
-          </div>
-        ))}
-      </div>
-
       <section className="event-builder-grid">
         <div className="event-form-card">
           <div className="event-form-title">
             <PartyPopper size={18} /> Dados do evento
-          </div>
-          <div className="event-preset-grid">
-            {eventPresets.map((preset) => (
-              <button key={preset.type} type="button" onClick={() => applyPreset(preset)} className="event-preset-button">
-                <strong>{preset.type}</strong>
-                <span>
-                  {preset.guests} convidados • {preset.startsAt} às {preset.endsAt}
-                </span>
-              </button>
-            ))}
           </div>
           <div className="event-data-grid">
             <label className="label">
@@ -242,6 +190,7 @@ export function CompanyEventsPage() {
             <label className="label">
               Tipo
               <select value={eventType} onChange={(event) => setEventType(event.target.value)} className="input">
+                <option value="">Selecione o tipo</option>
                 {eventTypes.map((item) => (
                   <option key={item}>{item}</option>
                 ))}
@@ -364,49 +313,51 @@ export function CompanyEventsPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[320px_1fr]">
-        <aside className="card p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-black text-white">
-            <Search size={17} /> Ver profissionais por função
-          </div>
-          <div className="grid gap-2">
-            {eventFunctions.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setSelectedFunction(item)}
-                className={`flex min-h-11 items-center justify-between rounded-lg border px-3 text-left text-sm font-black transition ${
-                  selectedFunction === item ? "border-aqua-200 bg-aqua-50 text-aqua-800" : "border-slate-200 bg-white text-navy-950 hover:bg-slate-50"
-                }`}
-              >
-                <span>{item}</span>
-                <span>{realWorkers.filter((worker) => Boolean(getFunctionExperience(worker, item))).length}</span>
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        <div className="grid gap-4">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="section-eyebrow">Disponíveis</p>
-              <h3 className="text-xl font-black text-white">{selectedFunction}</h3>
-            </div>
-            <p className="flex items-center gap-1.5 text-sm font-bold text-slate-600">
-              <MapPin size={16} /> Ordenado por confiabilidade
-            </p>
-          </div>
-          {selectedWorkers.length === 0 ? (
-            <EmptyState title="Nenhum profissional nesta função" text="Quando trabalhadores completarem o perfil com essa profissão, eles aparecerão aqui." />
-          ) : (
-            <div className="grid gap-4 2xl:grid-cols-2">
-              {selectedWorkers.slice(0, 8).map((worker) => (
-                <WorkerOption key={worker.id} worker={worker} functionFocus={selectedFunction} />
+      <details className="event-browse-professionals">
+        <summary>
+          <Search size={17} /> Ver profissionais disponíveis por função
+        </summary>
+        <section className="mt-4 grid gap-4 xl:grid-cols-[320px_1fr]">
+          <aside className="card p-4">
+            <div className="grid gap-2">
+              {eventFunctions.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setSelectedFunction(item)}
+                  className={`flex min-h-11 items-center justify-between rounded-lg border px-3 text-left text-sm font-black transition ${
+                    selectedFunction === item ? "border-aqua-200 bg-aqua-50 text-aqua-800" : "border-slate-200 bg-white text-navy-950 hover:bg-slate-50"
+                  }`}
+                >
+                  <span>{item}</span>
+                  <span>{realWorkers.filter((worker) => Boolean(getFunctionExperience(worker, item))).length}</span>
+                </button>
               ))}
             </div>
-          )}
-        </div>
-      </section>
+          </aside>
+
+          <div className="grid gap-4">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="section-eyebrow">Disponíveis</p>
+                <h3 className="text-xl font-black text-white">{selectedFunction}</h3>
+              </div>
+              <p className="flex items-center gap-1.5 text-sm font-bold text-slate-600">
+                <MapPin size={16} /> Ordenado por confiabilidade
+              </p>
+            </div>
+            {selectedWorkers.length === 0 ? (
+              <EmptyState title="Nenhum profissional nesta função" text="Quando trabalhadores completarem o perfil com essa profissão, eles aparecerão aqui." />
+            ) : (
+              <div className="grid gap-4 2xl:grid-cols-2">
+                {selectedWorkers.slice(0, 8).map((worker) => (
+                  <WorkerOption key={worker.id} worker={worker} functionFocus={selectedFunction} />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      </details>
     </div>
   );
 }

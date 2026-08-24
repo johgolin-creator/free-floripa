@@ -2,18 +2,32 @@ Add-Type -AssemblyName System.Drawing
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
-$logoPath = Join-Path $root "src\assets\free-floripa-logo.jpg"
 $resRoot = Join-Path $root "android\app\src\main\res"
-
-if (!(Test-Path $logoPath)) {
-  throw "Logo not found: $logoPath"
-}
 
 if (!(Test-Path $resRoot)) {
   throw "Android resources not found. Run Capacitor Android setup first."
 }
 
-$logo = [System.Drawing.Image]::FromFile($logoPath)
+# Brand tokens (must match src/components/BrandLogo.tsx / public/favicon.svg):
+# dark navy card background + a lime-green ring mark (a near-full circle with a
+# small gap at the bottom, capped by two dots), drawn on a 48x48 reference grid.
+$darkColor = [System.Drawing.Color]::FromArgb(0x11, 0x13, 0x18)
+$markColor = [System.Drawing.Color]::FromArgb(0xC8, 0xFF, 0x38)
+
+$gridSize = 48.0
+$centerX = 24.0
+$centerY = 24.0
+$radius = 15.0
+$strokeWidth = 5.0
+$dotRadius = 4.0
+$dot1 = @{ X = 31.5; Y = 37.0 }
+$dot2 = @{ X = 16.5; Y = 37.0 }
+$startAngle = [Math]::Atan2($dot2.Y - $centerY, $dot2.X - $centerX) * 180.0 / [Math]::PI
+$endAngle = [Math]::Atan2($dot1.Y - $centerY, $dot1.X - $centerX) * 180.0 / [Math]::PI
+$sweepAngle = $endAngle - $startAngle
+if ($sweepAngle -le 0) { $sweepAngle += 360 }
+# Keep the major arc (the near-full ring), matching the SVG's large-arc-flag.
+if ($sweepAngle -lt 180) { $sweepAngle -= 360 }
 
 function New-RoundedRectPath([float]$x, [float]$y, [float]$w, [float]$h, [float]$r) {
   $path = New-Object System.Drawing.Drawing2D.GraphicsPath
@@ -35,37 +49,62 @@ function New-Canvas([int]$width, [int]$height) {
   return @{ Bitmap = $bitmap; Graphics = $graphics }
 }
 
+# Draws the PONT ring mark centered at ($cx, $cy) with the 48-unit reference
+# grid scaled so it spans $spanPx pixels.
+function Draw-Mark($g, [float]$cx, [float]$cy, [float]$spanPx) {
+  $scale = $spanPx / $gridSize
+  $originX = $cx - $spanPx / 2
+  $originY = $cy - $spanPx / 2
+
+  function Grid([float]$v) { return $v * $scale }
+
+  $penWidth = [Math]::Max(1.0, $strokeWidth * $scale)
+  $pen = New-Object System.Drawing.Pen($markColor, $penWidth)
+  $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+  $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+
+  $boxX = $originX + (Grid ($centerX - $radius))
+  $boxY = $originY + (Grid ($centerY - $radius))
+  $boxSize = Grid ($radius * 2)
+  $g.DrawArc($pen, $boxX, $boxY, $boxSize, $boxSize, $startAngle, $sweepAngle)
+
+  $brush = New-Object System.Drawing.SolidBrush($markColor)
+  foreach ($dot in @($dot1, $dot2)) {
+    $dx = $originX + (Grid ($dot.X - $dotRadius))
+    $dy = $originY + (Grid ($dot.Y - $dotRadius))
+    $g.FillEllipse($brush, $dx, $dy, (Grid ($dotRadius * 2)), (Grid ($dotRadius * 2)))
+  }
+
+  $pen.Dispose()
+  $brush.Dispose()
+}
+
 function Save-Icon($path, [int]$size) {
   $canvas = New-Canvas $size $size
   $g = $canvas.Graphics
-  $g.Clear([System.Drawing.Color]::FromArgb(5, 31, 51))
+  $g.Clear([System.Drawing.Color]::Transparent)
 
-  $card = [Math]::Round($size * 0.78)
-  $x = ($size - $card) / 2
-  $y = ($size - $card) / 2
-  $cardPath = New-RoundedRectPath $x $y $card $card ($card * 0.22)
-  $g.FillPath((New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)), $cardPath)
+  $cardRadius = $size * (10.0 / $gridSize)
+  $cardPath = New-RoundedRectPath 0 0 $size $size $cardRadius
+  $g.FillPath((New-Object System.Drawing.SolidBrush($darkColor)), $cardPath)
 
-  $logoSize = [Math]::Round($card * 0.84)
-  $g.DrawImage($logo, ($size - $logoSize) / 2, ($size - $logoSize) / 2, $logoSize, $logoSize)
+  Draw-Mark $g ($size / 2.0) ($size / 2.0) ($size * (30.0 / $gridSize))
+
   $g.Dispose()
   $canvas.Bitmap.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
   $canvas.Bitmap.Dispose()
 }
 
 function Save-Foreground($path, [int]$size) {
+  # Adaptive icon foreground layer: transparent background (the flat-color
+  # background layer is @color/ic_launcher_background), mark kept inside the
+  # ~66%-of-canvas safe zone so it survives launcher masking/parallax.
   $canvas = New-Canvas $size $size
   $g = $canvas.Graphics
   $g.Clear([System.Drawing.Color]::Transparent)
 
-  $card = [Math]::Round($size * 0.62)
-  $x = ($size - $card) / 2
-  $y = ($size - $card) / 2
-  $cardPath = New-RoundedRectPath $x $y $card $card ($card * 0.2)
-  $g.FillPath((New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)), $cardPath)
+  Draw-Mark $g ($size / 2.0) ($size / 2.0) ($size * 0.4)
 
-  $logoSize = [Math]::Round($card * 0.86)
-  $g.DrawImage($logo, ($size - $logoSize) / 2, ($size - $logoSize) / 2, $logoSize, $logoSize)
   $g.Dispose()
   $canvas.Bitmap.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
   $canvas.Bitmap.Dispose()
@@ -74,20 +113,11 @@ function Save-Foreground($path, [int]$size) {
 function Save-Splash($path, [int]$width, [int]$height) {
   $canvas = New-Canvas $width $height
   $g = $canvas.Graphics
-  $g.Clear([System.Drawing.Color]::FromArgb(5, 31, 51))
+  $g.Clear($darkColor)
 
-  $accent = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(16, 185, 166))
-  $g.FillRectangle($accent, 0, [Math]::Round($height * 0.86), $width, [Math]::Max(6, [Math]::Round($height * 0.015)))
+  $span = [Math]::Min($width, $height) * 0.32
+  Draw-Mark $g ($width / 2.0) ($height / 2.0) $span
 
-  $panel = [Math]::Round([Math]::Min($width * 0.48, $height * 0.42))
-  $panel = [Math]::Max($panel, 120)
-  $x = ($width - $panel) / 2
-  $y = ($height - $panel) / 2
-  $panelPath = New-RoundedRectPath $x $y $panel $panel ($panel * 0.16)
-  $g.FillPath((New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)), $panelPath)
-
-  $logoSize = [Math]::Round($panel * 0.86)
-  $g.DrawImage($logo, ($width - $logoSize) / 2, ($height - $logoSize) / 2, $logoSize, $logoSize)
   $g.Dispose()
   $canvas.Bitmap.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
   $canvas.Bitmap.Dispose()
@@ -127,5 +157,4 @@ foreach ($entry in $splashes.GetEnumerator()) {
   Save-Splash $path $entry.Value[0] $entry.Value[1]
 }
 
-$logo.Dispose()
 Write-Output "Android brand assets generated."

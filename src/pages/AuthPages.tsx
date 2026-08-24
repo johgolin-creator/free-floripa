@@ -198,6 +198,7 @@ export function WorkerSignupPage() {
   const wizard = useWizardStep(workerSteps.length);
   const [selectedFunctions, setSelectedFunctions] = useState<JobFunction[]>(["Garçom"]);
   const [avatarUrl, setAvatarUrl] = useState(DEFAULT_WORKER_AVATAR);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
@@ -289,7 +290,7 @@ export function WorkerSignupPage() {
                 experience,
                 description,
                 availability,
-                avatarUrl,
+                avatarUrl: avatarFile ? DEFAULT_WORKER_AVATAR : avatarUrl,
                 hasTransport: form.get("hasTransport") === "Sim",
                 maxDistanceKm,
                 functions: selectedFunctions,
@@ -300,7 +301,10 @@ export function WorkerSignupPage() {
             if (result.needsEmailConfirmation) {
               setMessage("Conta criada. Confirme o e-mail antes de fazer login.");
             } else {
-              navigate("/app/trabalhador");
+              // The photo is uploaded from AppLayout once the post-login state
+              // sync settles, instead of here: doing it immediately races with
+              // that sync and the upload gets overwritten.
+              navigate("/app/trabalhador", avatarFile ? { state: { pendingAvatarFile: avatarFile } } : undefined);
             }
           } catch (err) {
             setError(err instanceof Error ? err.message : "Não foi possível criar o cadastro.");
@@ -324,7 +328,15 @@ export function WorkerSignupPage() {
 
         <WizardPanel eyebrow="Etapa 2" title="Onde você está" hint="Para mostrarmos vagas perto de você." hidden={wizard.step !== 1}>
           <div className="grid gap-3 md:grid-cols-2">
-            <ProfileImageUploader label="Foto de perfil (opcional)" value={avatarUrl} kind="trabalhadores" previewAlt="Foto de perfil" onChange={setAvatarUrl} />
+            <ProfileImageUploader
+              label="Foto de perfil (opcional)"
+              value={avatarUrl}
+              kind="trabalhadores"
+              previewAlt="Foto de perfil"
+              onChange={setAvatarUrl}
+              deferUpload
+              onFileSelected={setAvatarFile}
+            />
             <label className="label">Data de nascimento<input name="birthDate" className="input" type="date" required /></label>
             <label className="label">Cidade<input name="city" className="input" defaultValue="Florianópolis" required /></label>
             <label className="label">
@@ -424,6 +436,7 @@ export function CompanySignupPage() {
   const formRef = useRef<HTMLFormElement>(null);
   const wizard = useWizardStep(companySteps.length);
   const [logoUrl, setLogoUrl] = useState(DEFAULT_COMPANY_LOGO);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   function validateStep(index: number) {
     const data = new FormData(formRef.current ?? undefined);
@@ -490,14 +503,17 @@ export function CompanySignupPage() {
                 neighborhood: String(form.get("neighborhood") || "").trim(),
                 address: String(form.get("address") || "").trim(),
                 description: String(form.get("description") || "").trim(),
-                logoUrl
+                logoUrl: logoFile ? DEFAULT_COMPANY_LOGO : logoUrl
               }
             });
             setRole("empresa");
             if (result.needsEmailConfirmation) {
               setMessage("Conta criada. Confirme o e-mail antes de fazer login.");
             } else {
-              navigate("/app/empresa");
+              // The logo is uploaded from AppLayout once the post-login state
+              // sync settles, instead of here: doing it immediately races with
+              // that sync and the upload gets overwritten.
+              navigate("/app/empresa", logoFile ? { state: { pendingAvatarFile: logoFile } } : undefined);
             }
           } catch (err) {
             setError(err instanceof Error ? err.message : "Não foi possível criar a conta da empresa.");
@@ -536,7 +552,15 @@ export function CompanySignupPage() {
         </WizardPanel>
 
         <WizardPanel eyebrow="Etapa 3" title="Imagem e revisão" hint="Opcional — ajuda os profissionais a reconhecerem sua marca." hidden={wizard.step !== 2}>
-          <ProfileImageUploader label="Foto ou logotipo (opcional)" value={logoUrl} kind="empresas" previewAlt="Logotipo da empresa" onChange={setLogoUrl} />
+          <ProfileImageUploader
+            label="Foto ou logotipo (opcional)"
+            value={logoUrl}
+            kind="empresas"
+            previewAlt="Logotipo da empresa"
+            onChange={setLogoUrl}
+            deferUpload
+            onFileSelected={setLogoFile}
+          />
           <LegalConsentText />
         </WizardPanel>
 
