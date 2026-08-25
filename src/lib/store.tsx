@@ -126,6 +126,7 @@ interface AppContextValue {
   submitTrustReport: (input: { targetType: TrustReportTargetType; targetId: string; targetName: string; reason: string }) => { ok: boolean; message: string };
   resolveTrustReport: (reportId: string) => void;
   addCompanyLeads: (leads: CompanyLead[]) => { added: number; updated: number };
+  replaceCompanyLeads: (leads: CompanyLead[]) => void;
   toggleCompanyLeadContacted: (leadId: string) => void;
   removeCompanyLead: (leadId: string) => void;
 }
@@ -2042,6 +2043,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
 
         return { added, updated };
+      },
+      replaceCompanyLeads(leads) {
+        commit((current) => ({
+          ...current,
+          companyLeads: leads
+        }));
       },
       toggleCompanyLeadContacted(leadId) {
         commit((current) => ({

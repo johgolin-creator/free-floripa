@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Building2,
   CheckCircle2,
@@ -14,6 +14,13 @@ import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
 import { COMPANY_LEAD_SEGMENTS, DEFAULT_CITY, searchCompanyLeads } from "../lib/companyProspecting";
+import {
+  deleteRemoteCompanyLead,
+  loadRemoteCompanyLeads,
+  setRemoteCompanyLeadContacted,
+  supabaseCompanyLeadsEnabled,
+  upsertRemoteCompanyLeads
+} from "../lib/supabaseCompanyLeads";
 import { useAppStore } from "../lib/store";
 import { formatDateTime } from "../lib/format";
 import type { CompanyLead, CompanyLeadSegment } from "../lib/types";
@@ -21,7 +28,7 @@ import type { CompanyLead, CompanyLeadSegment } from "../lib/types";
 type SegmentFilter = "Todos" | CompanyLeadSegment;
 
 export function AdminLeadsPage() {
-  const { state, addCompanyLeads, toggleCompanyLeadContacted, removeCompanyLead } = useAppStore();
+  const { state, addCompanyLeads, replaceCompanyLeads, toggleCompanyLeadContacted, removeCompanyLead } = useAppStore();
   const [segment, setSegment] = useState<CompanyLeadSegment>("Restaurantes");
   const [city, setCity] = useState(DEFAULT_CITY);
   const [searching, setSearching] = useState(false);
@@ -29,6 +36,18 @@ export function AdminLeadsPage() {
   const [message, setMessage] = useState("");
   const [segmentFilter, setSegmentFilter] = useState<SegmentFilter>("Todos");
   const [contactFilter, setContactFilter] = useState<"Todas" | "Sem contato" | "Contatadas">("Todas");
+
+  useEffect(() => {
+    if (!supabaseCompanyLeadsEnabled) return;
+    loadRemoteCompanyLeads()
+      .then((remoteLeads) => {
+        if (remoteLeads.length > 0) replaceCompanyLeads(remoteLeads);
+      })
+      .catch(() => {
+        setError("Não foi possível carregar a lista compartilhada. Mostrando apenas o que já estava neste aparelho.");
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const leads = state.companyLeads;
   const filteredLeads = useMemo(
@@ -61,10 +80,33 @@ export function AdminLeadsPage() {
       } else {
         setMessage(`${found.length} empresa(s) encontrada(s): ${added} nova(s), ${updated} já conhecida(s).`);
       }
+      if (supabaseCompanyLeadsEnabled) {
+        upsertRemoteCompanyLeads(found).catch(() => {
+          setError("Empresas salvas neste aparelho, mas não foi possível sincronizar com a lista compartilhada.");
+        });
+      }
     } catch (searchError) {
       setError(searchError instanceof Error ? searchError.message : "Não foi possível concluir a busca.");
     } finally {
       setSearching(false);
+    }
+  }
+
+  function handleToggleContacted(lead: CompanyLead) {
+    toggleCompanyLeadContacted(lead.id);
+    if (supabaseCompanyLeadsEnabled) {
+      setRemoteCompanyLeadContacted(lead.id, !lead.contacted).catch(() => {
+        setError("Não foi possível sincronizar o status de contato.");
+      });
+    }
+  }
+
+  function handleRemove(lead: CompanyLead) {
+    removeCompanyLead(lead.id);
+    if (supabaseCompanyLeadsEnabled) {
+      deleteRemoteCompanyLead(lead.id).catch(() => {
+        setError("Não foi possível remover da lista compartilhada.");
+      });
     }
   }
 
@@ -158,8 +200,8 @@ export function AdminLeadsPage() {
             <LeadCard
               key={lead.id}
               lead={lead}
-              onToggleContacted={() => toggleCompanyLeadContacted(lead.id)}
-              onRemove={() => removeCompanyLead(lead.id)}
+              onToggleContacted={() => handleToggleContacted(lead)}
+              onRemove={() => handleRemove(lead)}
             />
           ))}
         </div>
