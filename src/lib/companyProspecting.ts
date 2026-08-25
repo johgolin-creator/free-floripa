@@ -26,25 +26,23 @@ export const COMPANY_LEAD_SEGMENTS: SegmentDefinition[] = [
   { value: "Atacados", label: "Atacados", tags: [{ key: "shop", value: "wholesale" }] }
 ];
 
-export const DEFAULT_CITY = "Florianópolis, SC, Brasil";
-const DEFAULT_BBOX: [number, number, number, number] = [-27.85, -48.62, -27.35, -48.35];
-
 type Bbox = [south: number, west: number, north: number, east: number];
 
-async function geocodeCity(city: string): Promise<Bbox | null> {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(city)}`;
-  const response = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!response.ok) return null;
+// Nominatim (the free geocoding service that would turn an arbitrary city
+// name into coordinates) doesn't allow direct calls from a browser - it has
+// no CORS headers, so it only works from a server. Rather than depending on
+// a server we don't have for this, cities are a fixed list with bounding
+// boxes looked up once, covering the Grande Florianópolis area this app
+// actually serves.
+export const CITY_OPTIONS: { label: string; bbox: Bbox }[] = [
+  { label: "Florianópolis, SC", bbox: [-27.85, -48.62, -27.35, -48.35] },
+  { label: "Palhoça, SC", bbox: [-27.917059, -48.7485245, -27.6066727, -48.5731101] },
+  { label: "São José, SC", bbox: [-27.661, -48.746, -27.517, -48.568] },
+  { label: "Santo Amaro da Imperatriz, SC", bbox: [-27.875, -48.913, -27.6136156, -48.6749356] },
+  { label: "Biguaçu, SC", bbox: [-27.544, -48.8351739, -27.32, -48.574] }
+];
 
-  const results = (await response.json()) as Array<{ boundingbox?: string[] }>;
-  const boundingBox = results[0]?.boundingbox;
-  if (!boundingBox || boundingBox.length < 4) return null;
-
-  const [south, north, west, east] = boundingBox.map(Number);
-  if ([south, north, west, east].some((value) => Number.isNaN(value))) return null;
-
-  return [south, west, north, east];
-}
+export const DEFAULT_CITY = CITY_OPTIONS[0].label;
 
 interface OverpassElement {
   type: "node" | "way" | "relation";
@@ -97,9 +95,8 @@ export async function searchCompanyLeads({
   const segmentDefinition = COMPANY_LEAD_SEGMENTS.find((item) => item.value === segment);
   if (!segmentDefinition) return [];
 
-  const trimmedCity = city.trim() || DEFAULT_CITY;
-  const bbox = trimmedCity === DEFAULT_CITY ? DEFAULT_BBOX : (await geocodeCity(trimmedCity)) ?? DEFAULT_BBOX;
-  const query = buildOverpassQuery(segmentDefinition.tags, bbox);
+  const cityOption = CITY_OPTIONS.find((item) => item.label === city) ?? CITY_OPTIONS[0];
+  const query = buildOverpassQuery(segmentDefinition.tags, cityOption.bbox);
 
   const response = await fetch("https://overpass-api.de/api/interpreter", {
     method: "POST",
@@ -114,6 +111,6 @@ export async function searchCompanyLeads({
   const elements = Array.isArray(data.elements) ? data.elements : [];
 
   return elements
-    .map((element) => toCompanyLead(element, segment, trimmedCity))
+    .map((element) => toCompanyLead(element, segment, cityOption.label))
     .filter((lead): lead is CompanyLead => Boolean(lead));
 }

@@ -13,7 +13,7 @@ import {
 import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
-import { COMPANY_LEAD_SEGMENTS, DEFAULT_CITY, searchCompanyLeads } from "../lib/companyProspecting";
+import { CITY_OPTIONS, COMPANY_LEAD_SEGMENTS, DEFAULT_CITY, searchCompanyLeads } from "../lib/companyProspecting";
 import {
   deleteRemoteCompanyLead,
   loadRemoteCompanyLeads,
@@ -132,7 +132,13 @@ export function AdminLeadsPage() {
           </label>
           <label className="label">
             Cidade
-            <input value={city} onChange={(event) => setCity(event.target.value)} className="input" placeholder={DEFAULT_CITY} />
+            <select value={city} onChange={(event) => setCity(event.target.value)} className="input">
+              {CITY_OPTIONS.map((item) => (
+                <option key={item.label} value={item.label}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
           </label>
           <button type="button" onClick={runSearch} disabled={searching} className="primary">
             {searching ? <Loader2 size={17} className="animate-spin" /> : <Search size={17} />}
