@@ -2,10 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Building2,
   CheckCircle2,
+  FileSearch,
   Globe,
+  Instagram,
   Loader2,
   Mail,
   MapPin,
+  MapPinned,
   Phone,
   Search,
   Trash2
@@ -216,6 +219,15 @@ export function AdminLeadsPage() {
   );
 }
 
+function buildSearchLinks(lead: CompanyLead) {
+  const query = `${lead.name} ${lead.city}`;
+  return {
+    maps: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`,
+    instagram: `https://www.google.com/search?q=${encodeURIComponent(`site:instagram.com ${query}`)}`,
+    cnpj: `https://www.google.com/search?q=${encodeURIComponent(`CNPJ ${query}`)}`
+  };
+}
+
 function LeadCard({
   lead,
   onToggleContacted,
@@ -226,6 +238,7 @@ function LeadCard({
   onRemove: () => void;
 }) {
   const hasContact = Boolean(lead.phone || lead.email);
+  const searchLinks = buildSearchLinks(lead);
 
   return (
     <article className={`worker-application-card ${lead.contacted ? "" : hasContact ? "border-aqua-200 bg-aqua-50/40" : ""}`}>
@@ -266,6 +279,19 @@ function LeadCard({
             <a href={lead.website} target="_blank" rel="noreferrer" className="secondary">
               <Globe size={16} /> Site
             </a>
+          )}
+          {!hasContact && (
+            <>
+              <a href={searchLinks.maps} target="_blank" rel="noreferrer" className="secondary">
+                <MapPinned size={16} /> Buscar no Maps
+              </a>
+              <a href={searchLinks.instagram} target="_blank" rel="noreferrer" className="secondary">
+                <Instagram size={16} /> Buscar no Instagram
+              </a>
+              <a href={searchLinks.cnpj} target="_blank" rel="noreferrer" className="secondary">
+                <FileSearch size={16} /> Buscar CNPJ
+              </a>
+            </>
           )}
           <button type="button" onClick={onToggleContacted} className={lead.contacted ? "secondary" : "primary"}>
             <CheckCircle2 size={16} /> {lead.contacted ? "Marcar como pendente" : "Marcar como contatada"}
