@@ -149,6 +149,10 @@ a {
   background: linear-gradient(180deg, #c8ff38, #4ade80);
 }
 
+.metric-card.is-clickable {
+  @apply cursor-pointer hover:-translate-y-0.5 hover:border-aqua-300/40 hover:shadow-lift active:translate-y-0;
+}
+
 .metric-tile {
   @apply rounded-lg border border-slate-100 bg-slate-50/80 p-3;
 }

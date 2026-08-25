@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   BriefcaseBusiness,
@@ -29,9 +29,9 @@ import { formatCurrency, formatDate } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
 import type { Application, Job, JobStatus } from "../lib/types";
 
-type JobFilter = "Todas" | "Ativas" | "Rascunhos" | "Histórico";
+type JobFilter = "Todas" | "Ativas" | "Urgentes" | "Rascunhos" | "Histórico";
 
-const filters: JobFilter[] = ["Todas", "Ativas", "Rascunhos", "Histórico"];
+const filters: JobFilter[] = ["Todas", "Ativas", "Urgentes", "Rascunhos", "Histórico"];
 type EventPackage = {
   key: string;
   name: string;
@@ -48,9 +48,11 @@ type EventPackage = {
 
 export function CompanyJobsPage() {
   const { state, currentCompany, updateJobStatus, duplicateJob } = useAppStore();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<JobFilter>("Todas");
   const [message, setMessage] = useState("");
   const [confirmCancelJobId, setConfirmCancelJobId] = useState<string | null>(null);
+  const jobListRef = useRef<HTMLDivElement | null>(null);
   const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
   const jobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const companyApplications = state.applications.filter((application) => jobs.some((job) => job.id === application.jobId));
@@ -99,6 +101,11 @@ export function CompanyJobsPage() {
     setMessage(result.message);
   }
 
+  function goToFilter(nextFilter: JobFilter) {
+    setFilter(nextFilter);
+    jobListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
     <div>
       <SectionHeader
@@ -131,10 +138,32 @@ export function CompanyJobsPage() {
         <div className="grid gap-4">
           <section className="grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
             <div className="company-hero-metrics">
-              <StatTile variant="primary" icon={<BriefcaseBusiness size={19} />} label="ativas" value={dashboard.active} />
-              <StatTile tone={dashboard.urgent > 0 ? "alert" : "normal"} icon={<AlertTriangle size={19} />} label="urgentes" value={dashboard.urgent} />
-              <StatTile icon={<UsersRound size={19} />} label="candidatos" value={dashboard.candidates} />
-              <StatTile icon={<WalletCards size={19} />} label="previsto" value={formatCurrency(dashboard.expected)} />
+              <StatTile
+                variant="primary"
+                icon={<BriefcaseBusiness size={19} />}
+                label="ativas"
+                value={dashboard.active}
+                onClick={() => goToFilter("Ativas")}
+              />
+              <StatTile
+                tone={dashboard.urgent > 0 ? "alert" : "normal"}
+                icon={<AlertTriangle size={19} />}
+                label="urgentes"
+                value={dashboard.urgent}
+                onClick={() => goToFilter("Urgentes")}
+              />
+              <StatTile
+                icon={<UsersRound size={19} />}
+                label="candidatos"
+                value={dashboard.candidates}
+                onClick={() => navigate("/app/candidatos")}
+              />
+              <StatTile
+                icon={<WalletCards size={19} />}
+                label="previsto"
+                value={formatCurrency(dashboard.expected)}
+                onClick={() => goToFilter("Ativas")}
+              />
             </div>
             <div className="flex flex-wrap gap-2">
               <Link to="/app/empresa?acao=criar-vaga" className="company-action company-action-primary">
@@ -146,7 +175,7 @@ export function CompanyJobsPage() {
             </div>
           </section>
 
-          <section className="company-filter-bar">
+          <section className="company-filter-bar" ref={jobListRef}>
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-800 lg:col-span-2">
               Cancelar uma vaga já preenchida custa 10 <TermHint term="moedas" role="empresa">moedas</TermHint> da empresa. Vagas sem equipe completa podem ser canceladas sem taxa.
             </p>
@@ -368,6 +397,7 @@ function getEventPackageName(job: Job) {
 function matchesFilter(job: Job, filter: JobFilter) {
   const status = getJobStatus(job);
   if (filter === "Ativas") return isActiveStatus(status);
+  if (filter === "Urgentes") return job.urgent && isActiveStatus(status);
   if (filter === "Rascunhos") return status === "Rascunho";
   if (filter === "Histórico") return status === "Concluída" || status === "Cancelada";
   return status !== "Concluída" && status !== "Cancelada";
