@@ -6,7 +6,6 @@ import {
   BadgeCheck,
   Building2,
   CalendarDays,
-  CheckCircle2,
   Clock,
   CreditCard,
   Flag,
@@ -19,14 +18,12 @@ import {
   Star,
   Users,
   WalletCards,
-  XCircle,
-  Zap
+  XCircle
 } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatusBadge } from "../components/StatusBadge";
-import { TermHint } from "../components/TermHint";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
@@ -34,7 +31,7 @@ import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getJo
 
 export function JobDetailsPage() {
   const { id } = useParams();
-  const { state, currentWorker, applyToJob, updateApplicationStatus, submitTrustReport, unlockJobWithCoins, subscribeProfessional, subscribePlus } = useAppStore();
+  const { state, currentWorker, applyToJob, updateApplicationStatus, submitTrustReport, subscribeProfessional, subscribePlus } = useAppStore();
   const [message, setMessage] = useState("");
   const [showPlans, setShowPlans] = useState(false);
   const [showApplyConfirm, setShowApplyConfirm] = useState(false);
@@ -62,11 +59,8 @@ export function JobDetailsPage() {
   const confirmed = application?.status === "Aprovada" || application?.status === "Trabalho concluído";
   const workerExperience = getFunctionExperience(currentWorker, currentJob.function);
   const jobStatus = getJobStatus(currentJob);
-  const hasUnlockedJob = state.subscription.unlockedJobIds.includes(currentJob.id);
-  const canViewFullJob = hasUnlockedJob || confirmed;
   const workerBlocked = state.adminModeration.blockedWorkerIds.includes(currentWorker.id);
   const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentJob.companyId);
-  const unlockItems = ["Descrição completa", "Requisitos e benefícios", "Candidatura liberada", "Dados protegidos no momento certo"];
   const canCancelApplication = Boolean(application) && (application?.status === "Enviada" || application?.status === "Em análise");
 
   function handleApply() {
@@ -82,8 +76,8 @@ export function JobDetailsPage() {
       setMessage("Esta vaga não está mais aberta para candidatura.");
       return;
     }
-    if (!hasUnlockedJob) {
-      setMessage("Use 1 moeda para liberar a vaga completa antes de enviar candidatura.");
+    if (state.subscription.creditsRemaining <= 0) {
+      setMessage("Use 1 moeda para se candidatar a esta vaga.");
       setShowPlans(true);
       return;
     }
@@ -110,12 +104,6 @@ export function JobDetailsPage() {
     setShowCancelApply(false);
   }
 
-  function handleUnlockJob() {
-    const result = unlockJobWithCoins(currentJob.id);
-    setMessage(result.message);
-    if (!result.ok) setShowPlans(true);
-  }
-
   function submitJobReport(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const result = submitTrustReport({
@@ -139,7 +127,7 @@ export function JobDetailsPage() {
             <CreditCard size={15} /> Saldo: {state.subscription.creditsRemaining} moeda(s)
           </span>
           <h3>Escolha um pacote de moedas</h3>
-          <p>Use moedas para liberar vagas completas. Depois de liberar, a candidatura naquela vaga não cobra de novo.</p>
+          <p>Cada candidatura enviada usa 1 moeda.</p>
         </div>
         <button
           type="button"
@@ -186,7 +174,7 @@ export function JobDetailsPage() {
           </span>
           <h3 className="mt-3 text-xl font-black text-white">Enviar candidatura para esta vaga?</h3>
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-            A vaga já está liberada. Depois do envio, a empresa poderá analisar seu perfil e responder pela plataforma sem nova cobrança de moeda.
+            O envio usa 1 moeda. Depois disso, a empresa poderá analisar seu perfil e responder pela plataforma.
           </p>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -233,84 +221,6 @@ export function JobDetailsPage() {
       </form>
     </Modal>
   ) : null;
-
-  if (!canViewFullJob) {
-    return (
-      <div className="grid gap-5">
-        <SectionHeader
-          eyebrow="Vaga bloqueada"
-          title={currentJob.function}
-          description="Você está vendo apenas uma prévia. Use moedas para liberar a vaga completa."
-        />
-
-        {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
-        {(workerBlocked || companyBlocked) && (
-          <SafetyNotice title="Ação bloqueada por segurança" tone="warning">
-            {workerBlocked
-              ? "Seu perfil está em revisão pela administração. Candidaturas ficam pausadas até a liberação."
-              : "Esta empresa está em revisão pela administração. Aguarde a liberação antes de usar moedas nesta vaga."}
-          </SafetyNotice>
-        )}
-        {company && (
-          <CompanyReputation
-            companyName={company.establishmentName}
-            rating={company.rating}
-            reviews={companyReviews}
-            reportCount={companyReportCount}
-            compact
-          />
-        )}
-
-        <section className="job-preview-card">
-          <div className="job-preview-main">
-            <div className="mb-3 flex flex-wrap gap-2">
-              {currentJob.urgent && <UrgentBadge />}
-              <span className="badge">{currentJob.function}</span>
-              <span className="badge">{currentJob.paymentMethod}</span>
-            </div>
-            <h2>{currentJob.title}</h2>
-            <p>Você está vendo uma prévia. Use 1 moeda para liberar descrição completa, requisitos, benefícios e candidatura.</p>
-
-            <div className="job-preview-grid">
-              <Info label="Empresa" value="Empresa verificada" icon={<Building2 size={17} />} />
-              <Info label="Data" value={formatDate(currentJob.date)} icon={<CalendarDays size={17} />} />
-              <Info label="Horário" value={`${currentJob.startsAt} às ${currentJob.endsAt}`} icon={<Clock size={17} />} />
-              <Info label="Valor" value={formatCurrency(currentJob.dailyValue)} icon={<WalletCards size={17} />} />
-              <Info label="Bairro" value={currentJob.neighborhood} icon={<MapPin size={17} />} />
-              <Info label="Vagas restantes" value={`${getOpenSlots(currentJob)} disponíveis`} icon={<Users size={17} />} />
-            </div>
-          </div>
-
-          <aside className="job-lock-panel">
-            <span className="job-lock-icon">
-              <Lock size={24} />
-            </span>
-            <h3>Vaga completa bloqueada</h3>
-            <p><TermHint term="moedas" role="trabalhador">As moedas</TermHint> liberam os detalhes que ajudam você a decidir com segurança.</p>
-            <div className="job-unlock-list">
-              {unlockItems.map((item) => (
-                <span key={item}>
-                  <CheckCircle2 size={16} /> {item}
-                </span>
-              ))}
-            </div>
-            <button type="button" onClick={handleUnlockJob} className="primary">
-              <Lock size={17} /> Liberar por 1 moeda
-            </button>
-            <button type="button" onClick={() => setShowPlans(true)} className="secondary">
-              Comprar moedas <Zap size={17} />
-            </button>
-            <button type="button" onClick={() => setShowReport(true)} className="secondary">
-              <Flag size={17} /> Relatar problema
-            </button>
-          </aside>
-        </section>
-
-        {plansModal}
-        {reportModal}
-      </div>
-    );
-  }
 
   return (
     <div className="grid gap-5">
@@ -430,7 +340,7 @@ export function JobDetailsPage() {
               {application ? `Status: ${application.status}` : workerBlocked || companyBlocked ? "Bloqueado por segurança" : isApplying ? "Enviando..." : isJobOpenForApplications(currentJob) ? "Candidatar-se" : `Vaga ${jobStatus}`}
             </button>
             <p className="text-xs leading-5 text-slate-500">
-              Cadastro gratuito com prévia das vagas. Use moedas para liberar a vaga completa antes de se candidatar.
+              Cadastro gratuito. Cada candidatura enviada usa 1 moeda.
             </p>
             <button type="button" onClick={() => setShowReport(true)} className="secondary">
               <Flag size={17} /> Relatar problema

@@ -111,10 +111,10 @@ export function JobsPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="flex items-center gap-2 font-black text-white">
-                <Lock size={18} /> Use <TermHint term="moedas" role="trabalhador">moedas</TermHint> para liberar vagas completas
+                <Lock size={18} /> Você está sem <TermHint term="moedas" role="trabalhador">moedas</TermHint>
               </h3>
               <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
-                No gratuito você vê uma prévia. Com moedas, você libera detalhes completos antes de se candidatar.
+                Cada candidatura enviada usa 1 moeda. Compre um pacote para continuar se candidatando.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">

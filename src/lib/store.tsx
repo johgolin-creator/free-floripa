@@ -33,8 +33,8 @@ import {
 import {
   grantRemoteCoins,
   loadRemoteCoinAccount,
+  spendRemoteCoinForApplication,
   supabaseCoinsEnabled,
-  unlockRemoteJobWithCoin,
   type CoinAccount
 } from "./supabaseCoins";
 import { emailNotificationsEnabled, enqueueEmailNotification, type EmailNotificationInput } from "./emailNotifications";
@@ -116,7 +116,6 @@ interface AppContextValue {
   markRoleNotificationsRead: (role: AppState["activeRole"]) => void;
   markChatConversationRead: (applicationId: string) => void;
   sendChatMessage: (applicationId: string, body: string) => { ok: boolean; message: string };
-  unlockJobWithCoins: (jobId: string) => { ok: boolean; message: string };
   subscribeProfessional: () => void;
   subscribePlus: () => void;
   buyCredits: (amount?: number) => void;
@@ -632,7 +631,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       recipientName: currentWorker.name,
       subject: "Suas moedas PONT estão acabando",
       preview: `Você tem ${nextBalance} moeda${nextBalance === 1 ? "" : "s"} disponível${nextBalance === 1 ? "" : "is"}.`,
-      body: `Oi, ${currentWorker.name}. Seu saldo atual é de ${nextBalance} moeda${nextBalance === 1 ? "" : "s"}. Recarregue para continuar liberando vagas completas.`,
+      body: `Oi, ${currentWorker.name}. Seu saldo atual é de ${nextBalance} moeda${nextBalance === 1 ? "" : "s"}. Recarregue para continuar se candidatando às vagas.`,
       eventType: "low_coins",
       metadata: { balance: nextBalance }
     });
@@ -1257,10 +1256,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return { ok: false, message: "Esta empresa está em revisão pela administração. A candidatura está bloqueada por segurança." };
         }
 
-        if (!state.subscription.unlockedJobIds.includes(jobId)) {
+        if (state.subscription.creditsRemaining <= 0) {
           return {
             ok: false,
-            message: "Use 1 moeda para liberar a vaga completa antes de enviar candidatura.",
+            message: "Use 1 moeda para se candidatar a esta vaga.",
             requiresPlan: true
           };
         }
@@ -1293,13 +1292,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
           read: false
         };
 
+        const nextCreditsRemaining = Math.max(0, state.subscription.creditsRemaining - 1);
+
         commit((current) => ({
           ...current,
+          subscription: {
+            ...current.subscription,
+            creditsRemaining: Math.max(0, current.subscription.creditsRemaining - 1)
+          },
           applications: [application, ...current.applications.filter((item) => item.id !== application.id)],
           jobs: current.jobs.map((item) => (item.id === jobId ? { ...item, candidates: item.candidates + 1 } : item)),
           notifications: [
             companyNotification,
             ...current.notifications
+          ],
+          coinLedger: [
+            coinLedgerEntry({
+              role: "trabalhador",
+              kind: "spend",
+              reason: "apply_job",
+              amount: -1,
+              balanceAfter: nextCreditsRemaining,
+              jobId,
+              applicationId: application.id
+            }),
+            ...current.coinLedger
           ]
         }));
         if (company?.email) {
@@ -1321,9 +1338,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
           });
           publishRemoteNotification(job.companyId, companyNotification);
         }
+        if (supabaseCoinsEnabled && user) {
+          trackCoinSync(
+            spendRemoteCoinForApplication(user.id, jobId, application.id),
+            "Falha ao usar moeda para a candidatura."
+          );
+        }
+        queueLowCoinsEmail(nextCreditsRemaining);
         window.setTimeout(() => pendingApplicationKeys.current.delete(pendingKey), 1500);
 
-        return { ok: true, message: "Candidatura enviada com sucesso. A vaga já estava liberada e nenhuma nova moeda foi usada." };
+        return { ok: true, message: "Candidatura enviada com sucesso. 1 moeda foi utilizada." };
       },
       updateApplicationStatus(applicationId, status) {
         const application = state.applications.find((item) => item.id === applicationId);
@@ -1683,42 +1707,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         return { ok: true, message: "Mensagem enviada." };
-      },
-      unlockJobWithCoins(jobId) {
-        const job = state.jobs.find((item) => item.id === jobId);
-        if (!job) return { ok: false, message: "Vaga não encontrada." };
-        if (state.subscription.unlockedJobIds.includes(jobId)) {
-          return { ok: true, message: "Esta vaga já está liberada." };
-        }
-        if (state.subscription.creditsRemaining <= 0) {
-          return { ok: false, message: "Você não possui moedas suficientes para liberar esta vaga." };
-        }
-
-        commit((current) => ({
-          ...current,
-          subscription: {
-            ...current.subscription,
-            creditsRemaining: Math.max(0, current.subscription.creditsRemaining - 1),
-            unlockedJobIds: [...current.subscription.unlockedJobIds, jobId]
-          },
-          coinLedger: [
-            coinLedgerEntry({
-              role: "trabalhador",
-              kind: "spend",
-              reason: "unlock_job",
-              amount: -1,
-              balanceAfter: Math.max(0, current.subscription.creditsRemaining - 1),
-              jobId
-            }),
-            ...current.coinLedger
-          ]
-        }));
-        if (supabaseCoinsEnabled && user) {
-          trackCoinSync(unlockRemoteJobWithCoin(user.id, jobId), "Falha ao liberar vaga com moeda.");
-        }
-        queueLowCoinsEmail(Math.max(0, state.subscription.creditsRemaining - 1));
-
-        return { ok: true, message: "Vaga completa liberada. 1 moeda foi utilizada." };
       },
       subscribeProfessional() {
         commit((current) => ({

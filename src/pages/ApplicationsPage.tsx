@@ -41,8 +41,7 @@ export function ApplicationsPage() {
       (application) => application.status === "Enviada" || application.status === "Em análise" || application.status === "Convidada"
     ).length,
     approved: applications.filter((application) => application.status === "Aprovada").length,
-    completed: applications.filter((application) => application.status === "Trabalho concluído").length,
-    unlockedJobs: applications.filter((application) => state.subscription.unlockedJobIds.includes(application.jobId)).length
+    completed: applications.filter((application) => application.status === "Trabalho concluído").length
   };
 
   function confirmCancelApplication() {
@@ -70,7 +69,7 @@ export function ApplicationsPage() {
               <StatTile variant="primary" icon={<ClipboardCheck size={19} />} label="enviadas" value={stats.total} />
               <StatTile tone={stats.waiting > 0 ? "alert" : "normal"} icon={<Clock3 size={19} />} label="aguardando" value={stats.waiting} />
               <StatTile tone="positive" icon={<UserCheck size={19} />} label="aprovadas" value={stats.approved} />
-              <StatTile icon={<CreditCard size={19} />} label="vagas liberadas" value={stats.unlockedJobs} />
+              <StatTile icon={<CreditCard size={19} />} label="concluídas" value={stats.completed} />
             </div>
           </section>
 
@@ -78,7 +77,7 @@ export function ApplicationsPage() {
             <div className="worker-filter-summary">
               <div>
                 <strong>Saldo atual: {state.subscription.creditsRemaining} moeda(s)</strong>
-                <span>A moeda libera a vaga completa. Depois disso, a candidatura naquela vaga não cobra de novo.</span>
+                <span>Cada candidatura enviada usa 1 moeda.</span>
               </div>
               <Link to="/app/planos" className="secondary min-h-10">
                 Comprar moedas

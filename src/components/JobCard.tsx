@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, Lock, MapPin, Star, Users } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Star, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { UrgentBadge } from "./UrgentBadge";
 import { useAppStore } from "../lib/store";
@@ -20,10 +20,7 @@ export function JobCard({
   const { state } = useAppStore();
   const company = state.companies.find((item) => item.id === job.companyId);
   const companyReviews = state.companyReviews.filter((review) => review.companyId === job.companyId);
-  const application = state.applications.find((item) => item.jobId === job.id && item.workerId === state.selectedWorkerId);
-  const confirmed = application?.status === "Aprovada" || application?.status === "Trabalho concluído";
   const openSlots = getOpenSlots(job);
-  const canViewFullJob = confirmed || state.subscription.unlockedJobIds.includes(job.id);
 
   return (
     <article className="card relative grid gap-4 overflow-hidden p-4 pl-5 hover:-translate-y-0.5 hover:border-aqua-200 hover:shadow-lift">
@@ -37,7 +34,7 @@ export function JobCard({
             {matchLabel && <span className={matchScore && matchScore >= 62 ? "badge bg-aqua-100 text-aqua-700" : "badge bg-slate-100 text-slate-600"}><Star size={14} /> {matchLabel}</span>}
           </div>
           <h3 className="text-lg font-black leading-snug text-white">{job.title}</h3>
-          <p className="text-sm font-semibold text-slate-600">{canViewFullJob ? company?.establishmentName : "Empresa verificada"}</p>
+          <p className="text-sm font-semibold text-slate-600">{company?.establishmentName}</p>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-xs font-black text-slate-500">
             <span className="inline-flex items-center gap-1"><Star size={14} /> {company?.rating.toFixed(1) ?? "0.0"}</span>
             <span>{companyReviews.length} avaliação{companyReviews.length === 1 ? "" : "ões"}</span>
@@ -49,13 +46,7 @@ export function JobCard({
         </div>
       </div>
 
-      {!compact && (
-        <p className="text-sm leading-6 text-slate-600">
-          {canViewFullJob
-            ? job.description
-            : "Prévia da vaga disponível. Use 1 moeda para ver descrição completa, requisitos, benefícios e dados protegidos."}
-        </p>
-      )}
+      {!compact && <p className="text-sm leading-6 text-slate-600">{job.description}</p>}
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <span className="meta-pill">
@@ -87,8 +78,7 @@ export function JobCard({
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
         <span className="text-sm font-semibold text-slate-600">{job.candidates} candidatos</span>
         <Link to={`/app/vagas/${job.id}`} className="primary w-full sm:w-auto">
-          {!canViewFullJob && <Lock size={17} />}
-          {canViewFullJob ? "Ver vaga" : "Liberar por 1 moeda"}
+          Ver vaga
         </Link>
       </div>
     </article>

@@ -61,7 +61,7 @@ export function WorkerDashboard() {
           label={<TermHint term="moedas" role="trabalhador">Moedas</TermHint>}
           value={state.subscription.creditsRemaining}
         />
-        <StatTile icon={<ClipboardList />} label="Acesso a vagas" value={state.subscription.creditsRemaining > 0 ? "Com moedas" : "Prévia"} />
+        <StatTile icon={<ClipboardList />} label="Pode se candidatar" value={state.subscription.creditsRemaining > 0 ? "Sim" : "Sem moedas"} />
       </div>
 
       <section className="smart-dashboard-hero">
@@ -84,7 +84,7 @@ export function WorkerDashboard() {
         <div>
           <h3 className="font-black text-white">Acesso profissional</h3>
           <p className="text-sm text-slate-600">
-            Saldo atual: {state.subscription.creditsRemaining} moeda(s). O gratuito mostra prévias; a moeda libera a vaga completa antes da candidatura.
+            Saldo atual: {state.subscription.creditsRemaining} moeda(s). Cada candidatura enviada usa 1 moeda.
           </p>
         </div>
         <Link to="/app/planos" className="primary">Comprar moedas</Link>

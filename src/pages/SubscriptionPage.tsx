@@ -22,15 +22,14 @@ import { loadRemoteCoinTransactions, supabaseCoinsEnabled, type CoinTransaction 
 
 const freeBenefits = [
   "Criar perfil e manter histórico",
-  "Ver prévias das vagas abertas",
+  "Ver todas as vagas abertas",
   "Receber moedas iniciais para testar",
   "Receber avaliações no perfil"
 ];
 
 const professionalBenefits = [
   "20 moedas no saldo",
-  "Liberar vagas completas conforme usar",
-  "Enviar candidaturas com controle de saldo",
+  "Enviar candidaturas conforme usar",
   "Pagar somente quando precisar",
   "Bom para quem pega diárias aos poucos"
 ];
@@ -44,9 +43,9 @@ const plusBenefits = [
 ];
 
 const unlockItems = [
-  "Endereço e detalhes completos",
-  "Requisitos e benefícios",
-  "Candidatura liberada",
+  "Vagas sempre visíveis por completo",
+  "1 moeda usada a cada candidatura enviada",
+  "Sem cobrança para ver detalhes",
   "Histórico organizado"
 ];
 
@@ -64,10 +63,10 @@ export function SubscriptionPage() {
   const walletLabel = isCompany ? "Saldo empresarial" : "Saldo do trabalhador";
   const pageDescription = isCompany
     ? "Use moedas empresariais para ações da empresa, como cancelar vagas que já foram preenchidas."
-    : "Use moedas para liberar vagas completas antes de se candidatar, sem mensalidade fixa.";
+    : "Cada candidatura enviada usa 1 moeda, sem mensalidade fixa.";
   const heroText = isCompany
     ? "As moedas da empresa ficam separadas das moedas do trabalhador. Assim cada lado tem controle próprio de uso e custo."
-    : "O gratuito deixa você conhecer as oportunidades. A moeda libera a vaga inteira e, naquela vaga, a candidatura não cobra de novo.";
+    : "Todas as vagas ficam sempre visíveis por completo. Ao enviar uma candidatura, 1 moeda do seu saldo é usada.";
   const localTransactions = state.coinLedger.filter((transaction) => transaction.role === state.activeRole);
   const statementTransactions = transactions.length > 0 ? transactions : localTransactions;
 
@@ -157,8 +156,8 @@ export function SubscriptionPage() {
       </section>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <StatTile variant="primary" icon={<Lock size={18} />} label={isCompany ? "Cancelar vaga preenchida" : "Desbloqueio de vaga"} value={isCompany ? "10 moedas" : "1 moeda"} />
-        <StatTile icon={<CreditCard size={18} />} label={isCompany ? "Carteira separada" : "Candidatura"} value={isCompany ? "Empresa" : "1 moeda"} />
+        <StatTile variant="primary" icon={<Lock size={18} />} label={isCompany ? "Cancelar vaga preenchida" : "Candidatura"} value={isCompany ? "10 moedas" : "1 moeda"} />
+        <StatTile icon={<CreditCard size={18} />} label={isCompany ? "Carteira separada" : "Saldo atual"} value={isCompany ? "Empresa" : `${state.subscription.creditsRemaining} moeda(s)`} />
       </div>
 
       <CoinStatement
@@ -173,12 +172,12 @@ export function SubscriptionPage() {
         <PlanCard
           title="Gratuito"
           price="R$ 0"
-          description="Para criar perfil, conhecer o app e ver prévias."
+          description="Para criar perfil, conhecer o app e ver as vagas."
           current={state.subscription.plan === "Gratuito"}
           benefits={freeBenefits}
           action={
             <Link to="/app/vagas" className="secondary w-full">
-              <Search size={17} /> Ver prévias
+              <Search size={17} /> Ver vagas
             </Link>
           }
         />
@@ -186,7 +185,7 @@ export function SubscriptionPage() {
           featured
           title="Profissional"
           price="R$ 19,90"
-          description="Pacote com 20 moedas para liberar vagas completas."
+          description="Pacote com 20 moedas para se candidatar às vagas."
           current={isProfessional}
           benefits={professionalBenefits}
           action={
@@ -236,7 +235,7 @@ export function SubscriptionPage() {
           <Feature
             icon={<BadgeCheck />}
             title="Decisão melhor"
-            text={isCompany ? "A empresa paga apenas por ações sensíveis, como cancelar vaga preenchida." : "O trabalhador paga para ver detalhes quando a vaga fizer sentido."}
+            text={isCompany ? "A empresa paga apenas por ações sensíveis, como cancelar vaga preenchida." : "O trabalhador usa moeda só quando decide se candidatar."}
           />
           <Feature icon={<Zap />} title="Sem mensalidade" text="A conta compra moedas e usa conforme a necessidade." />
         </div>
@@ -286,7 +285,7 @@ function CoinStatement({
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
             {isCompany
               ? "Quando a empresa comprar moedas ou tiver uma cobrança empresarial, o histórico aparecerá aqui."
-              : "Quando você comprar moedas ou liberar uma vaga, o histórico aparecerá aqui."}
+              : "Quando você comprar moedas ou se candidatar a uma vaga, o histórico aparecerá aqui."}
           </p>
         </div>
       ) : (

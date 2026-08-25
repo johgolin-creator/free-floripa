@@ -22,6 +22,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import { Navigate } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
 import { Modal } from "./Modal";
+import { NotificationToast } from "./NotificationToast";
 import { RoleSwitcher } from "./RoleSwitcher";
 import { ReportBugButton } from "./ReportBugButton";
 import { useAppStore } from "../lib/store";
@@ -162,7 +163,8 @@ export function AppLayout() {
 
   return (
     <div className="app-shell min-h-screen bg-ice pb-20 md:grid md:grid-cols-[264px_1fr] md:pb-0">
-      <aside className="app-sidebar hidden border-r border-white/10 p-4 text-white shadow-lift md:flex md:flex-col">
+      <NotificationToast />
+      <aside className="app-sidebar hidden border-r border-white/10 p-4 text-white shadow-lift md:sticky md:top-0 md:flex md:h-screen md:flex-col md:overflow-y-auto">
         <NavLink to={dashboardPath} className="mb-5 flex items-center gap-3">
           <BrandLogo inverted />
         </NavLink>
@@ -221,8 +223,15 @@ export function AppLayout() {
           </p>
         </Link>
 
-        <NavLink to="/app/notificacoes" className="mt-auto rounded-lg border border-white/10 bg-white/10 p-3 shadow-soft transition hover:bg-white/15">
-          <div className="flex items-center gap-2 text-sm text-aqua-300">
+        <NavLink
+          to="/app/notificacoes"
+          className={`mt-auto rounded-lg border p-3 shadow-soft transition ${
+            unread > 0
+              ? "border-alert/50 bg-alert/15 hover:bg-alert/20"
+              : "border-white/10 bg-white/10 hover:bg-white/15"
+          }`}
+        >
+          <div className={`flex items-center gap-2 text-sm ${unread > 0 ? "text-alert" : "text-aqua-300"}`}>
             <Bell size={16} />
             <strong>{unread} novas</strong>
           </div>
@@ -240,7 +249,7 @@ export function AppLayout() {
       </aside>
 
       <main className="min-w-0">
-        <header className="app-mobile-header md:hidden">
+        <header className="app-mobile-header sticky top-0 z-20 md:hidden">
           <div className="flex items-center justify-between gap-3">
             <NavLink to={dashboardPath} className="min-w-0">
               <BrandLogo compact inverted />
@@ -266,8 +275,12 @@ export function AppLayout() {
               >
                 <Cloud size={16} /> {syncLabel}
               </span>
-              <NavLink to="/app/notificacoes" className="app-mobile-bell" aria-label="Notificações">
-                <Bell size={18} />
+              <NavLink
+                to="/app/notificacoes"
+                className={`app-mobile-bell ${unread > 0 ? "has-unread" : ""}`}
+                aria-label="Notificações"
+              >
+                <Bell size={20} />
                 {unread > 0 && <span>{unread}</span>}
               </NavLink>
               {isModerator && <ReportBugButton compact />}
@@ -288,7 +301,7 @@ export function AppLayout() {
           </Link>
         </header>
 
-        <header className="hidden border-b border-white/10 bg-brand-charcoal/90 px-4 py-2 shadow-sm backdrop-blur-xl md:block md:px-8">
+        <header className="hidden border-b border-white/10 bg-brand-charcoal/90 px-4 py-2 shadow-sm backdrop-blur-xl md:sticky md:top-0 md:z-20 md:block md:px-8">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase text-aqua-700">Conecta. Oportunidades. Talentos.</p>
@@ -312,6 +325,14 @@ export function AppLayout() {
               >
                 <Cloud size={16} /> {syncLabel}
               </span>
+              <NavLink
+                to="/app/notificacoes"
+                className={`app-header-bell ${unread > 0 ? "has-unread" : ""}`}
+                aria-label="Notificações"
+              >
+                <Bell size={18} />
+                {unread > 0 && <span className="app-header-bell-badge">{unread}</span>}
+              </NavLink>
               <div className="max-w-full">
                 <RoleSwitcher compact />
               </div>
