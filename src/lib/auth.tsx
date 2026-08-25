@@ -94,6 +94,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessionError, setSessionError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Wait for the session itself to resolve first. Otherwise, on the very
+    // first render (session still null while it loads), userId is
+    // undefined, this effect saw "no user" and flipped dbRoleLoading to
+    // false immediately - before the real session (and its real userId)
+    // ever had a chance to load. AdminRoute would then read that false
+    // dbRoleLoading on the exact render where `loading` just turned false,
+    // see isAdmin/isModerator still false (dbRole hadn't been fetched yet),
+    // and bounce an admin whose access comes from dbRole away from any
+    // /app/admin/* deep link before this effect got to re-run for real.
+    if (loading) return;
+
     const userId = session?.user?.id;
     if (!supabase || !userId) {
       setDbRole(null);
@@ -118,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [session?.user?.id]);
+  }, [loading, session?.user?.id]);
 
   useEffect(() => {
     if (!supabase) {
