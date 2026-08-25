@@ -144,7 +144,15 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: ReactNode }) {
-  const { authEnabled, isAdmin, isModerator } = useAuth();
+  const { authEnabled, isAdmin, isModerator, dbRoleLoading } = useAuth();
+
+  // isAdmin/isModerator can depend on dbRole, which loads a moment after the
+  // session itself (see auth.tsx). Bouncing before it resolves sent a hard
+  // refresh or direct link to any /app/admin/* page back to plain
+  // /app/admin, losing the deeper path.
+  if (authEnabled && !isAdmin && !isModerator && dbRoleLoading) {
+    return <PageLoading />;
+  }
 
   if (authEnabled && !isAdmin && !isModerator) {
     return <Navigate to="/app" replace />;

@@ -267,7 +267,7 @@ function CoinStatement({
           <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
             {isCompany
               ? "Acompanhe compras e cobranças empresariais, separadas do saldo do trabalhador."
-              : "Acompanhe compras, vagas liberadas e candidaturas enviadas."}
+              : "Acompanhe compras e candidaturas enviadas."}
           </p>
         </div>
         <span className="badge bg-aqua-50 text-aqua-700">

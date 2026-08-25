@@ -65,9 +65,7 @@ export function AdminPage() {
     const company = state.companies.find((item) => item.id === job.companyId);
     return normalize(`${job.title} ${job.function} ${job.neighborhood} ${company?.establishmentName ?? ""}`).includes(normalizedSearch);
   });
-  const unlockedJobs = state.subscription.unlockedJobIds
-    .map((jobId) => state.jobs.find((job) => job.id === jobId))
-    .filter((job): job is NonNullable<typeof job> => Boolean(job));
+  const coinPurchaseCount = state.coinLedger.filter((entry) => entry.kind === "purchase").length;
 
   return (
     <div className="grid gap-5">
@@ -231,7 +229,7 @@ export function AdminPage() {
             <div className="grid gap-3">
               <InfoTile icon={<WalletCards />} label="Saldo do trabalhador" value={`${state.subscription.creditsRemaining} moeda(s)`} />
               <InfoTile icon={<WalletCards />} label="Saldo da empresa" value={`${state.subscription.companyCreditsRemaining} moeda(s)`} />
-              <InfoTile icon={<BriefcaseBusiness />} label="Vagas liberadas" value={String(unlockedJobs.length)} />
+              <InfoTile icon={<BriefcaseBusiness />} label="Compras de moedas" value={String(coinPurchaseCount)} />
               <InfoTile icon={<ClipboardList />} label="Candidaturas enviadas" value={String(state.applications.length)} />
             </div>
           </div>

@@ -28,6 +28,7 @@ interface AuthContextValue {
   role: UserRole | null;
   isAdmin: boolean;
   isModerator: boolean;
+  dbRoleLoading: boolean;
   email: string;
   sessionError: string | null;
   signIn: (input: SignInInput) => Promise<{ role: UserRole }>;
@@ -89,16 +90,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(Boolean(supabase));
   const [dbRole, setDbRole] = useState<string | null>(null);
+  const [dbRoleLoading, setDbRoleLoading] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
   useEffect(() => {
     const userId = session?.user?.id;
     if (!supabase || !userId) {
       setDbRole(null);
+      setDbRoleLoading(false);
       return;
     }
 
     let active = true;
+    setDbRoleLoading(true);
     const authClient = supabase;
     authClient
       .from("users")
@@ -106,7 +110,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("id", userId)
       .maybeSingle()
       .then(({ data }) => {
-        if (active) setDbRole((data as { role?: string } | null)?.role ?? null);
+        if (!active) return;
+        setDbRole((data as { role?: string } | null)?.role ?? null);
+        setDbRoleLoading(false);
       });
 
     return () => {
@@ -176,6 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role,
       isAdmin: getIsAdmin(user) || dbRole === "admin",
       isModerator: !supabase || dbRole === "moderador",
+      dbRoleLoading,
       email: user?.email ?? "",
       sessionError,
       async signIn({ email, password, fallbackRole }) {
@@ -233,7 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw new Error(getAuthErrorMessage(error.message));
       }
     };
-  }, [loading, session, dbRole, sessionError]);
+  }, [loading, session, dbRole, dbRoleLoading, sessionError]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

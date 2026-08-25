@@ -150,7 +150,7 @@ export function AppLayout() {
   const coinLabel = state.activeRole === "trabalhador" ? "Moedas" : "Moedas da empresa";
   const coinHelp =
     state.activeRole === "trabalhador"
-      ? "Use moedas para liberar vagas completas antes de se candidatar."
+      ? "Cada candidatura enviada usa 1 moeda."
       : "Use moedas para ações empresariais, como cancelar vagas já preenchidas.";
 
   if (isModerator && (location.pathname === "/app/trabalhador" || location.pathname === "/app/empresa")) {
