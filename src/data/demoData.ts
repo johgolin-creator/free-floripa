@@ -415,5 +415,6 @@ export const initialState: AppState = {
     blockedWorkerIds: [],
     blockedCompanyIds: []
   },
-  trustReports: []
+  trustReports: [],
+  companyLeads: []
 };

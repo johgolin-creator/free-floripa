@@ -29,6 +29,7 @@ const CompanyProfilePage = lazy(() => import("./pages/CompanyProfilePage").then(
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage").then(({ NotificationsPage }) => ({ default: NotificationsPage })));
 const MessagesPage = lazy(() => import("./pages/MessagesPage").then(({ MessagesPage }) => ({ default: MessagesPage })));
 const AdminPage = lazy(() => import("./pages/AdminPage").then(({ AdminPage }) => ({ default: AdminPage })));
+const AdminLeadsPage = lazy(() => import("./pages/AdminLeadsPage").then(({ AdminLeadsPage }) => ({ default: AdminLeadsPage })));
 const LegalPage = lazy(() => import("./pages/LegalPage").then(({ LegalPage }) => ({ default: LegalPage })));
 
 export default function App() {
@@ -77,6 +78,7 @@ export default function App() {
           <Route path="mensagens" element={<MessagesPage />} />
           <Route path="notificacoes" element={<NotificationsPage />} />
           <Route path="admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+          <Route path="admin/captacao" element={<AdminRoute><AdminLeadsPage /></AdminRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -240,6 +240,21 @@ export interface BugReport {
   resolvedAt?: string;
 }
 
+export type CompanyLeadSegment = "Restaurantes" | "Baladas" | "Hotéis" | "Mercados" | "Atacados";
+
+export interface CompanyLead {
+  id: string;
+  name: string;
+  segment: CompanyLeadSegment;
+  phone?: string;
+  email?: string;
+  website?: string;
+  address?: string;
+  city: string;
+  contacted: boolean;
+  foundAt: string;
+}
+
 export interface AppState {
   activeRole: UserRole;
   selectedWorkerId: string;
@@ -257,4 +272,5 @@ export interface AppState {
   subscription: SubscriptionState;
   adminModeration: AdminModerationState;
   trustReports: TrustReport[];
+  companyLeads: CompanyLead[];
 }

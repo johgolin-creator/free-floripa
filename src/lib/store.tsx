@@ -38,7 +38,7 @@ import {
   type CoinAccount
 } from "./supabaseCoins";
 import { emailNotificationsEnabled, enqueueEmailNotification, type EmailNotificationInput } from "./emailNotifications";
-import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyProfile, CompanyReview, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, TrustReportTargetType, UserRole, WorkerProfile } from "./types";
+import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyLead, CompanyProfile, CompanyReview, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, TrustReportTargetType, UserRole, WorkerProfile } from "./types";
 
 const STORAGE_KEY = "free-floripa:state";
 const REMOTE_SYNC_POLL_MS = 5000;
@@ -125,6 +125,9 @@ interface AppContextValue {
   toggleCompanyBlock: (companyId: string) => void;
   submitTrustReport: (input: { targetType: TrustReportTargetType; targetId: string; targetName: string; reason: string }) => { ok: boolean; message: string };
   resolveTrustReport: (reportId: string) => void;
+  addCompanyLeads: (leads: CompanyLead[]) => { added: number; updated: number };
+  toggleCompanyLeadContacted: (leadId: string) => void;
+  removeCompanyLead: (leadId: string) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -180,6 +183,7 @@ function mergeSeedUpdates(savedState: AppState): AppState {
     companyReviews: Array.isArray(savedState.companyReviews) ? savedState.companyReviews : [],
     coinLedger: Array.isArray(savedState.coinLedger) ? savedState.coinLedger : [],
     trustReports: Array.isArray(savedState.trustReports) ? savedState.trustReports : [],
+    companyLeads: Array.isArray(savedState.companyLeads) ? savedState.companyLeads : [],
     adminModeration: {
       blockedWorkerIds: Array.isArray(savedState.adminModeration?.blockedWorkerIds)
         ? savedState.adminModeration.blockedWorkerIds
@@ -195,6 +199,7 @@ function mergeSeedUpdates(savedState: AppState): AppState {
     !Array.isArray(savedState.companyReviews) ||
     !Array.isArray(savedState.coinLedger) ||
     !Array.isArray(savedState.trustReports) ||
+    !Array.isArray(savedState.companyLeads) ||
     !Number.isFinite(savedState.subscription?.companyCreditsRemaining) ||
     !Array.isArray(savedState.subscription?.unlockedJobIds) ||
     !Array.isArray(savedState.adminModeration?.blockedWorkerIds) ||
@@ -2012,6 +2017,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setSyncStatus("erro");
           });
         }
+      },
+      addCompanyLeads(leads) {
+        let added = 0;
+        let updated = 0;
+
+        commit((current) => {
+          const byId = new Map(current.companyLeads.map((lead) => [lead.id, lead]));
+          leads.forEach((lead) => {
+            const existing = byId.get(lead.id);
+            if (existing) {
+              updated += 1;
+              byId.set(lead.id, { ...lead, contacted: existing.contacted });
+            } else {
+              added += 1;
+              byId.set(lead.id, lead);
+            }
+          });
+
+          return {
+            ...current,
+            companyLeads: Array.from(byId.values())
+          };
+        });
+
+        return { added, updated };
+      },
+      toggleCompanyLeadContacted(leadId) {
+        commit((current) => ({
+          ...current,
+          companyLeads: current.companyLeads.map((lead) =>
+            lead.id === leadId ? { ...lead, contacted: !lead.contacted } : lead
+          )
+        }));
+      },
+      removeCompanyLead(leadId) {
+        commit((current) => ({
+          ...current,
+          companyLeads: current.companyLeads.filter((lead) => lead.id !== leadId)
+        }));
       }
     }),
     [state, syncStatus, syncError, currentWorker, currentCompany, user, localStorageKey, isAdmin, isModerator]

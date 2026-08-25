@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   Ban,
@@ -8,6 +9,7 @@ import {
   ClipboardList,
   Search,
   ShieldCheck,
+  Target,
   UserRound,
   WalletCards
 } from "lucide-react";
@@ -88,6 +90,11 @@ export function AdminPage() {
           <AdminMetric icon={<Building2 size={19} />} label="empresas" value={String(state.companies.length)} />
           <AdminMetric icon={<BriefcaseBusiness size={19} />} label="vagas abertas" value={String(openJobs.length)} />
           <AdminMetric icon={<AlertTriangle size={19} />} label="alertas" value={String(alerts.length + openReports.length)} tone={alerts.length + openReports.length > 0 ? "alert" : "normal"} />
+        </div>
+        <div className="smart-dashboard-actions">
+          <Link to="/app/admin/captacao" className="company-action company-action-primary">
+            <Target size={17} /> Captação de empresas
+          </Link>
         </div>
       </section>
 
