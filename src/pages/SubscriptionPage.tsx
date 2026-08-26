@@ -160,14 +160,6 @@ export function SubscriptionPage() {
         <StatTile icon={<CreditCard size={18} />} label={isCompany ? "Carteira separada" : "Saldo atual"} value={isCompany ? "Empresa" : `${state.subscription.creditsRemaining} moeda(s)`} />
       </div>
 
-      <CoinStatement
-        transactions={statementTransactions}
-        loading={transactionsLoading}
-        error={transactionsError}
-        localBalance={activeBalance}
-        role={state.activeRole}
-      />
-
       <section className="grid gap-4 lg:grid-cols-3">
         <PlanCard
           title="Gratuito"
@@ -220,6 +212,14 @@ export function SubscriptionPage() {
         />
       </section>
 
+      <CoinStatement
+        transactions={statementTransactions}
+        loading={transactionsLoading}
+        error={transactionsError}
+        localBalance={activeBalance}
+        role={state.activeRole}
+      />
+
       <section className="plan-note">
         <div>
           <span className="badge bg-aqua-50 text-aqua-700">
@@ -244,6 +244,8 @@ export function SubscriptionPage() {
   );
 }
 
+const COLLAPSED_TRANSACTION_COUNT = 5;
+
 function CoinStatement({
   transactions,
   loading,
@@ -257,7 +259,11 @@ function CoinStatement({
   localBalance: number;
   role: "trabalhador" | "empresa";
 }) {
+  const [expanded, setExpanded] = useState(false);
   const isCompany = role === "empresa";
+  const hasMore = transactions.length > COLLAPSED_TRANSACTION_COUNT;
+  const visibleTransactions = expanded ? transactions : transactions.slice(0, COLLAPSED_TRANSACTION_COUNT);
+
   return (
     <section className="card p-4">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -289,11 +295,18 @@ function CoinStatement({
           </p>
         </div>
       ) : (
-        <div className="grid gap-3">
-          {transactions.map((transaction) => (
-            <CoinTransactionRow key={transaction.id} transaction={transaction} />
-          ))}
-        </div>
+        <>
+          <div className={`grid gap-3 ${expanded ? "max-h-[28rem] overflow-y-auto pr-1" : ""}`}>
+            {visibleTransactions.map((transaction) => (
+              <CoinTransactionRow key={transaction.id} transaction={transaction} />
+            ))}
+          </div>
+          {hasMore && (
+            <button type="button" onClick={() => setExpanded((current) => !current)} className="secondary mt-3 w-full">
+              {expanded ? "Mostrar menos" : `Ver histórico completo (${transactions.length})`}
+            </button>
+          )}
+        </>
       )}
     </section>
   );

@@ -29,6 +29,7 @@
 alter table public.coin_wallets add column if not exists role public.user_role not null default 'trabalhador';
 alter table public.coin_wallets drop constraint if exists coin_wallets_pkey;
 alter table public.coin_wallets add primary key (user_id, role);
+alter table public.coin_wallets drop constraint if exists coin_wallets_role_check;
 alter table public.coin_wallets add constraint coin_wallets_role_check check (role in ('trabalhador', 'empresa'));
 
 -- 2. Re-create the wallet RPCs role-aware. Existing calls that omit
@@ -133,7 +134,19 @@ begin
   if new.status <> 'Enviada' then
     return new;
   end if;
-  if tg_op = 'UPDATE' and old.status = 'Enviada' then
+
+  if tg_op = 'INSERT' then
+    -- publishApplication upserts on (job_id, worker_id). When a row for
+    -- this pair already exists (a previous application, e.g. cancelled),
+    -- Postgres fires THIS insert-attempt's BEFORE INSERT trigger first,
+    -- then falls through to an UPDATE on the conflicting row - firing
+    -- BEFORE UPDATE too, for the very same statement. Charging here would
+    -- double-charge alongside that UPDATE firing below, so defer entirely
+    -- to it when a conflict is coming.
+    if exists (select 1 from public.applications where job_id = new.job_id and worker_id = new.worker_id) then
+      return new;
+    end if;
+  elsif old.status = 'Enviada' then
     return new;
   end if;
 
