@@ -65,6 +65,15 @@ export function AdminLeadsPage() {
     [leads, segmentFilter, contactFilter]
   );
 
+  const groupedLeads = useMemo(() => {
+    if (segmentFilter !== "Todos") return null;
+    return COMPANY_LEAD_SEGMENTS.map((item) => ({
+      segment: item.value,
+      label: item.label,
+      leads: filteredLeads.filter((lead) => lead.segment === item.value)
+    })).filter((group) => group.leads.length > 0);
+  }, [filteredLeads, segmentFilter]);
+
   const stats = {
     total: leads.length,
     withContact: leads.filter((lead) => lead.phone || lead.email).length,
@@ -203,6 +212,27 @@ export function AdminLeadsPage() {
         <EmptyState title="Nenhuma empresa buscada ainda" text="Escolha uma área de atuação e clique em Buscar empresas para começar." />
       ) : filteredLeads.length === 0 ? (
         <EmptyState title="Nada neste filtro" text="Troque o filtro para ver outras empresas encontradas." />
+      ) : groupedLeads ? (
+        <div className="mt-4 grid gap-6">
+          {groupedLeads.map((group) => (
+            <section key={group.segment}>
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-lg font-black text-white">{group.label}</h3>
+                <span className="badge">{group.leads.length}</span>
+              </div>
+              <div className="grid gap-3">
+                {group.leads.map((lead) => (
+                  <LeadCard
+                    key={lead.id}
+                    lead={lead}
+                    onToggleContacted={() => handleToggleContacted(lead)}
+                    onRemove={() => handleRemove(lead)}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
       ) : (
         <div className="mt-4 grid gap-3">
           {filteredLeads.map((lead) => (

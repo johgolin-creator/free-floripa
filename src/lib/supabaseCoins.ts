@@ -4,6 +4,7 @@ import type { UserRole } from "./types";
 export interface CoinAccount {
   balance: number;
   unlockedJobIds: string[];
+  plusActiveUntil?: string;
 }
 
 export interface CoinTransaction {
@@ -20,6 +21,7 @@ export interface CoinTransaction {
 interface CoinWalletRow {
   user_id: string;
   balance: number | string | null;
+  plus_active_until?: string | null;
 }
 
 interface UnlockedJobRow {
@@ -48,6 +50,11 @@ function mapWallet(data: unknown): CoinWalletRow | null {
 function toBalance(row: CoinWalletRow | null) {
   const value = Number(row?.balance ?? 0);
   return Number.isFinite(value) ? value : 0;
+}
+
+function toPlusActiveUntil(row: CoinWalletRow | null): string | undefined {
+  if (!row?.plus_active_until) return undefined;
+  return new Date(row.plus_active_until) > new Date() ? row.plus_active_until : undefined;
 }
 
 async function ensureWallet(userId: string, role: UserRole) {
@@ -79,7 +86,8 @@ export async function loadRemoteCoinAccount(userId: string, role: UserRole): Pro
 
   return {
     balance: toBalance(wallet),
-    unlockedJobIds
+    unlockedJobIds,
+    plusActiveUntil: toPlusActiveUntil(wallet)
   };
 }
 
@@ -135,9 +143,34 @@ export async function grantRemoteCoins(
 
   if (error) throw new Error(error.message);
 
+  const wallet = mapWallet(data);
   return {
-    balance: toBalance(mapWallet(data)),
-    unlockedJobIds: await loadUnlockedJobIds(userId)
+    balance: toBalance(wallet),
+    unlockedJobIds: await loadUnlockedJobIds(userId),
+    plusActiveUntil: toPlusActiveUntil(wallet)
+  };
+}
+
+export async function activateUnlimitedPlan(
+  userId: string,
+  role: UserRole,
+  days = 30
+): Promise<CoinAccount | null> {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc("activate_unlimited_plan", {
+    target_user_id: userId,
+    target_role: role,
+    days
+  });
+
+  if (error) throw new Error(error.message);
+
+  const wallet = mapWallet(data);
+  return {
+    balance: toBalance(wallet),
+    unlockedJobIds: await loadUnlockedJobIds(userId),
+    plusActiveUntil: toPlusActiveUntil(wallet)
   };
 }
 

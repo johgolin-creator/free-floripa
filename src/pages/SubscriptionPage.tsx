@@ -35,11 +35,11 @@ const professionalBenefits = [
 ];
 
 const plusBenefits = [
-  "35 moedas no saldo",
-  "Mais custo-benefício por pacote",
+  "Moedas ilimitadas por 30 dias",
+  "35 moedas no saldo de bônus",
   "Ideal para quem se candidata com frequência",
   "Preparado para destaques e recursos premium",
-  "Mais fôlego para vagas urgentes"
+  "Sem se preocupar em ficar sem moedas"
 ];
 
 const unlockItems = [
@@ -69,6 +69,11 @@ export function SubscriptionPage() {
     : "Todas as vagas ficam sempre visíveis por completo. Ao enviar uma candidatura, 1 moeda do seu saldo é usada.";
   const localTransactions = state.coinLedger.filter((transaction) => transaction.role === state.activeRole);
   const statementTransactions = transactions.length > 0 ? transactions : localTransactions;
+  const activePlusUntil = isCompany ? state.subscription.companyPlusActiveUntil : state.subscription.plusActiveUntil;
+  const hasActivePlus = Boolean(activePlusUntil) && new Date(activePlusUntil as string) > new Date();
+  const activePlusUntilLabel = hasActivePlus
+    ? new Date(activePlusUntil as string).toLocaleDateString("pt-BR")
+    : "";
 
   useEffect(() => {
     if (isCompany || !user || !supabaseCoinsEnabled) {
@@ -104,7 +109,9 @@ export function SubscriptionPage() {
 
   function handleSubscribePlus() {
     subscribePlus();
-    setMessage(`Pacote Plus comprado. 35 moedas foram adicionadas ao ${isCompany ? "saldo da empresa" : "seu saldo"}.`);
+    setMessage(
+      `Pacote Plus ativado. Moedas ilimitadas por 30 dias, além de 35 moedas de bônus no ${isCompany ? "saldo da empresa" : "seu saldo"}.`
+    );
   }
 
   return (
@@ -156,23 +163,35 @@ export function SubscriptionPage() {
       </section>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <StatTile variant="primary" icon={<Lock size={18} />} label={isCompany ? "Cancelar vaga preenchida" : "Candidatura"} value={isCompany ? "10 moedas" : "1 moeda"} />
-        <StatTile icon={<CreditCard size={18} />} label={isCompany ? "Carteira separada" : "Saldo atual"} value={isCompany ? "Empresa" : `${state.subscription.creditsRemaining} moeda(s)`} />
+        <StatTile
+          variant="primary"
+          icon={<Lock size={18} />}
+          label={isCompany ? "Cancelar vaga preenchida" : "Candidatura"}
+          value={hasActivePlus ? "Ilimitado" : isCompany ? "10 moedas" : "1 moeda"}
+        />
+        <StatTile
+          tone={hasActivePlus ? "positive" : "normal"}
+          icon={<CreditCard size={18} />}
+          label={hasActivePlus ? `Ilimitado até ${activePlusUntilLabel}` : isCompany ? "Carteira separada" : "Saldo atual"}
+          value={hasActivePlus ? "Plus ativo" : isCompany ? "Empresa" : `${state.subscription.creditsRemaining} moeda(s)`}
+        />
       </div>
 
-      <section className="grid gap-4 lg:grid-cols-3">
-        <PlanCard
-          title="Gratuito"
-          price="R$ 0"
-          description="Para criar perfil, conhecer o app e ver as vagas."
-          current={state.subscription.plan === "Gratuito"}
-          benefits={freeBenefits}
-          action={
-            <Link to="/app/vagas" className="secondary w-full">
-              <Search size={17} /> Ver vagas
-            </Link>
-          }
-        />
+      <section className={`grid gap-4 ${isCompany ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
+        {isCompany && (
+          <PlanCard
+            title="Gratuito"
+            price="R$ 0"
+            description="Para criar perfil, conhecer o app e ver as vagas."
+            current={state.subscription.plan === "Gratuito"}
+            benefits={freeBenefits}
+            action={
+              <Link to="/app/vagas" className="secondary w-full">
+                <Search size={17} /> Ver vagas
+              </Link>
+            }
+          />
+        )}
         <PlanCard
           featured
           title="Profissional"
@@ -195,7 +214,7 @@ export function SubscriptionPage() {
         <PlanCard
           title="Plus"
           price="R$ 29,90"
-          description="Pacote com 35 moedas para quem usa o app com mais frequência."
+          description="Moedas ilimitadas por 30 dias para quem usa o app com mais frequência."
           current={isPlus}
           benefits={plusBenefits}
           action={
@@ -205,7 +224,7 @@ export function SubscriptionPage() {
               </Link>
             ) : (
               <button type="button" onClick={handleSubscribePlus} className="primary w-full">
-                Comprar 35 moedas <ArrowRight size={17} />
+                Ativar moedas ilimitadas <ArrowRight size={17} />
               </button>
             )
           }

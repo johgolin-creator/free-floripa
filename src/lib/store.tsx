@@ -31,6 +31,7 @@ import {
   supabaseModerationEnabled
 } from "./supabaseModeration";
 import {
+  activateUnlimitedPlan,
   grantRemoteCoins,
   loadRemoteCoinAccount,
   loadRemoteWalletBalance,
@@ -163,6 +164,10 @@ function coinLedgerEntry(input: Omit<AppState["coinLedger"][number], "id" | "cre
     createdAt: new Date().toISOString(),
     ...input
   };
+}
+
+function hasUnlimitedAccess(activeUntil: string | undefined): boolean {
+  return Boolean(activeUntil) && new Date(activeUntil as string) > new Date();
 }
 
 function mergeSeedUpdates(savedState: AppState): AppState {
@@ -656,6 +661,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ...current.subscription,
           creditsRemaining: role === "trabalhador" ? account.balance : current.subscription.creditsRemaining,
           companyCreditsRemaining: role === "empresa" ? account.balance : current.subscription.companyCreditsRemaining,
+          plusActiveUntil: role === "trabalhador" ? account.plusActiveUntil : current.subscription.plusActiveUntil,
+          companyPlusActiveUntil: role === "empresa" ? account.plusActiveUntil : current.subscription.companyPlusActiveUntil,
           unlockedJobIds
         }
       };
@@ -1062,7 +1069,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         const affectedApplications = state.applications.filter((application) => application.jobId === jobId);
         const approvedCount = countApproved(state.applications, jobId);
-        const filledCancellationFee = status === "Cancelada" && approvedCount >= job.quantity ? 10 : 0;
+        const companyHasUnlimited = hasUnlimitedAccess(state.subscription.companyPlusActiveUntil);
+        const jobIsFilled = status === "Cancelada" && approvedCount >= job.quantity;
+        const filledCancellationFee = jobIsFilled && !companyHasUnlimited ? 10 : 0;
         const previousJob = job;
         const previousApplications = state.applications;
         const previousCompanyCreditsRemaining = state.subscription.companyCreditsRemaining;
@@ -1203,7 +1212,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           message:
             filledCancellationFee > 0
               ? `Vaga cancelada. Como ela já estava preenchida, foram cobradas ${filledCancellationFee} moedas.`
-              : `Vaga marcada como ${status}.`
+              : jobIsFilled && companyHasUnlimited
+                ? "Vaga cancelada. Seu Plus dá cancelamentos ilimitados."
+                : `Vaga marcada como ${status}.`
         };
       },
       duplicateJob(jobId) {
@@ -1305,7 +1316,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return { ok: false, message: "Esta empresa está em revisão pela administração. A candidatura está bloqueada por segurança." };
         }
 
-        if (state.subscription.creditsRemaining <= 0) {
+        const workerHasUnlimited = hasUnlimitedAccess(state.subscription.plusActiveUntil);
+        if (!workerHasUnlimited && state.subscription.creditsRemaining <= 0) {
           return {
             ok: false,
             message: "Use 1 moeda para se candidatar a esta vaga.",
@@ -1341,32 +1353,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
           read: false
         };
 
-        const nextCreditsRemaining = Math.max(0, state.subscription.creditsRemaining - 1);
+        const nextCreditsRemaining = workerHasUnlimited
+          ? state.subscription.creditsRemaining
+          : Math.max(0, state.subscription.creditsRemaining - 1);
 
         commit((current) => ({
           ...current,
-          subscription: {
-            ...current.subscription,
-            creditsRemaining: Math.max(0, current.subscription.creditsRemaining - 1)
-          },
+          subscription: workerHasUnlimited
+            ? current.subscription
+            : {
+                ...current.subscription,
+                creditsRemaining: Math.max(0, current.subscription.creditsRemaining - 1)
+              },
           applications: [application, ...current.applications.filter((item) => item.id !== application.id)],
           jobs: current.jobs.map((item) => (item.id === jobId ? { ...item, candidates: item.candidates + 1 } : item)),
           notifications: [
             companyNotification,
             ...current.notifications
           ],
-          coinLedger: [
-            coinLedgerEntry({
-              role: "trabalhador",
-              kind: "spend",
-              reason: "apply_job",
-              amount: -1,
-              balanceAfter: nextCreditsRemaining,
-              jobId,
-              applicationId: application.id
-            }),
-            ...current.coinLedger
-          ]
+          coinLedger: workerHasUnlimited
+            ? current.coinLedger
+            : [
+                coinLedgerEntry({
+                  role: "trabalhador",
+                  kind: "spend",
+                  reason: "apply_job",
+                  amount: -1,
+                  balanceAfter: nextCreditsRemaining,
+                  jobId,
+                  applicationId: application.id
+                }),
+                ...current.coinLedger
+              ]
         }));
         if (supabaseMarketplaceEnabled) {
           // The 1-moeda charge now happens as a database trigger on this
@@ -1423,7 +1441,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         window.setTimeout(() => pendingApplicationKeys.current.delete(pendingKey), 1500);
 
-        return { ok: true, message: "Candidatura enviada com sucesso. 1 moeda foi utilizada." };
+        return {
+          ok: true,
+          message: workerHasUnlimited
+            ? "Candidatura enviada com sucesso. Seu Plus dá candidaturas ilimitadas."
+            : "Candidatura enviada com sucesso. 1 moeda foi utilizada."
+        };
       },
       updateApplicationStatus(applicationId, status) {
         const application = state.applications.find((item) => item.id === applicationId);
@@ -1822,6 +1845,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       },
       subscribePlus() {
+        const plusUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
         commit((current) => ({
           ...current,
           subscription: {
@@ -1834,7 +1859,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             companyCreditsRemaining:
               current.activeRole === "empresa"
                 ? current.subscription.companyCreditsRemaining + 35
-                : current.subscription.companyCreditsRemaining
+                : current.subscription.companyCreditsRemaining,
+            plusActiveUntil: current.activeRole === "trabalhador" ? plusUntil : current.subscription.plusActiveUntil,
+            companyPlusActiveUntil: current.activeRole === "empresa" ? plusUntil : current.subscription.companyPlusActiveUntil
           },
           coinLedger: [
             coinLedgerEntry({
@@ -1854,6 +1881,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           trackCoinSync(
             grantRemoteCoins(user.id, state.activeRole, 35, "package_plus"),
             "Falha ao adicionar moedas.",
+            state.activeRole
+          );
+          trackCoinSync(
+            activateUnlimitedPlan(user.id, state.activeRole, 30),
+            "Falha ao ativar moedas ilimitadas do Plus.",
             state.activeRole
           );
         }

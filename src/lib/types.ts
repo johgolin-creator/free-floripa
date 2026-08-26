@@ -201,6 +201,8 @@ export interface SubscriptionState {
   companyCreditsRemaining: number;
   renewalDate: string;
   unlockedJobIds: string[];
+  plusActiveUntil?: string;
+  companyPlusActiveUntil?: string;
 }
 
 export interface AdminModerationState {
