@@ -33,7 +33,7 @@ import {
 import {
   grantRemoteCoins,
   loadRemoteCoinAccount,
-  spendRemoteCoinForApplication,
+  loadRemoteWalletBalance,
   supabaseCoinsEnabled,
   type CoinAccount
 } from "./supabaseCoins";
@@ -643,7 +643,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function applyCoinAccount(account: CoinAccount | null) {
+  function applyCoinAccount(account: CoinAccount | null, role: UserRole) {
     if (!account) return;
 
     setState((current) => {
@@ -654,7 +654,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...current,
         subscription: {
           ...current.subscription,
-          creditsRemaining: account.balance,
+          creditsRemaining: role === "trabalhador" ? account.balance : current.subscription.creditsRemaining,
+          companyCreditsRemaining: role === "empresa" ? account.balance : current.subscription.companyCreditsRemaining,
           unlockedJobIds
         }
       };
@@ -663,13 +664,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function trackCoinSync(action: Promise<CoinAccount | null>, fallbackMessage: string) {
+  function trackCoinSync(action: Promise<CoinAccount | null>, fallbackMessage: string, role: UserRole) {
     if (!supabaseCoinsEnabled) return;
 
     setSyncStatus("salvando");
     action
       .then((account) => {
-        applyCoinAccount(account);
+        applyCoinAccount(account, role);
         setSyncError("");
         setSyncStatus("sincronizado");
       })
@@ -879,13 +880,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (authLoading || !user || !supabaseCoinsEnabled) return;
 
     const userId = user.id;
+    const activeRole = state.activeRole;
     let active = true;
     function refresh() {
       if (document.visibilityState === "hidden") return;
-      loadRemoteCoinAccount(userId)
+      loadRemoteCoinAccount(userId, activeRole)
         .then((account) => {
           if (!active) return;
-          applyCoinAccount(account);
+          applyCoinAccount(account, activeRole);
           setSyncError("");
         })
         .catch(() => {
@@ -902,7 +904,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       active = false;
       window.clearInterval(intervalId);
     };
-  }, [authLoading, user?.id, localStorageKey]);
+  }, [authLoading, user?.id, localStorageKey, state.activeRole]);
 
   const createJobHandler = (input: CreateJobInput) => {
     if (state.adminModeration.blockedCompanyIds.includes(currentCompany.id)) {
@@ -1061,6 +1063,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const affectedApplications = state.applications.filter((application) => application.jobId === jobId);
         const approvedCount = countApproved(state.applications, jobId);
         const filledCancellationFee = status === "Cancelada" && approvedCount >= job.quantity ? 10 : 0;
+        const previousJob = job;
+        const previousApplications = state.applications;
+        const previousCompanyCreditsRemaining = state.subscription.companyCreditsRemaining;
 
         if (filledCancellationFee > 0 && state.subscription.companyCreditsRemaining < filledCancellationFee) {
           return {
@@ -1149,10 +1154,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         if (supabaseMarketplaceEnabled) {
-          publishJob(user, currentCompany, { ...job, status, urgent: status === "Cancelada" || status === "Concluída" ? false : job.urgent }).catch(() => {
-            setSyncError("Falha ao atualizar vaga.");
-            setSyncStatus("erro");
-          });
+          // When filledCancellationFee > 0, this same update is what the
+          // database trigger charges the 10 moedas against (see
+          // supabase/coin_enforcement.sql), using the empresa's real wallet
+          // - not the local companyCreditsRemaining, which a user could
+          // otherwise forge. If the real balance is short, this rejects and
+          // we undo the optimistic status/fee commit above.
+          publishJob(user, currentCompany, { ...job, status, urgent: status === "Cancelada" || status === "Concluída" ? false : job.urgent })
+            .then(() => {
+              if (filledCancellationFee > 0 && supabaseCoinsEnabled && user) {
+                loadRemoteWalletBalance(user.id, "empresa")
+                  .then((balance) => {
+                    commit((current) => ({
+                      ...current,
+                      subscription: { ...current.subscription, companyCreditsRemaining: balance }
+                    }));
+                  })
+                  .catch(() => {
+                    // Next periodic wallet refresh will reconcile this.
+                  });
+              }
+            })
+            .catch((error) => {
+              commit((current) => ({
+                ...current,
+                jobs: current.jobs.map((item) => (item.id === jobId ? previousJob : item)),
+                applications: current.applications.map((item) => {
+                  if (item.jobId !== jobId) return item;
+                  const original = previousApplications.find((prev) => prev.id === item.id);
+                  return original ?? item;
+                }),
+                subscription:
+                  filledCancellationFee > 0
+                    ? { ...current.subscription, companyCreditsRemaining: previousCompanyCreditsRemaining }
+                    : current.subscription,
+                coinLedger:
+                  filledCancellationFee > 0
+                    ? current.coinLedger.filter((entry) => !(entry.jobId === jobId && entry.reason === "cancel_filled_job"))
+                    : current.coinLedger
+              }));
+              setSyncError(error instanceof Error ? error.message : "Falha ao atualizar vaga.");
+              setSyncStatus("erro");
+            });
         }
 
         return {
@@ -1325,32 +1368,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...current.coinLedger
           ]
         }));
-        if (company?.email) {
-          queueEmail({
-            recipientUserId: company.id,
-            recipientEmail: company.email,
-            recipientName: company.establishmentName,
-            subject: "Nova candidatura recebida",
-            preview: `${currentWorker.name} se candidatou para ${job.title}.`,
-            body: `${currentWorker.name} enviou candidatura para ${job.title}. Entre no PONT para analisar o perfil, aprovar ou recusar.`,
-            eventType: "application_status",
-            metadata: { jobId, applicationId: application.id, workerId: currentWorker.id, companyId: company.id }
-          });
-        }
         if (supabaseMarketplaceEnabled) {
-          publishApplication(currentWorker, jobId, application.id).catch(() => {
-            setSyncError("Falha ao enviar candidatura.");
-            setSyncStatus("erro");
-          });
-          publishRemoteNotification(job.companyId, companyNotification);
+          // The 1-moeda charge now happens as a database trigger on this
+          // same insert/update (see supabase/coin_enforcement.sql), using
+          // the worker's real wallet balance - not anything this client
+          // claims. If the real balance is empty, this call rejects and we
+          // undo the optimistic commit above instead of leaving a phantom
+          // "sent" application that was never actually created server-side.
+          publishApplication(currentWorker, jobId, application.id)
+            .then(() => {
+              if (company?.email) {
+                queueEmail({
+                  recipientUserId: company.id,
+                  recipientEmail: company.email,
+                  recipientName: company.establishmentName,
+                  subject: "Nova candidatura recebida",
+                  preview: `${currentWorker.name} se candidatou para ${job.title}.`,
+                  body: `${currentWorker.name} enviou candidatura para ${job.title}. Entre no PONT para analisar o perfil, aprovar ou recusar.`,
+                  eventType: "application_status",
+                  metadata: { jobId, applicationId: application.id, workerId: currentWorker.id, companyId: company.id }
+                });
+              }
+              publishRemoteNotification(job.companyId, companyNotification);
+              queueLowCoinsEmail(nextCreditsRemaining);
+
+              if (supabaseCoinsEnabled && user) {
+                loadRemoteWalletBalance(user.id, "trabalhador")
+                  .then((balance) => {
+                    commit((current) => ({
+                      ...current,
+                      subscription: { ...current.subscription, creditsRemaining: balance }
+                    }));
+                  })
+                  .catch(() => {
+                    // Next periodic wallet refresh will reconcile this.
+                  });
+              }
+            })
+            .catch((error) => {
+              commit((current) => ({
+                ...current,
+                applications: existingApplication
+                  ? current.applications.map((item) => (item.id === application.id ? existingApplication : item))
+                  : current.applications.filter((item) => item.id !== application.id),
+                jobs: current.jobs.map((item) =>
+                  item.id === jobId ? { ...item, candidates: Math.max(0, item.candidates - 1) } : item
+                ),
+                subscription: { ...current.subscription, creditsRemaining: state.subscription.creditsRemaining },
+                coinLedger: current.coinLedger.filter((entry) => entry.applicationId !== application.id)
+              }));
+              setSyncError(error instanceof Error ? error.message : "Falha ao enviar candidatura.");
+              setSyncStatus("erro");
+            });
         }
-        if (supabaseCoinsEnabled && user) {
-          trackCoinSync(
-            spendRemoteCoinForApplication(user.id, jobId, application.id),
-            "Falha ao usar moeda para a candidatura."
-          );
-        }
-        queueLowCoinsEmail(nextCreditsRemaining);
         window.setTimeout(() => pendingApplicationKeys.current.delete(pendingKey), 1500);
 
         return { ok: true, message: "Candidatura enviada com sucesso. 1 moeda foi utilizada." };
@@ -1743,8 +1813,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...current.coinLedger
           ]
         }));
-        if (state.activeRole === "trabalhador" && supabaseCoinsEnabled && user) {
-          trackCoinSync(grantRemoteCoins(user.id, 20, "package_professional"), "Falha ao adicionar moedas.");
+        if (supabaseCoinsEnabled && user) {
+          trackCoinSync(
+            grantRemoteCoins(user.id, state.activeRole, 20, "package_professional"),
+            "Falha ao adicionar moedas.",
+            state.activeRole
+          );
         }
       },
       subscribePlus() {
@@ -1776,8 +1850,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...current.coinLedger
           ]
         }));
-        if (state.activeRole === "trabalhador" && supabaseCoinsEnabled && user) {
-          trackCoinSync(grantRemoteCoins(user.id, 35, "package_plus"), "Falha ao adicionar moedas.");
+        if (supabaseCoinsEnabled && user) {
+          trackCoinSync(
+            grantRemoteCoins(user.id, state.activeRole, 35, "package_plus"),
+            "Falha ao adicionar moedas.",
+            state.activeRole
+          );
         }
       },
       buyCredits(amount = 5) {
@@ -1808,8 +1886,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...current.coinLedger
           ]
         }));
-        if (state.activeRole === "trabalhador" && supabaseCoinsEnabled && user) {
-          trackCoinSync(grantRemoteCoins(user.id, amount, "coin_pack"), "Falha ao adicionar moedas.");
+        if (supabaseCoinsEnabled && user) {
+          trackCoinSync(
+            grantRemoteCoins(user.id, state.activeRole, amount, "coin_pack"),
+            "Falha ao adicionar moedas.",
+            state.activeRole
+          );
         }
       },
       addReview(workerId, review) {

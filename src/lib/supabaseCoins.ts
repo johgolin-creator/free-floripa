@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import type { UserRole } from "./types";
 
 export interface CoinAccount {
   balance: number;
@@ -14,10 +15,6 @@ export interface CoinTransaction {
   jobId?: string;
   applicationId?: string;
   createdAt: string;
-}
-
-interface ApplyWithCoinRow {
-  wallet_balance?: number | string | null;
 }
 
 interface CoinWalletRow {
@@ -53,10 +50,10 @@ function toBalance(row: CoinWalletRow | null) {
   return Number.isFinite(value) ? value : 0;
 }
 
-async function ensureWallet(userId: string) {
+async function ensureWallet(userId: string, role: UserRole) {
   if (!supabase) return null;
 
-  const { data, error } = await supabase.rpc("ensure_coin_wallet", { target_user_id: userId });
+  const { data, error } = await supabase.rpc("ensure_coin_wallet", { target_user_id: userId, target_role: role });
   if (error) throw new Error(error.message);
 
   return mapWallet(data);
@@ -75,15 +72,22 @@ async function loadUnlockedJobIds(userId: string) {
   return ((data ?? []) as UnlockedJobRow[]).map((row) => row.job_id);
 }
 
-export async function loadRemoteCoinAccount(userId: string): Promise<CoinAccount | null> {
+export async function loadRemoteCoinAccount(userId: string, role: UserRole): Promise<CoinAccount | null> {
   if (!supabase) return null;
 
-  const [wallet, unlockedJobIds] = await Promise.all([ensureWallet(userId), loadUnlockedJobIds(userId)]);
+  const [wallet, unlockedJobIds] = await Promise.all([ensureWallet(userId, role), loadUnlockedJobIds(userId)]);
 
   return {
     balance: toBalance(wallet),
     unlockedJobIds
   };
+}
+
+export async function loadRemoteWalletBalance(userId: string, role: UserRole): Promise<number> {
+  if (!supabase) return 0;
+
+  const wallet = await ensureWallet(userId, role);
+  return toBalance(wallet);
 }
 
 export async function loadRemoteCoinTransactions(userId: string, limit = 20): Promise<CoinTransaction[]> {
@@ -110,7 +114,12 @@ export async function loadRemoteCoinTransactions(userId: string, limit = 20): Pr
   }));
 }
 
-export async function grantRemoteCoins(userId: string, amount: number, reason: string): Promise<CoinAccount | null> {
+export async function grantRemoteCoins(
+  userId: string,
+  role: UserRole,
+  amount: number,
+  reason: string
+): Promise<CoinAccount | null> {
   if (!supabase) return null;
 
   const { data, error } = await supabase.rpc("add_coin_transaction", {
@@ -120,7 +129,8 @@ export async function grantRemoteCoins(userId: string, amount: number, reason: s
     tx_reason: reason,
     target_job_id: null,
     target_application_id: null,
-    tx_metadata: {}
+    tx_metadata: {},
+    target_role: role
   });
 
   if (error) throw new Error(error.message);
@@ -131,64 +141,3 @@ export async function grantRemoteCoins(userId: string, amount: number, reason: s
   };
 }
 
-export async function unlockRemoteJobWithCoin(userId: string, jobId: string): Promise<CoinAccount | null> {
-  if (!supabase) return null;
-
-  const { data, error } = await supabase.rpc("unlock_job_with_coin", { target_job_id: jobId });
-  if (error) throw new Error(error.message);
-
-  return {
-    balance: toBalance(mapWallet(data)),
-    unlockedJobIds: await loadUnlockedJobIds(userId)
-  };
-}
-
-export async function spendRemoteCoinForApplication(
-  userId: string,
-  jobId: string,
-  applicationId: string
-): Promise<CoinAccount | null> {
-  if (!supabase) return null;
-
-  const { data, error } = await supabase.rpc("add_coin_transaction", {
-    target_user_id: userId,
-    coin_delta: -1,
-    tx_kind: "spend",
-    tx_reason: "apply_job",
-    target_job_id: jobId,
-    target_application_id: applicationId,
-    tx_metadata: {}
-  });
-
-  if (error) throw new Error(error.message);
-
-  return {
-    balance: toBalance(mapWallet(data)),
-    unlockedJobIds: await loadUnlockedJobIds(userId)
-  };
-}
-
-export async function applyRemoteToJobWithCoin(
-  userId: string,
-  workerId: string,
-  jobId: string,
-  applicationId: string
-): Promise<CoinAccount | null> {
-  if (!supabase) return null;
-
-  const { data, error } = await supabase.rpc("apply_to_job_with_coin", {
-    target_job_id: jobId,
-    target_worker_id: workerId,
-    target_application_id: applicationId
-  });
-
-  if (error) throw new Error(error.message);
-
-  const row = (Array.isArray(data) ? data[0] : data) as ApplyWithCoinRow | null;
-  const balance = Number(row?.wallet_balance ?? 0);
-
-  return {
-    balance: Number.isFinite(balance) ? balance : 0,
-    unlockedJobIds: await loadUnlockedJobIds(userId)
-  };
-}
