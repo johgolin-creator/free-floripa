@@ -1708,6 +1708,10 @@ a {
   @apply text-xs font-black uppercase text-slate-500;
 }
 
+.smart-dashboard-metric.is-clickable {
+  @apply w-full cursor-pointer text-left transition hover:-translate-y-0.5 hover:border-aqua-300/60 hover:shadow-lift active:translate-y-0;
+}
+
 .smart-panel {
   @apply grid gap-3 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5;
 }

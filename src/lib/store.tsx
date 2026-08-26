@@ -701,18 +701,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     let active = true;
     setSyncStatus("carregando");
+    // For an admin/moderator, workers/companies must only ever come from
+    // loadModerationOverview's real cross-account query below - this
+    // account's own app_state_snapshots blob only ever holds this one
+    // account's small local copy (whatever demo/seed data it started
+    // with). Applying it here raced the moderation-overview effect: if
+    // this fetch (a single request) resolved after that one (five
+    // requests), it silently reverted the freelancer/empresa counts back
+    // down from the real number to that stale local list - the "16 vs 5"
+    // flicker.
+    function keepModerationLists(next: AppState, current: AppState): AppState {
+      return isAdmin || isModerator ? { ...next, workers: current.workers, companies: current.companies } : next;
+    }
     loadSupabaseState(remoteStateKey)
       .then((remoteState) => {
         if (!active) return;
         if (remoteState) {
           const migratedState = ensureAccountProfile(mergeSeedUpdates(remoteState), user, role);
-          setState(migratedState);
+          setState((current) => keepModerationLists(migratedState, current));
           persist(migratedState, localStorageKey);
           if (migratedState !== remoteState) {
             void persistRemote(migratedState);
           }
         } else {
-          setState(localState);
+          setState((current) => keepModerationLists(localState, current));
           persist(localState, localStorageKey);
           void persistRemote(localState);
         }
@@ -728,7 +740,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [accountState, authLoading, localStorageKey, remoteStateKey]);
+  }, [accountState, authLoading, localStorageKey, remoteStateKey, isAdmin, isModerator]);
 
   const currentWorker = state.workers.find((worker) => worker.id === state.selectedWorkerId) ?? state.workers[0];
   const currentCompany = state.companies.find((company) => company.id === state.selectedCompanyId) ?? state.companies[0];

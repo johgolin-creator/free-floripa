@@ -67,6 +67,11 @@ export function AdminPage() {
   });
   const coinPurchaseCount = state.coinLedger.filter((entry) => entry.kind === "purchase").length;
 
+  function goToUsersTab() {
+    setSearch("");
+    setTab("Usuários");
+  }
+
   return (
     <div className="grid gap-5">
       <SectionHeader
@@ -84,10 +89,31 @@ export function AdminPage() {
           </p>
         </div>
         <div className="smart-dashboard-metrics">
-          <AdminMetric icon={<UserRound size={19} />} label="freelancers" value={String(state.workers.length)} />
-          <AdminMetric icon={<Building2 size={19} />} label="empresas" value={String(state.companies.length)} />
-          <AdminMetric icon={<BriefcaseBusiness size={19} />} label="vagas abertas" value={String(openJobs.length)} />
-          <AdminMetric icon={<AlertTriangle size={19} />} label="alertas" value={String(alerts.length + openReports.length)} tone={alerts.length + openReports.length > 0 ? "alert" : "normal"} />
+          <AdminMetric
+            icon={<UserRound size={19} />}
+            label="freelancers"
+            value={String(state.workers.length)}
+            onClick={() => goToUsersTab()}
+          />
+          <AdminMetric
+            icon={<Building2 size={19} />}
+            label="empresas"
+            value={String(state.companies.length)}
+            onClick={() => goToUsersTab()}
+          />
+          <AdminMetric
+            icon={<BriefcaseBusiness size={19} />}
+            label="vagas abertas"
+            value={String(openJobs.length)}
+            onClick={() => setTab("Vagas")}
+          />
+          <AdminMetric
+            icon={<AlertTriangle size={19} />}
+            label="alertas"
+            value={String(alerts.length + openReports.length)}
+            tone={alerts.length + openReports.length > 0 ? "alert" : "normal"}
+            onClick={() => setTab("Alertas")}
+          />
         </div>
         <div className="smart-dashboard-actions">
           <Link to="/app/admin/captacao" className="company-action company-action-primary">
@@ -369,14 +395,37 @@ function countOpenReportsForJob(reports: TrustReport[], jobId: string) {
   return reports.filter((report) => report.targetType === "job" && report.targetId === jobId).length;
 }
 
-function AdminMetric({ icon, label, value, tone = "normal" }: { icon: ReactNode; label: string; value: string; tone?: "normal" | "alert" }) {
-  return (
-    <span className={`smart-dashboard-metric ${tone === "alert" ? "is-alert" : ""}`}>
+function AdminMetric({
+  icon,
+  label,
+  value,
+  tone = "normal",
+  onClick
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  tone?: "normal" | "alert";
+  onClick?: () => void;
+}) {
+  const className = `smart-dashboard-metric ${tone === "alert" ? "is-alert" : ""} ${onClick ? "is-clickable" : ""}`;
+  const content = (
+    <>
       <span>{icon}</span>
       <strong>{value}</strong>
       <small>{label}</small>
-    </span>
+    </>
   );
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className}>
+        {content}
+      </button>
+    );
+  }
+
+  return <span className={className}>{content}</span>;
 }
 
 function InfoTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
