@@ -579,6 +579,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // effect below corrects it. Starting from the plain demo default and
   // letting that effect hydrate the right state per-user avoids the race.
   const [state, setState] = useState<AppState>(() => initialState);
+  // For an admin/moderator, workers/companies must only ever come from
+  // loadModerationOverview's real cross-account query. Every other effect
+  // that touches either field (the account-state reload below, and the
+  // worker/company marketplace effects that merge in *this* account's own
+  // limited view of companies-with-jobs or public workers) has its own,
+  // usually smaller, partial list - and whichever of these resolves last
+  // wins, so an admin's freelancer/empresa counts flickered between the
+  // real total and whatever partial list a competing effect saw at that
+  // moment. Routing every one of those writes through this keeps
+  // moderation-overview as the sole source for both fields.
+  function keepModerationLists(next: AppState, current: AppState): AppState {
+    return isAdmin || isModerator ? { ...next, workers: current.workers, companies: current.companies } : next;
+  }
   const [syncStatus, setSyncStatus] = useState<AppContextValue["syncStatus"]>(
     supabaseStateEnabled ? "carregando" : "local"
   );
@@ -701,18 +714,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     let active = true;
     setSyncStatus("carregando");
-    // For an admin/moderator, workers/companies must only ever come from
-    // loadModerationOverview's real cross-account query below - this
-    // account's own app_state_snapshots blob only ever holds this one
-    // account's small local copy (whatever demo/seed data it started
-    // with). Applying it here raced the moderation-overview effect: if
-    // this fetch (a single request) resolved after that one (five
-    // requests), it silently reverted the freelancer/empresa counts back
-    // down from the real number to that stale local list - the "16 vs 5"
-    // flicker.
-    function keepModerationLists(next: AppState, current: AppState): AppState {
-      return isAdmin || isModerator ? { ...next, workers: current.workers, companies: current.companies } : next;
-    }
     loadSupabaseState(remoteStateKey)
       .then((remoteState) => {
         if (!active) return;
@@ -754,7 +755,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       Promise.all([loadPublicWorkerProfiles(user?.id), loadCompanyMarketplace(currentCompany.id)])
         .then(([publicWorkers, companyPayload]) => {
           if (!active) return;
-          setState((current) => mergeCompanyMarketplaceState(mergePublicWorkers(current, publicWorkers), currentCompany.id, companyPayload));
+          setState((current) =>
+            keepModerationLists(mergeCompanyMarketplaceState(mergePublicWorkers(current, publicWorkers), currentCompany.id, companyPayload), current)
+          );
           setSyncError("");
         })
         .catch(() => {
@@ -847,7 +850,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       loadWorkerMarketplace(currentWorker.id)
         .then((payload) => {
           if (!active) return;
-          setState((current) => mergeWorkerMarketplaceState(current, currentWorker.id, payload));
+          setState((current) => keepModerationLists(mergeWorkerMarketplaceState(current, currentWorker.id, payload), current));
           setSyncError("");
         })
         .catch(() => {
