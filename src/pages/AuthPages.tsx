@@ -7,6 +7,7 @@ import { useWizardStep, WizardActions, WizardPanel, WizardSteps } from "../compo
 import { experienceLevels, functions, neighborhoods } from "../data/demoData";
 import { useAuth } from "../lib/auth";
 import { useAppStore } from "../lib/store";
+import { isPhoneTaken } from "../lib/signupChecks";
 import type { JobFunction, UserRole } from "../lib/types";
 import {
   formatBrPhone,
@@ -342,6 +343,13 @@ export function WorkerSignupPage() {
             setPending(true);
             setError("");
             setMessage("");
+
+            if (await isPhoneTaken(phone)) {
+              setError("Este telefone já está cadastrado em outra conta.");
+              wizard.goTo(0);
+              return;
+            }
+
             const result = await signUp({
               email: email.trim(),
               password,
@@ -652,6 +660,13 @@ export function CompanySignupPage() {
             setPending(true);
             setError("");
             setMessage("");
+
+            if (await isPhoneTaken(phone)) {
+              setError("Este telefone já está cadastrado em outra conta.");
+              wizard.goTo(0);
+              return;
+            }
+
             const result = await signUp({
               email: email.trim(),
               password,

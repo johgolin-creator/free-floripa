@@ -3,6 +3,7 @@ import { AlertTriangle, BadgeCheck, Building2, Edit3, ImageUp, Save, ShieldCheck
 import { DeleteAccountSection } from "../components/DeleteAccountSection";
 import { Modal } from "../components/Modal";
 import { formatBrPhone, formatCNPJ, isMeaningfulText, isPlausibleFullName, isValidBrMobile, isValidCNPJ, isValidEmail, onlyDigits } from "../lib/validation";
+import { isPhoneTaken } from "../lib/signupChecks";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
 import { SafetyNotice } from "../components/SafetyNotice";
@@ -145,7 +146,7 @@ function CompanyProfileForm({
   return (
     <form
       className="grid max-h-[72vh] gap-3 overflow-auto pr-1"
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         const establishmentName = String(form.get("establishmentName") || "").trim();
@@ -182,6 +183,10 @@ function CompanyProfileForm({
         }
         if (!isMeaningfulText(description, { minLen: 15, minWords: 3 })) {
           setError("Descreva o estabelecimento com mais detalhes.");
+          return;
+        }
+        if (onlyDigits(phone) !== onlyDigits(company.phone) && (await isPhoneTaken(phone))) {
+          setError("Este telefone já está cadastrado em outra conta.");
           return;
         }
 

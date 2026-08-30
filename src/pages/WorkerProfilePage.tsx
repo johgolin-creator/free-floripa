@@ -13,6 +13,7 @@ import {
   isValidEmail,
   onlyDigits
 } from "../lib/validation";
+import { isPhoneTaken } from "../lib/signupChecks";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
 import { SafetyNotice } from "../components/SafetyNotice";
@@ -172,7 +173,7 @@ export function WorkerProfilePage() {
         <Modal title="Editar perfil do trabalhador" onClose={() => setEditing(false)}>
           <form
             className="grid max-h-[72vh] gap-3 overflow-auto pr-1"
-            onSubmit={(event) => {
+            onSubmit={async (event) => {
               event.preventDefault();
               const form = new FormData(event.currentTarget);
               const name = String(form.get("name") || "").trim();
@@ -220,6 +221,10 @@ export function WorkerProfilePage() {
               }
               if (selectedFunctions.length === 0) {
                 setError("Selecione pelo menos uma profissão.");
+                return;
+              }
+              if (onlyDigits(phone) !== onlyDigits(currentWorker.phone) && (await isPhoneTaken(phone))) {
+                setError("Este telefone já está cadastrado em outra conta.");
                 return;
               }
 
