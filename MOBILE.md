@@ -1,13 +1,17 @@
-# Free Floripa como aplicativo
+# PONT como aplicativo
 
-Este projeto agora está preparado para virar aplicativo Android e iOS com Capacitor.
+Este projeto está preparado para virar aplicativo Android e iOS com Capacitor.
 
 ## O que foi configurado
 
-- Nome do app: Free Floripa
-- ID do app: com.freefloripa.app
+- Nome do app: PONT
+- ID do app (bundle id, interno): com.freefloripa.app
 - Pasta usada pelo app nativo: dist
-- Build mobile usando o mesmo Free Floripa já criado
+- Build mobile usando o mesmo PONT já criado
+
+> O bundle id `com.freefloripa.app` é herdado da primeira configuração do
+> projeto. Ele não aparece para o usuário (que vê apenas "PONT") e não pode
+> ser alterado depois da primeira publicação na Play Store.
 
 ## Primeiro uso
 
@@ -42,7 +46,7 @@ pnpm cap:open:ios
 
 ## Depois de alterar o app
 
-Sempre que fizer mudanças no Free Floripa, rode:
+Sempre que fizer mudanças no PONT, rode:
 
 ```bash
 pnpm cap:sync

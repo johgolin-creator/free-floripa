@@ -20,7 +20,7 @@ export function ShiftReceipt({
   const receiptText = useMemo(
     () =>
       [
-        "COMPROVANTE FREE FLORIPA",
+        "COMPROVANTE PONT",
         `Empresa: ${company.establishmentName}`,
         `Profissional: ${worker.name}`,
         `Vaga: ${job.title}`,
