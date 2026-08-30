@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { KeyRound, MessageSquare, Smartphone } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { useAuth } from "../lib/auth";
@@ -28,8 +28,7 @@ export function PhoneVerifyPage() {
   const landingPath = state.activeRole === "empresa" ? "/app/empresa" : "/app/trabalhador";
 
   if (phoneVerified) {
-    navigate(landingPath, { replace: true });
-    return null;
+    return <Navigate to={landingPath} replace />;
   }
 
   async function handleSend() {

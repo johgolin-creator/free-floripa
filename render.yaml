@@ -20,3 +20,5 @@ services:
         value: https://usepont.com.br
       - key: VITE_SUPPORT_WHATSAPP
         sync: false
+      - key: VITE_PHONE_VERIFICATION
+        sync: false

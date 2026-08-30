@@ -50,9 +50,12 @@ export function isMeaningfulText(
   const words = trimmed.split(" ").filter((word) => word.length >= 2);
   if (words.length < minWords) return false;
 
-  // Reject "abc abc abc" and a single word repeated to hit the count.
-  const distinct = new Set(words.map((word) => word.toLowerCase()));
-  return distinct.size >= Math.min(minWords, words.length) - 0 && distinct.size >= 2;
+  // For multi-word fields, reject "abc abc abc" (one word repeated to hit the count).
+  if (minWords >= 2) {
+    const distinct = new Set(words.map((word) => word.toLowerCase()));
+    if (distinct.size < 2) return false;
+  }
+  return true;
 }
 
 function isAllSameDigit(digits: string): boolean {
@@ -157,7 +160,8 @@ export function formatCNPJ(value: string): string {
 
 export function formatBrPhone(value: string): string {
   const d = onlyDigits(value).slice(0, 11);
-  if (d.length <= 2) return d.replace(/^(\d{0,2})/, "($1");
+  if (!d) return "";
+  if (d.length <= 2) return `(${d}`;
   if (d.length <= 7) return d.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
   return d.replace(/^(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3");
 }

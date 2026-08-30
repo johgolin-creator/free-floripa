@@ -45,6 +45,10 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 const DEFAULT_PUBLIC_APP_URL = "https://usepont.com.br";
+// Escape hatch: set VITE_PHONE_VERIFICATION=off to skip the SMS gate while
+// the Supabase phone provider (Twilio) is not configured yet. Any other
+// value (including unset) keeps the gate on.
+const PHONE_VERIFICATION_ENABLED = String(import.meta.env.VITE_PHONE_VERIFICATION || "").toLowerCase() !== "off";
 const DEFAULT_ADMIN_EMAILS = ["jonathan.f@gmail.com"];
 
 function getAuthRedirectUrl(pathname = "/login") {
@@ -204,7 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       dbRoleLoading,
       email: user?.email ?? "",
       phone: user?.phone ?? "",
-      phoneVerified: !supabase || Boolean(user?.phone && user?.phone_confirmed_at),
+      phoneVerified: !supabase || !PHONE_VERIFICATION_ENABLED || Boolean(user?.phone && user?.phone_confirmed_at),
       sessionError,
       async signIn({ email, password, fallbackRole }) {
         if (!supabase) return { role: fallbackRole };

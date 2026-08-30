@@ -357,7 +357,7 @@ export async function loadPublicWorkerProfiles(excludeUserId?: string | null) {
   const { data: rows, error } = await supabase
     .from("worker_profiles")
     .select(
-      "id,user_id,cpf,display_name,avatar_url,birth_date,city,neighborhood,professions,experience,description,availability,has_transport,max_distance_km,rating,completed_jobs,attendance_rate,punctuality_rate,cancellations,verified"
+      "id,user_id,display_name,avatar_url,birth_date,city,neighborhood,professions,experience,description,availability,has_transport,max_distance_km,rating,completed_jobs,attendance_rate,punctuality_rate,cancellations,verified"
     )
     .order("updated_at", { ascending: false })
     .limit(PUBLIC_WORKERS_LIMIT);
