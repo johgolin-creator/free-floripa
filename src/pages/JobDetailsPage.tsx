@@ -26,12 +26,15 @@ import { SectionHeader } from "../components/SectionHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
+import { useAuth } from "../lib/auth";
+import { supportEmailUrl, supportWhatsappUrl } from "../lib/support";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
 import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots, isJobOpenForApplications } from "../lib/rules";
 
 export function JobDetailsPage() {
   const { id } = useParams();
-  const { state, currentWorker, applyToJob, updateApplicationStatus, submitTrustReport, subscribeProfessional, subscribePlus } = useAppStore();
+  const { state, currentWorker, applyToJob, updateApplicationStatus, submitTrustReport } = useAppStore();
+  const { email } = useAuth();
   const [message, setMessage] = useState("");
   const [showPlans, setShowPlans] = useState(false);
   const [showApplyConfirm, setShowApplyConfirm] = useState(false);
@@ -126,41 +129,28 @@ export function JobDetailsPage() {
           <span className="badge bg-aqua-50 text-aqua-700">
             <CreditCard size={15} /> Saldo: {state.subscription.creditsRemaining} moeda(s)
           </span>
-          <h3>Escolha um pacote de moedas</h3>
-          <p>Cada candidatura enviada usa 1 moeda.</p>
+          <h3>Você está sem moedas</h3>
+          <p>
+            Cada candidatura usa 1 moeda. A recarga é feita pelo suporte: combine o pagamento no WhatsApp e a
+            equipe do PONT credita as moedas na sua conta.
+          </p>
         </div>
         <button
           type="button"
-          className="job-plan-option"
+          className="primary w-full"
           onClick={() => {
-            subscribeProfessional();
+            const text = `Olá! Quero comprar moedas do PONT.\nConta: ${email || "(informe seu e-mail)"} (trabalhador).`;
+            const whatsapp = supportWhatsappUrl(text);
+            if (whatsapp) window.open(whatsapp, "_blank", "noopener");
+            else window.location.href = supportEmailUrl("Compra de moedas PONT", text);
             setShowPlans(false);
-            setMessage("Pacote Profissional ativado. 20 moedas foram adicionadas.");
+            setMessage("Abrimos o suporte com sua solicitação. As moedas são liberadas após a confirmação do pagamento.");
           }}
         >
-          <span>
-            <strong>R$ 19,90</strong>
-            <small>20 moedas</small>
-          </span>
-          <em>Comprar pacote</em>
-        </button>
-        <button
-          type="button"
-          className="job-plan-option"
-          onClick={() => {
-            subscribePlus();
-            setShowPlans(false);
-            setMessage("Pacote Plus ativado. 35 moedas foram adicionadas.");
-          }}
-        >
-          <span>
-            <strong>R$ 29,90</strong>
-            <small>35 moedas</small>
-          </span>
-          <em>Comprar Plus</em>
+          <MessageCircle size={17} /> Comprar pelo WhatsApp
         </button>
         <Link to="/app/planos" onClick={() => setShowPlans(false)} className="secondary">
-          Ver todos os pacotes <ArrowRight size={17} />
+          Ver os pacotes <ArrowRight size={17} />
         </Link>
       </div>
     </Modal>

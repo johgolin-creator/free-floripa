@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { onlyDigits } from "./validation";
 import type {
   Application,
   ApplicationStatus,
@@ -65,6 +66,7 @@ const USER_APPLICATIONS_LIMIT = 200;
 interface WorkerProfileRow {
   id: string;
   user_id: string;
+  cpf?: string | null;
   display_name?: string | null;
   avatar_url?: string | null;
   birth_date?: string | null;
@@ -229,6 +231,7 @@ function mapPublicWorker(row: WorkerProfileRow, experiences: FunctionExperienceR
   return {
     id: row.id,
     name: row.display_name?.trim() || "Profissional PONT",
+    cpf: "",
     phone: "",
     email: "",
     avatarUrl: row.avatar_url || DEFAULT_PUBLIC_AVATAR,
@@ -354,7 +357,7 @@ export async function loadPublicWorkerProfiles(excludeUserId?: string | null) {
   const { data: rows, error } = await supabase
     .from("worker_profiles")
     .select(
-      "id,user_id,display_name,avatar_url,birth_date,city,neighborhood,professions,experience,description,availability,has_transport,max_distance_km,rating,completed_jobs,attendance_rate,punctuality_rate,cancellations,verified"
+      "id,user_id,cpf,display_name,avatar_url,birth_date,city,neighborhood,professions,experience,description,availability,has_transport,max_distance_km,rating,completed_jobs,attendance_rate,punctuality_rate,cancellations,verified"
     )
     .order("updated_at", { ascending: false })
     .limit(PUBLIC_WORKERS_LIMIT);
@@ -409,6 +412,7 @@ export async function publishWorkerProfile(user: User, worker: WorkerProfile) {
       {
         id: worker.id,
         user_id: user.id,
+        cpf: onlyDigits(worker.cpf || "") || null,
         display_name: worker.name,
         avatar_url: worker.avatarUrl,
         birth_date: worker.birthDate || null,

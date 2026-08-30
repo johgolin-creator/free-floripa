@@ -63,7 +63,7 @@ const companySecondaryLinks = [
 
 export function AppLayout() {
   const { state, storageMode, syncStatus, syncError, currentWorker, currentCompany, updateWorkerProfile, updateCompanyProfile } = useAppStore();
-  const { isAdmin, isModerator } = useAuth();
+  const { authEnabled, isAdmin, isModerator, phoneVerified } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [showMoreNav, setShowMoreNav] = useState(false);
@@ -157,7 +157,12 @@ export function AppLayout() {
     return <Navigate to="/app/admin" replace />;
   }
 
-  if (!isAdmin && !isModerator && !completion.complete && location.pathname !== profilePath) {
+  const needsPhoneVerification = authEnabled && !isAdmin && !isModerator && !phoneVerified;
+  if (needsPhoneVerification && location.pathname !== "/app/verificar-telefone") {
+    return <Navigate to="/app/verificar-telefone" replace />;
+  }
+
+  if (!needsPhoneVerification && !isAdmin && !isModerator && !completion.complete && location.pathname !== profilePath) {
     return <Navigate to={profilePath} replace />;
   }
 

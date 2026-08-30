@@ -1,4 +1,5 @@
 import type { CompanyProfile, WorkerProfile } from "./types";
+import { isValidCNPJ, isValidCPF } from "./validation";
 
 const DEFAULT_WORKER_TEXTS = ["Perfil recém-criado no PONT.", "Perfil recÃ©m-criado no PONT."];
 const DEFAULT_COMPANY_TEXTS = ["Empresa cadastrada no PONT."];
@@ -15,6 +16,7 @@ export function getWorkerProfileCompletion(worker: WorkerProfile) {
   const missing: string[] = [];
 
   if (!filled(worker.name)) missing.push("nome completo");
+  if (!isValidCPF(worker.cpf)) missing.push("CPF");
   if (!filled(worker.phone)) missing.push("telefone");
   if (!filled(worker.email)) missing.push("e-mail");
   if (!filled(worker.birthDate)) missing.push("data de nascimento");
@@ -40,7 +42,7 @@ export function getCompanyProfileCompletion(company: CompanyProfile) {
   if (!filled(company.responsibleName) || company.responsibleName === "Responsável" || company.responsibleName === "ResponsÃ¡vel") {
     missing.push("responsável");
   }
-  if (!filled(company.cnpj)) missing.push("CNPJ");
+  if (!isValidCNPJ(company.cnpj)) missing.push("CNPJ");
   if (!filled(company.phone)) missing.push("telefone");
   if (!filled(company.email)) missing.push("e-mail");
   if (!filled(company.category)) missing.push("categoria");

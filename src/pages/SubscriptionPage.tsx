@@ -19,6 +19,7 @@ import { useAppStore } from "../lib/store";
 import { useAuth } from "../lib/auth";
 import { formatDateTime } from "../lib/format";
 import { loadRemoteCoinTransactions, supabaseCoinsEnabled, type CoinTransaction } from "../lib/supabaseCoins";
+import { supportEmailUrl, supportWhatsappUrl } from "../lib/support";
 
 const freeBenefits = [
   "Criar perfil e manter histórico",
@@ -50,8 +51,8 @@ const unlockItems = [
 ];
 
 export function SubscriptionPage() {
-  const { state, subscribeProfessional, subscribePlus } = useAppStore();
-  const { user } = useAuth();
+  const { state } = useAppStore();
+  const { user, email } = useAuth();
   const [message, setMessage] = useState("");
   const [transactions, setTransactions] = useState<CoinTransaction[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
@@ -102,16 +103,17 @@ export function SubscriptionPage() {
     };
   }, [isCompany, state.subscription.creditsRemaining, user]);
 
-  function handleSubscribe() {
-    subscribeProfessional();
-    setMessage(`Pacote Profissional comprado. 20 moedas foram adicionadas ao ${isCompany ? "saldo da empresa" : "seu saldo"}.`);
-  }
-
-  function handleSubscribePlus() {
-    subscribePlus();
-    setMessage(
-      `Pacote Plus ativado. Moedas ilimitadas por 30 dias, além de 35 moedas de bônus no ${isCompany ? "saldo da empresa" : "seu saldo"}.`
-    );
+  function buyViaSupport(planLabel: string) {
+    const roleLabel = isCompany ? "empresa" : "trabalhador";
+    const text = `Olá! Quero comprar o pacote "${planLabel}" do PONT.\nConta: ${email || "(informe seu e-mail)"} (${roleLabel}).`;
+    const whatsapp = supportWhatsappUrl(text);
+    if (whatsapp) {
+      window.open(whatsapp, "_blank", "noopener");
+      setMessage("Abrimos o WhatsApp do suporte com sua solicitação. As moedas são liberadas após a confirmação do pagamento.");
+      return;
+    }
+    window.location.href = supportEmailUrl("Compra de moedas PONT", text);
+    setMessage("Envie o e-mail para o suporte concluir a compra. As moedas são liberadas após a confirmação do pagamento.");
   }
 
   return (
@@ -155,9 +157,9 @@ export function SubscriptionPage() {
             <span>20 moedas</span>
           </div>
           <p>Ideal para quem quer testar o fluxo e se candidatar com mais segurança.</p>
-          <button type="button" onClick={handleSubscribe} className="primary w-full">
+          <button type="button" onClick={() => buyViaSupport("Profissional — 20 moedas")} className="primary w-full">
             <Zap size={17} />
-            Comprar 20 moedas
+            Comprar pelo WhatsApp
           </button>
         </div>
       </section>
@@ -205,8 +207,8 @@ export function SubscriptionPage() {
                 Usar moedas <ArrowRight size={17} />
               </Link>
             ) : (
-              <button type="button" onClick={handleSubscribe} className="primary w-full">
-                Comprar 20 moedas <ArrowRight size={17} />
+              <button type="button" onClick={() => buyViaSupport("Profissional — 20 moedas")} className="primary w-full">
+                Comprar pelo WhatsApp <ArrowRight size={17} />
               </button>
             )
           }
@@ -223,8 +225,8 @@ export function SubscriptionPage() {
                 Usar moedas <ArrowRight size={17} />
               </Link>
             ) : (
-              <button type="button" onClick={handleSubscribePlus} className="primary w-full">
-                Ativar moedas ilimitadas <ArrowRight size={17} />
+              <button type="button" onClick={() => buyViaSupport("Plus — moedas ilimitadas por 30 dias")} className="primary w-full">
+                Comprar pelo WhatsApp <ArrowRight size={17} />
               </button>
             )
           }
@@ -244,9 +246,10 @@ export function SubscriptionPage() {
           <span className="badge bg-aqua-50 text-aqua-700">
             <ShieldCheck size={15} /> Moedas
           </span>
-          <h3>Recargas em preparação</h3>
+          <h3>Como comprar moedas</h3>
           <p>
-            As moedas organizam ações importantes dentro do app. Por enquanto, as recargas ficam sob controle da administração do PONT.
+            A compra é feita pelo suporte: toque em <strong>Comprar pelo WhatsApp</strong>, combine o pagamento e a
+            equipe do PONT credita as moedas na sua conta. Não há cobrança automática dentro do app.
           </p>
         </div>
         <div className="plan-note-list">

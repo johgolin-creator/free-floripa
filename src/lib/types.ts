@@ -49,6 +49,7 @@ export type ApplicationStatus =
 export interface WorkerProfile {
   id: string;
   name: string;
+  cpf: string;
   phone: string;
   email: string;
   avatarUrl: string;

@@ -51,7 +51,7 @@ export const companies: CompanyProfile[] = [
     id: "company-1",
     establishmentName: "Maré Alta Beach Club",
     responsibleName: "Fernanda Luz",
-    cnpj: "12.345.678/0001-90",
+    cnpj: "11.222.333/0001-81",
     phone: "(48) 99911-2300",
     email: "contratacao@marealta.com.br",
     category: "Beach club",
@@ -65,7 +65,7 @@ export const companies: CompanyProfile[] = [
     id: "company-2",
     establishmentName: "Restaurante Ilha Norte",
     responsibleName: "Carlos Mendes",
-    cnpj: "23.456.789/0001-10",
+    cnpj: "11.222.333/0002-62",
     phone: "(48) 98822-1144",
     email: "rh@ilhanorte.com.br",
     category: "Restaurante",
@@ -79,7 +79,7 @@ export const companies: CompanyProfile[] = [
     id: "company-3",
     establishmentName: "Centro Eventos Floripa",
     responsibleName: "Bianca Rocha",
-    cnpj: "34.567.890/0001-21",
+    cnpj: "11.222.333/0003-43",
     phone: "(48) 97733-8821",
     email: "operacao@eventosfloripa.com.br",
     category: "Agência de eventos",
@@ -95,6 +95,7 @@ export const workers: WorkerProfile[] = [
   {
     id: "worker-1",
     name: "Ana Carolina Souza",
+    cpf: "12345678909",
     phone: "(48) 99123-4567",
     email: "ana.souza@email.com",
     avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80",
@@ -125,6 +126,7 @@ export const workers: WorkerProfile[] = [
   {
     id: "worker-2",
     name: "Rafael Pires",
+    cpf: "98765432100",
     phone: "(48) 98888-4422",
     email: "rafael.pires@email.com",
     avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=320&q=80",
@@ -154,6 +156,7 @@ export const workers: WorkerProfile[] = [
   {
     id: "worker-3",
     name: "Luiza Martins",
+    cpf: "11144777735",
     phone: "(48) 99777-9811",
     email: "luiza.martins@email.com",
     avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=320&q=80",
@@ -184,6 +187,7 @@ export const workers: WorkerProfile[] = [
   {
     id: "worker-4",
     name: "Diego Ramos",
+    cpf: "52998224725",
     phone: "(48) 99621-5510",
     email: "diego.ramos@email.com",
     avatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=320&q=80",

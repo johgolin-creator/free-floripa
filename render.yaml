@@ -18,3 +18,5 @@ services:
         sync: false
       - key: VITE_PUBLIC_APP_URL
         value: https://usepont.com.br
+      - key: VITE_SUPPORT_WHATSAPP
+        sync: false

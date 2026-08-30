@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { AlertTriangle, BadgeCheck, Building2, Edit3, ImageUp, Save, ShieldCheck, Star } from "lucide-react";
 import { DeleteAccountSection } from "../components/DeleteAccountSection";
 import { Modal } from "../components/Modal";
+import { formatBrPhone, formatCNPJ, isMeaningfulText, isPlausibleFullName, isValidBrMobile, isValidCNPJ, isValidEmail, onlyDigits } from "../lib/validation";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
 import { SafetyNotice } from "../components/SafetyNotice";
@@ -155,17 +156,41 @@ function CompanyProfileForm({
         const address = String(form.get("address") || "").trim();
         const description = String(form.get("description") || "").trim();
 
-        if (!establishmentName || !responsibleName || !cnpj || !phone || !email || !address || !description) {
-          setError("Preencha todos os dados obrigatórios da empresa.");
+        if (!isMeaningfulText(establishmentName, { minLen: 3, minWords: 1 })) {
+          setError("Informe o nome real do estabelecimento.");
+          return;
+        }
+        if (!isPlausibleFullName(responsibleName)) {
+          setError("Informe o nome e sobrenome do responsável.");
+          return;
+        }
+        if (!isValidCNPJ(cnpj)) {
+          setError("Informe um CNPJ válido.");
+          return;
+        }
+        if (!isValidBrMobile(phone)) {
+          setError("Informe um celular válido com DDD.");
+          return;
+        }
+        if (!isValidEmail(email)) {
+          setError("Informe um e-mail válido.");
+          return;
+        }
+        if (!isMeaningfulText(address, { minLen: 8, minWords: 2 })) {
+          setError("Informe o endereço completo.");
+          return;
+        }
+        if (!isMeaningfulText(description, { minLen: 15, minWords: 3 })) {
+          setError("Descreva o estabelecimento com mais detalhes.");
           return;
         }
 
         setError("");
         onSubmit({
-          establishmentName,
-          responsibleName,
-          cnpj,
-          phone,
+          establishmentName: establishmentName.replace(/\s+/g, " "),
+          responsibleName: responsibleName.replace(/\s+/g, " "),
+          cnpj: onlyDigits(cnpj),
+          phone: formatBrPhone(phone),
           email,
           category: form.get("category") as CompanyProfile["category"],
           neighborhood: form.get("neighborhood") as CompanyProfile["neighborhood"],
@@ -187,8 +212,34 @@ function CompanyProfileForm({
       <div className="grid gap-3 md:grid-cols-2">
         <label className="label">Nome do estabelecimento<input name="establishmentName" className="input" defaultValue={company.establishmentName} required /></label>
         <label className="label">Responsável<input name="responsibleName" className="input" defaultValue={company.responsibleName} required /></label>
-        <label className="label">CNPJ<input name="cnpj" className="input" defaultValue={company.cnpj} required /></label>
-        <label className="label">Telefone<input name="phone" className="input" defaultValue={company.phone} required /></label>
+        <label className="label">
+          CNPJ
+          <input
+            name="cnpj"
+            className="input"
+            inputMode="numeric"
+            placeholder="00.000.000/0000-00"
+            defaultValue={formatCNPJ(company.cnpj)}
+            onChange={(event) => {
+              event.target.value = formatCNPJ(event.target.value);
+            }}
+            required
+          />
+        </label>
+        <label className="label">
+          Telefone (celular)
+          <input
+            name="phone"
+            className="input"
+            inputMode="tel"
+            placeholder="(48) 99999-9999"
+            defaultValue={formatBrPhone(company.phone)}
+            onChange={(event) => {
+              event.target.value = formatBrPhone(event.target.value);
+            }}
+            required
+          />
+        </label>
         <label className="label">E-mail<input name="email" className="input" type="email" defaultValue={company.email} required /></label>
         <label className="label">Categoria<select name="category" className="input" defaultValue={company.category} required>{companyCategories.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="label md:col-span-2">Bairro<select name="neighborhood" className="input" defaultValue={company.neighborhood} required>{neighborhoods.map((item) => <option key={item}>{item}</option>)}</select></label>

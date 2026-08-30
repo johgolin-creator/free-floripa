@@ -2,6 +2,17 @@ import { useState, type ReactNode } from "react";
 import { AlertTriangle, BadgeCheck, Edit3, ImageUp, Save, ShieldCheck, Star, UserRound } from "lucide-react";
 import { DeleteAccountSection } from "../components/DeleteAccountSection";
 import { Modal } from "../components/Modal";
+import {
+  formatBrPhone,
+  formatCPF,
+  isAdult,
+  isMeaningfulText,
+  isPlausibleFullName,
+  isValidBrMobile,
+  isValidCPF,
+  isValidEmail,
+  onlyDigits
+} from "../lib/validation";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
 import { SafetyNotice } from "../components/SafetyNotice";
@@ -20,6 +31,7 @@ export function WorkerProfilePage() {
   const [error, setError] = useState("");
   const [selectedFunctions, setSelectedFunctions] = useState<JobFunction[]>(currentWorker.functions);
   const [avatarUrl, setAvatarUrl] = useState(currentWorker.avatarUrl);
+  const [cpf, setCpf] = useState(formatCPF(currentWorker.cpf));
   const reliability = calculateReliability(currentWorker);
   const completion = getWorkerProfileCompletion(currentWorker);
   const blocked = state.adminModeration.blockedWorkerIds.includes(currentWorker.id);
@@ -37,6 +49,7 @@ export function WorkerProfilePage() {
         onEdit={() => {
           setSelectedFunctions(currentWorker.functions);
           setAvatarUrl(currentWorker.avatarUrl);
+          setCpf(formatCPF(currentWorker.cpf));
           setError("");
           setEditing(true);
         }}
@@ -63,6 +76,7 @@ export function WorkerProfilePage() {
                   onClick={() => {
                     setSelectedFunctions(currentWorker.functions);
                     setAvatarUrl(currentWorker.avatarUrl);
+                    setCpf(formatCPF(currentWorker.cpf));
                     setError("");
                     setEditing(true);
                   }}
@@ -75,6 +89,7 @@ export function WorkerProfilePage() {
                   onClick={() => {
                     setSelectedFunctions(currentWorker.functions);
                     setAvatarUrl(currentWorker.avatarUrl);
+                    setCpf(formatCPF(currentWorker.cpf));
                     setError("");
                     setEditing(true);
                   }}
@@ -171,8 +186,36 @@ export function WorkerProfilePage() {
               const availability = String(form.get("availability") || "").trim();
               const maxDistanceKm = Number(form.get("maxDistanceKm"));
 
-              if (!name || !phone || !email || !birthDate || !city || !neighborhood || !description || !availability || maxDistanceKm <= 0) {
-                setError("Preencha nome, contato, localização, descrição, disponibilidade e distância máxima.");
+              if (!isPlausibleFullName(name)) {
+                setError("Informe seu nome e sobrenome completos.");
+                return;
+              }
+              if (!isValidCPF(cpf)) {
+                setError("Informe um CPF válido.");
+                return;
+              }
+              if (!isValidBrMobile(phone)) {
+                setError("Informe um celular válido com DDD.");
+                return;
+              }
+              if (!isValidEmail(email)) {
+                setError("Informe um e-mail válido.");
+                return;
+              }
+              if (!isAdult(birthDate)) {
+                setError("É necessário ter 18 anos ou mais.");
+                return;
+              }
+              if (!city || !neighborhood) {
+                setError("Preencha cidade e bairro.");
+                return;
+              }
+              if (!isMeaningfulText(description, { minLen: 15, minWords: 3 })) {
+                setError("Escreva uma descrição real do seu perfil.");
+                return;
+              }
+              if (!isMeaningfulText(availability, { minLen: 4, minWords: 1 }) || maxDistanceKm < 1 || maxDistanceKm > 200) {
+                setError("Preencha disponibilidade e uma distância máxima entre 1 e 200 km.");
                 return;
               }
               if (selectedFunctions.length === 0) {
@@ -181,8 +224,9 @@ export function WorkerProfilePage() {
               }
 
               updateWorkerProfile({
-                name,
-                phone,
+                name: name.replace(/\s+/g, " "),
+                cpf: onlyDigits(cpf),
+                phone: formatBrPhone(phone),
                 email,
                 avatarUrl: avatarUrl.trim() || currentWorker.avatarUrl,
                 birthDate,
@@ -222,11 +266,33 @@ export function WorkerProfilePage() {
             <div className="grid gap-3 md:grid-cols-2">
               <label className="label">
                 Nome completo
-                <input name="name" className="input" required defaultValue={currentWorker.name} />
+                <input name="name" className="input" required defaultValue={currentWorker.name} placeholder="Nome e sobrenome" />
               </label>
               <label className="label">
-                Telefone
-                <input name="phone" className="input" required defaultValue={currentWorker.phone} />
+                CPF
+                <input
+                  name="cpf"
+                  className="input"
+                  required
+                  inputMode="numeric"
+                  placeholder="000.000.000-00"
+                  value={cpf}
+                  onChange={(event) => setCpf(formatCPF(event.target.value))}
+                />
+              </label>
+              <label className="label">
+                Telefone (celular)
+                <input
+                  name="phone"
+                  className="input"
+                  required
+                  inputMode="tel"
+                  placeholder="(48) 99999-9999"
+                  defaultValue={formatBrPhone(currentWorker.phone)}
+                  onChange={(event) => {
+                    event.target.value = formatBrPhone(event.target.value);
+                  }}
+                />
               </label>
               <label className="label">
                 E-mail de contato

@@ -31,8 +31,6 @@ import {
   supabaseModerationEnabled
 } from "./supabaseModeration";
 import {
-  activateUnlimitedPlan,
-  grantRemoteCoins,
   loadRemoteCoinAccount,
   loadRemoteWalletBalance,
   supabaseCoinsEnabled,
@@ -106,7 +104,7 @@ interface AppContextValue {
   deleteCompanySchedule: (scheduleId: string) => { ok: boolean; message: string };
   updateJobStatus: (jobId: string, status: JobStatus) => { ok: boolean; message: string };
   duplicateJob: (jobId: string) => { ok: boolean; message: string; jobId?: string };
-  updateWorkerProfile: (input: Partial<Pick<WorkerProfile, "name" | "phone" | "email" | "avatarUrl" | "birthDate" | "city" | "neighborhood" | "functions" | "functionExperience" | "experience" | "description" | "availability" | "hasTransport" | "maxDistanceKm">>) => void;
+  updateWorkerProfile: (input: Partial<Pick<WorkerProfile, "name" | "cpf" | "phone" | "email" | "avatarUrl" | "birthDate" | "city" | "neighborhood" | "functions" | "functionExperience" | "experience" | "description" | "availability" | "hasTransport" | "maxDistanceKm">>) => void;
   updateCompanyProfile: (input: Partial<CompanyProfile>) => void;
   applyToJob: (jobId: string) => { ok: boolean; message: string; requiresPlan?: boolean };
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => { ok: boolean; message: string };
@@ -117,9 +115,6 @@ interface AppContextValue {
   markRoleNotificationsRead: (role: AppState["activeRole"]) => void;
   markChatConversationRead: (applicationId: string) => void;
   sendChatMessage: (applicationId: string, body: string) => { ok: boolean; message: string };
-  subscribeProfessional: () => void;
-  subscribePlus: () => void;
-  buyCredits: (amount?: number) => void;
   addReview: (workerId: string, review: Omit<Review, "id">) => void;
   addCompanyReview: (companyId: string, review: Omit<CompanyReview, "id" | "companyId" | "createdAt">) => { ok: boolean; message: string };
   toggleWorkerBlock: (workerId: string) => void;
@@ -278,6 +273,7 @@ function createWorkerForUser(user: User): WorkerProfile {
   return {
     id: user.id,
     name: getMetadataString(user, "name", user.email ?? "Trabalhador PONT"),
+    cpf: getMetadataString(user, "cpf", ""),
     phone: getMetadataString(user, "phone", ""),
     email: user.email ?? getMetadataString(user, "email", ""),
     avatarUrl: getMetadataString(user, "avatarUrl", DEFAULT_WORKER_AVATAR),
@@ -682,22 +678,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       persist(next, localStorageKey);
       return next;
     });
-  }
-
-  function trackCoinSync(action: Promise<CoinAccount | null>, fallbackMessage: string, role: UserRole) {
-    if (!supabaseCoinsEnabled) return;
-
-    setSyncStatus("salvando");
-    action
-      .then((account) => {
-        applyCoinAccount(account, role);
-        setSyncError("");
-        setSyncStatus("sincronizado");
-      })
-      .catch(() => {
-        setSyncError(fallbackMessage);
-        setSyncStatus("erro");
-      });
   }
 
   useEffect(() => {
@@ -1821,125 +1801,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         return { ok: true, message: "Mensagem enviada." };
-      },
-      subscribeProfessional() {
-        commit((current) => ({
-          ...current,
-          subscription: {
-            ...current.subscription,
-            plan: "Profissional",
-            creditsRemaining:
-              current.activeRole === "trabalhador"
-                ? current.subscription.creditsRemaining + 20
-                : current.subscription.creditsRemaining,
-            companyCreditsRemaining:
-              current.activeRole === "empresa"
-                ? current.subscription.companyCreditsRemaining + 20
-                : current.subscription.companyCreditsRemaining
-          },
-          coinLedger: [
-            coinLedgerEntry({
-              role: current.activeRole,
-              kind: "purchase",
-              reason: "package_professional",
-              amount: 20,
-              balanceAfter:
-                current.activeRole === "empresa"
-                  ? current.subscription.companyCreditsRemaining + 20
-                  : current.subscription.creditsRemaining + 20
-            }),
-            ...current.coinLedger
-          ]
-        }));
-        if (supabaseCoinsEnabled && user) {
-          trackCoinSync(
-            grantRemoteCoins(user.id, state.activeRole, 20, "package_professional"),
-            "Falha ao adicionar moedas.",
-            state.activeRole
-          );
-        }
-      },
-      subscribePlus() {
-        const plusUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-        commit((current) => ({
-          ...current,
-          subscription: {
-            ...current.subscription,
-            plan: "Plus",
-            creditsRemaining:
-              current.activeRole === "trabalhador"
-                ? current.subscription.creditsRemaining + 35
-                : current.subscription.creditsRemaining,
-            companyCreditsRemaining:
-              current.activeRole === "empresa"
-                ? current.subscription.companyCreditsRemaining + 35
-                : current.subscription.companyCreditsRemaining,
-            plusActiveUntil: current.activeRole === "trabalhador" ? plusUntil : current.subscription.plusActiveUntil,
-            companyPlusActiveUntil: current.activeRole === "empresa" ? plusUntil : current.subscription.companyPlusActiveUntil
-          },
-          coinLedger: [
-            coinLedgerEntry({
-              role: current.activeRole,
-              kind: "purchase",
-              reason: "package_plus",
-              amount: 35,
-              balanceAfter:
-                current.activeRole === "empresa"
-                  ? current.subscription.companyCreditsRemaining + 35
-                  : current.subscription.creditsRemaining + 35
-            }),
-            ...current.coinLedger
-          ]
-        }));
-        if (supabaseCoinsEnabled && user) {
-          trackCoinSync(
-            grantRemoteCoins(user.id, state.activeRole, 35, "package_plus"),
-            "Falha ao adicionar moedas.",
-            state.activeRole
-          );
-          trackCoinSync(
-            activateUnlimitedPlan(user.id, state.activeRole, 30),
-            "Falha ao ativar moedas ilimitadas do Plus.",
-            state.activeRole
-          );
-        }
-      },
-      buyCredits(amount = 5) {
-        commit((current) => ({
-          ...current,
-          subscription: {
-            ...current.subscription,
-            creditsRemaining:
-              current.activeRole === "trabalhador"
-                ? current.subscription.creditsRemaining + amount
-                : current.subscription.creditsRemaining,
-            companyCreditsRemaining:
-              current.activeRole === "empresa"
-                ? current.subscription.companyCreditsRemaining + amount
-                : current.subscription.companyCreditsRemaining
-          },
-          coinLedger: [
-            coinLedgerEntry({
-              role: current.activeRole,
-              kind: "purchase",
-              reason: "coin_pack",
-              amount,
-              balanceAfter:
-                current.activeRole === "empresa"
-                  ? current.subscription.companyCreditsRemaining + amount
-                  : current.subscription.creditsRemaining + amount
-            }),
-            ...current.coinLedger
-          ]
-        }));
-        if (supabaseCoinsEnabled && user) {
-          trackCoinSync(
-            grantRemoteCoins(user.id, state.activeRole, amount, "coin_pack"),
-            "Falha ao adicionar moedas.",
-            state.activeRole
-          );
-        }
       },
       addReview(workerId, review) {
         const worker = state.workers.find((item) => item.id === workerId);

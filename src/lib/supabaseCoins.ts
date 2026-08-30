@@ -122,55 +122,9 @@ export async function loadRemoteCoinTransactions(userId: string, limit = 20): Pr
   }));
 }
 
-export async function grantRemoteCoins(
-  userId: string,
-  role: UserRole,
-  amount: number,
-  reason: string
-): Promise<CoinAccount | null> {
-  if (!supabase) return null;
-
-  const { data, error } = await supabase.rpc("add_coin_transaction", {
-    target_user_id: userId,
-    coin_delta: amount,
-    tx_kind: "purchase",
-    tx_reason: reason,
-    target_job_id: null,
-    target_application_id: null,
-    tx_metadata: {},
-    target_role: role
-  });
-
-  if (error) throw new Error(error.message);
-
-  const wallet = mapWallet(data);
-  return {
-    balance: toBalance(wallet),
-    unlockedJobIds: await loadUnlockedJobIds(userId),
-    plusActiveUntil: toPlusActiveUntil(wallet)
-  };
-}
-
-export async function activateUnlimitedPlan(
-  userId: string,
-  role: UserRole,
-  days = 30
-): Promise<CoinAccount | null> {
-  if (!supabase) return null;
-
-  const { data, error } = await supabase.rpc("activate_unlimited_plan", {
-    target_user_id: userId,
-    target_role: role,
-    days
-  });
-
-  if (error) throw new Error(error.message);
-
-  const wallet = mapWallet(data);
-  return {
-    balance: toBalance(wallet),
-    unlockedJobIds: await loadUnlockedJobIds(userId),
-    plusActiveUntil: toPlusActiveUntil(wallet)
-  };
-}
+// Coin top-ups and the unlimited (Plus) plan are no longer self-service:
+// grants happen only through the admin console (adminAdjustCoins /
+// adminActivatePlus in supabaseAdminCoins.ts) after the support team
+// confirms a WhatsApp payment. The database RPCs used here were locked to
+// admin/moderador in supabase/close_coin_purchases.sql.
 

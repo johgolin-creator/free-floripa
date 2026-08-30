@@ -8,6 +8,20 @@ import { experienceLevels, functions, neighborhoods } from "../data/demoData";
 import { useAuth } from "../lib/auth";
 import { useAppStore } from "../lib/store";
 import type { JobFunction, UserRole } from "../lib/types";
+import {
+  formatBrPhone,
+  formatCNPJ,
+  formatCPF,
+  isAdult,
+  isMeaningfulText,
+  isPlausibleFullName,
+  isStrongPassword,
+  isValidBrMobile,
+  isValidCNPJ,
+  isValidCPF,
+  isValidEmail,
+  onlyDigits
+} from "../lib/validation";
 
 const DEFAULT_WORKER_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
 const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=500&q=80";
@@ -16,10 +30,12 @@ const companySteps = ["Acesso e responsável", "Seu estabelecimento", "Imagem e 
 
 export function LoginPage() {
   const { setRole } = useAppStore();
-  const { authEnabled, signIn } = useAuth();
+  const { authEnabled, signIn, resendConfirmation } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState("");
+  const [resendInfo, setResendInfo] = useState("");
 
   return (
     <AuthShell title="Entrar no PONT" description="Acesse com e-mail e senha para entrar na sua área.">
@@ -35,17 +51,40 @@ export function LoginPage() {
           try {
             setPending(true);
             setError("");
+            setUnconfirmedEmail("");
+            setResendInfo("");
             const result = await signIn({ email, password, fallbackRole });
             setRole(result.role);
             navigate(result.role === "empresa" ? "/app/empresa" : "/app/trabalhador");
           } catch (err) {
-            setError(err instanceof Error ? err.message : "Não foi possível entrar.");
+            const messageText = err instanceof Error ? err.message : "Não foi possível entrar.";
+            setError(messageText);
+            if (messageText.toLowerCase().includes("confirme seu e-mail")) setUnconfirmedEmail(email);
           } finally {
             setPending(false);
           }
         }}
       >
         {error && <div className="auth-alert auth-alert-error">{error}</div>}
+        {unconfirmedEmail && (
+          <div className="auth-alert auth-alert-info">
+            <button
+              type="button"
+              className="font-black underline"
+              onClick={async () => {
+                try {
+                  await resendConfirmation(unconfirmedEmail);
+                  setResendInfo("Reenviamos o e-mail de confirmação. Verifique sua caixa de entrada e o spam.");
+                } catch {
+                  setResendInfo("Não foi possível reenviar agora. Tente novamente em instantes.");
+                }
+              }}
+            >
+              Reenviar e-mail de confirmação para {unconfirmedEmail}
+            </button>
+            {resendInfo && <p className="mt-1 font-semibold">{resendInfo}</p>}
+          </div>
+        )}
         {!authEnabled && <div className="auth-alert auth-alert-info">Modo demonstração: dados salvos apenas neste aparelho.</div>}
         <label className="label">E-mail<input name="email" className="input" type="email" required placeholder="seu@email.com" /></label>
         <div className="grid gap-1">
@@ -192,13 +231,19 @@ export function ResetPasswordPage() {
 
 export function WorkerSignupPage() {
   const { setRole } = useAppStore();
-  const { signUp } = useAuth();
+  const { signUp, resendConfirmation } = useAuth();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const wizard = useWizardStep(workerSteps.length);
+  const [confirmEmail, setConfirmEmail] = useState("");
   const [selectedFunctions, setSelectedFunctions] = useState<JobFunction[]>(["Garçom"]);
   const [avatarUrl, setAvatarUrl] = useState(DEFAULT_WORKER_AVATAR);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [cpf, setCpf] = useState("");
+  const [phone, setPhone] = useState("");
+  const [phoneConfirm, setPhoneConfirm] = useState("");
+  const [email, setEmail] = useState("");
+  const [emailConfirm, setEmailConfirm] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
@@ -206,18 +251,36 @@ export function WorkerSignupPage() {
   function validateStep(index: number) {
     const data = new FormData(formRef.current ?? undefined);
     if (index === 0) {
-      if (!String(data.get("name") || "").trim()) return "Informe seu nome completo.";
-      if (!String(data.get("phone") || "").trim()) return "Informe seu telefone.";
-      if (!String(data.get("email") || "").trim()) return "Informe um e-mail válido.";
-      if (!String(data.get("password") || "").trim()) return "Crie uma senha.";
+      if (!isPlausibleFullName(String(data.get("name") || ""))) return "Informe seu nome e sobrenome completos.";
+      if (!isValidCPF(cpf)) return "Informe um CPF válido.";
+      if (!isValidBrMobile(phone)) return "Informe um celular válido com DDD, no formato (48) 9XXXX-XXXX.";
+      if (onlyDigits(phone) !== onlyDigits(phoneConfirm)) return "Os telefones não conferem.";
+      if (!isValidEmail(email)) return "Informe um e-mail válido.";
+      if (email.trim().toLowerCase() !== emailConfirm.trim().toLowerCase()) return "Os e-mails não conferem.";
+      if (!isStrongPassword(String(data.get("password") || ""))) {
+        return "A senha precisa ter ao menos 8 caracteres, com letras e números.";
+      }
     }
     if (index === 1) {
-      if (!String(data.get("birthDate") || "").trim()) return "Informe sua data de nascimento.";
-      if (!String(data.get("city") || "").trim()) return "Informe sua cidade.";
+      if (!isAdult(String(data.get("birthDate") || ""))) return "É necessário ter 18 anos ou mais para usar o PONT.";
+      if (!isMeaningfulText(String(data.get("city") || ""), { minLen: 3, minWords: 1 })) return "Informe sua cidade.";
       if (!String(data.get("neighborhood") || "").trim()) return "Informe seu bairro.";
     }
     if (index === 2 && selectedFunctions.length === 0) {
       return "Selecione pelo menos uma profissão.";
+    }
+    if (index === 3) {
+      if (!isMeaningfulText(String(data.get("experience") || ""), { minLen: 15, minWords: 3 })) {
+        return "Descreva sua experiência profissional com mais detalhes.";
+      }
+      if (!isMeaningfulText(String(data.get("description") || ""), { minLen: 15, minWords: 3 })) {
+        return "Escreva uma descrição real do seu perfil.";
+      }
+      if (!isMeaningfulText(String(data.get("availability") || ""), { minLen: 4, minWords: 1 })) {
+        return "Informe sua disponibilidade.";
+      }
+      const distance = Number(data.get("maxDistanceKm") || 0);
+      if (!Number.isFinite(distance) || distance < 1 || distance > 200) return "Informe uma distância máxima entre 1 e 200 km.";
     }
     return "";
   }
@@ -250,10 +313,8 @@ export function WorkerSignupPage() {
         onSubmit={async (event) => {
           event.preventDefault();
           const form = new FormData(event.currentTarget);
-          const email = String(form.get("email") || "").trim();
           const password = String(form.get("password") || "");
-          const name = String(form.get("name") || "").trim();
-          const phone = String(form.get("phone") || "").trim();
+          const name = String(form.get("name") || "").trim().replace(/\s+/g, " ");
           const city = String(form.get("city") || "").trim();
           const neighborhood = String(form.get("neighborhood") || "").trim();
           const birthDate = String(form.get("birthDate") || "").trim();
@@ -268,9 +329,13 @@ export function WorkerSignupPage() {
             acceptsAssistant: false
           }));
 
-          if (selectedFunctions.length === 0) {
-            setError("Selecione pelo menos uma profissão.");
-            return;
+          for (let step = 0; step < workerSteps.length; step += 1) {
+            const stepError = validateStep(step);
+            if (stepError) {
+              setError(stepError);
+              wizard.goTo(step);
+              return;
+            }
           }
 
           try {
@@ -278,12 +343,13 @@ export function WorkerSignupPage() {
             setError("");
             setMessage("");
             const result = await signUp({
-              email,
+              email: email.trim(),
               password,
               fallbackRole: "trabalhador",
               metadata: {
                 name,
-                phone,
+                cpf: onlyDigits(cpf),
+                phone: formatBrPhone(phone),
                 city,
                 neighborhood,
                 birthDate,
@@ -299,7 +365,8 @@ export function WorkerSignupPage() {
             });
             setRole("trabalhador");
             if (result.needsEmailConfirmation) {
-              setMessage("Conta criada. Confirme o e-mail antes de fazer login.");
+              setMessage("Conta criada. Enviamos um e-mail de confirmação — abra o link antes de fazer login.");
+              setConfirmEmail(email.trim());
             } else {
               // The photo is uploaded from AppLayout once the post-login state
               // sync settles, instead of here: doing it immediately races with
@@ -315,14 +382,87 @@ export function WorkerSignupPage() {
       >
         {error && <div className="auth-alert auth-alert-error">{error}</div>}
         {message && <div className="auth-alert auth-alert-info">{message}</div>}
+        {confirmEmail && (
+          <button
+            type="button"
+            className="secondary"
+            onClick={async () => {
+              try {
+                await resendConfirmation(confirmEmail);
+                setMessage("Reenviamos o e-mail de confirmação. Verifique a caixa de entrada e o spam.");
+              } catch {
+                setMessage("Não foi possível reenviar agora. Tente novamente em instantes.");
+              }
+            }}
+          >
+            Reenviar e-mail de confirmação
+          </button>
+        )}
         <WizardSteps steps={workerSteps} current={wizard.step} onSelect={handleStepSelect} />
 
         <WizardPanel eyebrow="Etapa 1" title="Acesso" hint="Para você entrar na sua conta depois." hidden={wizard.step !== 0}>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="label">Nome completo<input name="name" className="input" required /></label>
-            <label className="label">Telefone<input name="phone" className="input" required placeholder="(48) 99999-9999" /></label>
-            <label className="label">E-mail<input name="email" className="input" type="email" required /></label>
-            <label className="label">Senha<input name="password" className="input" type="password" required /></label>
+            <label className="label">Nome completo<input name="name" className="input" required placeholder="Nome e sobrenome" autoComplete="name" /></label>
+            <label className="label">
+              CPF
+              <input
+                name="cpf"
+                className="input"
+                required
+                inputMode="numeric"
+                placeholder="000.000.000-00"
+                value={cpf}
+                onChange={(event) => setCpf(formatCPF(event.target.value))}
+              />
+            </label>
+            <label className="label">
+              Telefone (celular)
+              <input
+                name="phone"
+                className="input"
+                required
+                inputMode="tel"
+                placeholder="(48) 99999-9999"
+                value={phone}
+                onChange={(event) => setPhone(formatBrPhone(event.target.value))}
+              />
+            </label>
+            <label className="label">
+              Confirmar telefone
+              <input
+                className="input"
+                required
+                inputMode="tel"
+                placeholder="(48) 99999-9999"
+                value={phoneConfirm}
+                onChange={(event) => setPhoneConfirm(formatBrPhone(event.target.value))}
+                onPaste={(event) => event.preventDefault()}
+              />
+            </label>
+            <label className="label">
+              E-mail
+              <input
+                name="email"
+                className="input"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </label>
+            <label className="label">
+              Confirmar e-mail
+              <input
+                className="input"
+                type="email"
+                required
+                value={emailConfirm}
+                onChange={(event) => setEmailConfirm(event.target.value)}
+                onPaste={(event) => event.preventDefault()}
+              />
+            </label>
+            <label className="label">Senha<input name="password" className="input" type="password" required minLength={8} placeholder="Mín. 8 caracteres, com letras e números" autoComplete="new-password" /></label>
           </div>
         </WizardPanel>
 
@@ -428,29 +568,43 @@ export function WorkerSignupPage() {
 
 export function CompanySignupPage() {
   const { setRole } = useAppStore();
-  const { signUp } = useAuth();
+  const { signUp, resendConfirmation } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
   const [pending, setPending] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const wizard = useWizardStep(companySteps.length);
   const [logoUrl, setLogoUrl] = useState(DEFAULT_COMPANY_LOGO);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [cnpj, setCnpj] = useState("");
+  const [phone, setPhone] = useState("");
+  const [phoneConfirm, setPhoneConfirm] = useState("");
+  const [email, setEmail] = useState("");
+  const [emailConfirm, setEmailConfirm] = useState("");
 
   function validateStep(index: number) {
     const data = new FormData(formRef.current ?? undefined);
     if (index === 0) {
-      if (!String(data.get("establishmentName") || "").trim()) return "Informe o nome do estabelecimento.";
-      if (!String(data.get("responsibleName") || "").trim()) return "Informe o nome do responsável.";
-      if (!String(data.get("cnpj") || "").trim()) return "Informe o CNPJ.";
-      if (!String(data.get("phone") || "").trim()) return "Informe um telefone de contato.";
-      if (!String(data.get("email") || "").trim()) return "Informe um e-mail válido.";
-      if (!String(data.get("password") || "").trim()) return "Crie uma senha.";
+      if (!isMeaningfulText(String(data.get("establishmentName") || ""), { minLen: 3, minWords: 1 })) {
+        return "Informe o nome real do estabelecimento.";
+      }
+      if (!isPlausibleFullName(String(data.get("responsibleName") || ""))) return "Informe o nome e sobrenome do responsável.";
+      if (!isValidCNPJ(cnpj)) return "Informe um CNPJ válido.";
+      if (!isValidBrMobile(phone)) return "Informe um celular válido com DDD, no formato (48) 9XXXX-XXXX.";
+      if (onlyDigits(phone) !== onlyDigits(phoneConfirm)) return "Os telefones não conferem.";
+      if (!isValidEmail(email)) return "Informe um e-mail válido.";
+      if (email.trim().toLowerCase() !== emailConfirm.trim().toLowerCase()) return "Os e-mails não conferem.";
+      if (!isStrongPassword(String(data.get("password") || ""))) {
+        return "A senha precisa ter ao menos 8 caracteres, com letras e números.";
+      }
     }
     if (index === 1) {
-      if (!String(data.get("address") || "").trim()) return "Informe o endereço.";
-      if (!String(data.get("description") || "").trim()) return "Descreva rapidamente o estabelecimento.";
+      if (!isMeaningfulText(String(data.get("address") || ""), { minLen: 8, minWords: 2 })) return "Informe o endereço completo.";
+      if (!isMeaningfulText(String(data.get("description") || ""), { minLen: 15, minWords: 3 })) {
+        return "Descreva o estabelecimento com mais detalhes.";
+      }
     }
     return "";
   }
@@ -483,22 +637,30 @@ export function CompanySignupPage() {
         onSubmit={async (event) => {
           event.preventDefault();
           const form = new FormData(event.currentTarget);
-          const email = String(form.get("email") || "").trim();
           const password = String(form.get("password") || "");
+
+          for (let step = 0; step < companySteps.length; step += 1) {
+            const stepError = validateStep(step);
+            if (stepError) {
+              setError(stepError);
+              wizard.goTo(step);
+              return;
+            }
+          }
 
           try {
             setPending(true);
             setError("");
             setMessage("");
             const result = await signUp({
-              email,
+              email: email.trim(),
               password,
               fallbackRole: "empresa",
               metadata: {
-                establishmentName: String(form.get("establishmentName") || "").trim(),
-                responsibleName: String(form.get("responsibleName") || "").trim(),
-                cnpj: String(form.get("cnpj") || "").trim(),
-                phone: String(form.get("phone") || "").trim(),
+                establishmentName: String(form.get("establishmentName") || "").trim().replace(/\s+/g, " "),
+                responsibleName: String(form.get("responsibleName") || "").trim().replace(/\s+/g, " "),
+                cnpj: onlyDigits(cnpj),
+                phone: formatBrPhone(phone),
                 category: String(form.get("category") || "").trim(),
                 neighborhood: String(form.get("neighborhood") || "").trim(),
                 address: String(form.get("address") || "").trim(),
@@ -508,7 +670,8 @@ export function CompanySignupPage() {
             });
             setRole("empresa");
             if (result.needsEmailConfirmation) {
-              setMessage("Conta criada. Confirme o e-mail antes de fazer login.");
+              setMessage("Conta criada. Enviamos um e-mail de confirmação — abra o link antes de fazer login.");
+              setConfirmEmail(email.trim());
             } else {
               // The logo is uploaded from AppLayout once the post-login state
               // sync settles, instead of here: doing it immediately races with
@@ -524,16 +687,88 @@ export function CompanySignupPage() {
       >
         {error && <div className="auth-alert auth-alert-error">{error}</div>}
         {message && <div className="auth-alert auth-alert-info">{message}</div>}
+        {confirmEmail && (
+          <button
+            type="button"
+            className="secondary"
+            onClick={async () => {
+              try {
+                await resendConfirmation(confirmEmail);
+                setMessage("Reenviamos o e-mail de confirmação. Verifique a caixa de entrada e o spam.");
+              } catch {
+                setMessage("Não foi possível reenviar agora. Tente novamente em instantes.");
+              }
+            }}
+          >
+            Reenviar e-mail de confirmação
+          </button>
+        )}
         <WizardSteps steps={companySteps} current={wizard.step} onSelect={handleStepSelect} />
 
         <WizardPanel eyebrow="Etapa 1" title="Acesso e responsável" hint="Para você entrar na conta e a gente saber quem responde pela empresa." hidden={wizard.step !== 0}>
           <div className="grid gap-3 md:grid-cols-2">
             <label className="label">Nome do estabelecimento<input name="establishmentName" className="input" required /></label>
-            <label className="label">Nome do responsável<input name="responsibleName" className="input" required /></label>
-            <label className="label">CNPJ<input name="cnpj" className="input" required placeholder="00.000.000/0000-00" /></label>
-            <label className="label">Telefone<input name="phone" className="input" required placeholder="(48) 99999-9999" /></label>
-            <label className="label">E-mail<input name="email" className="input" type="email" required /></label>
-            <label className="label">Senha<input name="password" className="input" type="password" required /></label>
+            <label className="label">Nome do responsável<input name="responsibleName" className="input" required placeholder="Nome e sobrenome" autoComplete="name" /></label>
+            <label className="label">
+              CNPJ
+              <input
+                name="cnpj"
+                className="input"
+                required
+                inputMode="numeric"
+                placeholder="00.000.000/0000-00"
+                value={cnpj}
+                onChange={(event) => setCnpj(formatCNPJ(event.target.value))}
+              />
+            </label>
+            <label className="label">
+              Telefone (celular)
+              <input
+                name="phone"
+                className="input"
+                required
+                inputMode="tel"
+                placeholder="(48) 99999-9999"
+                value={phone}
+                onChange={(event) => setPhone(formatBrPhone(event.target.value))}
+              />
+            </label>
+            <label className="label">
+              Confirmar telefone
+              <input
+                className="input"
+                required
+                inputMode="tel"
+                placeholder="(48) 99999-9999"
+                value={phoneConfirm}
+                onChange={(event) => setPhoneConfirm(formatBrPhone(event.target.value))}
+                onPaste={(event) => event.preventDefault()}
+              />
+            </label>
+            <label className="label">
+              E-mail
+              <input
+                name="email"
+                className="input"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </label>
+            <label className="label">
+              Confirmar e-mail
+              <input
+                className="input"
+                type="email"
+                required
+                value={emailConfirm}
+                onChange={(event) => setEmailConfirm(event.target.value)}
+                onPaste={(event) => event.preventDefault()}
+              />
+            </label>
+            <label className="label">Senha<input name="password" className="input" type="password" required minLength={8} placeholder="Mín. 8 caracteres, com letras e números" autoComplete="new-password" /></label>
           </div>
         </WizardPanel>
 

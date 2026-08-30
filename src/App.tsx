@@ -31,6 +31,7 @@ const MessagesPage = lazy(() => import("./pages/MessagesPage").then(({ MessagesP
 const AdminPage = lazy(() => import("./pages/AdminPage").then(({ AdminPage }) => ({ default: AdminPage })));
 const AdminLeadsPage = lazy(() => import("./pages/AdminLeadsPage").then(({ AdminLeadsPage }) => ({ default: AdminLeadsPage })));
 const LegalPage = lazy(() => import("./pages/LegalPage").then(({ LegalPage }) => ({ default: LegalPage })));
+const PhoneVerifyPage = lazy(() => import("./pages/PhoneVerifyPage").then(({ PhoneVerifyPage }) => ({ default: PhoneVerifyPage })));
 
 export default function App() {
   const { state, setRole } = useAppStore();
@@ -60,6 +61,7 @@ export default function App() {
         <Route path="/privacidade" element={<LegalPage kind="privacy" />} />
         <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
           <Route index element={<Navigate to={landingPath} replace />} />
+          <Route path="verificar-telefone" element={<PhoneVerifyPage />} />
           <Route path="trabalhador" element={<RoleRoute role="trabalhador"><WorkerDashboard /></RoleRoute>} />
           <Route path="vagas" element={<RoleRoute role="trabalhador"><JobsPage /></RoleRoute>} />
           <Route path="vagas/:id" element={<RoleRoute role="trabalhador"><JobDetailsPage /></RoleRoute>} />

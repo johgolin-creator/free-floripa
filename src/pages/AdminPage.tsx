@@ -19,7 +19,8 @@ import { UrgentBadge } from "../components/UrgentBadge";
 import { formatCurrency, formatDate } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
 import { useAppStore } from "../lib/store";
-import type { TrustReport } from "../lib/types";
+import { adminActivatePlus, adminAdjustCoins, adminCoinsEnabled } from "../lib/supabaseAdminCoins";
+import type { TrustReport, UserRole } from "../lib/types";
 
 type AdminTab = "Resumo" | "Usuários" | "Vagas" | "Moedas" | "Alertas";
 
@@ -249,6 +250,8 @@ export function AdminPage() {
       )}
 
       {tab === "Moedas" && (
+        <div className="grid gap-4">
+        <CoinGrantCard />
         <section className="grid gap-4 lg:grid-cols-[0.8fr_1fr]">
           <div className="card p-4">
             <h3 className="mb-3 font-black text-white">Carteiras da conta atual</h3>
@@ -273,6 +276,7 @@ export function AdminPage() {
             })}
           </AdminList>
         </section>
+        </div>
       )}
 
       {tab === "Alertas" && (
@@ -426,6 +430,115 @@ function AdminMetric({
   }
 
   return <span className={className}>{content}</span>;
+}
+
+function CoinGrantCard() {
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<UserRole>("trabalhador");
+  const [amount, setAmount] = useState("20");
+  const [reason, setReason] = useState("Compra confirmada pelo suporte");
+  const [plusDays, setPlusDays] = useState("30");
+  const [pending, setPending] = useState<"" | "coins" | "plus">("");
+  const [feedback, setFeedback] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+
+  async function run(kind: "coins" | "plus") {
+    if (!email.trim()) {
+      setFeedback({ tone: "err", text: "Informe o e-mail da conta." });
+      return;
+    }
+    setPending(kind);
+    setFeedback(null);
+    try {
+      if (kind === "coins") {
+        const value = Number(amount);
+        if (!Number.isFinite(value) || value === 0) throw new Error("Informe uma quantidade diferente de zero.");
+        await adminAdjustCoins(email, role, value, reason);
+        setFeedback({ tone: "ok", text: `Ajuste de ${value > 0 ? "+" : ""}${value} moeda(s) aplicado para ${email.trim()} (${role}).` });
+      } else {
+        const days = Number(plusDays);
+        if (!Number.isFinite(days) || days <= 0) throw new Error("Informe um número de dias válido.");
+        await adminActivatePlus(email, role, days);
+        setFeedback({ tone: "ok", text: `Plus estendido por ${days} dia(s) para ${email.trim()} (${role}).` });
+      }
+    } catch (err) {
+      setFeedback({ tone: "err", text: err instanceof Error ? err.message : "Não foi possível concluir." });
+    } finally {
+      setPending("");
+    }
+  }
+
+  return (
+    <section className="card p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <WalletCards size={18} className="text-aqua-300" />
+        <h3 className="font-black text-white">Creditar moedas / ativar Plus</h3>
+      </div>
+      <p className="mb-4 text-sm font-semibold leading-6 text-slate-600">
+        Use depois que o pagamento for confirmado pelo WhatsApp. Precisa que sua conta tenha papel
+        admin/moderador no banco.
+      </p>
+
+      {!adminCoinsEnabled && (
+        <div className="mb-3 rounded-lg bg-slate-100 p-3 text-sm font-bold text-slate-600">
+          Disponível apenas no ambiente online (Supabase configurado).
+        </div>
+      )}
+      {feedback && (
+        <div
+          className={`mb-3 rounded-lg p-3 text-sm font-bold ${
+            feedback.tone === "ok" ? "bg-aqua-50 text-aqua-800" : "bg-red-50 text-alert"
+          }`}
+        >
+          {feedback.text}
+        </div>
+      )}
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <label className="label">
+          E-mail da conta
+          <input className="input" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="pessoa@email.com" />
+        </label>
+        <label className="label">
+          Carteira
+          <select className="input" value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
+            <option value="trabalhador">Trabalhador</option>
+            <option value="empresa">Empresa</option>
+          </select>
+        </label>
+        <label className="label">
+          Quantidade de moedas (negativo para estornar)
+          <input className="input" type="number" value={amount} onChange={(event) => setAmount(event.target.value)} />
+        </label>
+        <label className="label">
+          Motivo
+          <input className="input" value={reason} onChange={(event) => setReason(event.target.value)} />
+        </label>
+      </div>
+      <button
+        type="button"
+        className="primary mt-3"
+        disabled={!adminCoinsEnabled || pending !== ""}
+        onClick={() => run("coins")}
+      >
+        {pending === "coins" ? "Aplicando..." : "Aplicar ajuste de moedas"}
+      </button>
+
+      <div className="mt-5 grid gap-3 border-t border-white/10 pt-4 md:grid-cols-2">
+        <label className="label">
+          Ativar Plus por (dias)
+          <input className="input" type="number" value={plusDays} onChange={(event) => setPlusDays(event.target.value)} />
+        </label>
+        <button
+          type="button"
+          className="secondary self-end"
+          disabled={!adminCoinsEnabled || pending !== ""}
+          onClick={() => run("plus")}
+        >
+          {pending === "plus" ? "Ativando..." : "Estender Plus da conta"}
+        </button>
+      </div>
+    </section>
+  );
 }
 
 function InfoTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {

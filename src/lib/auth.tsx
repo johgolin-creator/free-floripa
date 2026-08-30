@@ -30,11 +30,16 @@ interface AuthContextValue {
   isModerator: boolean;
   dbRoleLoading: boolean;
   email: string;
+  phone: string;
+  phoneVerified: boolean;
   sessionError: string | null;
   signIn: (input: SignInInput) => Promise<{ role: UserRole }>;
   signUp: (input: SignUpInput) => Promise<{ role: UserRole; needsEmailConfirmation: boolean }>;
   resetPassword: (input: ResetPasswordInput) => Promise<void>;
   updatePassword: (input: UpdatePasswordInput) => Promise<void>;
+  resendConfirmation: (email: string) => Promise<void>;
+  sendPhoneOtp: (phoneE164: string) => Promise<void>;
+  verifyPhoneOtp: (phoneE164: string, token: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -74,6 +79,9 @@ function getIsAdmin(user: User | null) {
 
 function getAuthErrorMessage(message: string) {
   const normalized = message.toLowerCase();
+  if (normalized.includes("not confirmed") || normalized.includes("confirm your email") || normalized.includes("email not confirmed")) {
+    return "Confirme seu e-mail antes de entrar.";
+  }
   if (normalized.includes("invalid login") || normalized.includes("invalid credentials")) {
     return "E-mail ou senha inválidos.";
   }
@@ -195,6 +203,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isModerator: !supabase || dbRole === "moderador",
       dbRoleLoading,
       email: user?.email ?? "",
+      phone: user?.phone ?? "",
+      phoneVerified: !supabase || Boolean(user?.phone && user?.phone_confirmed_at),
       sessionError,
       async signIn({ email, password, fallbackRole }) {
         if (!supabase) return { role: fallbackRole };
@@ -243,6 +253,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw new Error(getAuthErrorMessage(error.message));
+      },
+      async resendConfirmation(targetEmail) {
+        if (!supabase) return;
+        const { error } = await supabase.auth.resend({ type: "signup", email: targetEmail.trim() });
+        if (error) throw new Error(getAuthErrorMessage(error.message));
+      },
+      async sendPhoneOtp(phoneE164) {
+        if (!supabase) {
+          throw new Error("Confirmação de telefone disponível apenas no ambiente online.");
+        }
+        const { error } = await supabase.auth.updateUser({ phone: phoneE164 });
+        if (error) throw new Error(getAuthErrorMessage(error.message));
+      },
+      async verifyPhoneOtp(phoneE164, token) {
+        if (!supabase) {
+          throw new Error("Confirmação de telefone disponível apenas no ambiente online.");
+        }
+        const { error } = await supabase.auth.verifyOtp({ phone: phoneE164, token, type: "phone_change" });
         if (error) throw new Error(getAuthErrorMessage(error.message));
       },
       async signOut() {
