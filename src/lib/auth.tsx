@@ -39,7 +39,7 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const DEFAULT_PUBLIC_APP_URL = "https://free-floripa.onrender.com";
+const DEFAULT_PUBLIC_APP_URL = "https://usepont.com.br";
 const DEFAULT_ADMIN_EMAILS = ["jonathan.f@gmail.com"];
 
 function getAuthRedirectUrl(pathname = "/login") {

@@ -17,4 +17,4 @@ services:
       - key: VITE_SUPABASE_STATE_KEY
         sync: false
       - key: VITE_PUBLIC_APP_URL
-        value: https://free-floripa.onrender.com
+        value: https://usepont.com.br

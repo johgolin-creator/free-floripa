@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { AlertTriangle, BadgeCheck, Edit3, ImageUp, Save, ShieldCheck, Star, UserRound } from "lucide-react";
+import { DeleteAccountSection } from "../components/DeleteAccountSection";
 import { Modal } from "../components/Modal";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
@@ -324,6 +325,7 @@ export function WorkerProfilePage() {
           </form>
         </Modal>
       )}
+      <DeleteAccountSection />
     </div>
   );
 }
