@@ -45,11 +45,13 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 const DEFAULT_PUBLIC_APP_URL = "https://usepont.com.br";
-// Escape hatch: set VITE_PHONE_VERIFICATION=off to skip the SMS gate while
-// the Supabase phone provider (Twilio) is not configured yet. Any other
-// value (including unset) keeps the gate on.
-const PHONE_VERIFICATION_ENABLED = String(import.meta.env.VITE_PHONE_VERIFICATION || "").toLowerCase() !== "off";
-const DEFAULT_ADMIN_EMAILS = ["jonathan.f@gmail.com"];
+// Verificação de telefone por SMS foi desativada. O cadastro ainda coleta o
+// telefone como dado de perfil, mas nenhuma conta é obrigada a confirmar um
+// código por SMS para usar o app. Para reativar no futuro, volte a derivar
+// este valor de VITE_PHONE_VERIFICATION e configure um provedor de SMS
+// (Twilio) no Supabase Auth.
+const PHONE_VERIFICATION_ENABLED = false;
+const DEFAULT_ADMIN_EMAILS = ["johgolin.ceo@gmail.com"];
 
 function getAuthRedirectUrl(pathname = "/login") {
   const configuredUrl = import.meta.env.VITE_PUBLIC_APP_URL;

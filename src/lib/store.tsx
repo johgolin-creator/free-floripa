@@ -46,6 +46,7 @@ const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1511795409834-ef
 const DEMO_WORKER_IDS = new Set(["worker-1", "worker-2", "worker-3", "worker-4"]);
 const DEMO_COMPANY_IDS = new Set(["company-1", "company-2", "company-3"]);
 const DEMO_APPLICATION_IDS = new Set(["application-1", "application-2", "application-3"]);
+const DEMO_JOB_IDS = new Set(["job-1", "job-2", "job-3", "job-4", "job-5", "job-6"]);
 
 export interface CreateJobInput {
   title: string;
@@ -166,7 +167,6 @@ function hasUnlimitedAccess(activeUntil: string | undefined): boolean {
 }
 
 function mergeSeedUpdates(savedState: AppState): AppState {
-  const securityJob = initialState.jobs.find((job) => job.id === "job-6");
   const seededWorker = initialState.workers.find((worker) => worker.id === "worker-3");
   const normalizedState = {
     ...savedState,
@@ -206,10 +206,11 @@ function mergeSeedUpdates(savedState: AppState): AppState {
     !Array.isArray(savedState.adminModeration?.blockedWorkerIds) ||
     !Array.isArray(savedState.adminModeration?.blockedCompanyIds);
 
-  const jobs =
-    securityJob && !normalizedState.jobs.some((job) => job.id === securityJob.id)
-      ? [securityJob, ...normalizedState.jobs]
-      : normalizedState.jobs;
+  // Vagas de demonstração nunca devem sobreviver num estado real salvo em
+  // localStorage - elas só existem como fixture de modo offline.
+  const jobs = normalizedState.jobs.some((job) => DEMO_JOB_IDS.has(job.id))
+    ? normalizedState.jobs.filter((job) => !DEMO_JOB_IDS.has(job.id))
+    : normalizedState.jobs;
   changed ||= jobs !== normalizedState.jobs;
 
   const workers = seededWorker
@@ -360,6 +361,7 @@ function createStateForUser(user: User | null, role: UserRole | null): AppState 
     activeRole: "trabalhador",
     selectedWorkerId: worker.id,
     workers: [worker],
+    jobs: [],
     applications: [],
     favoriteWorkerIds: [],
     notifications: [],
@@ -374,6 +376,7 @@ function removeDemoWorkers(state: AppState) {
   return {
     ...state,
     workers: state.workers.filter((worker) => !DEMO_WORKER_IDS.has(worker.id)),
+    jobs: state.jobs.filter((job) => !DEMO_JOB_IDS.has(job.id)),
     applications,
     favoriteWorkerIds: state.favoriteWorkerIds.filter((workerId) => !DEMO_WORKER_IDS.has(workerId)),
     notifications: state.notifications.filter((notification) => !notification.id.startsWith("notification-")),
@@ -446,7 +449,10 @@ function mergeWorkerMarketplaceState(state: AppState, workerId: string, payload:
     ...state,
     companies: mergeCompanies(state.companies, payload.companies),
     jobs: applyApplicationCounts(
-      [...payload.jobs, ...state.jobs.filter((job) => !payloadJobIds.has(job.id))],
+      [
+        ...payload.jobs,
+        ...state.jobs.filter((job) => !payloadJobIds.has(job.id) && !DEMO_JOB_IDS.has(job.id))
+      ],
       applications
     ),
     applications

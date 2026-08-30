@@ -19,13 +19,11 @@ import {
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { BrandLogo, PontMark } from "../components/BrandLogo";
-import { JobCard } from "../components/JobCard";
 import { functions } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 
 export function PublicHome() {
-  const { state, setRole } = useAppStore();
-  const recentJobs = state.jobs.slice(0, 3);
+  const { setRole } = useAppStore();
 
   return (
     <div className="min-h-screen bg-ice">
@@ -143,23 +141,6 @@ export function PublicHome() {
             <Metric value="Profissional" label="libera vaga completa" />
             <Metric value="3 min" label="para publicar uma vaga" />
             <Metric value="por função" label="nível de experiência" />
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-7xl px-4 py-14">
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-black uppercase text-aqua-700">Vagas abertas</p>
-              <h2 className="text-2xl font-black text-white">Oportunidades recentes</h2>
-            </div>
-            <Link to="/app/vagas" onClick={() => setRole("trabalhador")} className="secondary">
-              Ver todas
-            </Link>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-3">
-            {recentJobs.map((job) => (
-              <JobCard key={job.id} job={job} compact />
-            ))}
           </div>
         </section>
 
