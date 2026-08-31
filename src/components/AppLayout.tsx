@@ -5,7 +5,6 @@ import {
   CalendarCheck,
   CalendarDays,
   ClipboardList,
-  Cloud,
   CreditCard,
   Home,
   MessageCircle,
@@ -62,7 +61,7 @@ const companySecondaryLinks = [
 ];
 
 export function AppLayout() {
-  const { state, storageMode, syncStatus, syncError, currentWorker, currentCompany, updateWorkerProfile, updateCompanyProfile } = useAppStore();
+  const { state, syncStatus, currentWorker, currentCompany, updateWorkerProfile, updateCompanyProfile } = useAppStore();
   const { isAdmin, isModerator } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -131,16 +130,6 @@ export function AppLayout() {
       ? getWorkerProfileCompletion(currentWorker)
       : getCompanyProfileCompletion(currentCompany);
   const unread = state.notifications.filter((notification) => notification.role === state.activeRole && !notification.read).length;
-  const syncLabel =
-    storageMode === "local"
-      ? "Local"
-      : syncStatus === "erro"
-        ? "Falha ao salvar"
-        : syncStatus === "carregando"
-          ? "Carregando"
-          : syncStatus === "salvando"
-            ? "Salvando"
-            : "Sincronizado";
   const areaLabel = state.activeRole === "trabalhador" ? "Área do trabalhador" : "Área da empresa";
   const identityName = state.activeRole === "trabalhador" ? currentWorker.name : currentCompany.establishmentName;
   const coinBalance =
@@ -267,14 +256,6 @@ export function AppLayout() {
                 <WalletCards size={15} />
                 <strong>{coinBalance}</strong>
               </Link>
-              <span
-                className={`hidden min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-black md:inline-flex ${
-                  syncStatus === "erro" ? "bg-red-50 text-alert" : storageMode === "supabase" ? "bg-aqua-100 text-aqua-700" : "bg-slate-100 text-slate-500"
-                }`}
-                title={syncError || (storageMode === "supabase" ? "Dados sincronizados com segurança" : "Dados salvos apenas neste aparelho")}
-              >
-                <Cloud size={16} /> {syncLabel}
-              </span>
               <NavLink
                 to="/app/notificacoes"
                 className={`app-mobile-bell ${unread > 0 ? "has-unread" : ""}`}
@@ -317,14 +298,6 @@ export function AppLayout() {
                 <span className="hidden sm:inline">{state.activeRole === "trabalhador" ? "Moedas:" : "Empresa:"}</span>
                 <strong className="text-sm">{coinBalance}</strong>
               </Link>
-              <span
-                className={`hidden min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-black md:inline-flex ${
-                  syncStatus === "erro" ? "bg-red-50 text-alert" : storageMode === "supabase" ? "bg-aqua-100 text-aqua-700" : "bg-slate-100 text-slate-500"
-                }`}
-                title={syncError || (storageMode === "supabase" ? "Dados sincronizados com segurança" : "Dados salvos apenas neste aparelho")}
-              >
-                <Cloud size={16} /> {syncLabel}
-              </span>
               <NavLink
                 to="/app/notificacoes"
                 className={`app-header-bell ${unread > 0 ? "has-unread" : ""}`}
