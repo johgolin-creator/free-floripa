@@ -43,7 +43,12 @@ export function CompanyProfilePage() {
         </SafetyNotice>
       )}
       <section className="profile-card">
-        <div className="h-36 bg-[url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
+        <div
+          className="h-36 bg-cover bg-center bg-[linear-gradient(120deg,#0c0e12_0%,#16241c_58%,#0c0e12_100%)]"
+          style={currentCompany.coverUrl ? { backgroundImage: `url(${currentCompany.coverUrl})` } : undefined}
+          role="img"
+          aria-label={currentCompany.coverUrl ? `Foto de capa de ${currentCompany.establishmentName}` : "Capa do perfil"}
+        />
         <div className="p-5">
           <div className="profile-main-row">
             <img
@@ -142,6 +147,7 @@ function CompanyProfileForm({
 }) {
   const [error, setError] = useState("");
   const [logoUrl, setLogoUrl] = useState(company.logoUrl);
+  const [coverUrl, setCoverUrl] = useState(company.coverUrl || "");
 
   return (
     <form
@@ -200,6 +206,7 @@ function CompanyProfileForm({
           category: form.get("category") as CompanyProfile["category"],
           neighborhood: form.get("neighborhood") as CompanyProfile["neighborhood"],
           logoUrl: logoUrl.trim() || company.logoUrl,
+          coverUrl: coverUrl.trim(),
           address,
           description
         });
@@ -256,6 +263,13 @@ function CompanyProfileForm({
         kind="empresas"
         previewAlt="Foto da empresa"
         onChange={setLogoUrl}
+      />
+      <ProfileImageUploader
+        label="Foto de capa (opcional)"
+        value={coverUrl}
+        kind="empresas"
+        previewAlt="Foto de capa da empresa"
+        onChange={setCoverUrl}
       />
       <SignupLikeTitle number="3" title="Endereço e apresentação" />
       <label className="label">Endereço<input name="address" className="input" defaultValue={company.address} required /></label>

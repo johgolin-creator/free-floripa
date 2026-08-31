@@ -119,6 +119,7 @@ export interface CompanyProfileRow {
   neighborhood: string;
   description?: string | null;
   logo_url?: string | null;
+  cover_url?: string | null;
   rating?: number | string | null;
 }
 
@@ -276,6 +277,7 @@ export function mapCompany(row: CompanyProfileRow): CompanyProfile {
     neighborhood: toNeighborhood(row.neighborhood),
     description: row.description || "",
     logoUrl: row.logo_url || "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=500&q=80",
+    coverUrl: row.cover_url || "",
     rating: toNumber(row.rating, 0)
   };
 }
@@ -493,6 +495,7 @@ export async function publishCompanyProfile(user: User, company: CompanyProfile)
       neighborhood: company.neighborhood,
       description: company.description,
       logo_url: company.logoUrl,
+      cover_url: company.coverUrl || null,
       rating: company.rating,
       updated_at: now
     },
@@ -544,7 +547,7 @@ export async function loadPublicJobs(): Promise<MarketplaceJobsPayload> {
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status,company_profiles(id,user_id,establishment_name,responsible_name,cnpj,phone,email,category,address,neighborhood,description,logo_url,rating)"
+      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status,company_profiles(id,user_id,establishment_name,responsible_name,cnpj,phone,email,category,address,neighborhood,description,logo_url,cover_url,rating)"
     )
     .neq("status", "Cancelada")
     .order("shift_date", { ascending: true })

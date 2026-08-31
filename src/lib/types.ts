@@ -84,6 +84,8 @@ export interface CompanyProfile {
   neighborhood: Neighborhood;
   description: string;
   logoUrl: string;
+  /** Foto de capa (banner) do perfil da empresa. Vazio = degradê da marca. */
+  coverUrl?: string;
   rating: number;
 }
 

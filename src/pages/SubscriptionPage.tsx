@@ -1,73 +1,24 @@
 import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  BadgeCheck,
-  CheckCircle2,
-  CreditCard,
-  Lock,
-  Search,
-  ShieldCheck,
-  Star,
-  WalletCards,
-  Zap
-} from "lucide-react";
+import { CreditCard, Lock, Search, WalletCards } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
 import { useAppStore } from "../lib/store";
 import { useAuth } from "../lib/auth";
 import { formatDateTime } from "../lib/format";
 import { loadRemoteCoinTransactions, supabaseCoinsEnabled, type CoinTransaction } from "../lib/supabaseCoins";
-import { supportEmailUrl, supportWhatsappUrl } from "../lib/support";
-
-const freeBenefits = [
-  "Criar perfil e manter histórico",
-  "Ver todas as vagas abertas",
-  "Receber moedas iniciais para testar",
-  "Receber avaliações no perfil"
-];
-
-const professionalBenefits = [
-  "20 moedas no saldo",
-  "Enviar candidaturas conforme usar",
-  "Pagar somente quando precisar",
-  "Bom para quem pega diárias aos poucos"
-];
-
-const plusBenefits = [
-  "Moedas ilimitadas por 30 dias",
-  "35 moedas no saldo de bônus",
-  "Ideal para quem se candidata com frequência",
-  "Preparado para destaques e recursos premium",
-  "Sem se preocupar em ficar sem moedas"
-];
-
-const unlockItems = [
-  "Vagas sempre visíveis por completo",
-  "1 moeda usada a cada candidatura enviada",
-  "Sem cobrança para ver detalhes",
-  "Histórico organizado"
-];
 
 export function SubscriptionPage() {
   const { state } = useAppStore();
-  const { user, email } = useAuth();
-  const [message, setMessage] = useState("");
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<CoinTransaction[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [transactionsError, setTransactionsError] = useState("");
-  const isProfessional = state.subscription.plan === "Profissional";
-  const isPlus = state.subscription.plan === "Plus";
   const isCompany = state.activeRole === "empresa";
   const activeBalance = isCompany ? state.subscription.companyCreditsRemaining : state.subscription.creditsRemaining;
-  const walletLabel = isCompany ? "Saldo empresarial" : "Saldo do trabalhador";
   const pageDescription = isCompany
     ? "Use moedas empresariais para ações da empresa, como cancelar vagas que já foram preenchidas."
     : "Cada candidatura enviada usa 1 moeda, sem mensalidade fixa.";
-  const heroText = isCompany
-    ? "As moedas da empresa ficam separadas das moedas do trabalhador. Assim cada lado tem controle próprio de uso e custo."
-    : "Todas as vagas ficam sempre visíveis por completo. Ao enviar uma candidatura, 1 moeda do seu saldo é usada.";
   const localTransactions = state.coinLedger.filter((transaction) => transaction.role === state.activeRole);
   const statementTransactions = transactions.length > 0 ? transactions : localTransactions;
   const activePlusUntil = isCompany ? state.subscription.companyPlusActiveUntil : state.subscription.plusActiveUntil;
@@ -103,24 +54,11 @@ export function SubscriptionPage() {
     };
   }, [isCompany, state.subscription.creditsRemaining, user]);
 
-  function buyViaSupport(planLabel: string) {
-    const roleLabel = isCompany ? "empresa" : "trabalhador";
-    const text = `Olá! Quero comprar o pacote "${planLabel}" do PONT.\nConta: ${email || "(informe seu e-mail)"} (${roleLabel}).`;
-    const whatsapp = supportWhatsappUrl(text);
-    if (whatsapp) {
-      window.open(whatsapp, "_blank", "noopener");
-      setMessage("Abrimos o WhatsApp do suporte com sua solicitação. As moedas são liberadas após a confirmação do pagamento.");
-      return;
-    }
-    window.location.href = supportEmailUrl("Compra de moedas PONT", text);
-    setMessage("Envie o e-mail para o suporte concluir a compra. As moedas são liberadas após a confirmação do pagamento.");
-  }
-
   return (
     <div className="grid gap-5">
       <SectionHeader
         eyebrow="Moedas"
-        title="Compre moedas e use quando precisar"
+        title="Suas moedas"
         description={pageDescription}
         action={
           <Link to={isCompany ? "/app/minhas-vagas" : "/app/vagas"} className="secondary">
@@ -129,39 +67,15 @@ export function SubscriptionPage() {
         }
       />
 
-      {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
-
-      <section className="plan-hero">
-        <div className="plan-hero-copy">
-          <span className="badge bg-aqua-50 text-aqua-700">
-            <CreditCard size={15} /> {walletLabel}: {activeBalance} moeda(s)
-          </span>
-          <h2>Pague por uso, sem travar em mensalidade</h2>
-          <p>{heroText}</p>
-          <div className="plan-unlock-grid">
-            {unlockItems.map((item) => (
-              <span key={item}>
-                <CheckCircle2 size={17} /> {item}
-              </span>
-            ))}
-          </div>
+      <section className="card p-5">
+        <div className="flex items-center gap-2 text-aqua-700">
+          <Lock size={18} />
+          <strong>Compra de moedas em breve</strong>
         </div>
-
-        <div className="plan-price-card">
-          <span className="plan-star">
-            <Star size={22} />
-          </span>
-          <h3>Profissional</h3>
-          <div className="plan-price">
-            <strong>R$ 19,90</strong>
-            <span>20 moedas</span>
-          </div>
-          <p>Ideal para quem quer testar o fluxo e se candidatar com mais segurança.</p>
-          <button type="button" onClick={() => buyViaSupport("Profissional — 20 moedas")} className="primary w-full">
-            <Zap size={17} />
-            Comprar pelo WhatsApp
-          </button>
-        </div>
+        <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+          A compra de moedas será liberada no lançamento do app. Por enquanto, cada conta nova começa com
+          5 moedas{isCompany ? "" : " e você usa 1 a cada candidatura enviada"}.
+        </p>
       </section>
 
       <div className="grid gap-3 md:grid-cols-2">
@@ -174,64 +88,10 @@ export function SubscriptionPage() {
         <StatTile
           tone={hasActivePlus ? "positive" : "normal"}
           icon={<CreditCard size={18} />}
-          label={hasActivePlus ? `Ilimitado até ${activePlusUntilLabel}` : isCompany ? "Carteira separada" : "Saldo atual"}
-          value={hasActivePlus ? "Plus ativo" : isCompany ? "Empresa" : `${state.subscription.creditsRemaining} moeda(s)`}
+          label={hasActivePlus ? `Ilimitado até ${activePlusUntilLabel}` : "Saldo atual"}
+          value={hasActivePlus ? "Plus ativo" : `${activeBalance} moeda(s)`}
         />
       </div>
-
-      <section className={`grid gap-4 ${isCompany ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
-        {isCompany && (
-          <PlanCard
-            title="Gratuito"
-            price="R$ 0"
-            description="Para criar perfil, conhecer o app e ver as vagas."
-            current={state.subscription.plan === "Gratuito"}
-            benefits={freeBenefits}
-            action={
-              <Link to="/app/vagas" className="secondary w-full">
-                <Search size={17} /> Ver vagas
-              </Link>
-            }
-          />
-        )}
-        <PlanCard
-          featured
-          title="Profissional"
-          price="R$ 19,90"
-          description="Pacote com 20 moedas para se candidatar às vagas."
-          current={isProfessional}
-          benefits={professionalBenefits}
-          action={
-            isProfessional ? (
-              <Link to="/app/vagas" className="primary w-full">
-                Usar moedas <ArrowRight size={17} />
-              </Link>
-            ) : (
-              <button type="button" onClick={() => buyViaSupport("Profissional — 20 moedas")} className="primary w-full">
-                Comprar pelo WhatsApp <ArrowRight size={17} />
-              </button>
-            )
-          }
-        />
-        <PlanCard
-          title="Plus"
-          price="R$ 29,90"
-          description="Moedas ilimitadas por 30 dias para quem usa o app com mais frequência."
-          current={isPlus}
-          benefits={plusBenefits}
-          action={
-            isPlus ? (
-              <Link to="/app/vagas" className="primary w-full">
-                Usar moedas <ArrowRight size={17} />
-              </Link>
-            ) : (
-              <button type="button" onClick={() => buyViaSupport("Plus — moedas ilimitadas por 30 dias")} className="primary w-full">
-                Comprar pelo WhatsApp <ArrowRight size={17} />
-              </button>
-            )
-          }
-        />
-      </section>
 
       <CoinStatement
         transactions={statementTransactions}
@@ -240,28 +100,6 @@ export function SubscriptionPage() {
         localBalance={activeBalance}
         role={state.activeRole}
       />
-
-      <section className="plan-note">
-        <div>
-          <span className="badge bg-aqua-50 text-aqua-700">
-            <ShieldCheck size={15} /> Moedas
-          </span>
-          <h3>Como comprar moedas</h3>
-          <p>
-            A compra é feita pelo suporte: toque em <strong>Comprar pelo WhatsApp</strong>, combine o pagamento e a
-            equipe do PONT credita as moedas na sua conta. Não há cobrança automática dentro do app.
-          </p>
-        </div>
-        <div className="plan-note-list">
-          <Feature icon={<ShieldCheck />} title="Dados protegidos" text="Detalhes sensíveis aparecem só quando o fluxo permite." />
-          <Feature
-            icon={<BadgeCheck />}
-            title="Decisão melhor"
-            text={isCompany ? "A empresa paga apenas por ações sensíveis, como cancelar vaga preenchida." : "O trabalhador usa moeda só quando decide se candidatar."}
-          />
-          <Feature icon={<Zap />} title="Sem mensalidade" text="A conta compra moedas e usa conforme a necessidade." />
-        </div>
-      </section>
     </div>
   );
 }
@@ -364,6 +202,7 @@ function CoinTransactionRow({ transaction }: { transaction: CoinTransaction }) {
 }
 
 function getTransactionTitle(transaction: CoinTransaction) {
+  if (transaction.reason === "welcome_bonus") return "Bônus de boas-vindas";
   if (transaction.reason === "package_professional") return "Pacote Profissional comprado";
   if (transaction.reason === "package_plus") return "Pacote Plus comprado";
   if (transaction.reason === "coin_pack") return "Pacote de moedas comprado";
@@ -376,58 +215,10 @@ function getTransactionTitle(transaction: CoinTransaction) {
 }
 
 function getTransactionDescription(transaction: CoinTransaction) {
+  if (transaction.reason === "welcome_bonus") return "5 moedas para você começar a usar o PONT.";
   if (transaction.reason === "unlock_job" && transaction.jobId) return `Desbloqueio da vaga ${transaction.jobId}.`;
   if (transaction.reason === "apply_job" && transaction.applicationId) return `Candidatura ${transaction.applicationId}.`;
   if (transaction.reason === "cancel_filled_job" && transaction.jobId) return `Taxa de cancelamento da vaga preenchida ${transaction.jobId}.`;
   if (transaction.amount > 0) return "Moedas adicionadas ao saldo da sua conta.";
   return "Moedas utilizadas dentro do PONT.";
-}
-
-function PlanCard({
-  title,
-  price,
-  description,
-  benefits,
-  action,
-  current,
-  featured = false
-}: {
-  title: string;
-  price: string;
-  description: string;
-  benefits: string[];
-  action: ReactNode;
-  current: boolean;
-  featured?: boolean;
-}) {
-  return (
-    <article className={`plan-card ${featured ? "plan-card-featured" : ""}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <span className="badge">{current ? "Pacote atual" : "Opção"}</span>
-          <h3>{title}</h3>
-          <p>{description}</p>
-        </div>
-        <strong className="plan-card-price">{price}</strong>
-      </div>
-      <div className="grid gap-2">
-        {benefits.map((benefit) => (
-          <span key={benefit} className="plan-benefit">
-            <CheckCircle2 size={17} /> {benefit}
-          </span>
-        ))}
-      </div>
-      {action}
-    </article>
-  );
-}
-
-function Feature({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
-  return (
-    <article className="plan-mini-feature">
-      <div>{icon}</div>
-      <strong>{title}</strong>
-      <p>{text}</p>
-    </article>
-  );
 }

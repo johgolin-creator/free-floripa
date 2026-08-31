@@ -410,8 +410,8 @@ export const initialState: AppState = {
   coinLedger: [],
   subscription: {
     plan: "Gratuito",
-    creditsRemaining: 4,
-    companyCreditsRemaining: 12,
+    creditsRemaining: 5,
+    companyCreditsRemaining: 5,
     renewalDate: "2026-02-01",
     unlockedJobIds: []
   },

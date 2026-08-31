@@ -61,7 +61,7 @@ export function WorkerProfilePage() {
         </SafetyNotice>
       )}
       <section className="profile-card">
-        <div className="h-36 bg-[url('https://images.unsplash.com/photo-1523755231516-e43fd2e8dca5?auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
+        <div className="h-36 bg-[linear-gradient(120deg,#0c0e12_0%,#16241c_58%,#0c0e12_100%)]" />
         <div className="p-5">
           <div className="profile-main-row">
             <img src={currentWorker.avatarUrl} alt="" className="h-28 w-28 rounded-lg border-4 border-brand-dark object-cover shadow-soft" />

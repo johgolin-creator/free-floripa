@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ImageUp } from "lucide-react";
+import { compressImage } from "../lib/imageCompression";
 import { ACCEPTED_IMAGE_TYPES, MAX_IMAGE_SIZE_MB, uploadProfileImage, type ProfileImageKind } from "../lib/supabaseStorage";
 
 interface ProfileImageUploaderProps {
@@ -14,60 +15,89 @@ interface ProfileImageUploaderProps {
 }
 
 export function ProfileImageUploader({ label, value, kind, previewAlt, onChange, deferUpload, onFileSelected }: ProfileImageUploaderProps) {
-  const [uploading, setUploading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [busyLabel, setBusyLabel] = useState("");
   const [uploadError, setUploadError] = useState("");
+  // Object URLs criados para preview local (fluxo deferUpload) precisam ser
+  // revogados, senão cada troca de foto vaza um blob na memória.
+  const previewUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    };
+  }, []);
+
+  function setLocalPreview(file: File) {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    const url = URL.createObjectURL(file);
+    previewUrlRef.current = url;
+    onChange(url);
+  }
+
+  const helpText = deferUpload
+    ? "JPG, PNG, WEBP ou GIF. É reduzida automaticamente e enviada ao criar a conta."
+    : "JPG, PNG, WEBP ou GIF. É reduzida automaticamente antes do envio.";
 
   return (
     <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 md:col-span-2">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <img src={value} alt={previewAlt} className="h-20 w-20 rounded-lg border border-white/10 object-cover shadow-sm" />
+        {value ? (
+          <img src={value} alt={previewAlt} className="h-20 w-20 rounded-lg border border-white/10 object-cover shadow-sm" />
+        ) : (
+          <div className="grid h-20 w-20 shrink-0 place-items-center rounded-lg border border-dashed border-slate-300 bg-white text-slate-400">
+            <ImageUp size={22} />
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <label className="label">
             {label}
             <input
               type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif"
+              accept="image/*"
               className="input cursor-pointer"
-              disabled={uploading}
+              disabled={busy}
               onChange={async (event) => {
                 const input = event.currentTarget;
-                const file = input.files?.[0];
-                if (!file) return;
+                const original = input.files?.[0];
+                if (!original) return;
 
                 setUploadError("");
+                setBusy(true);
+                setBusyLabel("Preparando imagem...");
 
-                if (deferUpload) {
+                try {
+                  const file = await compressImage(original);
+
                   if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
                     setUploadError("Use uma imagem JPG, PNG, WEBP ou GIF.");
-                    input.value = "";
                     return;
                   }
                   if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
                     setUploadError(`A imagem precisa ter até ${MAX_IMAGE_SIZE_MB} MB.`);
-                    input.value = "";
                     return;
                   }
-                  onFileSelected?.(file);
-                  onChange(URL.createObjectURL(file));
-                  return;
-                }
 
-                setUploading(true);
-                try {
+                  if (deferUpload) {
+                    onFileSelected?.(file);
+                    setLocalPreview(file);
+                    return;
+                  }
+
+                  setBusyLabel("Enviando imagem...");
                   const publicUrl = await uploadProfileImage(file, kind);
                   onChange(publicUrl);
                 } catch (error) {
                   setUploadError(error instanceof Error ? error.message : "Não foi possível enviar a imagem.");
                 } finally {
-                  setUploading(false);
+                  setBusy(false);
+                  setBusyLabel("");
                   input.value = "";
                 }
               }}
             />
           </label>
-          <p className="mt-1 text-xs font-semibold text-slate-500">
-            {uploading ? "Enviando imagem..." : deferUpload ? "JPG, PNG, WEBP ou GIF até 5 MB. Enviada ao criar a conta." : "JPG, PNG, WEBP ou GIF até 5 MB."}
-          </p>
+          <p className="mt-1 text-xs font-semibold text-slate-500">{busy ? busyLabel : helpText}</p>
         </div>
       </div>
       {uploadError && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{uploadError}</div>}
