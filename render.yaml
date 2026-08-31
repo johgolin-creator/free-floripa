@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: free-floripa
+    name: pont
     runtime: static
     buildCommand: pnpm run build
     staticPublishPath: ./dist
