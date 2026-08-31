@@ -1,9 +1,11 @@
 export function PontMark({ className }: { className?: string }) {
+  // Anel dividido em dois arcos (topo e base) com um ponto em cada lateral.
   return (
     <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} aria-hidden="true">
-      <path d="M31.5 37 A15 15 0 1 0 16.5 37" stroke="#C8FF38" strokeWidth="5" strokeLinecap="round" />
-      <circle cx="16.5" cy="37" r="4" fill="#C8FF38" />
-      <circle cx="31.5" cy="37" r="4" fill="#C8FF38" />
+      <path d="M10.41 17.66 A15 15 0 0 1 37.59 17.66" stroke="#C8FF38" strokeWidth="5.5" strokeLinecap="round" />
+      <path d="M10.41 30.34 A15 15 0 0 0 37.59 30.34" stroke="#C8FF38" strokeWidth="5.5" strokeLinecap="round" />
+      <circle cx="9" cy="24" r="3.6" fill="#C8FF38" />
+      <circle cx="39" cy="24" r="3.6" fill="#C8FF38" />
     </svg>
   );
 }
