@@ -9,6 +9,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
+          if (id.includes("@sentry")) return "vendor-sentry";
           if (id.includes("react") || id.includes("scheduler")) return "vendor-react";
           if (id.includes("@supabase")) return "vendor-data";
           if (id.includes("lucide-react")) return "vendor-icons";

@@ -22,3 +22,5 @@ services:
         value: "5548998556221"
       - key: VITE_PHONE_VERIFICATION
         sync: false
+      - key: VITE_SENTRY_DSN
+        sync: false
