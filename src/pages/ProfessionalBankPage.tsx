@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BriefcaseBusiness, Filter, Heart, MapPin, Search, Star, UserCheck, UsersRound } from "lucide-react";
 import { Link } from "react-router-dom";
+import { AvatarButton } from "../components/AvatarButton";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
@@ -222,7 +223,7 @@ function InviteForm({ jobs, worker, onSubmit }: { jobs: Job[]; worker: WorkerPro
     >
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
       <div className="grid gap-3 rounded-lg border border-aqua-100 bg-aqua-50 p-3 md:grid-cols-[auto_1fr]">
-        <img src={worker.avatarUrl} alt="" className="h-16 w-16 rounded-lg object-cover" />
+        <AvatarButton src={worker.avatarUrl} name={worker.name} className="h-16 w-16 rounded-lg object-cover" />
         <div>
           <strong className="block text-white">{worker.name}</strong>
           <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-slate-600">

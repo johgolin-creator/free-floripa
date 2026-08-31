@@ -14,6 +14,7 @@ import {
   Trash2,
   UserX
 } from "lucide-react";
+import { AvatarButton } from "../components/AvatarButton";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
@@ -414,7 +415,7 @@ function ScheduleWorker({
   return (
     <article className="schedule-worker-card">
       <div className="flex min-w-0 gap-3">
-        <img src={worker.avatarUrl} alt="" className="h-14 w-14 rounded-lg object-cover" />
+        <AvatarButton src={worker.avatarUrl} name={worker.name} className="h-14 w-14 rounded-lg object-cover" />
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <strong className="text-sm text-white">{worker.name}</strong>

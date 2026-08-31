@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { AlertTriangle, BadgeCheck, Edit3, ImageUp, Save, ShieldCheck, Star, UserRound } from "lucide-react";
+import { BadgeCheck, Edit3, ImageUp, Save, Star, UserRound } from "lucide-react";
 import { DeleteAccountSection } from "../components/DeleteAccountSection";
 import { Modal } from "../components/Modal";
 import {
@@ -140,12 +140,6 @@ export function WorkerProfilePage() {
             <div className="profile-panel">
               <h3 className="font-black text-white">Validação e segurança</h3>
               <div className="mt-3 grid gap-2">
-                <ValidationRow
-                  icon={blocked ? <AlertTriangle size={16} /> : <ShieldCheck size={16} />}
-                  title={blocked ? "Conta em revisão" : currentWorker.verified ? "Identidade verificada" : "Identidade pendente"}
-                  text={blocked ? "A administração pausou ações sensíveis deste perfil." : currentWorker.verified ? "Perfil liberado para candidaturas e histórico de confiança." : "Envie documentos ao suporte para receber o selo de verificação."}
-                  tone={blocked ? "warning" : currentWorker.verified ? "success" : "neutral"}
-                />
                 <ValidationRow
                   icon={<BadgeCheck size={16} />}
                   title="Histórico operacional"

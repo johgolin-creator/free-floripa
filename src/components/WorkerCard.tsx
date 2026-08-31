@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AlertTriangle, Award, CheckCircle2, Flag, Heart, MapPin, Star } from "lucide-react";
+import { AvatarButton } from "./AvatarButton";
 import { Modal } from "./Modal";
 import { TermHint } from "./TermHint";
 import { useAppStore } from "../lib/store";
@@ -36,7 +37,12 @@ export function WorkerCard({
   return (
     <article className="card grid gap-4 p-4 hover:border-aqua-200 hover:shadow-lift">
       <div className="flex items-start gap-3">
-        <img src={worker.avatarUrl} alt="" className="h-16 w-16 rounded-lg object-cover ring-4 ring-aqua-50" />
+        <AvatarButton
+          src={worker.avatarUrl}
+          name={worker.name}
+          className="h-16 w-16 rounded-lg object-cover"
+          ringClassName="ring-4 ring-aqua-50"
+        />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="truncate font-black text-white">{worker.name}</h3>
