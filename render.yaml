@@ -24,3 +24,7 @@ services:
         sync: false
       - key: VITE_SENTRY_DSN
         sync: false
+      - key: VITE_UMAMI_SRC
+        sync: false
+      - key: VITE_UMAMI_WEBSITE_ID
+        sync: false

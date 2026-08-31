@@ -5,6 +5,7 @@ import { BrandLogo } from "../components/BrandLogo";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { useWizardStep, WizardActions, WizardPanel, WizardSteps } from "../components/Wizard";
 import { experienceLevels, functions, neighborhoods } from "../data/demoData";
+import { track } from "../lib/analytics";
 import { useAuth } from "../lib/auth";
 import { useAppStore } from "../lib/store";
 import { isPhoneTaken } from "../lib/signupChecks";
@@ -372,6 +373,7 @@ export function WorkerSignupPage() {
               }
             });
             setRole("trabalhador");
+            track("signup_completed", { role: "trabalhador", needsEmailConfirmation: result.needsEmailConfirmation });
             if (result.needsEmailConfirmation) {
               setMessage("Conta criada. Enviamos um e-mail de confirmação — abra o link antes de fazer login.");
               setConfirmEmail(email.trim());
@@ -684,6 +686,7 @@ export function CompanySignupPage() {
               }
             });
             setRole("empresa");
+            track("signup_completed", { role: "empresa", needsEmailConfirmation: result.needsEmailConfirmation });
             if (result.needsEmailConfirmation) {
               setMessage("Conta criada. Enviamos um e-mail de confirmação — abra o link antes de fazer login.");
               setConfirmEmail(email.trim());

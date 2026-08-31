@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
 import { initialState } from "../data/demoData";
+import { track } from "./analytics";
 import { useAuth } from "./auth";
 import { canApply, getOpenSlots } from "./rules";
 import {
@@ -948,6 +949,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...current.notifications
       ]
     }));
+    track("job_created", { function: input.function, urgent: Boolean(input.urgent) });
     if (supabaseMarketplaceEnabled) {
       setSyncStatus("salvando");
       publishJob(user, currentCompany, job)
@@ -1441,6 +1443,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             });
         }
         window.setTimeout(() => pendingApplicationKeys.current.delete(pendingKey), 1500);
+
+        track("application_sent", { jobId });
 
         return {
           ok: true,
