@@ -156,11 +156,18 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://127.0.0.1:3000"
+site_url = "https://usepont.com.br"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+# Inclui o fluxo de recuperacao de senha (redirectTo em src/lib/auth.tsx) tanto
+# em producao quanto no dev local (Vite roda em :5180 neste projeto).
+additional_redirect_urls = [
+  "https://usepont.com.br/recuperar-senha",
+  "https://usepont.com.br/login",
+  "http://localhost:5180/recuperar-senha",
+  "http://localhost:5180/login",
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -233,15 +240,24 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
+# SMTP de producao. Sem isto, o Supabase envia pelo remetente dele
+# (noreply@mail.app.supabase.io) e limita a 2 e-mails/hora. Para o "From" virar
+# no-reply@usepont.com.br e preciso um provedor com o dominio usepont.com.br
+# verificado (SPF/DKIM). Exemplo com Resend (plano gratuito):
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# host = "smtp.resend.com"
+# port = 465
+# user = "resend"
+# pass = "env(RESEND_SMTP_PASSWORD)"
+# admin_email = "no-reply@usepont.com.br"
+# sender_name = "PONT"
+
+# Assunto/HTML do e-mail de recuperacao de senha. O corpo esta versionado em
+# supabase/templates/recovery.html. Mantem {{ .ConfirmationURL }} no template.
+[auth.email.template.recovery]
+subject = "Redefinir sua senha — PONT"
+content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]

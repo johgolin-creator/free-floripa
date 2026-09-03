@@ -54,3 +54,24 @@ com o SQL da mudança. Ao dar commit e push para `main`, o GitHub Actions roda
 `supabase db push` sozinho e aplica no banco real. Para aplicar na hora, sem
 esperar o push, `pnpm run supabase:push` aplica direto da sua máquina (usa a
 mesma conexão do `link`).
+
+## E-mails de autenticação (recuperação de senha etc.)
+
+O assunto e o HTML do e-mail de recuperação de senha estão versionados:
+
+- `supabase/config.toml` -> seção `[auth.email.template.recovery]` (assunto) e
+  `site_url` / `additional_redirect_urls` (para onde o link do e-mail pode
+  voltar - inclui `usepont.com.br` e o dev local em `localhost:5180`).
+- `supabase/templates/recovery.html` -> corpo do e-mail, com a marca PONT.
+  A variável `{{ .ConfirmationURL }}` é obrigatória - o Supabase a troca pelo
+  link real com o token.
+
+Para aplicar no projeto hospedado: `pnpm exec supabase config push` (ou colar
+o mesmo conteúdo no painel em Authentication -> Emails).
+
+O **remetente** (`From:`) só deixa de ser o do Supabase
+(`noreply@mail.app.supabase.io`, limitado a ~2 e-mails/hora) depois de
+configurar um SMTP próprio - ver o bloco `[auth.email.smtp]` comentado no
+`config.toml`. Isso exige um provedor (ex.: Resend) com o domínio
+`usepont.com.br` verificado (SPF/DKIM no DNS) e a senha SMTP guardada como
+variável de ambiente, nunca commitada.

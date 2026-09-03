@@ -1,0 +1,55 @@
+<!--
+  Template do e-mail de recuperacao de senha do PONT.
+  Aplicado ao projeto hospedado via `supabase config push` (CLI) ou colado
+  manualmente em Authentication -> Emails -> Templates -> "Reset Password"
+  no painel do Supabase.
+
+  Variavel obrigatoria: {{ .ConfirmationURL }} -> o Supabase troca pelo link
+  real com o token. Nao remover.
+-->
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif">
+  <tr>
+    <td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0">
+        <tr>
+          <td style="background:#0f172a;padding:24px 32px">
+            <span style="color:#5eead4;font-size:20px;font-weight:800;letter-spacing:.5px">PONT</span>
+            <div style="color:#94a3b8;font-size:11px;font-weight:700;text-transform:uppercase;margin-top:2px">Conecta. Oportunidades. Talentos.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px">
+            <h1 style="margin:0 0 12px;font-size:20px;color:#0f172a">Redefinir sua senha</h1>
+            <p style="margin:0 0 20px;font-size:14px;line-height:22px;color:#475569">
+              Recebemos um pedido para redefinir a senha da sua conta no PONT.
+              Clique no botao abaixo para criar uma nova senha. O link expira em 1 hora.
+            </p>
+            <table cellpadding="0" cellspacing="0" style="margin:0 0 24px">
+              <tr>
+                <td style="border-radius:10px;background:#0f172a">
+                  <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:13px 28px;font-size:14px;font-weight:800;color:#5eead4;text-decoration:none">
+                    Criar nova senha
+                  </a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:0 0 8px;font-size:12px;color:#94a3b8">
+              Se o botao nao funcionar, copie e cole este endereco no navegador:
+            </p>
+            <p style="margin:0 0 24px;font-size:12px;word-break:break-all">
+              <a href="{{ .ConfirmationURL }}" style="color:#0f766e">{{ .ConfirmationURL }}</a>
+            </p>
+            <p style="margin:0;font-size:12px;line-height:20px;color:#94a3b8">
+              Nao pediu isso? Pode ignorar este e-mail &mdash; sua senha continua a mesma.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0">
+            <p style="margin:0;font-size:11px;color:#94a3b8">PONT &middot; Florianopolis/SC &middot; <a href="https://usepont.com.br" style="color:#0f766e">usepont.com.br</a></p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
