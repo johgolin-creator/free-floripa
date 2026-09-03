@@ -142,10 +142,6 @@ export function AppLayout() {
       ? "Cada candidatura enviada usa 1 moeda."
       : "Use moedas para ações empresariais, como cancelar vagas já preenchidas.";
 
-  if (isModerator && (location.pathname === "/app/trabalhador" || location.pathname === "/app/empresa")) {
-    return <Navigate to="/app/admin" replace />;
-  }
-
   if (!isAdmin && !isModerator && !completion.complete && location.pathname !== profilePath) {
     return <Navigate to={profilePath} replace />;
   }

@@ -35,7 +35,7 @@ const PhoneVerifyPage = lazy(() => import("./pages/PhoneVerifyPage").then(({ Pho
 
 export default function App() {
   const { state, setRole } = useAppStore();
-  const { user, role, isAdmin, isModerator } = useAuth();
+  const { user, role } = useAuth();
 
   useEffect(() => {
     if (user && role && state.activeRole !== role) {
@@ -43,11 +43,10 @@ export default function App() {
     }
   }, [role, setRole, state.activeRole, user]);
 
-  const landingPath = isAdmin || isModerator
-    ? "/app/admin"
-    : state.activeRole === "empresa"
-      ? "/app/empresa"
-      : "/app/trabalhador";
+  // Admins e moderadores entram direto na área normal (Início / Painel), como
+  // qualquer usuário. A área administrativa continua acessível pela aba "Admin"
+  // no menu lateral.
+  const landingPath = state.activeRole === "empresa" ? "/app/empresa" : "/app/trabalhador";
 
   return (
     <Suspense fallback={<PageLoading />}>
