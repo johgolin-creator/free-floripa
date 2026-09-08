@@ -264,6 +264,7 @@ export function WorkerSignupPage() {
       }
     }
     if (index === 1) {
+      if (!avatarFile) return "Envie uma foto de perfil. As empresas precisam ver quem vão contratar.";
       if (!isAdult(String(data.get("birthDate") || ""))) return "É necessário ter 18 anos ou mais para usar o PONT.";
       if (!isMeaningfulText(String(data.get("city") || ""), { minLen: 3, minWords: 1 })) return "Informe sua cidade.";
       if (!String(data.get("neighborhood") || "").trim()) return "Informe seu bairro.";
@@ -479,8 +480,8 @@ export function WorkerSignupPage() {
         <WizardPanel eyebrow="Etapa 2" title="Onde você está" hint="Para mostrarmos vagas perto de você." hidden={wizard.step !== 1}>
           <div className="grid gap-3 md:grid-cols-2">
             <ProfileImageUploader
-              label="Foto de perfil (opcional)"
-              value={avatarUrl}
+              label="Foto de perfil (obrigatória)"
+              value={avatarFile ? avatarUrl : ""}
               kind="trabalhadores"
               previewAlt="Foto de perfil"
               onChange={setAvatarUrl}
