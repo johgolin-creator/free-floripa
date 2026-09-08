@@ -734,6 +734,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const currentWorker = state.workers.find((worker) => worker.id === state.selectedWorkerId) ?? state.workers[0];
   const currentCompany = state.companies.find((company) => company.id === state.selectedCompanyId) ?? state.companies[0];
 
+  // Trabalhadores que já existiam quando a foto passou a ser exigida podem
+  // estar sem foto. As empresas escolhem candidatos pela foto, então enquanto
+  // o trabalhador não enviar uma, mantém uma notificação fixa lembrando disso;
+  // ela some sozinha assim que a foto é cadastrada.
+  useEffect(() => {
+    if (authLoading || role !== "trabalhador" || !currentWorker) return;
+
+    const reminderId = `avatar-reminder-${currentWorker.id}`;
+    const hasReminder = state.notifications.some((notification) => notification.id === reminderId);
+    const hasPhoto = resolveAvatarUrl(currentWorker.avatarUrl) !== DEFAULT_AVATAR_PLACEHOLDER;
+
+    if (hasPhoto && hasReminder) {
+      commit((current) => ({
+        ...current,
+        notifications: current.notifications.filter((notification) => notification.id !== reminderId)
+      }));
+      return;
+    }
+
+    if (!hasPhoto && !hasReminder) {
+      commit((current) => {
+        if (current.notifications.some((notification) => notification.id === reminderId)) return current;
+        return {
+          ...current,
+          notifications: [
+            {
+              id: reminderId,
+              title: "Adicione uma foto de perfil",
+              body: "As empresas escolhem quem contratar pela foto. Cadastre a sua em Perfil para aparecer melhor nas vagas.",
+              role: "trabalhador" as const,
+              createdAt: new Date().toISOString(),
+              read: false
+            },
+            ...current.notifications
+          ]
+        };
+      });
+    }
+  }, [authLoading, role, currentWorker?.id, currentWorker?.avatarUrl, state.notifications]);
+
   useEffect(() => {
     if (authLoading || role !== "empresa" || !currentCompany || !supabaseMarketplaceEnabled) return;
 
