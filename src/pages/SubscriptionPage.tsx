@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { CreditCard, Lock, Search, WalletCards } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { CheckCircle2, CreditCard, ExternalLink, Lock, Search, WalletCards } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
 import { useAppStore } from "../lib/store";
 import { useAuth } from "../lib/auth";
 import { formatDateTime } from "../lib/format";
 import { loadRemoteCoinTransactions, supabaseCoinsEnabled, type CoinTransaction } from "../lib/supabaseCoins";
+import { formatProductPrice, getCoinProductsForRole, type CoinProduct } from "../lib/coinCatalog";
+import { createCoinPayment, getPaymentStatus, openCheckout, paymentsEnabled } from "../lib/payments";
+import type { UserRole } from "../lib/types";
 
 export function SubscriptionPage() {
   const { state } = useAppStore();
@@ -67,16 +70,20 @@ export function SubscriptionPage() {
         }
       />
 
-      <section className="card p-5">
-        <div className="flex items-center gap-2 text-aqua-700">
-          <Lock size={18} />
-          <strong>Compra de moedas em breve</strong>
-        </div>
-        <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-          A compra de moedas será liberada no lançamento do app. Por enquanto, cada conta nova começa com
-          5 moedas{isCompany ? "" : " e você usa 1 a cada candidatura enviada"}.
-        </p>
-      </section>
+      {paymentsEnabled ? (
+        <CoinStore role={state.activeRole} />
+      ) : (
+        <section className="card p-5">
+          <div className="flex items-center gap-2 text-aqua-700">
+            <Lock size={18} />
+            <strong>Compra de moedas em breve</strong>
+          </div>
+          <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+            A compra de moedas será liberada no lançamento do app. Por enquanto, cada conta nova começa com
+            5 moedas{isCompany ? "" : " e você usa 1 a cada candidatura enviada"}.
+          </p>
+        </section>
+      )}
 
       <div className="grid gap-3 md:grid-cols-2">
         <StatTile
@@ -198,6 +205,138 @@ function CoinTransactionRow({ transaction }: { transaction: CoinTransaction }) {
         </div>
       </div>
     </article>
+  );
+}
+
+function CoinStore({ role }: { role: UserRole }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const products = getCoinProductsForRole(role);
+  const [pendingProductId, setPendingProductId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [awaitingPaymentId, setAwaitingPaymentId] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+  const returnStatus = searchParams.get("pagamento");
+
+  useEffect(() => {
+    if (!returnStatus) return;
+    const timeout = window.setTimeout(() => {
+      searchParams.delete("pagamento");
+      setSearchParams(searchParams, { replace: true });
+    }, 8000);
+    return () => window.clearTimeout(timeout);
+  }, [returnStatus, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!awaitingPaymentId) return;
+
+    let active = true;
+    let tries = 0;
+    const intervalId = window.setInterval(async () => {
+      tries += 1;
+      try {
+        const payment = await getPaymentStatus(awaitingPaymentId);
+        if (!active) return;
+        if (payment?.credited || payment?.status === "approved") {
+          setConfirmed(true);
+          setAwaitingPaymentId(null);
+          window.clearInterval(intervalId);
+        }
+      } catch {
+        // segue tentando
+      }
+      if (tries >= 75 && active) {
+        setAwaitingPaymentId(null);
+        window.clearInterval(intervalId);
+      }
+    }, 4000);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [awaitingPaymentId]);
+
+  async function buy(product: CoinProduct) {
+    setError("");
+    setConfirmed(false);
+    setPendingProductId(product.id);
+    try {
+      const { paymentId, initPoint } = await createCoinPayment(product.id);
+      openCheckout(initPoint);
+      setAwaitingPaymentId(paymentId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível iniciar o pagamento.");
+    } finally {
+      setPendingProductId(null);
+    }
+  }
+
+  return (
+    <section className="card p-5">
+      <div className="mb-1 flex items-center gap-2 text-aqua-700">
+        <CreditCard size={18} />
+        <strong>Comprar moedas</strong>
+      </div>
+      <p className="mb-4 text-sm font-semibold leading-6 text-slate-600">
+        Pagamento por Pix ou cartão pelo Mercado Pago. O checkout abre no navegador; ao confirmar, o saldo
+        entra automaticamente aqui.
+      </p>
+
+      {returnStatus === "sucesso" && (
+        <div className="mb-3 rounded-lg bg-aqua-50 p-3 text-sm font-bold text-aqua-800">
+          Pagamento recebido. Assim que o Mercado Pago confirmar, as moedas aparecem no seu saldo.
+        </div>
+      )}
+      {returnStatus === "pendente" && (
+        <div className="mb-3 rounded-lg bg-amber-50 p-3 text-sm font-bold text-amber-800">
+          Pagamento em processamento. O saldo é atualizado assim que for aprovado.
+        </div>
+      )}
+      {returnStatus === "falha" && (
+        <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">
+          O pagamento não foi concluído. Você pode tentar de novo.
+        </div>
+      )}
+      {confirmed && (
+        <div className="mb-3 flex items-center gap-2 rounded-lg bg-aqua-50 p-3 text-sm font-bold text-aqua-800">
+          <CheckCircle2 size={16} /> Pagamento confirmado! Seu novo saldo já está valendo.
+        </div>
+      )}
+      {awaitingPaymentId && !confirmed && (
+        <div className="mb-3 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-600">
+          Aguardando a confirmação do pagamento… pode fechar a aba do checkout depois de pagar.
+        </div>
+      )}
+      {error && <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
+
+      <div className="grid gap-3 md:grid-cols-2">
+        {products.map((product) => (
+          <article key={product.id} className="worker-info-tile flex flex-col gap-2">
+            <div>
+              <strong className="block text-white">{product.title}</strong>
+              <p className="mt-1 text-sm font-semibold leading-5 text-slate-600">{product.description}</p>
+            </div>
+            <div className="mt-auto flex items-center justify-between gap-2">
+              <span className="text-lg font-black text-white">{formatProductPrice(product.priceCents)}</span>
+              <button
+                type="button"
+                className="primary"
+                disabled={pendingProductId !== null}
+                onClick={() => buy(product)}
+              >
+                {pendingProductId === product.id ? (
+                  "Abrindo…"
+                ) : (
+                  <>
+                    <ExternalLink size={16} /> Comprar
+                  </>
+                )}
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
