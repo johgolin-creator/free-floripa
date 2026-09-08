@@ -121,6 +121,7 @@ export interface CompanyProfileRow {
   logo_url?: string | null;
   cover_url?: string | null;
   rating?: number | string | null;
+  sold_by?: string | null;
 }
 
 export interface JobRow {
@@ -278,7 +279,8 @@ export function mapCompany(row: CompanyProfileRow): CompanyProfile {
     description: row.description || "",
     logoUrl: row.logo_url || "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=500&q=80",
     coverUrl: row.cover_url || "",
-    rating: toNumber(row.rating, 0)
+    rating: toNumber(row.rating, 0),
+    soldBy: row.sold_by || ""
   };
 }
 

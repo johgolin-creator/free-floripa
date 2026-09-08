@@ -32,6 +32,7 @@ import { getTrustBadges } from "../lib/trust";
 import { useAppStore } from "../lib/store";
 import { adminActivatePlus, adminAdjustCoins, adminCoinsEnabled } from "../lib/supabaseAdminCoins";
 import { adminAccountsEnabled, adminDeleteAccount } from "../lib/adminAccounts";
+import { adminCompanyEnabled, adminSetCompanySoldBy } from "../lib/adminCompany";
 import type { Application, CompanyProfile, CompanyReview, Job, TrustReport, UserRole, WorkerProfile } from "../lib/types";
 
 type AdminTab = "Resumo" | "Usuários" | "Vagas" | "Moedas" | "Alertas";
@@ -45,7 +46,8 @@ export function AdminPage() {
     toggleWorkerBlock,
     toggleCompanyBlock,
     removeWorkerFromState,
-    removeCompanyFromState
+    removeCompanyFromState,
+    applyCompanySoldBy
   } = useAppStore();
   const [tab, setTab] = useState<AdminTab>("Resumo");
   const [search, setSearch] = useState("");
@@ -94,7 +96,7 @@ export function AdminPage() {
     normalize(`${worker.name} ${worker.email} ${worker.phone} ${worker.functions.join(" ")}`).includes(normalizedSearch)
   );
   const filteredCompanies = state.companies.filter((company) =>
-    normalize(`${company.establishmentName} ${company.responsibleName} ${company.email} ${company.phone}`).includes(normalizedSearch)
+    normalize(`${company.establishmentName} ${company.responsibleName} ${company.email} ${company.phone} ${company.soldBy ?? ""}`).includes(normalizedSearch)
   );
   const filteredJobs = state.jobs.filter((job) => {
     const company = state.companies.find((item) => item.id === job.companyId);
@@ -248,7 +250,7 @@ export function AdminPage() {
                   icon={<Building2 size={18} />}
                   title={company.establishmentName}
                   subtitle={`${company.responsibleName} - ${company.email}`}
-                  meta={`${jobs} vaga(s) - ${company.category} - ${company.neighborhood}`}
+                  meta={`${jobs} vaga(s) - ${company.category} - ${company.neighborhood}${company.soldBy ? ` - vendedor: ${company.soldBy}` : ""}`}
                   blocked={blocked}
                   reportCount={reportCount}
                   onToggle={() => toggleCompanyBlock(company.id)}
@@ -422,6 +424,12 @@ export function AdminPage() {
               reports={state.trustReports}
               onToggleBlock={() => toggleCompanyBlock(company.id)}
               onDelete={() => handleDeleteAccount("company", company.id, company.establishmentName)}
+              onSetSoldBy={async (value) => {
+                if (adminCompanyEnabled) {
+                  await adminSetCompanySoldBy(company.id, value);
+                }
+                applyCompanySoldBy(company.id, value);
+              }}
               onClose={() => setDetail(null)}
             />
           );
@@ -886,6 +894,7 @@ function CompanyDetailModal({
   reports,
   onToggleBlock,
   onDelete,
+  onSetSoldBy,
   onClose
 }: {
   company: CompanyProfile;
@@ -895,6 +904,7 @@ function CompanyDetailModal({
   reports: TrustReport[];
   onToggleBlock: () => void;
   onDelete: () => Promise<void>;
+  onSetSoldBy: (value: string) => Promise<void>;
   onClose: () => void;
 }) {
   const companyJobs = jobs.filter((job) => job.companyId === company.id);
@@ -941,6 +951,8 @@ function CompanyDetailModal({
           <DetailField label="Avaliação" value={`${company.rating.toFixed(1)} de 5`} />
           <DetailField label="ID da conta" value={<code className="text-xs">{company.id}</code>} />
         </div>
+
+        <CompanySoldByField value={company.soldBy ?? ""} onSave={onSetSoldBy} />
 
         <DetailSection title="Sobre a empresa">
           <p className="text-sm leading-6 text-slate-600">{company.description || "Sem descrição."}</p>
@@ -1063,6 +1075,54 @@ function DangerDeleteAccount({
             </button>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function CompanySoldByField({ value, onSave }: { value: string; onSave: (value: string) => Promise<void> }) {
+  const [draft, setDraft] = useState(value);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+  const dirty = draft.trim() !== value.trim();
+
+  async function save() {
+    if (!dirty || pending) return;
+    setPending(true);
+    setError("");
+    setSaved(false);
+    try {
+      await onSave(draft.trim());
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível salvar.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-aqua-100 bg-aqua-50/40 p-3">
+      <span className="text-xs font-black uppercase text-slate-500">Vendedor responsável pelo pacote</span>
+      <div className="mt-1 flex flex-wrap gap-2">
+        <input
+          className="input flex-1"
+          value={draft}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            setSaved(false);
+          }}
+          placeholder="Nome ou código do vendedor"
+        />
+        <button type="button" className="primary" disabled={!dirty || pending} onClick={save}>
+          {pending ? "Salvando..." : "Salvar"}
+        </button>
+      </div>
+      {saved && <p className="mt-1 text-xs font-bold text-aqua-700">Vendedor atualizado.</p>}
+      {error && <p className="mt-1 text-xs font-bold text-alert">{error}</p>}
+      {!value && !dirty && (
+        <p className="mt-1 text-xs font-semibold text-slate-500">Sem atribuição. Preencha quem fechou a venda com esta empresa.</p>
       )}
     </div>
   );

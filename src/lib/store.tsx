@@ -129,6 +129,7 @@ interface AppContextValue {
   toggleCompanyBlock: (companyId: string) => void;
   removeWorkerFromState: (workerId: string) => void;
   removeCompanyFromState: (companyId: string) => void;
+  applyCompanySoldBy: (companyId: string, value: string) => void;
   submitTrustReport: (input: { targetType: TrustReportTargetType; targetId: string; targetName: string; reason: string }) => { ok: boolean; message: string };
   resolveTrustReport: (reportId: string) => void;
   addCompanyLeads: (leads: CompanyLead[]) => { added: number; updated: number };
@@ -2107,6 +2108,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
           };
         });
+      },
+      // Reflete na hora, no painel admin, o vendedor gravado via
+      // admin_set_company_sold_by (adminSetCompanySoldBy em adminCompany.ts).
+      applyCompanySoldBy(companyId, value) {
+        commit((current) => ({
+          ...current,
+          companies: current.companies.map((company) =>
+            company.id === companyId ? { ...company, soldBy: value.trim() } : company
+          )
+        }));
       },
       addCompanyLeads(leads) {
         let added = 0;

@@ -87,6 +87,9 @@ export interface CompanyProfile {
   /** Foto de capa (banner) do perfil da empresa. Vazio = degradê da marca. */
   coverUrl?: string;
   rating: number;
+  /** Vendedor que trouxe/fechou o pacote com a empresa (nome ou código).
+   *  Só a administração vê e edita. Vazio = sem atribuição. */
+  soldBy?: string;
 }
 
 export interface Job {
