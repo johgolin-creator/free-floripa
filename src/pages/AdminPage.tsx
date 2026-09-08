@@ -2,13 +2,21 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
+  Award,
+  BadgeCheck,
   Ban,
   BriefcaseBusiness,
   Building2,
+  CalendarDays,
   CheckCircle2,
   ClipboardList,
+  Eye,
+  Mail,
+  MapPin,
+  Phone,
   Search,
   ShieldCheck,
+  Star,
   Target,
   UserRound,
   WalletCards
@@ -16,11 +24,13 @@ import {
 import { SectionHeader } from "../components/SectionHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { UrgentBadge } from "../components/UrgentBadge";
+import { Modal } from "../components/Modal";
 import { formatCurrency, formatDate } from "../lib/format";
-import { getJobStatus, getOpenSlots } from "../lib/rules";
+import { calculateReliability, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots } from "../lib/rules";
+import { getTrustBadges } from "../lib/trust";
 import { useAppStore } from "../lib/store";
 import { adminActivatePlus, adminAdjustCoins, adminCoinsEnabled } from "../lib/supabaseAdminCoins";
-import type { TrustReport, UserRole } from "../lib/types";
+import type { Application, CompanyProfile, CompanyReview, Job, TrustReport, UserRole, WorkerProfile } from "../lib/types";
 
 type AdminTab = "Resumo" | "Usuários" | "Vagas" | "Moedas" | "Alertas";
 
@@ -30,6 +40,7 @@ export function AdminPage() {
   const { state, resolveTrustReport, toggleWorkerBlock, toggleCompanyBlock } = useAppStore();
   const [tab, setTab] = useState<AdminTab>("Resumo");
   const [search, setSearch] = useState("");
+  const [detail, setDetail] = useState<{ type: "worker" | "company"; id: string } | null>(null);
   const normalizedSearch = normalize(search);
   const blockedWorkerIds = state.adminModeration.blockedWorkerIds;
   const blockedCompanyIds = state.adminModeration.blockedCompanyIds;
@@ -194,6 +205,7 @@ export function AdminPage() {
                   blocked={blocked}
                   reportCount={reportCount}
                   onToggle={() => toggleWorkerBlock(worker.id)}
+                  onOpen={() => setDetail({ type: "worker", id: worker.id })}
                 />
               );
             })}
@@ -213,6 +225,7 @@ export function AdminPage() {
                   blocked={blocked}
                   reportCount={reportCount}
                   onToggle={() => toggleCompanyBlock(company.id)}
+                  onOpen={() => setDetail({ type: "company", id: company.id })}
                 />
               );
             })}
@@ -349,6 +362,41 @@ export function AdminPage() {
           )}
         </AdminList>
       )}
+
+      {detail?.type === "worker" &&
+        (() => {
+          const worker = state.workers.find((item) => item.id === detail.id);
+          if (!worker) return null;
+          return (
+            <WorkerDetailModal
+              worker={worker}
+              blocked={blockedWorkerIds.includes(worker.id)}
+              applications={state.applications}
+              jobs={state.jobs}
+              companies={state.companies}
+              reports={state.trustReports}
+              onToggleBlock={() => toggleWorkerBlock(worker.id)}
+              onClose={() => setDetail(null)}
+            />
+          );
+        })()}
+
+      {detail?.type === "company" &&
+        (() => {
+          const company = state.companies.find((item) => item.id === detail.id);
+          if (!company) return null;
+          return (
+            <CompanyDetailModal
+              company={company}
+              blocked={blockedCompanyIds.includes(company.id)}
+              jobs={state.jobs}
+              companyReviews={state.companyReviews}
+              reports={state.trustReports}
+              onToggleBlock={() => toggleCompanyBlock(company.id)}
+              onClose={() => setDetail(null)}
+            />
+          );
+        })()}
     </div>
   );
 }
@@ -569,7 +617,8 @@ function AdminRow({
   meta,
   blocked,
   reportCount = 0,
-  onToggle
+  onToggle,
+  onOpen
 }: {
   icon: ReactNode;
   title: string;
@@ -578,11 +627,17 @@ function AdminRow({
   blocked: boolean;
   reportCount?: number;
   onToggle: () => void;
+  onOpen?: () => void;
 }) {
   return (
     <article className={`worker-application-card ${blocked ? "border-red-100 bg-red-50/60" : ""}`}>
       <div className="worker-card-head">
-        <div className="flex min-w-0 gap-3">
+        <button
+          type="button"
+          onClick={onOpen}
+          disabled={!onOpen}
+          className="group flex min-w-0 flex-1 gap-3 text-left disabled:cursor-default"
+        >
           <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-lg ${blocked ? "bg-red-100 text-alert" : "bg-aqua-50 text-aqua-700"}`}>
             {icon}
           </span>
@@ -591,16 +646,304 @@ function AdminRow({
               <span className={blocked ? "badge border-red-100 bg-red-50 text-alert" : "badge"}>{blocked ? "Bloqueado" : "Ativo"}</span>
               {reportCount > 0 && <span className="badge border-amber-200 bg-amber-50 text-amber-700">{reportCount} relato(s) aberto(s)</span>}
             </div>
-            <h3 className="mt-2">{title}</h3>
+            <h3 className="mt-2 underline-offset-4 group-hover:underline">{title}</h3>
             <p className="text-sm font-semibold text-slate-600">{subtitle}</p>
             <p className="mt-1 text-xs font-black uppercase text-slate-500">{meta}</p>
           </div>
-        </div>
-        <button type="button" onClick={onToggle} className={blocked ? "secondary" : "danger"}>
-          <Ban size={16} /> {blocked ? "Desbloquear" : "Bloquear"}
         </button>
+        <div className="grid gap-2 sm:min-w-40">
+          {onOpen && (
+            <button type="button" onClick={onOpen} className="secondary">
+              <Eye size={16} /> Ver perfil
+            </button>
+          )}
+          <button type="button" onClick={onToggle} className={blocked ? "secondary" : "danger"}>
+            <Ban size={16} /> {blocked ? "Desbloquear" : "Bloquear"}
+          </button>
+        </div>
       </div>
     </article>
+  );
+}
+
+function DetailField({ icon, label, value }: { icon?: ReactNode; label: string; value: ReactNode }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <span className="flex items-center gap-1.5 text-xs font-black uppercase text-slate-500">
+        {icon}
+        {label}
+      </span>
+      <strong className="mt-1 block break-words text-sm text-white">{value}</strong>
+    </div>
+  );
+}
+
+function DetailSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="grid gap-2">
+      <h3 className="font-black text-white">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function WorkerDetailModal({
+  worker,
+  blocked,
+  applications,
+  jobs,
+  companies,
+  reports,
+  onToggleBlock,
+  onClose
+}: {
+  worker: WorkerProfile;
+  blocked: boolean;
+  applications: Application[];
+  jobs: Job[];
+  companies: CompanyProfile[];
+  reports: TrustReport[];
+  onToggleBlock: () => void;
+  onClose: () => void;
+}) {
+  const reliability = calculateReliability(worker);
+  const badges = getTrustBadges(worker);
+  const workerApplications = applications
+    .filter((application) => application.workerId === worker.id)
+    .slice()
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const openReports = reports.filter(
+    (report) => report.status === "Aberto" && report.targetType === "worker" && report.targetId === worker.id
+  );
+  const experiences = worker.functions
+    .map((functionName) => getFunctionExperience(worker, functionName))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+  return (
+    <Modal title={`Perfil de ${worker.name}`} onClose={onClose}>
+      <div className="grid max-h-[72vh] gap-4 overflow-auto pr-1">
+        <div className="flex items-start gap-3">
+          <img src={worker.avatarUrl} alt="" className="h-16 w-16 shrink-0 rounded-lg border-2 border-brand-dark object-cover" />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-black text-white">{worker.name}</h2>
+              {worker.verified && <span className="badge bg-aqua-100 text-aqua-700"><BadgeCheck size={14} /> Verificado</span>}
+              <span className={blocked ? "badge border-red-100 bg-red-50 text-alert" : "badge"}>{blocked ? "Bloqueado" : "Ativo"}</span>
+            </div>
+            <p className="mt-1 text-sm font-semibold text-slate-600">{worker.functions.join(", ") || "Sem função"}</p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
+              <MapPin size={14} /> {worker.city} - {worker.neighborhood}
+            </p>
+          </div>
+        </div>
+
+        {openReports.length > 0 && (
+          <div className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm font-bold text-alert">
+            {openReports.length} relato(s) aberto(s) sobre este profissional.
+          </div>
+        )}
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <DetailField icon={<Mail size={13} />} label="E-mail" value={worker.email} />
+          <DetailField icon={<Phone size={13} />} label="Telefone" value={worker.phone} />
+          <DetailField label="CPF" value={worker.cpf || "Não informado"} />
+          <DetailField icon={<CalendarDays size={13} />} label="Nascimento" value={worker.birthDate ? formatDate(worker.birthDate) : "Não informado"} />
+        </div>
+
+        <DetailSection title="Indicadores">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <DetailField icon={<Star size={13} />} label="Nota" value={worker.rating.toFixed(1)} />
+            <DetailField label="Confiabilidade" value={`${reliability}%`} />
+            <DetailField label="Trabalhos" value={String(worker.completedJobs)} />
+            <DetailField label="Comparecimento" value={`${worker.attendanceRate}%`} />
+            <DetailField label="Pontualidade" value={`${worker.punctualityRate}%`} />
+            <DetailField label="Cancelamentos" value={String(worker.cancellations)} />
+            <DetailField label="Transporte próprio" value={worker.hasTransport ? "Sim" : "Não"} />
+            <DetailField label="Distância máx." value={`${worker.maxDistanceKm} km`} />
+          </div>
+          {badges.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {badges.map((badge) => (
+                <span key={badge.label} className={`badge ${badge.tone}`}>
+                  <Award size={13} /> {badge.label}
+                </span>
+              ))}
+            </div>
+          )}
+        </DetailSection>
+
+        <DetailSection title="Descrição e disponibilidade">
+          <p className="text-sm leading-6 text-slate-600">{worker.description || "Sem descrição."}</p>
+          {worker.experience && <p className="text-sm leading-6 text-slate-600">Experiência: {worker.experience}</p>}
+          <p className="text-sm leading-6 text-slate-600">Disponibilidade: {worker.availability || "Não informada"}</p>
+        </DetailSection>
+
+        {experiences.length > 0 && (
+          <DetailSection title="Nível por profissão">
+            <div className="grid gap-2">
+              {experiences.map((experience) => (
+                <div key={experience.function} className="rounded-lg bg-slate-50 p-3">
+                  <span className="text-xs font-black uppercase text-slate-500">{experience.function}</span>
+                  <strong className="mt-1 block text-sm text-white">{getExperienceLabel(experience.level)}</strong>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">
+                    {experience.months} meses informados{experience.verified ? " - verificado" : ""}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </DetailSection>
+        )}
+
+        <DetailSection title={`Candidaturas (${workerApplications.length})`}>
+          {workerApplications.length === 0 ? (
+            <p className="text-sm text-slate-600">Nenhuma candidatura registrada.</p>
+          ) : (
+            <div className="grid gap-2">
+              {workerApplications.slice(0, 12).map((application) => {
+                const job = jobs.find((item) => item.id === application.jobId);
+                const company = job ? companies.find((item) => item.id === job.companyId) : undefined;
+                return (
+                  <div key={application.id} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 p-3">
+                    <div className="min-w-0">
+                      <strong className="block truncate text-sm text-white">{job?.title ?? "Vaga removida"}</strong>
+                      <p className="truncate text-xs font-semibold text-slate-500">
+                        {company?.establishmentName ?? "Empresa"} - {formatDate(application.createdAt.slice(0, 10))}
+                      </p>
+                    </div>
+                    <span className="badge shrink-0">{application.status}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </DetailSection>
+
+        {worker.reviews.length > 0 && (
+          <DetailSection title="Avaliações recebidas">
+            <div className="grid gap-2">
+              {worker.reviews.map((review) => (
+                <div key={review.id} className="rounded-lg bg-slate-50 p-3">
+                  <strong className="flex items-center gap-1 text-sm text-white">
+                    <Star size={14} /> {review.rating} - {review.authorName}
+                  </strong>
+                  <p className="mt-1 text-sm text-slate-600">{review.comment}</p>
+                </div>
+              ))}
+            </div>
+          </DetailSection>
+        )}
+
+        <button type="button" onClick={onToggleBlock} className={blocked ? "secondary" : "danger"}>
+          <Ban size={16} /> {blocked ? "Desbloquear profissional" : "Bloquear profissional"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function CompanyDetailModal({
+  company,
+  blocked,
+  jobs,
+  companyReviews,
+  reports,
+  onToggleBlock,
+  onClose
+}: {
+  company: CompanyProfile;
+  blocked: boolean;
+  jobs: Job[];
+  companyReviews: CompanyReview[];
+  reports: TrustReport[];
+  onToggleBlock: () => void;
+  onClose: () => void;
+}) {
+  const companyJobs = jobs.filter((job) => job.companyId === company.id);
+  const companyJobIds = new Set(companyJobs.map((job) => job.id));
+  const reviews = companyReviews.filter((review) => review.companyId === company.id);
+  const openReports = reports.filter(
+    (report) =>
+      report.status === "Aberto" &&
+      ((report.targetType === "company" && report.targetId === company.id) ||
+        (report.targetType === "job" && companyJobIds.has(report.targetId)))
+  );
+
+  return (
+    <Modal title={`Perfil de ${company.establishmentName}`} onClose={onClose}>
+      <div className="grid max-h-[72vh] gap-4 overflow-auto pr-1">
+        <div className="flex items-start gap-3">
+          <img src={company.logoUrl} alt="" className="h-16 w-16 shrink-0 rounded-lg border-2 border-brand-dark bg-white object-contain" />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-black text-white">{company.establishmentName}</h2>
+              <span className={blocked ? "badge border-red-100 bg-red-50 text-alert" : "badge"}>{blocked ? "Bloqueada" : "Ativa"}</span>
+            </div>
+            <p className="mt-1 text-sm font-semibold text-slate-600">{company.category} - {company.neighborhood}</p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
+              <Star size={14} /> {company.rating.toFixed(1)} de avaliação
+            </p>
+          </div>
+        </div>
+
+        {openReports.length > 0 && (
+          <div className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm font-bold text-alert">
+            {openReports.length} relato(s) aberto(s) sobre esta empresa ou suas vagas.
+          </div>
+        )}
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <DetailField label="Responsável" value={company.responsibleName} />
+          <DetailField label="CNPJ" value={company.cnpj || "Não informado"} />
+          <DetailField icon={<Phone size={13} />} label="Telefone" value={company.phone} />
+          <DetailField icon={<Mail size={13} />} label="E-mail" value={company.email} />
+          <DetailField icon={<MapPin size={13} />} label="Endereço" value={company.address || "Não informado"} />
+          <DetailField label="Bairro" value={company.neighborhood} />
+        </div>
+
+        <DetailSection title="Sobre a empresa">
+          <p className="text-sm leading-6 text-slate-600">{company.description || "Sem descrição."}</p>
+        </DetailSection>
+
+        <DetailSection title={`Vagas publicadas (${companyJobs.length})`}>
+          {companyJobs.length === 0 ? (
+            <p className="text-sm text-slate-600">Nenhuma vaga cadastrada.</p>
+          ) : (
+            <div className="grid gap-2">
+              {companyJobs.slice(0, 12).map((job) => (
+                <div key={job.id} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 p-3">
+                  <div className="min-w-0">
+                    <strong className="block truncate text-sm text-white">{job.title}</strong>
+                    <p className="truncate text-xs font-semibold text-slate-500">
+                      {job.function} - {formatDate(job.date)} - {formatCurrency(job.dailyValue)}
+                    </p>
+                  </div>
+                  <span className="badge shrink-0">{getOpenSlots(job)} em aberto</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </DetailSection>
+
+        {reviews.length > 0 && (
+          <DetailSection title="Avaliações dos trabalhadores">
+            <div className="grid gap-2">
+              {reviews.slice(0, 8).map((review) => (
+                <div key={review.id} className="rounded-lg bg-slate-50 p-3">
+                  <strong className="flex items-center gap-1 text-sm text-white">
+                    <Star size={14} /> {review.rating} - {review.workerName}
+                  </strong>
+                  <p className="mt-1 text-sm text-slate-600">{review.comment}</p>
+                </div>
+              ))}
+            </div>
+          </DetailSection>
+        )}
+
+        <button type="button" onClick={onToggleBlock} className={blocked ? "secondary" : "danger"}>
+          <Ban size={16} /> {blocked ? "Desbloquear empresa" : "Bloquear empresa"}
+        </button>
+      </div>
+    </Modal>
   );
 }
 
