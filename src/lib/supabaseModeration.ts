@@ -165,7 +165,10 @@ export async function loadModerationOverview(): Promise<ModerationOverview> {
 
   const [workers, workerContacts, companies, jobsPayload, applications, trustReports, adminModeration] = await Promise.all([
     loadPublicWorkerProfiles(null),
-    loadWorkerContactsForModeration().catch(() => new Map<string, { cpf: string; phone: string; email: string }>()),
+    loadWorkerContactsForModeration().catch((error) => {
+      console.warn("[admin] contato completo dos trabalhadores indisponível:", error);
+      return new Map<string, { cpf: string; phone: string; email: string }>();
+    }),
     loadAllCompanyProfiles(),
     loadAllJobsForModeration(),
     loadAllApplicationsForModeration(),
