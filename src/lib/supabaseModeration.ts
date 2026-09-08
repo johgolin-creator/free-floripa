@@ -66,11 +66,27 @@ export async function loadAllCompanyProfiles(): Promise<CompanyProfile[]> {
 
   const { data, error } = await supabase
     .from("company_profiles")
-    .select("id,user_id,establishment_name,responsible_name,cnpj,phone,email,category,address,neighborhood,description,logo_url,rating,sold_by")
+    .select("id,user_id,establishment_name,responsible_name,cnpj,phone,email,category,address,neighborhood,description,logo_url,rating")
     .order("updated_at", { ascending: false });
 
   if (error) throw new Error(error.message);
   return ((data ?? []) as CompanyProfileRow[]).map(mapCompany);
+}
+
+/** Atribuição de vendedor por empresa (supabase/company_sold_by.sql). É lido à
+ *  parte e com catch: se a coluna ainda não existe no banco, a visão de
+ *  moderação continua funcionando sem esse dado. */
+export async function loadCompanySoldByMap(): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (!supabase) return map;
+
+  const { data, error } = await supabase.from("company_profiles").select("id,sold_by");
+  if (error) return map;
+
+  for (const row of (data ?? []) as { id: string; sold_by?: string | null }[]) {
+    if (row.sold_by) map.set(row.id, row.sold_by);
+  }
+  return map;
 }
 
 export async function loadAllJobsForModeration(): Promise<{ jobs: Job[]; companies: CompanyProfile[] }> {
@@ -79,7 +95,7 @@ export async function loadAllJobsForModeration(): Promise<{ jobs: Job[]; compani
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status,company_profiles(id,user_id,establishment_name,responsible_name,cnpj,phone,email,category,address,neighborhood,description,logo_url,rating,sold_by)"
+      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status,company_profiles(id,user_id,establishment_name,responsible_name,cnpj,phone,email,category,address,neighborhood,description,logo_url,rating)"
     )
     .order("shift_date", { ascending: false })
     .limit(MODERATION_JOBS_LIMIT);
@@ -163,13 +179,14 @@ export async function loadModerationOverview(): Promise<ModerationOverview> {
     return { workers: [], companies: [], jobs: [], applications: [], trustReports: [], adminModeration: { blockedWorkerIds: [], blockedCompanyIds: [] } };
   }
 
-  const [workers, workerContacts, companies, jobsPayload, applications, trustReports, adminModeration] = await Promise.all([
+  const [workers, workerContacts, companies, soldByMap, jobsPayload, applications, trustReports, adminModeration] = await Promise.all([
     loadPublicWorkerProfiles(null),
     loadWorkerContactsForModeration().catch((error) => {
       console.warn("[admin] contato completo dos trabalhadores indisponível:", error);
       return new Map<string, { cpf: string; phone: string; email: string }>();
     }),
     loadAllCompanyProfiles(),
+    loadCompanySoldByMap(),
     loadAllJobsForModeration(),
     loadAllApplicationsForModeration(),
     loadAllTrustReports(),
@@ -187,7 +204,10 @@ export async function loadModerationOverview(): Promise<ModerationOverview> {
   });
 
   const companyIds = new Set(companies.map((company) => company.id));
-  const mergedCompanies = [...companies, ...jobsPayload.companies.filter((company) => !companyIds.has(company.id))];
+  const mergedCompanies = [...companies, ...jobsPayload.companies.filter((company) => !companyIds.has(company.id))].map((company) => {
+    const soldBy = soldByMap.get(company.id);
+    return soldBy ? { ...company, soldBy } : company;
+  });
 
   return { workers: workersWithContacts, companies: mergedCompanies, jobs: jobsPayload.jobs, applications, trustReports, adminModeration };
 }
