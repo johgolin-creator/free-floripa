@@ -48,20 +48,6 @@ export const neighborhoods = [
 
 export const companies: CompanyProfile[] = [
   {
-    id: "company-1",
-    establishmentName: "Maré Alta Beach Club",
-    responsibleName: "Fernanda Luz",
-    cnpj: "11.222.333/0001-81",
-    phone: "(48) 99911-2300",
-    email: "contratacao@marealta.com.br",
-    category: "Beach club",
-    address: "Av. dos Búzios, 1200",
-    neighborhood: "Jurerê",
-    description: "Beach club com alta demanda para eventos de verão e festas ao pôr do sol.",
-    logoUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=500&q=80",
-    rating: 4.8
-  },
-  {
     id: "company-2",
     establishmentName: "Restaurante Ilha Norte",
     responsibleName: "Carlos Mendes",
@@ -119,7 +105,7 @@ export const workers: WorkerProfile[] = [
     punctualityRate: 96,
     cancellations: 1,
     reviews: [
-      { id: "review-1", authorName: "Maré Alta Beach Club", rating: 5, comment: "Excelente postura e atendimento." }
+      { id: "review-1", authorName: "Restaurante Ilha Norte", rating: 5, comment: "Excelente postura e atendimento." }
     ],
     verified: true
   },
@@ -217,30 +203,6 @@ export const workers: WorkerProfile[] = [
 ];
 
 export const jobs: Job[] = [
-  {
-    id: "job-1",
-    companyId: "company-1",
-    title: "Garçom para beach club",
-    function: "Garçom",
-    quantity: 6,
-    filled: 3,
-    date: "2026-01-04",
-    startsAt: "14:00",
-    endsAt: "23:00",
-    dailyValue: 260,
-    paymentMethod: "Pix",
-    approximateAddress: "Jurerê Internacional, próximo à praia",
-    fullAddress: "Av. dos Búzios, 1200, Jurerê",
-    neighborhood: "Jurerê",
-    uniform: "Calça preta, tênis preto e camisa fornecida no local",
-    requiredExperience: "Experiência com bandeja e atendimento em alto fluxo",
-    description: "Atendimento em mesas, reposição de bebidas e suporte à operação do salão.",
-    benefits: ["Alimentação no local", "Transporte após 23h"],
-    contactAfterConfirmation: true,
-    urgent: true,
-    candidates: 12,
-    distanceKm: 16
-  },
   {
     id: "job-2",
     companyId: "company-3",
@@ -375,7 +337,7 @@ export const notifications: NotificationItem[] = [
   {
     id: "notification-2",
     title: "Um candidato se inscreveu na sua vaga",
-    body: "Ana Carolina enviou candidatura para Garçom em Jurerê.",
+    body: "Luiza Martins enviou candidatura para Recepcionista no Centro.",
     role: "empresa",
     createdAt: "2026-01-02T10:10:00.000Z",
     read: false
@@ -393,13 +355,12 @@ export const notifications: NotificationItem[] = [
 export const initialState: AppState = {
   activeRole: "trabalhador",
   selectedWorkerId: "worker-1",
-  selectedCompanyId: "company-1",
+  selectedCompanyId: "company-2",
   workers,
   companies,
   jobs,
   companySchedules: [],
   applications: [
-    { id: "application-1", jobId: "job-1", workerId: "worker-1", status: "Em análise", createdAt: "2026-01-01T14:00:00.000Z" },
     { id: "application-2", jobId: "job-2", workerId: "worker-2", status: "Aprovada", createdAt: "2026-01-01T16:30:00.000Z" },
     { id: "application-3", jobId: "job-4", workerId: "worker-3", status: "Enviada", createdAt: "2026-01-02T09:20:00.000Z" }
   ],

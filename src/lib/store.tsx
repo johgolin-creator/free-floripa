@@ -45,6 +45,11 @@ const STORAGE_KEY = "pont:state";
 const REMOTE_SYNC_POLL_MS = 5000;
 const DEFAULT_WORKER_AVATAR = DEFAULT_AVATAR_PLACEHOLDER;
 const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=500&q=80";
+// Ids da vitrine de demonstração (src/data/demoData.ts). Servem para limpar
+// esses registros de estados antigos salvos no localStorage/snapshot quando os
+// dados reais do Supabase chegam. company-1 / job-1 / application-1 eram do
+// "Maré Alta Beach Club", já removido do seed, mas ficam aqui para apagar
+// resquícios em contas que já tinham a vitrine antiga persistida.
 const DEMO_WORKER_IDS = new Set(["worker-1", "worker-2", "worker-3", "worker-4"]);
 const DEMO_COMPANY_IDS = new Set(["company-1", "company-2", "company-3"]);
 const DEMO_APPLICATION_IDS = new Set(["application-1", "application-2", "application-3"]);
