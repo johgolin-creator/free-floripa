@@ -10,20 +10,37 @@ export function NotificationToast() {
   const { state, markNotificationRead } = useAppStore();
   const navigate = useNavigate();
   const [toasts, setToasts] = useState<NotificationItem[]>([]);
-  const seenIds = useRef<Set<string> | null>(null);
+  const seenIds = useRef<Set<string>>(new Set());
+  // Marco temporal definido na primeira carga: tudo que já existia quando o
+  // app abriu é histórico e não deve virar toast de novo a cada login. Só
+  // notificações criadas depois desse instante (e ainda não lidas) aparecem.
+  const historyCutoff = useRef<number | null>(null);
 
   useEffect(() => {
     const roleNotifications = state.notifications.filter((notification) => notification.role === state.activeRole);
 
-    if (seenIds.current === null) {
-      seenIds.current = new Set(roleNotifications.map((notification) => notification.id));
+    if (historyCutoff.current === null) {
+      // O store começa vazio e as notificações chegam do backend logo depois.
+      // Espera o primeiro lote real antes de fixar o corte.
+      if (roleNotifications.length === 0) return;
+      historyCutoff.current = roleNotifications.reduce(
+        (newest, notification) => Math.max(newest, Date.parse(notification.createdAt) || 0),
+        0
+      );
+      roleNotifications.forEach((notification) => seenIds.current.add(notification.id));
       return;
     }
 
-    const fresh = roleNotifications.filter((notification) => !seenIds.current?.has(notification.id));
+    const cutoff = historyCutoff.current;
+    const fresh = roleNotifications.filter(
+      (notification) =>
+        !notification.read &&
+        !seenIds.current.has(notification.id) &&
+        (Date.parse(notification.createdAt) || 0) > cutoff
+    );
     if (fresh.length === 0) return;
 
-    fresh.forEach((notification) => seenIds.current?.add(notification.id));
+    fresh.forEach((notification) => seenIds.current.add(notification.id));
     setToasts((current) => [...fresh, ...current].slice(0, 3));
   }, [state.notifications, state.activeRole]);
 
