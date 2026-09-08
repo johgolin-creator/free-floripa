@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Star,
   Target,
+  Trash2,
   UserRound,
   WalletCards
 } from "lucide-react";
@@ -30,6 +31,7 @@ import { calculateReliability, getExperienceLabel, getFunctionExperience, getJob
 import { getTrustBadges } from "../lib/trust";
 import { useAppStore } from "../lib/store";
 import { adminActivatePlus, adminAdjustCoins, adminCoinsEnabled } from "../lib/supabaseAdminCoins";
+import { adminAccountsEnabled, adminDeleteAccount } from "../lib/adminAccounts";
 import type { Application, CompanyProfile, CompanyReview, Job, TrustReport, UserRole, WorkerProfile } from "../lib/types";
 
 type AdminTab = "Resumo" | "Usuários" | "Vagas" | "Moedas" | "Alertas";
@@ -37,10 +39,31 @@ type AdminTab = "Resumo" | "Usuários" | "Vagas" | "Moedas" | "Alertas";
 const tabs: AdminTab[] = ["Resumo", "Usuários", "Vagas", "Moedas", "Alertas"];
 
 export function AdminPage() {
-  const { state, resolveTrustReport, toggleWorkerBlock, toggleCompanyBlock } = useAppStore();
+  const {
+    state,
+    resolveTrustReport,
+    toggleWorkerBlock,
+    toggleCompanyBlock,
+    removeWorkerFromState,
+    removeCompanyFromState
+  } = useAppStore();
   const [tab, setTab] = useState<AdminTab>("Resumo");
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<{ type: "worker" | "company"; id: string } | null>(null);
+  const [deleteFeedback, setDeleteFeedback] = useState("");
+
+  async function handleDeleteAccount(kind: "worker" | "company", id: string, name: string) {
+    if (adminAccountsEnabled) {
+      await adminDeleteAccount(id);
+    }
+    if (kind === "worker") {
+      removeWorkerFromState(id);
+    } else {
+      removeCompanyFromState(id);
+    }
+    setDetail(null);
+    setDeleteFeedback(`Conta de ${name} excluída.`);
+  }
   const normalizedSearch = normalize(search);
   const blockedWorkerIds = state.adminModeration.blockedWorkerIds;
   const blockedCompanyIds = state.adminModeration.blockedCompanyIds;
@@ -91,6 +114,10 @@ export function AdminPage() {
         title="Painel administrativo"
         description="Acompanhe usuários, empresas, vagas, moedas e sinais de risco em um só lugar."
       />
+
+      {deleteFeedback && (
+        <div className="rounded-lg bg-aqua-50 p-3 text-sm font-bold text-aqua-800">{deleteFeedback}</div>
+      )}
 
       <section className="smart-dashboard-hero">
         <div>
@@ -376,6 +403,7 @@ export function AdminPage() {
               companies={state.companies}
               reports={state.trustReports}
               onToggleBlock={() => toggleWorkerBlock(worker.id)}
+              onDelete={() => handleDeleteAccount("worker", worker.id, worker.name)}
               onClose={() => setDetail(null)}
             />
           );
@@ -393,6 +421,7 @@ export function AdminPage() {
               companyReviews={state.companyReviews}
               reports={state.trustReports}
               onToggleBlock={() => toggleCompanyBlock(company.id)}
+              onDelete={() => handleDeleteAccount("company", company.id, company.establishmentName)}
               onClose={() => setDetail(null)}
             />
           );
@@ -695,6 +724,7 @@ function WorkerDetailModal({
   companies,
   reports,
   onToggleBlock,
+  onDelete,
   onClose
 }: {
   worker: WorkerProfile;
@@ -704,6 +734,7 @@ function WorkerDetailModal({
   companies: CompanyProfile[];
   reports: TrustReport[];
   onToggleBlock: () => void;
+  onDelete: () => Promise<void>;
   onClose: () => void;
 }) {
   const reliability = calculateReliability(worker);
@@ -836,6 +867,8 @@ function WorkerDetailModal({
         <button type="button" onClick={onToggleBlock} className={blocked ? "secondary" : "danger"}>
           <Ban size={16} /> {blocked ? "Desbloquear profissional" : "Bloquear profissional"}
         </button>
+
+        <DangerDeleteAccount kind="profissional" name={worker.name} onDelete={onDelete} />
       </div>
     </Modal>
   );
@@ -848,6 +881,7 @@ function CompanyDetailModal({
   companyReviews,
   reports,
   onToggleBlock,
+  onDelete,
   onClose
 }: {
   company: CompanyProfile;
@@ -856,6 +890,7 @@ function CompanyDetailModal({
   companyReviews: CompanyReview[];
   reports: TrustReport[];
   onToggleBlock: () => void;
+  onDelete: () => Promise<void>;
   onClose: () => void;
 }) {
   const companyJobs = jobs.filter((job) => job.companyId === company.id);
@@ -942,8 +977,87 @@ function CompanyDetailModal({
         <button type="button" onClick={onToggleBlock} className={blocked ? "secondary" : "danger"}>
           <Ban size={16} /> {blocked ? "Desbloquear empresa" : "Bloquear empresa"}
         </button>
+
+        <DangerDeleteAccount kind="empresa" name={company.establishmentName} onDelete={onDelete} />
       </div>
     </Modal>
+  );
+}
+
+function DangerDeleteAccount({
+  kind,
+  name,
+  onDelete
+}: {
+  kind: "profissional" | "empresa";
+  name: string;
+  onDelete: () => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const ready = confirmText.trim().toUpperCase() === "EXCLUIR";
+
+  async function run() {
+    if (!ready || pending) return;
+    setPending(true);
+    setError("");
+    try {
+      await onDelete();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível excluir a conta.");
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="mt-2 rounded-lg border border-red-200 bg-red-50/60 p-3">
+      <strong className="flex items-center gap-2 text-sm text-alert">
+        <Trash2 size={15} /> Zona de perigo
+      </strong>
+      <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+        Excluir apaga a conta {kind === "empresa" ? "da empresa" : "do profissional"}, o perfil, vagas,
+        candidaturas, avaliações e histórico. Não dá para desfazer.
+      </p>
+
+      {!open ? (
+        <button type="button" className="danger mt-2" onClick={() => setOpen(true)}>
+          <Trash2 size={16} /> Excluir conta
+        </button>
+      ) : (
+        <div className="mt-2 grid gap-2">
+          <label className="text-xs font-black uppercase text-slate-500">
+            Digite EXCLUIR para confirmar a remoção de {name}
+            <input
+              className="input mt-1"
+              value={confirmText}
+              onChange={(event) => setConfirmText(event.target.value)}
+              placeholder="EXCLUIR"
+              autoFocus
+            />
+          </label>
+          {error && <div className="rounded-lg bg-red-50 p-2 text-xs font-bold text-alert">{error}</div>}
+          <div className="flex gap-2">
+            <button type="button" className="danger" disabled={!ready || pending} onClick={run}>
+              <Trash2 size={16} /> {pending ? "Excluindo..." : "Excluir definitivamente"}
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              disabled={pending}
+              onClick={() => {
+                setOpen(false);
+                setConfirmText("");
+                setError("");
+              }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

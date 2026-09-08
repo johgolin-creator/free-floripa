@@ -127,6 +127,8 @@ interface AppContextValue {
   addCompanyReview: (companyId: string, review: Omit<CompanyReview, "id" | "companyId" | "createdAt">) => { ok: boolean; message: string };
   toggleWorkerBlock: (workerId: string) => void;
   toggleCompanyBlock: (companyId: string) => void;
+  removeWorkerFromState: (workerId: string) => void;
+  removeCompanyFromState: (companyId: string) => void;
   submitTrustReport: (input: { targetType: TrustReportTargetType; targetId: string; targetName: string; reason: string }) => { ok: boolean; message: string };
   resolveTrustReport: (reportId: string) => void;
   addCompanyLeads: (leads: CompanyLead[]) => { added: number; updated: number };
@@ -2064,6 +2066,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setSyncStatus("erro");
           });
         }
+      },
+      // Tira o trabalhador da lista local depois que a administração exclui a
+      // conta no servidor (Edge Function admin-delete-account). O servidor é
+      // quem apaga de verdade; aqui só refletimos na hora, sem esperar o poll.
+      removeWorkerFromState(workerId) {
+        commit((current) => ({
+          ...current,
+          workers: current.workers.filter((worker) => worker.id !== workerId),
+          applications: current.applications.filter((application) => application.workerId !== workerId),
+          favoriteWorkerIds: current.favoriteWorkerIds.filter((id) => id !== workerId),
+          trustReports: current.trustReports.filter(
+            (report) => !(report.targetType === "worker" && report.targetId === workerId)
+          ),
+          adminModeration: {
+            ...current.adminModeration,
+            blockedWorkerIds: current.adminModeration.blockedWorkerIds.filter((id) => id !== workerId)
+          }
+        }));
+      },
+      removeCompanyFromState(companyId) {
+        commit((current) => {
+          const companyJobIds = new Set(
+            current.jobs.filter((job) => job.companyId === companyId).map((job) => job.id)
+          );
+          return {
+            ...current,
+            companies: current.companies.filter((company) => company.id !== companyId),
+            jobs: current.jobs.filter((job) => job.companyId !== companyId),
+            applications: current.applications.filter((application) => !companyJobIds.has(application.jobId)),
+            companyReviews: current.companyReviews.filter((review) => review.companyId !== companyId),
+            trustReports: current.trustReports.filter(
+              (report) =>
+                !(report.targetType === "company" && report.targetId === companyId) &&
+                !(report.targetType === "job" && companyJobIds.has(report.targetId))
+            ),
+            adminModeration: {
+              ...current.adminModeration,
+              blockedCompanyIds: current.adminModeration.blockedCompanyIds.filter((id) => id !== companyId)
+            }
+          };
+        });
       },
       addCompanyLeads(leads) {
         let added = 0;
