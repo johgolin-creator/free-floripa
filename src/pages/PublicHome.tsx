@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ClipboardCheck,
   Coins,
+  Download,
   Flame,
   Heart,
   LogIn,
@@ -45,6 +46,13 @@ export function PublicHome() {
             >
               <Smartphone size={17} /> Abrir app
             </Link>
+            <a
+              href="/pont.apk"
+              download
+              className="hidden min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-brand-charcoal px-4 text-sm font-black text-white shadow-sm transition hover:bg-white/5 sm:inline-flex"
+            >
+              <Download size={17} /> Baixar app
+            </a>
             <Link
               to="/cadastro-trabalhador"
               onClick={() => setRole("trabalhador")}
@@ -133,6 +141,32 @@ export function PublicHome() {
               label="Cadastrar empresa"
               onClick={() => setRole("empresa")}
             />
+          </div>
+        </section>
+
+        <section className="border-b border-white/10 bg-brand-dark">
+          <div className="mx-auto flex max-w-7xl flex-col items-start gap-3 px-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <strong className="block text-lg font-black text-white">Leve o PONT no celular</strong>
+              <p className="mt-1 text-sm font-semibold text-slate-300">
+                App Android para instalar direto (fora da Play Store). Também funciona pelo navegador.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href="/pont.apk"
+                download
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-4 text-sm font-black text-aqua-700 shadow-sm transition hover:bg-aqua-100"
+              >
+                <Download size={17} /> Baixar app (Android)
+              </a>
+              <Link
+                to="/app"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-brand-charcoal px-4 text-sm font-black text-white shadow-sm transition hover:bg-white/5"
+              >
+                <Smartphone size={17} /> Abrir no navegador
+              </Link>
+            </div>
           </div>
         </section>
 
