@@ -25,7 +25,7 @@ import {
   onlyDigits
 } from "../lib/validation";
 
-const DEFAULT_WORKER_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
+const DEFAULT_WORKER_AVATAR = "/avatar-placeholder.svg";
 const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=500&q=80";
 const workerSteps = ["Acesso", "Onde você está", "Suas profissões", "Disponibilidade"] as const;
 const companySteps = ["Acesso e responsável", "Seu estabelecimento", "Imagem e revisão"] as const;

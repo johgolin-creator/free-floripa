@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { resolveAvatarUrl } from "./avatars";
 import { onlyDigits } from "./validation";
 import type {
   Application,
@@ -18,7 +19,6 @@ import type {
   WorkerProfile
 } from "./types";
 
-const DEFAULT_PUBLIC_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
 const VALID_FUNCTIONS = new Set<JobFunction>([
   "Garçom",
   "Bartender",
@@ -235,7 +235,7 @@ function mapPublicWorker(row: WorkerProfileRow, experiences: FunctionExperienceR
     cpf: "",
     phone: "",
     email: "",
-    avatarUrl: row.avatar_url || DEFAULT_PUBLIC_AVATAR,
+    avatarUrl: resolveAvatarUrl(row.avatar_url),
     birthDate: row.birth_date || "2000-01-01",
     city: row.city || "Florianópolis",
     neighborhood: toNeighborhood(row.neighborhood),

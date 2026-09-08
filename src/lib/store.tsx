@@ -37,12 +37,13 @@ import {
   supabaseCoinsEnabled,
   type CoinAccount
 } from "./supabaseCoins";
+import { DEFAULT_AVATAR_PLACEHOLDER, resolveAvatarUrl } from "./avatars";
 import { emailNotificationsEnabled, enqueueEmailNotification, type EmailNotificationInput } from "./emailNotifications";
 import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyLead, CompanyProfile, CompanyReview, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, TrustReportTargetType, UserRole, WorkerProfile } from "./types";
 
 const STORAGE_KEY = "pont:state";
 const REMOTE_SYNC_POLL_MS = 5000;
-const DEFAULT_WORKER_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80";
+const DEFAULT_WORKER_AVATAR = DEFAULT_AVATAR_PLACEHOLDER;
 const DEFAULT_COMPANY_LOGO = "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=500&q=80";
 const DEMO_WORKER_IDS = new Set(["worker-1", "worker-2", "worker-3", "worker-4"]);
 const DEMO_COMPANY_IDS = new Set(["company-1", "company-2", "company-3"]);
@@ -278,7 +279,7 @@ function createWorkerForUser(user: User): WorkerProfile {
     cpf: getMetadataString(user, "cpf", ""),
     phone: getMetadataString(user, "phone", ""),
     email: user.email ?? getMetadataString(user, "email", ""),
-    avatarUrl: getMetadataString(user, "avatarUrl", DEFAULT_WORKER_AVATAR),
+    avatarUrl: resolveAvatarUrl(getMetadataString(user, "avatarUrl", DEFAULT_WORKER_AVATAR)),
     birthDate: getMetadataString(user, "birthDate", "2000-01-01"),
     city: getMetadataString(user, "city", "Florianópolis"),
     neighborhood: getMetadataString(user, "neighborhood", "Centro") as Neighborhood,
