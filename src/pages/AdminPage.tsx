@@ -775,10 +775,12 @@ function WorkerDetailModal({
         )}
 
         <div className="grid gap-2 sm:grid-cols-2">
-          <DetailField icon={<Mail size={13} />} label="E-mail" value={worker.email} />
-          <DetailField icon={<Phone size={13} />} label="Telefone" value={worker.phone} />
+          <DetailField icon={<Mail size={13} />} label="E-mail" value={worker.email || "Não informado"} />
+          <DetailField icon={<Phone size={13} />} label="Telefone" value={worker.phone || "Não informado"} />
           <DetailField label="CPF" value={worker.cpf || "Não informado"} />
           <DetailField icon={<CalendarDays size={13} />} label="Nascimento" value={worker.birthDate ? formatDate(worker.birthDate) : "Não informado"} />
+          <DetailField icon={<MapPin size={13} />} label="Cidade / bairro" value={`${worker.city || "?"} - ${worker.neighborhood}`} />
+          <DetailField label="ID da conta" value={<code className="text-xs">{worker.id}</code>} />
         </div>
 
         <DetailSection title="Indicadores">
@@ -791,6 +793,7 @@ function WorkerDetailModal({
             <DetailField label="Cancelamentos" value={String(worker.cancellations)} />
             <DetailField label="Transporte próprio" value={worker.hasTransport ? "Sim" : "Não"} />
             <DetailField label="Distância máx." value={`${worker.maxDistanceKm} km`} />
+            <DetailField label="Perfil verificado" value={worker.verified ? "Sim" : "Não"} />
           </div>
           {badges.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -818,6 +821,7 @@ function WorkerDetailModal({
                   <strong className="mt-1 block text-sm text-white">{getExperienceLabel(experience.level)}</strong>
                   <p className="mt-1 text-xs font-semibold text-slate-500">
                     {experience.months} meses informados{experience.verified ? " - verificado" : ""}
+                    {experience.acceptsAssistant ? " - aceita ajudante" : ""}
                   </p>
                 </div>
               ))}
@@ -927,12 +931,15 @@ function CompanyDetailModal({
         )}
 
         <div className="grid gap-2 sm:grid-cols-2">
-          <DetailField label="Responsável" value={company.responsibleName} />
+          <DetailField label="Responsável" value={company.responsibleName || "Não informado"} />
           <DetailField label="CNPJ" value={company.cnpj || "Não informado"} />
-          <DetailField icon={<Phone size={13} />} label="Telefone" value={company.phone} />
-          <DetailField icon={<Mail size={13} />} label="E-mail" value={company.email} />
+          <DetailField icon={<Phone size={13} />} label="Telefone" value={company.phone || "Não informado"} />
+          <DetailField icon={<Mail size={13} />} label="E-mail" value={company.email || "Não informado"} />
+          <DetailField label="Categoria" value={company.category} />
           <DetailField icon={<MapPin size={13} />} label="Endereço" value={company.address || "Não informado"} />
           <DetailField label="Bairro" value={company.neighborhood} />
+          <DetailField label="Avaliação" value={`${company.rating.toFixed(1)} de 5`} />
+          <DetailField label="ID da conta" value={<code className="text-xs">{company.id}</code>} />
         </div>
 
         <DetailSection title="Sobre a empresa">

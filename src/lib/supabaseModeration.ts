@@ -106,6 +106,33 @@ export async function loadAllApplicationsForModeration(): Promise<Application[]>
   return ((data ?? []) as ApplicationRow[]).map(mapApplication);
 }
 
+interface WorkerContactRow {
+  id: string;
+  cpf: string | null;
+  phone: string | null;
+  email: string | null;
+}
+
+/** Contato completo dos trabalhadores (CPF, telefone, e-mail), só para
+ *  admin/moderador. Vem da função security-definer admin_list_worker_contacts
+ *  (supabase/admin_worker_directory.sql); indexado por worker_profiles.id. */
+export async function loadWorkerContactsForModeration(): Promise<Map<string, { cpf: string; phone: string; email: string }>> {
+  const map = new Map<string, { cpf: string; phone: string; email: string }>();
+  if (!supabase) return map;
+
+  const { data, error } = await supabase.rpc("admin_list_worker_contacts");
+  if (error) throw new Error(error.message);
+
+  for (const row of (data ?? []) as WorkerContactRow[]) {
+    map.set(row.id, {
+      cpf: row.cpf ?? "",
+      phone: row.phone ?? "",
+      email: row.email ?? ""
+    });
+  }
+  return map;
+}
+
 export async function loadAllTrustReports(): Promise<TrustReport[]> {
   if (!supabase) return [];
 
@@ -136,8 +163,9 @@ export async function loadModerationOverview(): Promise<ModerationOverview> {
     return { workers: [], companies: [], jobs: [], applications: [], trustReports: [], adminModeration: { blockedWorkerIds: [], blockedCompanyIds: [] } };
   }
 
-  const [workers, companies, jobsPayload, applications, trustReports, adminModeration] = await Promise.all([
+  const [workers, workerContacts, companies, jobsPayload, applications, trustReports, adminModeration] = await Promise.all([
     loadPublicWorkerProfiles(null),
+    loadWorkerContactsForModeration().catch(() => new Map<string, { cpf: string; phone: string; email: string }>()),
     loadAllCompanyProfiles(),
     loadAllJobsForModeration(),
     loadAllApplicationsForModeration(),
@@ -145,10 +173,20 @@ export async function loadModerationOverview(): Promise<ModerationOverview> {
     loadAllModerationBlocks()
   ]);
 
+  // Preenche o contato completo (CPF/telefone/e-mail) que a projeção pública
+  // omite. Sem a função no banco ainda, o catch acima deixa o mapa vazio e a
+  // lista segue sem esses campos.
+  const workersWithContacts = workers.map((worker) => {
+    const contact = workerContacts.get(worker.id);
+    return contact
+      ? { ...worker, cpf: contact.cpf || worker.cpf, phone: contact.phone || worker.phone, email: contact.email || worker.email }
+      : worker;
+  });
+
   const companyIds = new Set(companies.map((company) => company.id));
   const mergedCompanies = [...companies, ...jobsPayload.companies.filter((company) => !companyIds.has(company.id))];
 
-  return { workers, companies: mergedCompanies, jobs: jobsPayload.jobs, applications, trustReports, adminModeration };
+  return { workers: workersWithContacts, companies: mergedCompanies, jobs: jobsPayload.jobs, applications, trustReports, adminModeration };
 }
 
 export async function setModerationBlock(targetType: "worker" | "company", targetId: string, blocked: boolean, blockedBy?: string) {
