@@ -34,7 +34,7 @@ import { calculateReliability, getExperienceLabel, getFunctionExperience, getJob
 import { getTrustBadges } from "../lib/trust";
 import { useAppStore } from "../lib/store";
 import { adminActivatePlus, adminAdjustCoins, adminCoinsEnabled } from "../lib/supabaseAdminCoins";
-import { adminAccountsEnabled, adminDeleteAccount } from "../lib/adminAccounts";
+import { adminAccountsEnabled, adminDeleteAccount, adminDeleteJob } from "../lib/adminAccounts";
 import {
   adminSetCompanySalesRep,
   deleteSalesRep,
@@ -58,6 +58,7 @@ export function AdminPage() {
     toggleCompanyBlock,
     removeWorkerFromState,
     removeCompanyFromState,
+    removeJobFromState,
     applyCompanySoldBy
   } = useAppStore();
   const [tab, setTab] = useState<AdminTab>("Resumo");
@@ -108,6 +109,14 @@ export function AdminPage() {
     }
     setDetail(null);
     setDeleteFeedback(`Conta de ${name} excluída.`);
+  }
+
+  async function handleDeleteJob(jobId: string, title: string) {
+    if (adminAccountsEnabled) {
+      await adminDeleteJob(jobId);
+    }
+    removeJobFromState(jobId);
+    setDeleteFeedback(`Vaga "${title}" excluída.`);
   }
   const normalizedSearch = normalize(search);
   const blockedWorkerIds = state.adminModeration.blockedWorkerIds;
@@ -326,7 +335,10 @@ export function AdminPage() {
                       {company?.establishmentName ?? "Empresa"} - {job.neighborhood} - {formatCurrency(job.dailyValue)}
                     </p>
                   </div>
-                  <strong className="worker-next-step">{openSlots} vaga(s) em aberto</strong>
+                  <div className="grid gap-2 sm:min-w-40">
+                    <strong className="worker-next-step">{openSlots} vaga(s) em aberto</strong>
+                    <JobDeleteButton title={job.title} onDelete={() => handleDeleteJob(job.id, job.title)} />
+                  </div>
                 </div>
               </article>
             );
@@ -476,6 +488,7 @@ export function AdminPage() {
               reports={state.trustReports}
               onToggleBlock={() => toggleCompanyBlock(company.id)}
               onDelete={() => handleDeleteAccount("company", company.id, company.establishmentName)}
+              onDeleteJob={handleDeleteJob}
               salesReps={salesReps}
               onSetSalesRep={async (code) => {
                 if (salesRepsEnabled) {
@@ -947,6 +960,7 @@ function CompanyDetailModal({
   reports,
   onToggleBlock,
   onDelete,
+  onDeleteJob,
   salesReps,
   onSetSalesRep,
   onClose
@@ -958,6 +972,7 @@ function CompanyDetailModal({
   reports: TrustReport[];
   onToggleBlock: () => void;
   onDelete: () => Promise<void>;
+  onDeleteJob: (jobId: string, title: string) => Promise<void>;
   salesReps: SalesRep[];
   onSetSalesRep: (code: string) => Promise<void>;
   onClose: () => void;
@@ -1019,14 +1034,17 @@ function CompanyDetailModal({
           ) : (
             <div className="grid gap-2">
               {companyJobs.slice(0, 12).map((job) => (
-                <div key={job.id} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 p-3">
+                <div key={job.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 p-3">
                   <div className="min-w-0">
                     <strong className="block truncate text-sm text-white">{job.title}</strong>
                     <p className="truncate text-xs font-semibold text-slate-500">
                       {job.function} - {formatDate(job.date)} - {formatCurrency(job.dailyValue)}
                     </p>
                   </div>
-                  <span className="badge shrink-0">{getOpenSlots(job)} em aberto</span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="badge">{getOpenSlots(job)} em aberto</span>
+                    <JobDeleteButton title={job.title} onDelete={() => onDeleteJob(job.id, job.title)} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -1131,6 +1149,48 @@ function DangerDeleteAccount({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function JobDeleteButton({ title, onDelete }: { title: string; onDelete: () => Promise<void> }) {
+  const [armed, setArmed] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+
+  async function run() {
+    if (pending) return;
+    setPending(true);
+    setError("");
+    try {
+      await onDelete();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível excluir a vaga.");
+      setPending(false);
+      setArmed(false);
+    }
+  }
+
+  return (
+    <div className="grid gap-1">
+      {!armed ? (
+        <button type="button" className="danger" onClick={() => setArmed(true)}>
+          <Trash2 size={15} /> Excluir vaga
+        </button>
+      ) : (
+        <div className="grid gap-1">
+          <span className="text-xs font-bold text-alert">Excluir "{title}" e suas candidaturas?</span>
+          <div className="flex gap-2">
+            <button type="button" className="danger" disabled={pending} onClick={run}>
+              {pending ? "Excluindo..." : "Confirmar"}
+            </button>
+            <button type="button" className="secondary" disabled={pending} onClick={() => setArmed(false)}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+      {error && <span className="text-xs font-bold text-alert">{error}</span>}
     </div>
   );
 }

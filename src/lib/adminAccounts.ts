@@ -43,3 +43,15 @@ export async function adminDeleteAccount(targetUserId: string): Promise<{ warnin
 
   return { warnings: ((data as { warnings?: string[] }).warnings ?? []) };
 }
+
+/**
+ * Exclui uma vaga (e suas candidaturas). Roda na função security-definer
+ * admin_delete_job, restrita a admin/moderador.
+ */
+export async function adminDeleteJob(jobId: string): Promise<void> {
+  if (!supabase) {
+    throw new Error("A exclusão de vagas está disponível apenas no ambiente online.");
+  }
+  const { error } = await supabase.rpc("admin_delete_job", { target_job_id: jobId });
+  if (error) throw new Error(error.message);
+}

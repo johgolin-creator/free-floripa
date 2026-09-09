@@ -129,6 +129,7 @@ interface AppContextValue {
   toggleCompanyBlock: (companyId: string) => void;
   removeWorkerFromState: (workerId: string) => void;
   removeCompanyFromState: (companyId: string) => void;
+  removeJobFromState: (jobId: string) => void;
   applyCompanySoldBy: (companyId: string, value: string) => void;
   submitTrustReport: (input: { targetType: TrustReportTargetType; targetId: string; targetName: string; reason: string }) => { ok: boolean; message: string };
   resolveTrustReport: (reportId: string) => void;
@@ -2108,6 +2109,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
             }
           };
         });
+      },
+      // Tira a vaga da lista local depois que a administração exclui no
+      // servidor (admin_delete_job).
+      removeJobFromState(jobId) {
+        commit((current) => ({
+          ...current,
+          jobs: current.jobs.filter((job) => job.id !== jobId),
+          applications: current.applications.filter((application) => application.jobId !== jobId),
+          trustReports: current.trustReports.filter(
+            (report) => !(report.targetType === "job" && report.targetId === jobId)
+          )
+        }));
       },
       // Reflete na hora, no painel admin, o código de vendedor gravado em
       // company_profiles.sold_by via admin_set_company_sales_rep (salesReps.ts).
