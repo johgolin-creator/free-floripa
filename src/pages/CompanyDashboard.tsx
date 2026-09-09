@@ -105,6 +105,13 @@ export function CompanyDashboard() {
   });
   const confirmed = companyApplications.filter((application) => application.status === "Aprovada").length;
   const absences = companyApplications.filter((application) => application.status === "Falta registrada").length;
+  // "Profissionais disponíveis": banco de profissionais com uma margem para
+  // cima e um "+", como vitrine. Não é uma contagem exata.
+  const AVAILABLE_WORKERS_MARGIN = 6;
+  const availableWorkers = state.workers.filter(
+    (worker) => !state.adminModeration.blockedWorkerIds.includes(worker.id)
+  ).length;
+  const shownAvailableWorkers = availableWorkers + AVAILABLE_WORKERS_MARGIN;
   const today = new Date().toISOString().slice(0, 10);
   const pendingApplications = companyApplications.filter((application) => application.status === "Enviada" || application.status === "Em análise");
   const todayJobs = companyJobs
@@ -145,7 +152,8 @@ export function CompanyDashboard() {
         }
       />
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <StatTile icon={<UsersRound />} label="Profissionais disponíveis" value={`${shownAvailableWorkers}+`} />
         <StatTile variant="primary" icon={<BriefcaseBusiness />} label="Vagas abertas" value={openJobs.length} />
         <StatTile icon={<CheckCircle2 />} label="Profissionais confirmados" value={confirmed} />
         <StatTile icon={<ClipboardList />} label="Candidaturas recebidas" value={companyApplications.length} />
