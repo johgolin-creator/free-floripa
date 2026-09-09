@@ -29,6 +29,7 @@ import { SectionHeader } from "../components/SectionHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { Modal } from "../components/Modal";
+import { AvatarButton } from "../components/AvatarButton";
 import { formatCurrency, formatDate } from "../lib/format";
 import { calculateReliability, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots } from "../lib/rules";
 import { getTrustBadges } from "../lib/trust";
@@ -280,6 +281,7 @@ export function AdminPage() {
                 <AdminRow
                   key={worker.id}
                   icon={<UserRound size={18} />}
+                  avatarUrl={worker.avatarUrl}
                   title={worker.name}
                   subtitle={`${worker.email} - ${worker.functions.join(", ") || "Sem função"}`}
                   meta={`${worker.rating.toFixed(1)} nota - ${worker.completedJobs} trabalhos - ${worker.attendanceRate}% presença`}
@@ -300,6 +302,8 @@ export function AdminPage() {
                 <AdminRow
                   key={company.id}
                   icon={<Building2 size={18} />}
+                  avatarUrl={company.logoUrl}
+                  avatarFit="contain"
                   title={company.establishmentName}
                   subtitle={`${company.responsibleName} - ${company.email}`}
                   meta={`${jobs} vaga(s) - ${company.category} - ${company.neighborhood}${company.soldBy ? ` - vendedor: ${describeSalesRep(company.soldBy)}` : ""}`}
@@ -715,6 +719,8 @@ function AdminList({ title, count, children }: { title: string; count: number; c
 
 function AdminRow({
   icon,
+  avatarUrl,
+  avatarFit = "cover",
   title,
   subtitle,
   meta,
@@ -724,6 +730,8 @@ function AdminRow({
   onOpen
 }: {
   icon: ReactNode;
+  avatarUrl?: string;
+  avatarFit?: "cover" | "contain";
   title: string;
   subtitle: string;
   meta: string;
@@ -741,9 +749,17 @@ function AdminRow({
           disabled={!onOpen}
           className="group flex min-w-0 flex-1 gap-3 text-left disabled:cursor-default"
         >
-          <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-lg ${blocked ? "bg-red-100 text-alert" : "bg-aqua-50 text-aqua-700"}`}>
-            {icon}
-          </span>
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt=""
+              className={`h-16 w-16 shrink-0 rounded-lg border-2 ${blocked ? "border-red-200" : "border-brand-dark"} ${avatarFit === "contain" ? "bg-white object-contain" : "object-cover"}`}
+            />
+          ) : (
+            <span className={`grid h-16 w-16 shrink-0 place-items-center rounded-lg ${blocked ? "bg-red-100 text-alert" : "bg-aqua-50 text-aqua-700"}`}>
+              {icon}
+            </span>
+          )}
           <div className="min-w-0">
             <div className="flex flex-wrap gap-2">
               <span className={blocked ? "badge border-red-100 bg-red-50 text-alert" : "badge"}>{blocked ? "Bloqueado" : "Ativo"}</span>
@@ -828,7 +844,11 @@ function WorkerDetailModal({
     <Modal title={`Perfil de ${worker.name}`} onClose={onClose}>
       <div className="grid max-h-[72vh] gap-4 overflow-auto pr-1">
         <div className="flex items-start gap-3">
-          <img src={worker.avatarUrl} alt="" className="h-16 w-16 shrink-0 rounded-lg border-2 border-brand-dark object-cover" />
+          <AvatarButton
+            src={worker.avatarUrl}
+            name={worker.name}
+            className="h-28 w-28 rounded-lg border-2 border-brand-dark object-cover"
+          />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-black text-white">{worker.name}</h2>
@@ -991,7 +1011,11 @@ function CompanyDetailModal({
     <Modal title={`Perfil de ${company.establishmentName}`} onClose={onClose}>
       <div className="grid max-h-[72vh] gap-4 overflow-auto pr-1">
         <div className="flex items-start gap-3">
-          <img src={company.logoUrl} alt="" className="h-16 w-16 shrink-0 rounded-lg border-2 border-brand-dark bg-white object-contain" />
+          <AvatarButton
+            src={company.logoUrl}
+            name={company.establishmentName}
+            className="h-28 w-28 rounded-lg border-2 border-brand-dark bg-white object-contain"
+          />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-black text-white">{company.establishmentName}</h2>
