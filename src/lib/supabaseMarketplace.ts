@@ -499,6 +499,10 @@ export async function publishCompanyProfile(user: User, company: CompanyProfile)
       logo_url: company.logoUrl,
       cover_url: company.coverUrl || null,
       rating: company.rating,
+      // O trigger enforce_company_sold_by valida (só código de vendedor
+      // ativo) e congela depois de definido, então mandar em todo save é
+      // seguro.
+      sold_by: company.soldBy ? company.soldBy.toUpperCase() : null,
       updated_at: now
     },
     { onConflict: "user_id" }

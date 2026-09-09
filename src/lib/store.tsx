@@ -341,7 +341,10 @@ function createCompanyForUser(user: User): CompanyProfile {
     neighborhood: getMetadataString(user, "neighborhood", "Centro") as Neighborhood,
     description: getMetadataString(user, "description", "Empresa cadastrada no PONT."),
     logoUrl: getMetadataString(user, "logoUrl", DEFAULT_COMPANY_LOGO),
-    rating: 0
+    rating: 0,
+    // Código do vendedor do link ?vendedor= (guardado no signup). O banco
+    // valida/congela isso em company_profiles.sold_by.
+    soldBy: getMetadataString(user, "salesRepCode", "")
   };
 }
 

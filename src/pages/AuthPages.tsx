@@ -9,6 +9,7 @@ import { track } from "../lib/analytics";
 import { useAuth } from "../lib/auth";
 import { useAppStore } from "../lib/store";
 import { isPhoneTaken } from "../lib/signupChecks";
+import { getStashedSalesRepCode } from "../lib/salesReps";
 import type { JobFunction, UserRole } from "../lib/types";
 import {
   formatBrPhone,
@@ -683,7 +684,8 @@ export function CompanySignupPage() {
                 neighborhood: String(form.get("neighborhood") || "").trim(),
                 address: String(form.get("address") || "").trim(),
                 description: String(form.get("description") || "").trim(),
-                logoUrl: logoFile ? DEFAULT_COMPANY_LOGO : logoUrl
+                logoUrl: logoFile ? DEFAULT_COMPANY_LOGO : logoUrl,
+                salesRepCode: getStashedSalesRepCode()
               }
             });
             setRole("empresa");

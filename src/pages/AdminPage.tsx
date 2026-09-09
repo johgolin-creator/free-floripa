@@ -1368,8 +1368,9 @@ function SalesRepsPanel({
         <h3 className="font-black text-white">Vendedores</h3>
       </div>
       <p className="mb-4 text-sm font-semibold leading-6 text-slate-600">
-        Cada vendedor tem um código e um link. Empresa que se cadastra pelo link do vendedor já fica
-        atribuída a ele automaticamente. Você também pode atribuir na mão no perfil da empresa.
+        Toda conta com <strong>pontapp no e-mail</strong> vira vendedor automaticamente e aparece
+        aqui — o código sai do e-mail. Empresa que se cadastra pelo link do vendedor já fica atribuída
+        a ele. Também dá pra atribuir na mão no perfil da empresa, ou adicionar um vendedor avulso abaixo.
       </p>
 
       {!enabled && (
