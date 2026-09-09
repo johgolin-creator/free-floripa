@@ -40,7 +40,7 @@ const LegalPage = lazy(() => import("./pages/LegalPage").then(({ LegalPage }) =>
 const PhoneVerifyPage = lazy(() => import("./pages/PhoneVerifyPage").then(({ PhoneVerifyPage }) => ({ default: PhoneVerifyPage })));
 
 export default function App() {
-  const { state, setRole, currentCompany } = useAppStore();
+  const { state, setRole } = useAppStore();
   const { user, role } = useAuth();
 
   useEffect(() => {
@@ -56,25 +56,48 @@ export default function App() {
   }, []);
 
   // Quando a empresa está logada, amarra a conta ao vendedor do código
-  // guardado. É write-once no banco; aqui limitamos as tentativas caso a
-  // linha da empresa ainda não exista logo após o cadastro.
-  const salesRepClaimTries = useRef(0);
+  // guardado. É write-once no banco. Logo após o cadastro a linha da empresa
+  // ainda não existe (é criada por publishCompanyProfile com debounce), então
+  // insistimos com espaçamento crescente até gravar (ou até o código ser
+  // inválido). Um novo carregamento da página recomeça as tentativas se o
+  // código ainda estiver guardado.
+  const salesRepClaimDone = useRef(false);
   useEffect(() => {
+    if (salesRepClaimDone.current) return;
     if (role !== "empresa" || !user) return;
     const code = getStashedSalesRepCode();
-    if (!code) return;
-    if (currentCompany?.soldBy) {
-      clearStashedSalesRepCode();
+    if (!code) {
+      salesRepClaimDone.current = true;
       return;
     }
-    if (salesRepClaimTries.current >= 5) return;
-    salesRepClaimTries.current += 1;
-    claimCompanySalesRep(code)
-      .then((result) => {
-        if (result.applied || !result.ok) clearStashedSalesRepCode();
-      })
-      .catch(() => {});
-  }, [role, user, currentCompany?.id, currentCompany?.soldBy]);
+
+    let cancelled = false;
+    let attempt = 0;
+
+    const tryClaim = async () => {
+      if (cancelled) return;
+      attempt += 1;
+      try {
+        const result = await claimCompanySalesRep(code);
+        if (cancelled) return;
+        if (!result.ok || result.applied) {
+          clearStashedSalesRepCode();
+          salesRepClaimDone.current = true;
+          return;
+        }
+      } catch {
+        // rede/instabilidade: tenta de novo
+      }
+      if (!cancelled && attempt < 8) {
+        window.setTimeout(tryClaim, attempt * 3000); // 3s, 6s, 9s, ... ~1min no total
+      }
+    };
+
+    void tryClaim();
+    return () => {
+      cancelled = true;
+    };
+  }, [role, user]);
 
   // Admins e moderadores entram direto na área normal (Início / Painel), como
   // qualquer usuário. A área administrativa continua acessível pela aba "Admin"
