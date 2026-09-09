@@ -39,6 +39,31 @@ const AdminLeadsPage = lazy(() => import("./pages/AdminLeadsPage").then(({ Admin
 const LegalPage = lazy(() => import("./pages/LegalPage").then(({ LegalPage }) => ({ default: LegalPage })));
 const PhoneVerifyPage = lazy(() => import("./pages/PhoneVerifyPage").then(({ PhoneVerifyPage }) => ({ default: PhoneVerifyPage })));
 
+// Depois que o app carrega e fica ocioso, baixamos em segundo plano os
+// pacotes das telas que a pessoa provavelmente vai abrir em seguida, para a
+// troca de página ser instantânea. Vite reaproveita esses import() (é o
+// mesmo chunk do lazy() acima).
+const prefetchWorkerPages = [
+  () => import("./pages/WorkerDashboard"),
+  () => import("./pages/JobsPage"),
+  () => import("./pages/JobDetailsPage"),
+  () => import("./pages/ApplicationsPage"),
+  () => import("./pages/MyJobsPage"),
+  () => import("./pages/WorkerProfilePage"),
+  () => import("./pages/NotificationsPage"),
+  () => import("./pages/MessagesPage")
+];
+const prefetchCompanyPages = [
+  () => import("./pages/CompanyDashboard"),
+  () => import("./pages/CompanyJobsPage"),
+  () => import("./pages/CandidatesPage"),
+  () => import("./pages/CompanySchedulePage"),
+  () => import("./pages/CompanyEventsPage"),
+  () => import("./pages/CompanyProfilePage"),
+  () => import("./pages/NotificationsPage"),
+  () => import("./pages/MessagesPage")
+];
+
 export default function App() {
   const { state, setRole } = useAppStore();
   const { user, role } = useAuth();
@@ -48,6 +73,21 @@ export default function App() {
       setRole(role);
     }
   }, [role, setRole, state.activeRole, user]);
+
+  // Prefetch das telas prováveis, quando o navegador estiver ocioso.
+  useEffect(() => {
+    if (!role) return;
+    const pages = role === "empresa" ? prefetchCompanyPages : prefetchWorkerPages;
+    const run = () => pages.forEach((load) => void load().catch(() => {}));
+
+    const idle = window.requestIdleCallback;
+    if (typeof idle === "function") {
+      const id = idle(run, { timeout: 5000 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+    const id = window.setTimeout(run, 2500);
+    return () => window.clearTimeout(id);
+  }, [role]);
 
   // Guarda o ?vendedor=CODIGO do link de indicação assim que a página abre,
   // para usar quando a empresa concluir o cadastro (mesmo que demore).
