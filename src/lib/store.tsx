@@ -2109,8 +2109,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           };
         });
       },
-      // Reflete na hora, no painel admin, o vendedor gravado via
-      // admin_set_company_sold_by (adminSetCompanySoldBy em adminCompany.ts).
+      // Reflete na hora, no painel admin, o código de vendedor gravado em
+      // company_profiles.sold_by via admin_set_company_sales_rep (salesReps.ts).
       applyCompanySoldBy(companyId, value) {
         commit((current) => ({
           ...current,

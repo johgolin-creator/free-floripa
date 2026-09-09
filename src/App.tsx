@@ -1,9 +1,15 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { AppLayout } from "./components/AppLayout";
 import { useAuth } from "./lib/auth";
 import { useAppStore } from "./lib/store";
+import {
+  claimCompanySalesRep,
+  clearStashedSalesRepCode,
+  getStashedSalesRepCode,
+  stashSalesRepCodeFromUrl
+} from "./lib/salesReps";
 import type { UserRole } from "./lib/types";
 
 const PublicHome = lazy(() => import("./pages/PublicHome").then(({ PublicHome }) => ({ default: PublicHome })));
@@ -34,7 +40,7 @@ const LegalPage = lazy(() => import("./pages/LegalPage").then(({ LegalPage }) =>
 const PhoneVerifyPage = lazy(() => import("./pages/PhoneVerifyPage").then(({ PhoneVerifyPage }) => ({ default: PhoneVerifyPage })));
 
 export default function App() {
-  const { state, setRole } = useAppStore();
+  const { state, setRole, currentCompany } = useAppStore();
   const { user, role } = useAuth();
 
   useEffect(() => {
@@ -42,6 +48,33 @@ export default function App() {
       setRole(role);
     }
   }, [role, setRole, state.activeRole, user]);
+
+  // Guarda o ?vendedor=CODIGO do link de indicação assim que a página abre,
+  // para usar quando a empresa concluir o cadastro (mesmo que demore).
+  useEffect(() => {
+    stashSalesRepCodeFromUrl();
+  }, []);
+
+  // Quando a empresa está logada, amarra a conta ao vendedor do código
+  // guardado. É write-once no banco; aqui limitamos as tentativas caso a
+  // linha da empresa ainda não exista logo após o cadastro.
+  const salesRepClaimTries = useRef(0);
+  useEffect(() => {
+    if (role !== "empresa" || !user) return;
+    const code = getStashedSalesRepCode();
+    if (!code) return;
+    if (currentCompany?.soldBy) {
+      clearStashedSalesRepCode();
+      return;
+    }
+    if (salesRepClaimTries.current >= 5) return;
+    salesRepClaimTries.current += 1;
+    claimCompanySalesRep(code)
+      .then((result) => {
+        if (result.applied || !result.ok) clearStashedSalesRepCode();
+      })
+      .catch(() => {});
+  }, [role, user, currentCompany?.id, currentCompany?.soldBy]);
 
   // Admins e moderadores entram direto na área normal (Início / Painel), como
   // qualquer usuário. A área administrativa continua acessível pela aba "Admin"

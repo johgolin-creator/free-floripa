@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
@@ -14,6 +14,9 @@ import {
   Mail,
   MapPin,
   Phone,
+  Copy,
+  Link2,
+  Plus,
   Search,
   ShieldCheck,
   Star,
@@ -32,12 +35,20 @@ import { getTrustBadges } from "../lib/trust";
 import { useAppStore } from "../lib/store";
 import { adminActivatePlus, adminAdjustCoins, adminCoinsEnabled } from "../lib/supabaseAdminCoins";
 import { adminAccountsEnabled, adminDeleteAccount } from "../lib/adminAccounts";
-import { adminCompanyEnabled, adminSetCompanySoldBy } from "../lib/adminCompany";
+import {
+  adminSetCompanySalesRep,
+  deleteSalesRep,
+  listSalesReps,
+  salesRepSignupLink,
+  salesRepsEnabled,
+  upsertSalesRep,
+  type SalesRep
+} from "../lib/salesReps";
 import type { Application, CompanyProfile, CompanyReview, Job, TrustReport, UserRole, WorkerProfile } from "../lib/types";
 
-type AdminTab = "Resumo" | "Usuários" | "Vagas" | "Moedas" | "Alertas";
+type AdminTab = "Resumo" | "Usuários" | "Vagas" | "Vendedores" | "Moedas" | "Alertas";
 
-const tabs: AdminTab[] = ["Resumo", "Usuários", "Vagas", "Moedas", "Alertas"];
+const tabs: AdminTab[] = ["Resumo", "Usuários", "Vagas", "Vendedores", "Moedas", "Alertas"];
 
 export function AdminPage() {
   const {
@@ -53,6 +64,38 @@ export function AdminPage() {
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<{ type: "worker" | "company"; id: string } | null>(null);
   const [deleteFeedback, setDeleteFeedback] = useState("");
+  const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
+
+  useEffect(() => {
+    if (!salesRepsEnabled) return;
+    let active = true;
+    listSalesReps()
+      .then((reps) => {
+        if (active) setSalesReps(reps);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function reloadSalesReps() {
+    if (!salesRepsEnabled) return;
+    setSalesReps(await listSalesReps());
+  }
+
+  const salesRepByCode = useMemo(() => {
+    const map = new Map<string, SalesRep>();
+    for (const rep of salesReps) map.set(rep.code.toUpperCase(), rep);
+    return map;
+  }, [salesReps]);
+
+  function describeSalesRep(soldBy: string | undefined) {
+    const code = (soldBy ?? "").trim();
+    if (!code) return "";
+    const rep = salesRepByCode.get(code.toUpperCase());
+    return rep ? `${rep.name} (${rep.code})` : code;
+  }
 
   async function handleDeleteAccount(kind: "worker" | "company", id: string, name: string) {
     if (adminAccountsEnabled) {
@@ -250,7 +293,7 @@ export function AdminPage() {
                   icon={<Building2 size={18} />}
                   title={company.establishmentName}
                   subtitle={`${company.responsibleName} - ${company.email}`}
-                  meta={`${jobs} vaga(s) - ${company.category} - ${company.neighborhood}${company.soldBy ? ` - vendedor: ${company.soldBy}` : ""}`}
+                  meta={`${jobs} vaga(s) - ${company.category} - ${company.neighborhood}${company.soldBy ? ` - vendedor: ${describeSalesRep(company.soldBy)}` : ""}`}
                   blocked={blocked}
                   reportCount={reportCount}
                   onToggle={() => toggleCompanyBlock(company.id)}
@@ -289,6 +332,15 @@ export function AdminPage() {
             );
           })}
         </AdminList>
+      )}
+
+      {tab === "Vendedores" && (
+        <SalesRepsPanel
+          reps={salesReps}
+          companies={state.companies}
+          enabled={salesRepsEnabled}
+          onReload={reloadSalesReps}
+        />
       )}
 
       {tab === "Moedas" && (
@@ -424,11 +476,12 @@ export function AdminPage() {
               reports={state.trustReports}
               onToggleBlock={() => toggleCompanyBlock(company.id)}
               onDelete={() => handleDeleteAccount("company", company.id, company.establishmentName)}
-              onSetSoldBy={async (value) => {
-                if (adminCompanyEnabled) {
-                  await adminSetCompanySoldBy(company.id, value);
+              salesReps={salesReps}
+              onSetSalesRep={async (code) => {
+                if (salesRepsEnabled) {
+                  await adminSetCompanySalesRep(company.id, code);
                 }
-                applyCompanySoldBy(company.id, value);
+                applyCompanySoldBy(company.id, code);
               }}
               onClose={() => setDetail(null)}
             />
@@ -894,7 +947,8 @@ function CompanyDetailModal({
   reports,
   onToggleBlock,
   onDelete,
-  onSetSoldBy,
+  salesReps,
+  onSetSalesRep,
   onClose
 }: {
   company: CompanyProfile;
@@ -904,7 +958,8 @@ function CompanyDetailModal({
   reports: TrustReport[];
   onToggleBlock: () => void;
   onDelete: () => Promise<void>;
-  onSetSoldBy: (value: string) => Promise<void>;
+  salesReps: SalesRep[];
+  onSetSalesRep: (code: string) => Promise<void>;
   onClose: () => void;
 }) {
   const companyJobs = jobs.filter((job) => job.companyId === company.id);
@@ -952,7 +1007,7 @@ function CompanyDetailModal({
           <DetailField label="ID da conta" value={<code className="text-xs">{company.id}</code>} />
         </div>
 
-        <CompanySoldByField value={company.soldBy ?? ""} onSave={onSetSoldBy} />
+        <CompanySalesRepField value={company.soldBy ?? ""} reps={salesReps} onSave={onSetSalesRep} />
 
         <DetailSection title="Sobre a empresa">
           <p className="text-sm leading-6 text-slate-600">{company.description || "Sem descrição."}</p>
@@ -1080,12 +1135,25 @@ function DangerDeleteAccount({
   );
 }
 
-function CompanySoldByField({ value, onSave }: { value: string; onSave: (value: string) => Promise<void> }) {
-  const [draft, setDraft] = useState(value);
+function CompanySalesRepField({
+  value,
+  reps,
+  onSave
+}: {
+  value: string;
+  reps: SalesRep[];
+  onSave: (code: string) => Promise<void>;
+}) {
+  const currentCode = value.trim().toUpperCase();
+  const [draft, setDraft] = useState(currentCode);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
-  const dirty = draft.trim() !== value.trim();
+  const dirty = draft !== currentCode;
+  // Se a empresa tem um código que não está na lista (vendedor removido ou
+  // texto antigo), mantém como opção pra não sumir do select.
+  const knownCodes = new Set(reps.map((rep) => rep.code.toUpperCase()));
+  const orphanCode = currentCode && !knownCodes.has(currentCode) ? currentCode : "";
 
   async function save() {
     if (!dirty || pending) return;
@@ -1093,7 +1161,7 @@ function CompanySoldByField({ value, onSave }: { value: string; onSave: (value: 
     setError("");
     setSaved(false);
     try {
-      await onSave(draft.trim());
+      await onSave(draft);
       setSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível salvar.");
@@ -1106,25 +1174,184 @@ function CompanySoldByField({ value, onSave }: { value: string; onSave: (value: 
     <div className="rounded-lg border border-aqua-100 bg-aqua-50/40 p-3">
       <span className="text-xs font-black uppercase text-slate-500">Vendedor responsável pelo pacote</span>
       <div className="mt-1 flex flex-wrap gap-2">
-        <input
+        <select
           className="input flex-1"
           value={draft}
           onChange={(event) => {
             setDraft(event.target.value);
             setSaved(false);
           }}
-          placeholder="Nome ou código do vendedor"
-        />
+        >
+          <option value="">— sem vendedor —</option>
+          {reps.map((rep) => (
+            <option key={rep.id} value={rep.code.toUpperCase()}>
+              {rep.name} ({rep.code}){rep.active ? "" : " — inativo"}
+            </option>
+          ))}
+          {orphanCode && <option value={orphanCode}>{orphanCode} (não cadastrado)</option>}
+        </select>
         <button type="button" className="primary" disabled={!dirty || pending} onClick={save}>
           {pending ? "Salvando..." : "Salvar"}
         </button>
       </div>
       {saved && <p className="mt-1 text-xs font-bold text-aqua-700">Vendedor atualizado.</p>}
       {error && <p className="mt-1 text-xs font-bold text-alert">{error}</p>}
-      {!value && !dirty && (
-        <p className="mt-1 text-xs font-semibold text-slate-500">Sem atribuição. Preencha quem fechou a venda com esta empresa.</p>
+      {reps.length === 0 && (
+        <p className="mt-1 text-xs font-semibold text-slate-500">
+          Cadastre vendedores na aba "Vendedores" para poder atribuir.
+        </p>
       )}
     </div>
+  );
+}
+
+function SalesRepsPanel({
+  reps,
+  companies,
+  enabled,
+  onReload
+}: {
+  reps: SalesRep[];
+  companies: CompanyProfile[];
+  enabled: boolean;
+  onReload: () => Promise<void>;
+}) {
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState("");
+
+  const companyCountByCode = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const company of companies) {
+      const key = (company.soldBy ?? "").trim().toUpperCase();
+      if (key) map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    return map;
+  }, [companies]);
+
+  async function addRep(event: FormEvent) {
+    event.preventDefault();
+    if (pending) return;
+    setPending(true);
+    setError("");
+    try {
+      await upsertSalesRep({ name, code, active: true });
+      setName("");
+      setCode("");
+      await onReload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível salvar o vendedor.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function toggleActive(rep: SalesRep) {
+    try {
+      await upsertSalesRep({ id: rep.id, name: rep.name, code: rep.code, active: !rep.active });
+      await onReload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível atualizar.");
+    }
+  }
+
+  async function removeRep(rep: SalesRep) {
+    try {
+      await deleteSalesRep(rep.id);
+      await onReload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível remover.");
+    }
+  }
+
+  function copyLink(rep: SalesRep) {
+    const link = salesRepSignupLink(rep.code);
+    navigator.clipboard?.writeText(link).then(
+      () => {
+        setCopied(rep.id);
+        window.setTimeout(() => setCopied(""), 2000);
+      },
+      () => setError("Não foi possível copiar. Copie manualmente.")
+    );
+  }
+
+  return (
+    <section className="card p-4">
+      <div className="mb-1 flex items-center gap-2">
+        <UserRound size={18} className="text-aqua-300" />
+        <h3 className="font-black text-white">Vendedores</h3>
+      </div>
+      <p className="mb-4 text-sm font-semibold leading-6 text-slate-600">
+        Cada vendedor tem um código e um link. Empresa que se cadastra pelo link do vendedor já fica
+        atribuída a ele automaticamente. Você também pode atribuir na mão no perfil da empresa.
+      </p>
+
+      {!enabled && (
+        <div className="mb-3 rounded-lg bg-slate-100 p-3 text-sm font-bold text-slate-600">
+          Disponível apenas no ambiente online (Supabase configurado).
+        </div>
+      )}
+      {error && <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
+
+      <form onSubmit={addRep} className="mb-4 grid gap-2 sm:grid-cols-[1fr_180px_auto]">
+        <input
+          className="input"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="Nome do vendedor"
+          required
+        />
+        <input
+          className="input"
+          value={code}
+          onChange={(event) => setCode(event.target.value.toUpperCase())}
+          placeholder="CÓDIGO"
+          required
+        />
+        <button type="submit" className="primary" disabled={!enabled || pending}>
+          <Plus size={16} /> Adicionar
+        </button>
+      </form>
+
+      <div className="grid gap-2">
+        {reps.length === 0 ? (
+          <p className="text-sm text-slate-600">Nenhum vendedor cadastrado ainda.</p>
+        ) : (
+          reps.map((rep) => (
+            <article key={rep.id} className="worker-application-card">
+              <div className="worker-card-head">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <strong className="text-white">{rep.name}</strong>
+                    <span className="badge">{rep.code}</span>
+                    <span className={rep.active ? "badge bg-aqua-50 text-aqua-700" : "badge border-slate-200 bg-slate-50 text-slate-500"}>
+                      {rep.active ? "Ativo" : "Inativo"}
+                    </span>
+                    <span className="badge">{companyCountByCode.get(rep.code.toUpperCase()) ?? 0} empresa(s)</span>
+                  </div>
+                  <p className="mt-1 flex items-center gap-1.5 break-all text-xs font-semibold text-slate-500">
+                    <Link2 size={13} /> {salesRepSignupLink(rep.code)}
+                  </p>
+                </div>
+                <div className="grid gap-2 sm:min-w-40">
+                  <button type="button" className="secondary" onClick={() => copyLink(rep)}>
+                    <Copy size={15} /> {copied === rep.id ? "Copiado!" : "Copiar link"}
+                  </button>
+                  <button type="button" className="secondary" onClick={() => toggleActive(rep)}>
+                    {rep.active ? "Desativar" : "Ativar"}
+                  </button>
+                  <button type="button" className="danger" onClick={() => removeRep(rep)}>
+                    <Trash2 size={15} /> Remover
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+    </section>
   );
 }
 
