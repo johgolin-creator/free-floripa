@@ -85,35 +85,51 @@ set search_path = public
 as $$
 declare
   slug text;
+  the_name text;
+  orphan_id uuid;
 begin
-  if public.is_sales_rep_email(new.email) then
-    slug := public.sales_rep_slug(new.email);
-    if slug is null or slug = '' then
-      return new;
-    end if;
-
-    -- evita colisão de código entre vendedores diferentes
-    if exists (
-      select 1 from public.sales_reps
-      where upper(code) = slug and user_id is distinct from new.id
-    ) then
-      slug := slug || substr(replace(new.id::text, '-', ''), 1, 4);
-    end if;
-
-    -- Só define o código na criação. Se o suporte renomear depois
-    -- (admin_upsert_sales_rep), o código customizado é preservado.
-    insert into public.sales_reps (user_id, name, code, active)
-    values (new.id, coalesce(nullif(trim(new.full_name), ''), new.email), slug, true)
-    on conflict (user_id) do update
-      set name = coalesce(nullif(trim(excluded.name), ''), public.sales_reps.name),
-          active = true,
-          updated_at = now();
-  else
+  if not public.is_sales_rep_email(new.email) then
     -- deixou de ter e-mail de vendedor: desativa (não apaga, para não
     -- perder atribuições antigas).
-    update public.sales_reps set active = false, updated_at = now()
-    where user_id = new.id;
+    update public.sales_reps set active = false, updated_at = now() where user_id = new.id;
+    return new;
   end if;
+
+  slug := public.sales_rep_slug(new.email);
+  if slug is null or slug = '' then
+    return new;
+  end if;
+  the_name := coalesce(nullif(trim(new.full_name), ''), new.email);
+
+  -- já tem linha desse usuário? só atualiza nome/ativo.
+  if exists (select 1 from public.sales_reps where user_id = new.id) then
+    update public.sales_reps
+    set name = coalesce(nullif(trim(the_name), ''), name), active = true, updated_at = now()
+    where user_id = new.id;
+    return new;
+  end if;
+
+  -- reaproveita um vendedor "avulso" (sem user_id) com mesmo código ou nome,
+  -- em vez de criar um duplicado.
+  select id into orphan_id from public.sales_reps
+  where user_id is null
+    and (upper(code) = slug or lower(trim(name)) = lower(trim(the_name)))
+  limit 1;
+
+  if orphan_id is not null then
+    update public.sales_reps
+    set user_id = new.id, name = the_name, active = true, updated_at = now()
+    where id = orphan_id;
+    return new;
+  end if;
+
+  -- evita colisão de código entre vendedores diferentes
+  if exists (select 1 from public.sales_reps where upper(code) = slug) then
+    slug := slug || substr(replace(new.id::text, '-', ''), 1, 4);
+  end if;
+
+  insert into public.sales_reps (user_id, name, code, active)
+  values (new.id, the_name, slug, true);
   return new;
 end;
 $$;

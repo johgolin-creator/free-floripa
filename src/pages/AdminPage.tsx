@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
@@ -16,7 +16,6 @@ import {
   Phone,
   Copy,
   Link2,
-  Plus,
   Search,
   ShieldCheck,
   Star,
@@ -1300,9 +1299,6 @@ function SalesRepsPanel({
   enabled: boolean;
   onReload: () => Promise<void>;
 }) {
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
-  const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
 
@@ -1314,23 +1310,6 @@ function SalesRepsPanel({
     }
     return map;
   }, [companies]);
-
-  async function addRep(event: FormEvent) {
-    event.preventDefault();
-    if (pending) return;
-    setPending(true);
-    setError("");
-    try {
-      await upsertSalesRep({ name, code, active: true });
-      setName("");
-      setCode("");
-      await onReload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível salvar o vendedor.");
-    } finally {
-      setPending(false);
-    }
-  }
 
   async function toggleActive(rep: SalesRep) {
     try {
@@ -1368,9 +1347,10 @@ function SalesRepsPanel({
         <h3 className="font-black text-white">Vendedores</h3>
       </div>
       <p className="mb-4 text-sm font-semibold leading-6 text-slate-600">
-        Toda conta com <strong>pontapp no e-mail</strong> vira vendedor automaticamente e aparece
-        aqui — o código sai do e-mail. Empresa que se cadastra pelo link do vendedor já fica atribuída
-        a ele. Também dá pra atribuir na mão no perfil da empresa, ou adicionar um vendedor avulso abaixo.
+        A lista é automática: toda conta com <strong>pontapp no e-mail</strong> vira vendedor e aparece
+        aqui, com o código tirado do e-mail. Para adicionar um vendedor, crie a conta dele no app com um
+        e-mail contendo "pontapp". Empresa que se cadastra pelo link do vendedor já fica atribuída a ele;
+        também dá pra atribuir na mão no perfil da empresa.
       </p>
 
       {!enabled && (
@@ -1379,26 +1359,6 @@ function SalesRepsPanel({
         </div>
       )}
       {error && <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
-
-      <form onSubmit={addRep} className="mb-4 grid gap-2 sm:grid-cols-[1fr_180px_auto]">
-        <input
-          className="input"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Nome do vendedor"
-          required
-        />
-        <input
-          className="input"
-          value={code}
-          onChange={(event) => setCode(event.target.value.toUpperCase())}
-          placeholder="CÓDIGO"
-          required
-        />
-        <button type="submit" className="primary" disabled={!enabled || pending}>
-          <Plus size={16} /> Adicionar
-        </button>
-      </form>
 
       <div className="grid gap-2">
         {reps.length === 0 ? (
