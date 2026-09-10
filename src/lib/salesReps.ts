@@ -93,6 +93,47 @@ export async function updateSalesRep(id: string, input: SalesRepInput): Promise<
   return mapRep(data as SalesRepRow);
 }
 
+export interface SalesRepCompany {
+  id: string;
+  establishmentName: string;
+  responsibleName: string;
+  email: string;
+  phone: string;
+  neighborhood: string;
+  createdAt: string;
+}
+
+interface SalesRepCompanyRow {
+  id: string;
+  establishment_name?: string | null;
+  responsible_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  neighborhood?: string | null;
+  created_at?: string | null;
+}
+
+/** Vendedor: empresas indicadas pelo seu link (company_profiles.sold_by),
+ *  mesmo sem venda registrada. Resiliente: se a função ainda não existe no
+ *  banco, devolve lista vazia e o painel segue com os dados de vendas. */
+export async function listMySalesRepCompanies(): Promise<SalesRepCompany[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("sales_rep_my_companies");
+  if (error) {
+    console.warn("[vendedor] indicações indisponíveis:", error.message);
+    return [];
+  }
+  return ((data ?? []) as SalesRepCompanyRow[]).map((row) => ({
+    id: row.id,
+    establishmentName: row.establishment_name ?? "Empresa",
+    responsibleName: row.responsible_name ?? "",
+    email: row.email ?? "",
+    phone: row.phone ?? "",
+    neighborhood: row.neighborhood ?? "",
+    createdAt: row.created_at ?? ""
+  }));
+}
+
 /** Nome do vendedor de um código (só ativo). Usado no cadastro. */
 export async function lookupSalesRepName(code: string): Promise<string> {
   if (!supabase || !code.trim()) return "";

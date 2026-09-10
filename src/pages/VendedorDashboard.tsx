@@ -5,7 +5,7 @@ import { StatTile } from "../components/StatTile";
 import { EmptyState } from "../components/EmptyState";
 import { useAuth } from "../lib/auth";
 import { formatDate } from "../lib/format";
-import { salesRepSignupLink } from "../lib/salesReps";
+import { listMySalesRepCompanies, salesRepSignupLink, type SalesRepCompany } from "../lib/salesReps";
 import { formatBrl, listMySales, type Sale } from "../lib/sales";
 
 function CopyButton({ text, label }: { text: string; label: string }) {
@@ -29,18 +29,21 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 export function VendedorDashboard() {
   const { salesRep } = useAuth();
   const [sales, setSales] = useState<Sale[]>([]);
+  const [companies, setCompanies] = useState<SalesRepCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
     setLoading(true);
-    listMySales()
-      .then((rows) => {
-        if (active) setSales(rows);
+    Promise.all([listMySales(), listMySalesRepCompanies()])
+      .then(([saleRows, companyRows]) => {
+        if (!active) return;
+        setSales(saleRows);
+        setCompanies(companyRows);
       })
       .catch((err) => {
-        if (active) setError(err instanceof Error ? err.message : "Não foi possível carregar suas vendas.");
+        if (active) setError(err instanceof Error ? err.message : "Não foi possível carregar seus dados.");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -52,13 +55,18 @@ export function VendedorDashboard() {
 
   const stats = useMemo(() => {
     const paid = sales.filter((sale) => sale.paymentStatus === "pago");
-    const clients = new Set(sales.map((sale) => sale.companyId).filter(Boolean));
+    // "Clientes indicados" = empresas que se cadastraram pelo link (sold_by)
+    // somadas às que já têm venda registrada, sem contar duas vezes.
+    const clientIds = new Set<string>([
+      ...companies.map((company) => company.id),
+      ...sales.map((sale) => sale.companyId).filter((id): id is string => Boolean(id))
+    ]);
     return {
-      clients: clients.size,
+      clients: clientIds.size,
       count: sales.length,
       revenueCents: paid.reduce((sum, sale) => sum + sale.amountCents, 0)
     };
-  }, [sales]);
+  }, [sales, companies]);
 
   if (!salesRep) {
     return <EmptyState title="Área do vendedor" text="Sua conta não está vinculada a um vendedor." />;
@@ -94,6 +102,37 @@ export function VendedorDashboard() {
         <StatTile icon={<WalletCards />} label="Vendas realizadas" value={stats.count} />
         <StatTile variant="primary" icon={<WalletCards />} label="Valor total vendido" value={formatBrl(stats.revenueCents)} />
       </div>
+
+      <section className="card p-4">
+        <h3 className="mb-1 font-black text-white">Minhas indicações</h3>
+        <p className="mb-3 text-xs font-semibold text-slate-500">
+          Empresas que se cadastraram pelo seu link. Aparecem aqui assim que entram no app, antes de comprar qualquer pacote.
+        </p>
+        {loading ? (
+          <p className="text-sm font-bold text-slate-600">Carregando…</p>
+        ) : companies.length === 0 ? (
+          <EmptyState
+            title="Nenhuma indicação ainda"
+            text="Quando alguém criar uma conta de empresa pelo seu link, a empresa aparece aqui."
+          />
+        ) : (
+          <div className="grid gap-2">
+            {companies.map((company) => (
+              <div key={company.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 p-3">
+                <div className="min-w-0">
+                  <strong className="block truncate text-sm text-white">{company.establishmentName}</strong>
+                  <p className="truncate text-xs font-semibold text-slate-500">
+                    {[company.neighborhood, company.responsibleName].filter(Boolean).join(" · ") || "Empresa indicada"}
+                  </p>
+                </div>
+                {company.createdAt && (
+                  <span className="shrink-0 text-xs font-bold text-slate-500">{formatDate(company.createdAt)}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="card p-4">
         <h3 className="mb-3 font-black text-white">Minhas vendas</h3>

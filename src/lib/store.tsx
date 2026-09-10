@@ -882,6 +882,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [authLoading, currentWorker, role, user]);
 
   useEffect(() => {
+    // Espelha o efeito de publicação do trabalhador acima, para a empresa.
+    // Sem isto, uma empresa só ganhava linha em company_profiles ao publicar
+    // uma vaga ou editar o perfil - antes disso ela não aparecia no painel
+    // admin nem recebia a atribuição de vendedor (company_profiles.sold_by do
+    // link ?vendedor=). O guard currentCompany.id === user.id garante que só
+    // a própria empresa da conta é publicada (um admin vê a lista inteira em
+    // state.companies e não deve regravar a empresa de outra pessoa).
+    if (
+      authLoading ||
+      role !== "empresa" ||
+      !user ||
+      !currentCompany ||
+      currentCompany.id !== user.id ||
+      !supabaseMarketplaceEnabled
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      publishQueueRef.current = publishQueueRef.current
+        .then(() => publishCompanyProfile(user, currentCompany))
+        .catch(() => {
+          setSyncError("Falha ao publicar o perfil da empresa.");
+          setSyncStatus("erro");
+        });
+    }, 600);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [authLoading, currentCompany, role, user]);
+
+  useEffect(() => {
     if (authLoading || role !== "trabalhador" || !currentWorker || !supabaseMarketplaceEnabled) return;
 
     let active = true;
