@@ -66,7 +66,7 @@ export async function loadAllCompanyProfiles(): Promise<CompanyProfile[]> {
 
   const { data, error } = await supabase
     .from("company_profiles")
-    .select("id,user_id,establishment_name,responsible_name,cnpj,phone,email,category,address,neighborhood,description,logo_url,rating")
+    .select("id,user_id,establishment_name,responsible_name,cnpj,phone,email,category,address,neighborhood,description,logo_url,rating,created_at")
     .order("updated_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -95,7 +95,7 @@ export async function loadAllJobsForModeration(): Promise<{ jobs: Job[]; compani
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status,company_profiles(id,user_id,establishment_name,responsible_name,cnpj,phone,email,category,address,neighborhood,description,logo_url,rating)"
+      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status,company_profiles(id,user_id,establishment_name,responsible_name,cnpj,phone,email,category,address,neighborhood,description,logo_url,rating,created_at)"
     )
     .order("shift_date", { ascending: false })
     .limit(MODERATION_JOBS_LIMIT);

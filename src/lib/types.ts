@@ -90,6 +90,9 @@ export interface CompanyProfile {
   /** Vendedor que trouxe/fechou o pacote com a empresa (nome ou código).
    *  Só a administração vê e edita. Vazio = sem atribuição. */
   soldBy?: string;
+  /** Data de criação do cadastro da empresa (ISO). Só preenchida na visão
+   *  de moderação. */
+  createdAt?: string;
 }
 
 export interface Job {

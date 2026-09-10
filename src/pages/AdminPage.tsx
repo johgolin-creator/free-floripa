@@ -353,8 +353,11 @@ export function AdminPage() {
         <SalesRepsPanel
           reps={salesReps}
           companies={state.companies}
+          jobs={state.jobs}
+          blockedCompanyIds={blockedCompanyIds}
           enabled={salesRepsEnabled}
           onReload={reloadSalesReps}
+          onOpenCompany={(id) => setDetail({ type: "company", id })}
         />
       )}
 
@@ -1291,25 +1294,79 @@ function CompanySalesRepField({
 function SalesRepsPanel({
   reps,
   companies,
+  jobs,
+  blockedCompanyIds,
   enabled,
-  onReload
+  onReload,
+  onOpenCompany
 }: {
   reps: SalesRep[];
   companies: CompanyProfile[];
+  jobs: Job[];
+  blockedCompanyIds: string[];
   enabled: boolean;
   onReload: () => Promise<void>;
+  onOpenCompany: (companyId: string) => void;
 }) {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
+  const [search, setSearch] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
 
-  const companyCountByCode = useMemo(() => {
+  const jobCountByCompany = useMemo(() => {
     const map = new Map<string, number>();
+    for (const job of jobs) map.set(job.companyId, (map.get(job.companyId) ?? 0) + 1);
+    return map;
+  }, [jobs]);
+
+  const companiesByCode = useMemo(() => {
+    const map = new Map<string, CompanyProfile[]>();
     for (const company of companies) {
       const key = (company.soldBy ?? "").trim().toUpperCase();
-      if (key) map.set(key, (map.get(key) ?? 0) + 1);
+      if (!key) continue;
+      const list = map.get(key) ?? [];
+      list.push(company);
+      map.set(key, list);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
     }
     return map;
   }, [companies]);
+
+  const repCodes = useMemo(() => new Set(reps.map((rep) => rep.code.toUpperCase())), [reps]);
+  const unassigned = useMemo(
+    () =>
+      companies
+        .filter((company) => {
+          const code = (company.soldBy ?? "").trim().toUpperCase();
+          return !code || !repCodes.has(code);
+        })
+        .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? "")),
+    [companies, repCodes]
+  );
+
+  const now = Date.now();
+  const last30 = (company: CompanyProfile) =>
+    company.createdAt ? now - new Date(company.createdAt).getTime() <= 30 * 24 * 60 * 60 * 1000 : false;
+
+  const totalAssigned = companies.length - unassigned.length;
+  const activeReps = reps.filter((rep) => rep.active).length;
+  const assignedLast30 = companies.filter(
+    (company) => last30(company) && repCodes.has((company.soldBy ?? "").trim().toUpperCase())
+  ).length;
+
+  const rows = useMemo(() => {
+    const term = normalize(search);
+    return reps
+      .map((rep) => {
+        const repCompanies = companiesByCode.get(rep.code.toUpperCase()) ?? [];
+        const jobsTotal = repCompanies.reduce((sum, company) => sum + (jobCountByCompany.get(company.id) ?? 0), 0);
+        return { rep, repCompanies, jobsTotal };
+      })
+      .filter(({ rep }) => normalize(`${rep.name} ${rep.code}`).includes(term))
+      .sort((a, b) => b.repCompanies.length - a.repCompanies.length || a.rep.name.localeCompare(b.rep.name));
+  }, [reps, companiesByCode, jobCountByCompany, search]);
 
   async function toggleActive(rep: SalesRep) {
     try {
@@ -1330,8 +1387,7 @@ function SalesRepsPanel({
   }
 
   function copyLink(rep: SalesRep) {
-    const link = salesRepSignupLink(rep.code);
-    navigator.clipboard?.writeText(link).then(
+    navigator.clipboard?.writeText(salesRepSignupLink(rep.code)).then(
       () => {
         setCopied(rep.id);
         window.setTimeout(() => setCopied(""), 2000);
@@ -1341,62 +1397,154 @@ function SalesRepsPanel({
   }
 
   return (
-    <section className="card p-4">
-      <div className="mb-1 flex items-center gap-2">
-        <UserRound size={18} className="text-aqua-300" />
-        <h3 className="font-black text-white">Vendedores</h3>
+    <div className="grid gap-4">
+      <SectionHeader
+        eyebrow="Admin"
+        title="Vendedores"
+        description="Quem trouxe cada empresa. A lista é automática: toda conta com pontapp no e-mail vira vendedor, com o código tirado do e-mail."
+      />
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <InfoTile icon={<UserRound />} label="Vendedores ativos" value={String(activeReps)} />
+        <InfoTile icon={<Building2 />} label="Empresas com vendedor" value={String(totalAssigned)} />
+        <InfoTile icon={<CalendarDays />} label="Atribuídas em 30 dias" value={String(assignedLast30)} />
+        <InfoTile icon={<AlertTriangle />} label="Empresas sem vendedor" value={String(unassigned.length)} />
       </div>
-      <p className="mb-4 text-sm font-semibold leading-6 text-slate-600">
-        A lista é automática: toda conta com <strong>pontapp no e-mail</strong> vira vendedor e aparece
-        aqui, com o código tirado do e-mail. Para adicionar um vendedor, crie a conta dele no app com um
-        e-mail contendo "pontapp". Empresa que se cadastra pelo link do vendedor já fica atribuída a ele;
-        também dá pra atribuir na mão no perfil da empresa.
-      </p>
 
       {!enabled && (
-        <div className="mb-3 rounded-lg bg-slate-100 p-3 text-sm font-bold text-slate-600">
+        <div className="rounded-lg bg-slate-100 p-3 text-sm font-bold text-slate-600">
           Disponível apenas no ambiente online (Supabase configurado).
         </div>
       )}
-      {error && <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
+      {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
 
-      <div className="grid gap-2">
-        {reps.length === 0 ? (
-          <p className="text-sm text-slate-600">Nenhum vendedor cadastrado ainda.</p>
-        ) : (
-          reps.map((rep) => (
-            <article key={rep.id} className="worker-application-card">
-              <div className="worker-card-head">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <strong className="text-white">{rep.name}</strong>
-                    <span className="badge">{rep.code}</span>
-                    <span className={rep.active ? "badge bg-aqua-50 text-aqua-700" : "badge border-slate-200 bg-slate-50 text-slate-500"}>
-                      {rep.active ? "Ativo" : "Inativo"}
-                    </span>
-                    <span className="badge">{companyCountByCode.get(rep.code.toUpperCase()) ?? 0} empresa(s)</span>
+      <input
+        className="input"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder="Buscar vendedor por nome ou código"
+      />
+
+      <section className="card p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="font-black text-white">Ranking</h3>
+          <span className="badge">{rows.length}</span>
+        </div>
+        <div className="grid gap-3">
+          {rows.length === 0 ? (
+            <p className="text-sm text-slate-600">Nenhum vendedor.</p>
+          ) : (
+            rows.map(({ rep, repCompanies, jobsTotal }) => {
+              const isOpen = expanded === rep.id;
+              const lastCompany = repCompanies[0];
+              return (
+                <article key={rep.id} className="worker-application-card">
+                  <div className="worker-card-head">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <strong className="text-white">{rep.name}</strong>
+                        <span className="badge">{rep.code}</span>
+                        <span className={rep.active ? "badge bg-aqua-50 text-aqua-700" : "badge border-slate-200 bg-slate-50 text-slate-500"}>
+                          {rep.active ? "Ativo" : "Inativo"}
+                        </span>
+                        <span className="badge">{repCompanies.length} empresa(s)</span>
+                        <span className="badge">{jobsTotal} vaga(s)</span>
+                      </div>
+                      <p className="mt-1 flex items-center gap-1.5 break-all text-xs font-semibold text-slate-500">
+                        <Link2 size={13} /> {salesRepSignupLink(rep.code)}
+                      </p>
+                      {lastCompany && (
+                        <p className="mt-1 text-xs font-semibold text-slate-500">
+                          Última: {lastCompany.establishmentName}
+                          {lastCompany.createdAt ? ` em ${formatDate(lastCompany.createdAt.slice(0, 10))}` : ""}
+                        </p>
+                      )}
+                    </div>
+                    <div className="grid gap-2 sm:min-w-40">
+                      <button type="button" className="secondary" onClick={() => copyLink(rep)}>
+                        <Copy size={15} /> {copied === rep.id ? "Copiado!" : "Copiar link"}
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => setExpanded(isOpen ? null : rep.id)}
+                        disabled={repCompanies.length === 0}
+                      >
+                        {isOpen ? "Ocultar empresas" : "Ver empresas"}
+                      </button>
+                      <button type="button" className="secondary" onClick={() => toggleActive(rep)}>
+                        {rep.active ? "Desativar" : "Ativar"}
+                      </button>
+                      <button type="button" className="danger" onClick={() => removeRep(rep)}>
+                        <Trash2 size={15} /> Remover
+                      </button>
+                    </div>
                   </div>
-                  <p className="mt-1 flex items-center gap-1.5 break-all text-xs font-semibold text-slate-500">
-                    <Link2 size={13} /> {salesRepSignupLink(rep.code)}
-                  </p>
-                </div>
-                <div className="grid gap-2 sm:min-w-40">
-                  <button type="button" className="secondary" onClick={() => copyLink(rep)}>
-                    <Copy size={15} /> {copied === rep.id ? "Copiado!" : "Copiar link"}
-                  </button>
-                  <button type="button" className="secondary" onClick={() => toggleActive(rep)}>
-                    {rep.active ? "Desativar" : "Ativar"}
-                  </button>
-                  <button type="button" className="danger" onClick={() => removeRep(rep)}>
-                    <Trash2 size={15} /> Remover
-                  </button>
-                </div>
+
+                  {isOpen && repCompanies.length > 0 && (
+                    <div className="mt-3 grid gap-2 border-t border-white/10 pt-3">
+                      {repCompanies.map((company) => (
+                        <button
+                          key={company.id}
+                          type="button"
+                          onClick={() => onOpenCompany(company.id)}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 p-3 text-left"
+                        >
+                          <div className="min-w-0">
+                            <strong className="block truncate text-sm text-white">{company.establishmentName}</strong>
+                            <p className="truncate text-xs font-semibold text-slate-500">
+                              {company.category} - {company.neighborhood}
+                              {company.createdAt ? ` - ${formatDate(company.createdAt.slice(0, 10))}` : ""}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span className="badge">{jobCountByCompany.get(company.id) ?? 0} vaga(s)</span>
+                            <span
+                              className={
+                                blockedCompanyIds.includes(company.id)
+                                  ? "badge border-red-100 bg-red-50 text-alert"
+                                  : "badge bg-aqua-50 text-aqua-700"
+                              }
+                            >
+                              {blockedCompanyIds.includes(company.id) ? "Bloqueada" : "Ativa"}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </article>
+              );
+            })
+          )}
+        </div>
+      </section>
+
+      <AdminList title="Empresas sem vendedor" count={unassigned.length}>
+        {unassigned.length === 0 ? (
+          <p className="text-sm text-slate-600">Todas as empresas têm vendedor.</p>
+        ) : (
+          unassigned.map((company) => (
+            <button
+              key={company.id}
+              type="button"
+              onClick={() => onOpenCompany(company.id)}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 p-3 text-left"
+            >
+              <div className="min-w-0">
+                <strong className="block truncate text-sm text-white">{company.establishmentName}</strong>
+                <p className="truncate text-xs font-semibold text-slate-500">
+                  {company.category} - {company.neighborhood}
+                  {company.createdAt ? ` - ${formatDate(company.createdAt.slice(0, 10))}` : ""}
+                  {company.soldBy ? ` - código "${company.soldBy}" não encontrado` : ""}
+                </p>
               </div>
-            </article>
+              <span className="badge shrink-0">{jobCountByCompany.get(company.id) ?? 0} vaga(s)</span>
+            </button>
           ))
         )}
-      </div>
-    </section>
+      </AdminList>
+    </div>
   );
 }
 
