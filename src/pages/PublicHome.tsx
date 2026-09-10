@@ -469,10 +469,10 @@ function IosInstallModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-white/10 bg-brand-charcoal p-6 shadow-lift"
+        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 bg-brand-charcoal shadow-lift"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-3 border-b border-white/10 p-6 pb-4">
           <div className="flex items-center gap-3">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-dark ring-1 ring-white/10">
               <img src="/apple-touch-icon.png" alt="" className="h-full w-full rounded-xl" />
@@ -492,32 +492,36 @@ function IosInstallModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <p className="mt-4 text-sm font-semibold leading-6 text-slate-300">
-          O iPhone não permite baixar apps fora da App Store. O PONT é instalado como app web direto pelo
-          navegador — leva menos de 30 segundos:
-        </p>
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">
+          <p className="text-sm font-semibold leading-6 text-slate-300">
+            O iPhone não permite baixar apps fora da App Store. O PONT é instalado como app web direto pelo
+            navegador — leva menos de 30 segundos:
+          </p>
 
-        <ol className="mt-4 grid gap-3">
-          {steps.map((step, index) => (
-            <li key={index} className="flex gap-3">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-navy-950 font-black text-aqua-300">
-                {index + 1}
-              </span>
-              <span className="flex items-center gap-2 pt-0.5 text-sm font-semibold leading-6 text-slate-300">
-                <span className="shrink-0 text-aqua-300">{step.icon}</span>
-                <span>{step.text}</span>
-              </span>
-            </li>
-          ))}
-        </ol>
+          <ol className="mt-4 grid gap-3">
+            {steps.map((step, index) => (
+              <li key={index} className="flex gap-3">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-navy-950 font-black text-aqua-300">
+                  {index + 1}
+                </span>
+                <span className="flex items-center gap-2 pt-0.5 text-sm font-semibold leading-6 text-slate-300">
+                  <span className="shrink-0 text-aqua-300">{step.icon}</span>
+                  <span>{step.text}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-4 text-sm font-black text-aqua-700 shadow-sm transition hover:bg-aqua-100"
-        >
-          Entendi
-        </button>
+        <div className="border-t border-white/10 p-6 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-4 text-sm font-black text-aqua-700 shadow-sm transition hover:bg-aqua-100"
+          >
+            Entendi
+          </button>
+        </div>
       </div>
     </div>
   );
