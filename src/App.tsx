@@ -36,6 +36,7 @@ const NotificationsPage = lazy(() => import("./pages/NotificationsPage").then(({
 const MessagesPage = lazy(() => import("./pages/MessagesPage").then(({ MessagesPage }) => ({ default: MessagesPage })));
 const AdminPage = lazy(() => import("./pages/AdminPage").then(({ AdminPage }) => ({ default: AdminPage })));
 const AdminLeadsPage = lazy(() => import("./pages/AdminLeadsPage").then(({ AdminLeadsPage }) => ({ default: AdminLeadsPage })));
+const VendedorDashboard = lazy(() => import("./pages/VendedorDashboard").then(({ VendedorDashboard }) => ({ default: VendedorDashboard })));
 const LegalPage = lazy(() => import("./pages/LegalPage").then(({ LegalPage }) => ({ default: LegalPage })));
 const PhoneVerifyPage = lazy(() => import("./pages/PhoneVerifyPage").then(({ PhoneVerifyPage }) => ({ default: PhoneVerifyPage })));
 
@@ -176,6 +177,7 @@ export default function App() {
           <Route path="notificacoes" element={<NotificationsPage />} />
           <Route path="admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
           <Route path="admin/captacao" element={<AdminRoute><AdminLeadsPage /></AdminRoute>} />
+          <Route path="vendedor" element={<SalesRepRoute><VendedorDashboard /></SalesRepRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -237,6 +239,18 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
+  return children;
+}
+
+function SalesRepRoute({ children }: { children: ReactNode }) {
+  const { authEnabled, isSalesRep, isAdmin, isModerator, dbRoleLoading } = useAuth();
+
+  if (authEnabled && !isSalesRep && !isAdmin && !isModerator && dbRoleLoading) {
+    return <PageLoading />;
+  }
+  if (authEnabled && !isSalesRep && !isAdmin && !isModerator) {
+    return <Navigate to="/app" replace />;
+  }
   return children;
 }
 

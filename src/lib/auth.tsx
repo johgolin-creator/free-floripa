@@ -28,6 +28,9 @@ interface AuthContextValue {
   role: UserRole | null;
   isAdmin: boolean;
   isModerator: boolean;
+  /** Vendedor: conta com linha em public.sales_reps. */
+  isSalesRep: boolean;
+  salesRep: { id: string; code: string; name: string } | null;
   dbRoleLoading: boolean;
   email: string;
   phone: string;
@@ -105,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(Boolean(supabase));
   const [dbRole, setDbRole] = useState<string | null>(null);
   const [dbRoleLoading, setDbRoleLoading] = useState(true);
+  const [salesRep, setSalesRep] = useState<{ id: string; code: string; name: string } | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -122,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userId = session?.user?.id;
     if (!supabase || !userId) {
       setDbRole(null);
+      setSalesRep(null);
       setDbRoleLoading(false);
       return;
     }
@@ -129,16 +134,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
     setDbRoleLoading(true);
     const authClient = supabase;
-    authClient
-      .from("users")
-      .select("role")
-      .eq("id", userId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!active) return;
-        setDbRole((data as { role?: string } | null)?.role ?? null);
-        setDbRoleLoading(false);
-      });
+    Promise.all([
+      authClient.from("users").select("role").eq("id", userId).maybeSingle(),
+      authClient.from("sales_reps").select("id,code,name,active").eq("user_id", userId).maybeSingle()
+    ]).then(([roleRes, repRes]) => {
+      if (!active) return;
+      setDbRole((roleRes.data as { role?: string } | null)?.role ?? null);
+      const rep = repRes.data as { id?: string; code?: string; name?: string; active?: boolean } | null;
+      setSalesRep(rep?.id && rep.active ? { id: rep.id, code: rep.code ?? "", name: rep.name ?? "" } : null);
+      setDbRoleLoading(false);
+    });
 
     return () => {
       active = false;
@@ -207,6 +212,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role,
       isAdmin: getIsAdmin(user) || dbRole === "admin",
       isModerator: !supabase || dbRole === "moderador",
+      isSalesRep: Boolean(salesRep),
+      salesRep,
       dbRoleLoading,
       email: user?.email ?? "",
       phone: user?.phone ?? "",
@@ -286,7 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw new Error(getAuthErrorMessage(error.message));
       }
     };
-  }, [loading, session, dbRole, dbRoleLoading, sessionError]);
+  }, [loading, session, dbRole, salesRep, dbRoleLoading, sessionError]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

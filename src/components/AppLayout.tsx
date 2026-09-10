@@ -62,7 +62,7 @@ const companySecondaryLinks = [
 
 export function AppLayout() {
   const { state, syncStatus, currentWorker, currentCompany, updateWorkerProfile, updateCompanyProfile } = useAppStore();
-  const { isAdmin, isModerator } = useAuth();
+  const { isAdmin, isModerator, isSalesRep } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [showMoreNav, setShowMoreNav] = useState(false);
@@ -119,6 +119,7 @@ export function AppLayout() {
   const primaryLinks = state.activeRole === "trabalhador" ? workerPrimaryLinks : companyPrimaryLinks;
   const secondaryLinks = [
     ...(state.activeRole === "trabalhador" ? workerSecondaryLinks : companySecondaryLinks),
+    ...(isSalesRep ? [{ to: "/app/vendedor", label: "Vendedor", mobileLabel: "Vendedor", icon: UsersRound }] : []),
     ...(isAdmin || isModerator ? [{ to: "/app/admin", label: "Admin", mobileLabel: "Admin", icon: ShieldCheck }] : [])
   ];
   const mobilePrimaryLinks = [...primaryLinks, MENSAGENS_LINK];
