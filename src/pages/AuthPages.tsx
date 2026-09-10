@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, BriefcaseBusiness, Building2, CheckCircle2, KeyRound, LogIn, Mail, ShieldCheck, UserRound, UsersRound } from "lucide-react";
 import { BrandLogo } from "../components/BrandLogo";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
@@ -9,7 +9,7 @@ import { track } from "../lib/analytics";
 import { useAuth } from "../lib/auth";
 import { useAppStore } from "../lib/store";
 import { isPhoneTaken } from "../lib/signupChecks";
-import { getStashedSalesRepCode } from "../lib/salesReps";
+import { getStashedSalesRepCode, lookupSalesRepName } from "../lib/salesReps";
 import type { JobFunction, UserRole } from "../lib/types";
 import {
   formatBrPhone,
@@ -595,6 +595,24 @@ export function CompanySignupPage() {
   const [phoneConfirm, setPhoneConfirm] = useState("");
   const [email, setEmail] = useState("");
   const [emailConfirm, setEmailConfirm] = useState("");
+  const [vendorCode, setVendorCode] = useState(getStashedSalesRepCode());
+  const [vendorName, setVendorName] = useState("");
+  const vendorLocked = Boolean(getStashedSalesRepCode()); // veio por link: não deixa trocar
+
+  useEffect(() => {
+    const code = vendorCode.trim();
+    if (!code) {
+      setVendorName("");
+      return;
+    }
+    let active = true;
+    lookupSalesRepName(code).then((name) => {
+      if (active) setVendorName(name);
+    });
+    return () => {
+      active = false;
+    };
+  }, [vendorCode]);
 
   function validateStep(index: number) {
     const data = new FormData(formRef.current ?? undefined);
@@ -685,7 +703,7 @@ export function CompanySignupPage() {
                 address: String(form.get("address") || "").trim(),
                 description: String(form.get("description") || "").trim(),
                 logoUrl: logoFile ? DEFAULT_COMPANY_LOGO : logoUrl,
-                salesRepCode: getStashedSalesRepCode()
+                salesRepCode: vendorCode.trim()
               }
             });
             setRole("empresa");
@@ -727,6 +745,25 @@ export function CompanySignupPage() {
         <WizardSteps steps={companySteps} current={wizard.step} onSelect={handleStepSelect} />
 
         <WizardPanel eyebrow="Etapa 1" title="Acesso e responsável" hint="Para você entrar na conta e a gente saber quem responde pela empresa." hidden={wizard.step !== 0}>
+          <div className="mb-3 rounded-lg border border-aqua-100 bg-aqua-50 px-3 py-2">
+            <label className="label m-0">
+              ID do Vendedor / Código de convite
+              <input
+                className="input"
+                value={vendorCode}
+                onChange={(event) => setVendorCode(event.target.value.toUpperCase())}
+                placeholder="VEN001"
+                readOnly={vendorLocked}
+              />
+            </label>
+            <p className="mt-1 text-xs font-semibold text-slate-600">
+              {vendorName
+                ? `Vendedor responsável: ${vendorName}`
+                : vendorCode.trim()
+                  ? "Código não encontrado ou vendedor inativo."
+                  : "Digite o código recebido do seu vendedor. Se você recebeu um link de convite, esse campo já vem preenchido."}
+            </p>
+          </div>
           <div className="grid gap-3 md:grid-cols-2">
             <label className="label">Nome do estabelecimento<input name="establishmentName" className="input" required /></label>
             <label className="label">Nome do responsável<input name="responsibleName" className="input" required placeholder="Nome e sobrenome" autoComplete="name" /></label>
