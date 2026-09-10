@@ -33,6 +33,31 @@ create table if not exists public.sales_reps (
   updated_at timestamptz not null default now()
 );
 
+alter table public.sales_reps add column if not exists email text;
+alter table public.sales_reps add column if not exists phone text;
+alter table public.sales_reps add column if not exists cpf text;
+alter table public.sales_reps add column if not exists notes text;
+
+-- Códigos sequenciais VEN001, VEN002, ...
+create sequence if not exists public.sales_rep_code_seq;
+
+create or replace function public.next_sales_rep_code()
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  candidate text;
+begin
+  loop
+    candidate := 'VEN' || lpad(nextval('public.sales_rep_code_seq')::text, 3, '0');
+    exit when not exists (select 1 from public.sales_reps where upper(code) = candidate);
+  end loop;
+  return candidate;
+end;
+$$;
+
 alter table public.sales_reps add column if not exists user_id uuid;
 do $$ begin
   alter table public.sales_reps
@@ -56,6 +81,11 @@ alter table public.sales_reps enable row level security;
 drop policy if exists "sales reps support read" on public.sales_reps;
 create policy "sales reps support read" on public.sales_reps for select
 using (public.is_support_user());
+
+-- o próprio vendedor lê a sua linha (para a Área do Vendedor)
+drop policy if exists "sales reps self read" on public.sales_reps;
+create policy "sales reps self read" on public.sales_reps for select
+using (user_id = auth.uid());
 
 -- --- Derivação do código a partir do e-mail -----------------------------
 
@@ -96,40 +126,35 @@ begin
   end if;
 
   slug := public.sales_rep_slug(new.email);
-  if slug is null or slug = '' then
-    return new;
-  end if;
   the_name := coalesce(nullif(trim(new.full_name), ''), new.email);
 
-  -- já tem linha desse usuário? só atualiza nome/ativo.
+  -- já tem linha desse usuário? só atualiza nome/e-mail/ativo.
   if exists (select 1 from public.sales_reps where user_id = new.id) then
     update public.sales_reps
-    set name = coalesce(nullif(trim(the_name), ''), name), active = true, updated_at = now()
+    set name = coalesce(nullif(trim(the_name), ''), name),
+        email = coalesce(email, new.email),
+        active = true, updated_at = now()
     where user_id = new.id;
     return new;
   end if;
 
-  -- reaproveita um vendedor "avulso" (sem user_id) com mesmo código ou nome,
+  -- reaproveita um vendedor "avulso" (sem user_id) com mesmo nome ou código,
   -- em vez de criar um duplicado.
   select id into orphan_id from public.sales_reps
   where user_id is null
-    and (upper(code) = slug or lower(trim(name)) = lower(trim(the_name)))
+    and (lower(trim(name)) = lower(trim(the_name)) or (slug <> '' and upper(code) = slug))
   limit 1;
 
   if orphan_id is not null then
     update public.sales_reps
-    set user_id = new.id, name = the_name, active = true, updated_at = now()
+    set user_id = new.id, name = the_name, email = coalesce(email, new.email),
+        active = true, updated_at = now()
     where id = orphan_id;
     return new;
   end if;
 
-  -- evita colisão de código entre vendedores diferentes
-  if exists (select 1 from public.sales_reps where upper(code) = slug) then
-    slug := slug || substr(replace(new.id::text, '-', ''), 1, 4);
-  end if;
-
-  insert into public.sales_reps (user_id, name, code, active)
-  values (new.id, the_name, slug, true);
+  insert into public.sales_reps (user_id, name, email, code, active)
+  values (new.id, the_name, new.email, public.next_sales_rep_code(), true);
   return new;
 end;
 $$;
@@ -139,25 +164,29 @@ create trigger trg_sync_sales_rep
 after insert or update of email, full_name on public.users
 for each row execute function public.sync_sales_rep_from_user();
 
--- backfill das contas já existentes
+-- backfill das contas com e-mail de vendedor que ainda não têm linha
 do $$
 declare
   u record;
-  slug text;
+  orphan_id uuid;
 begin
   for u in
     select id, full_name, email from public.users where public.is_sales_rep_email(email)
   loop
-    slug := public.sales_rep_slug(u.email);
-    if slug = '' then continue; end if;
-    if exists (
-      select 1 from public.sales_reps where upper(code) = slug and user_id is distinct from u.id
-    ) then
-      slug := slug || substr(replace(u.id::text, '-', ''), 1, 4);
+    if exists (select 1 from public.sales_reps where user_id = u.id) then
+      continue;
     end if;
-    insert into public.sales_reps (user_id, name, code, active)
-    values (u.id, coalesce(nullif(trim(u.full_name), ''), u.email), slug, true)
-    on conflict (user_id) do update set active = true, updated_at = now();
+    select id into orphan_id from public.sales_reps
+    where user_id is null and lower(trim(name)) = lower(trim(coalesce(u.full_name, u.email)))
+    limit 1;
+    if orphan_id is not null then
+      update public.sales_reps
+      set user_id = u.id, email = coalesce(email, u.email), active = true, updated_at = now()
+      where id = orphan_id;
+    else
+      insert into public.sales_reps (user_id, name, email, code, active)
+      values (u.id, coalesce(nullif(trim(u.full_name), ''), u.email), u.email, public.next_sales_rep_code(), true);
+    end if;
   end loop;
 end $$;
 
@@ -276,6 +305,96 @@ begin
 end;
 $$;
 
+-- Cria um vendedor com código sequencial VEN###, gerado automaticamente.
+create or replace function public.admin_create_sales_rep(
+  p_name text,
+  p_email text,
+  p_phone text,
+  p_cpf text,
+  p_notes text,
+  p_active boolean
+)
+returns public.sales_reps
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  rep public.sales_reps;
+begin
+  if not public.is_support_user() then
+    raise exception 'Ação restrita ao suporte.';
+  end if;
+  if trim(coalesce(p_name, '')) = '' then
+    raise exception 'Informe o nome do vendedor.';
+  end if;
+
+  insert into public.sales_reps (name, email, phone, cpf, notes, code, active)
+  values (
+    trim(p_name),
+    nullif(trim(coalesce(p_email, '')), ''),
+    nullif(trim(coalesce(p_phone, '')), ''),
+    nullif(regexp_replace(coalesce(p_cpf, ''), '[^0-9]', '', 'g'), ''),
+    nullif(trim(coalesce(p_notes, '')), ''),
+    public.next_sales_rep_code(),
+    coalesce(p_active, true)
+  )
+  returning * into rep;
+  return rep;
+end;
+$$;
+
+create or replace function public.admin_update_sales_rep(
+  rep_id uuid,
+  p_name text,
+  p_email text,
+  p_phone text,
+  p_cpf text,
+  p_notes text,
+  p_active boolean
+)
+returns public.sales_reps
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  rep public.sales_reps;
+begin
+  if not public.is_support_user() then
+    raise exception 'Ação restrita ao suporte.';
+  end if;
+
+  update public.sales_reps set
+    name = coalesce(nullif(trim(p_name), ''), name),
+    email = nullif(trim(coalesce(p_email, '')), ''),
+    phone = nullif(trim(coalesce(p_phone, '')), ''),
+    cpf = nullif(regexp_replace(coalesce(p_cpf, ''), '[^0-9]', '', 'g'), ''),
+    notes = nullif(trim(coalesce(p_notes, '')), ''),
+    active = coalesce(p_active, active),
+    updated_at = now()
+  where id = rep_id
+  returning * into rep;
+  if not found then raise exception 'Vendedor não encontrado.'; end if;
+  return rep;
+end;
+$$;
+
+-- Lookup público (usado no cadastro para mostrar "Vendedor responsável: Nome").
+-- Só devolve o nome, e só se o código existir e estiver ativo.
+create or replace function public.sales_rep_public(p_code text)
+returns table (name text)
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select name from public.sales_reps
+  where upper(code) = upper(regexp_replace(coalesce(p_code, ''), '[^a-zA-Z0-9]', '', 'g'))
+    and active
+  limit 1
+$$;
+
 create or replace function public.admin_delete_sales_rep(rep_id uuid)
 returns void
 language plpgsql
@@ -358,12 +477,17 @@ $$;
 
 revoke all on function public.admin_list_sales_reps() from public;
 revoke all on function public.admin_upsert_sales_rep(uuid, text, text, boolean) from public;
+revoke all on function public.admin_create_sales_rep(text, text, text, text, text, boolean) from public;
+revoke all on function public.admin_update_sales_rep(uuid, text, text, text, text, text, boolean) from public;
 revoke all on function public.admin_delete_sales_rep(uuid) from public;
 revoke all on function public.admin_set_company_sales_rep(uuid, text) from public;
 revoke all on function public.claim_company_sales_rep(text) from public;
 
 grant execute on function public.admin_list_sales_reps() to authenticated;
 grant execute on function public.admin_upsert_sales_rep(uuid, text, text, boolean) to authenticated;
+grant execute on function public.admin_create_sales_rep(text, text, text, text, text, boolean) to authenticated;
+grant execute on function public.admin_update_sales_rep(uuid, text, text, text, text, text, boolean) to authenticated;
 grant execute on function public.admin_delete_sales_rep(uuid) to authenticated;
 grant execute on function public.admin_set_company_sales_rep(uuid, text) to authenticated;
 grant execute on function public.claim_company_sales_rep(text) to authenticated;
+grant execute on function public.sales_rep_public(text) to anon, authenticated;
