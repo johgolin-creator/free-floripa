@@ -499,16 +499,25 @@ export async function publishCompanyProfile(user: User, company: CompanyProfile)
       logo_url: company.logoUrl,
       cover_url: company.coverUrl || null,
       rating: company.rating,
-      // O trigger enforce_company_sold_by valida (só código de vendedor
-      // ativo) e congela depois de definido, então mandar em todo save é
-      // seguro.
-      sold_by: company.soldBy ? company.soldBy.toUpperCase() : null,
       updated_at: now
     },
     { onConflict: "user_id" }
   );
 
   if (error) throw new Error(error.message);
+
+  // Atribuição de vendedor: escrita à parte e best-effort. Se a coluna
+  // company_profiles.sold_by ou o gatilho de validação ainda não existem no
+  // banco, o cadastro da empresa NÃO pode quebrar por causa disso.
+  if (company.soldBy) {
+    const { error: soldByError } = await supabase
+      .from("company_profiles")
+      .update({ sold_by: company.soldBy.toUpperCase() })
+      .eq("user_id", user.id);
+    if (soldByError) {
+      console.warn("[vendedor] atribuição não gravada:", soldByError.message);
+    }
+  }
 }
 
 export async function publishJob(user: User | null, company: CompanyProfile, job: Job) {
