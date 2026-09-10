@@ -37,7 +37,7 @@ export function JobCard({
           <p className="text-sm font-semibold text-slate-600">{company?.establishmentName}</p>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-xs font-black text-slate-500">
             <span className="inline-flex items-center gap-1"><Star size={14} /> {company?.rating.toFixed(1) ?? "0.0"}</span>
-            <span>{companyReviews.length} avaliação{companyReviews.length === 1 ? "" : "ões"}</span>
+            <span>{companyReviews.length} avaliaç{companyReviews.length === 1 ? "ão" : "ões"}</span>
           </p>
         </div>
         <div className="w-fit rounded-lg bg-navy-950 px-3 py-2 text-left text-white shadow-soft sm:text-right">

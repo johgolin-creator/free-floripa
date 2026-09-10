@@ -388,7 +388,7 @@ function CompanyReputation({
             <Star size={17} /> {rating.toFixed(1)}
           </strong>
           <span className="block text-xs font-black uppercase text-slate-500">
-            {reviews.length} avaliação{reviews.length === 1 ? "" : "ões"}
+            {reviews.length} avaliaç{reviews.length === 1 ? "ão" : "ões"}
           </span>
         </div>
       </div>

@@ -102,23 +102,6 @@ export async function lookupSalesRepName(code: string): Promise<string> {
   return rows[0]?.name ?? "";
 }
 
-export async function upsertSalesRep(input: {
-  id?: string;
-  name: string;
-  code: string;
-  active: boolean;
-}): Promise<SalesRep> {
-  if (!supabase) throw new Error("Disponível apenas no ambiente online.");
-  const { data, error } = await supabase.rpc("admin_upsert_sales_rep", {
-    rep_id: input.id ?? null,
-    rep_name: input.name,
-    rep_code: input.code,
-    rep_active: input.active
-  });
-  if (error) throw new Error(error.message);
-  return mapRep(data as SalesRepRow);
-}
-
 export async function deleteSalesRep(id: string): Promise<void> {
   if (!supabase) throw new Error("Disponível apenas no ambiente online.");
   const { error } = await supabase.rpc("admin_delete_sales_rep", { rep_id: id });
