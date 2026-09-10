@@ -49,9 +49,9 @@ export function PublicHome() {
             <a
               href="/pont.apk"
               download
-              className="hidden min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-brand-charcoal px-4 text-sm font-black text-white shadow-sm transition hover:bg-white/5 sm:inline-flex"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-3 text-sm font-black text-aqua-700 shadow-sm transition hover:bg-aqua-100 sm:px-4"
             >
-              <Download size={17} /> Baixar app
+              <Download size={17} /> <span className="hidden sm:inline">Baixar app</span>
             </a>
             <Link
               to="/cadastro-trabalhador"
@@ -98,6 +98,13 @@ export function PublicHome() {
                 <Link to="/cadastro-trabalhador" onClick={() => setRole("trabalhador")} className="secondary">
                   Quero trabalhar
                 </Link>
+                <a
+                  href="/pont.apk"
+                  download
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-300/60 bg-aqua-400/15 px-4 text-sm font-black text-white transition hover:bg-aqua-400/25"
+                >
+                  <Download size={17} /> Baixar app (Android)
+                </a>
               </div>
             </div>
             <div className="phone-showcase" aria-label="Previa do aplicativo PONT">
