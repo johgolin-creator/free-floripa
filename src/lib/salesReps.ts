@@ -10,6 +10,11 @@ export interface SalesRep {
   name: string;
   code: string;
   active: boolean;
+  email: string;
+  phone: string;
+  cpf: string;
+  notes: string;
+  linked: boolean; // tem conta (user_id) vinculada
   created_at: string;
 }
 
@@ -18,11 +23,27 @@ interface SalesRepRow {
   name: string;
   code: string;
   active: boolean;
+  email?: string | null;
+  phone?: string | null;
+  cpf?: string | null;
+  notes?: string | null;
+  user_id?: string | null;
   created_at: string;
 }
 
 function mapRep(row: SalesRepRow): SalesRep {
-  return { id: row.id, name: row.name, code: row.code, active: row.active, created_at: row.created_at };
+  return {
+    id: row.id,
+    name: row.name,
+    code: row.code,
+    active: row.active,
+    email: row.email ?? "",
+    phone: row.phone ?? "",
+    cpf: row.cpf ?? "",
+    notes: row.notes ?? "",
+    linked: Boolean(row.user_id),
+    created_at: row.created_at
+  };
 }
 
 export async function listSalesReps(): Promise<SalesRep[]> {
@@ -30,6 +51,55 @@ export async function listSalesReps(): Promise<SalesRep[]> {
   const { data, error } = await supabase.rpc("admin_list_sales_reps");
   if (error) throw new Error(error.message);
   return ((data ?? []) as SalesRepRow[]).map(mapRep);
+}
+
+export interface SalesRepInput {
+  name: string;
+  email: string;
+  phone: string;
+  cpf: string;
+  notes: string;
+  active: boolean;
+}
+
+/** Cria um vendedor novo (código VEN### automático). */
+export async function createSalesRep(input: SalesRepInput): Promise<SalesRep> {
+  if (!supabase) throw new Error("Disponível apenas no ambiente online.");
+  const { data, error } = await supabase.rpc("admin_create_sales_rep", {
+    p_name: input.name,
+    p_email: input.email,
+    p_phone: input.phone,
+    p_cpf: input.cpf,
+    p_notes: input.notes,
+    p_active: input.active
+  });
+  if (error) throw new Error(error.message);
+  return mapRep(data as SalesRepRow);
+}
+
+/** Edita os dados de um vendedor (código não muda). */
+export async function updateSalesRep(id: string, input: SalesRepInput): Promise<SalesRep> {
+  if (!supabase) throw new Error("Disponível apenas no ambiente online.");
+  const { data, error } = await supabase.rpc("admin_update_sales_rep", {
+    rep_id: id,
+    p_name: input.name,
+    p_email: input.email,
+    p_phone: input.phone,
+    p_cpf: input.cpf,
+    p_notes: input.notes,
+    p_active: input.active
+  });
+  if (error) throw new Error(error.message);
+  return mapRep(data as SalesRepRow);
+}
+
+/** Nome do vendedor de um código (só ativo). Usado no cadastro. */
+export async function lookupSalesRepName(code: string): Promise<string> {
+  if (!supabase || !code.trim()) return "";
+  const { data, error } = await supabase.rpc("sales_rep_public", { p_code: code });
+  if (error) return "";
+  const rows = (data ?? []) as { name?: string }[];
+  return rows[0]?.name ?? "";
 }
 
 export async function upsertSalesRep(input: {

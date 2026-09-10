@@ -16,6 +16,7 @@ import {
   Phone,
   Copy,
   Link2,
+  Plus,
   Search,
   ShieldCheck,
   Star,
@@ -37,13 +38,16 @@ import { adminActivatePlus, adminAdjustCoins, adminCoinsEnabled } from "../lib/s
 import { adminAccountsEnabled, adminDeleteAccount, adminDeleteJob } from "../lib/adminAccounts";
 import {
   adminSetCompanySalesRep,
+  createSalesRep,
   deleteSalesRep,
   listSalesReps,
   salesRepSignupLink,
   salesRepsEnabled,
-  upsertSalesRep,
-  type SalesRep
+  updateSalesRep,
+  type SalesRep,
+  type SalesRepInput
 } from "../lib/salesReps";
+import { formatBrl, listSales, registerSale, salesEnabled, type PaymentStatus, type Sale } from "../lib/sales";
 import type { Application, CompanyProfile, CompanyReview, Job, TrustReport, UserRole, WorkerProfile } from "../lib/types";
 
 type AdminTab = "Resumo" | "Usuários" | "Vagas" | "Vendedores" | "Moedas" | "Alertas";
@@ -66,13 +70,16 @@ export function AdminPage() {
   const [detail, setDetail] = useState<{ type: "worker" | "company"; id: string } | null>(null);
   const [deleteFeedback, setDeleteFeedback] = useState("");
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
 
   useEffect(() => {
     if (!salesRepsEnabled) return;
     let active = true;
-    listSalesReps()
-      .then((reps) => {
-        if (active) setSalesReps(reps);
+    Promise.all([listSalesReps(), salesEnabled ? listSales() : Promise.resolve([] as Sale[])])
+      .then(([reps, saleRows]) => {
+        if (!active) return;
+        setSalesReps(reps);
+        setSales(saleRows);
       })
       .catch(() => {});
     return () => {
@@ -83,6 +90,11 @@ export function AdminPage() {
   async function reloadSalesReps() {
     if (!salesRepsEnabled) return;
     setSalesReps(await listSalesReps());
+  }
+
+  async function reloadSales() {
+    if (!salesEnabled) return;
+    setSales(await listSales());
   }
 
   const salesRepByCode = useMemo(() => {
@@ -353,10 +365,11 @@ export function AdminPage() {
         <SalesRepsPanel
           reps={salesReps}
           companies={state.companies}
-          jobs={state.jobs}
+          sales={sales}
           blockedCompanyIds={blockedCompanyIds}
           enabled={salesRepsEnabled}
-          onReload={reloadSalesReps}
+          onReloadReps={reloadSalesReps}
+          onReloadSales={reloadSales}
           onOpenCompany={(id) => setDetail({ type: "company", id })}
         />
       )}
@@ -1291,33 +1304,44 @@ function CompanySalesRepField({
   );
 }
 
+type RepStatusFilter = "todos" | "ativos" | "inativos";
+type RepSort = "faturamento" | "vendas" | "clientes" | "recente";
+
+interface RepAgg {
+  rep: SalesRep;
+  companies: CompanyProfile[];
+  sales: Sale[];
+  revenueCents: number;
+  ticketCents: number;
+  lastSale: Sale | undefined;
+}
+
 function SalesRepsPanel({
   reps,
   companies,
-  jobs,
+  sales,
   blockedCompanyIds,
   enabled,
-  onReload,
+  onReloadReps,
+  onReloadSales,
   onOpenCompany
 }: {
   reps: SalesRep[];
   companies: CompanyProfile[];
-  jobs: Job[];
+  sales: Sale[];
   blockedCompanyIds: string[];
   enabled: boolean;
-  onReload: () => Promise<void>;
+  onReloadReps: () => Promise<void>;
+  onReloadSales: () => Promise<void>;
   onOpenCompany: (companyId: string) => void;
 }) {
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState("");
   const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState<string | null>(null);
-
-  const jobCountByCompany = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const job of jobs) map.set(job.companyId, (map.get(job.companyId) ?? 0) + 1);
-    return map;
-  }, [jobs]);
+  const [statusFilter, setStatusFilter] = useState<RepStatusFilter>("todos");
+  const [sort, setSort] = useState<RepSort>("faturamento");
+  const [repForm, setRepForm] = useState<{ mode: "new" } | { mode: "edit"; rep: SalesRep } | null>(null);
+  const [saleForm, setSaleForm] = useState<{ companyId?: string } | null>(null);
+  const [detailRepId, setDetailRepId] = useState<string | null>(null);
 
   const companiesByCode = useMemo(() => {
     const map = new Map<string, CompanyProfile[]>();
@@ -1328,50 +1352,77 @@ function SalesRepsPanel({
       list.push(company);
       map.set(key, list);
     }
-    for (const list of map.values()) {
-      list.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
-    }
     return map;
   }, [companies]);
 
-  const repCodes = useMemo(() => new Set(reps.map((rep) => rep.code.toUpperCase())), [reps]);
-  const unassigned = useMemo(
-    () =>
-      companies
-        .filter((company) => {
-          const code = (company.soldBy ?? "").trim().toUpperCase();
-          return !code || !repCodes.has(code);
-        })
-        .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? "")),
-    [companies, repCodes]
-  );
+  const salesByCode = useMemo(() => {
+    const map = new Map<string, Sale[]>();
+    for (const sale of sales) {
+      const key = (sale.salesRepCode ?? "").trim().toUpperCase();
+      if (!key) continue;
+      const list = map.get(key) ?? [];
+      list.push(sale);
+      map.set(key, list);
+    }
+    return map;
+  }, [sales]);
 
-  const now = Date.now();
-  const last30 = (company: CompanyProfile) =>
-    company.createdAt ? now - new Date(company.createdAt).getTime() <= 30 * 24 * 60 * 60 * 1000 : false;
-
-  const totalAssigned = companies.length - unassigned.length;
-  const activeReps = reps.filter((rep) => rep.active).length;
-  const assignedLast30 = companies.filter(
-    (company) => last30(company) && repCodes.has((company.soldBy ?? "").trim().toUpperCase())
-  ).length;
+  const aggregates = useMemo<RepAgg[]>(() => {
+    return reps.map((rep) => {
+      const code = rep.code.toUpperCase();
+      const repSales = (salesByCode.get(code) ?? []).slice().sort((a, b) => b.soldAt.localeCompare(a.soldAt));
+      const paid = repSales.filter((sale) => sale.paymentStatus === "pago");
+      const revenueCents = paid.reduce((sum, sale) => sum + sale.amountCents, 0);
+      return {
+        rep,
+        companies: (companiesByCode.get(code) ?? []).slice().sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? "")),
+        sales: repSales,
+        revenueCents,
+        ticketCents: paid.length ? Math.round(revenueCents / paid.length) : 0,
+        lastSale: repSales[0]
+      };
+    });
+  }, [reps, salesByCode, companiesByCode]);
 
   const rows = useMemo(() => {
     const term = normalize(search);
-    return reps
-      .map((rep) => {
-        const repCompanies = companiesByCode.get(rep.code.toUpperCase()) ?? [];
-        const jobsTotal = repCompanies.reduce((sum, company) => sum + (jobCountByCompany.get(company.id) ?? 0), 0);
-        return { rep, repCompanies, jobsTotal };
+    return aggregates
+      .filter(({ rep, companies: repCompanies }) => {
+        if (statusFilter === "ativos" && !rep.active) return false;
+        if (statusFilter === "inativos" && rep.active) return false;
+        if (!term) return true;
+        const haystack = normalize(
+          `${rep.name} ${rep.code} ${rep.email} ${repCompanies.map((c) => c.establishmentName).join(" ")}`
+        );
+        return haystack.includes(term);
       })
-      .filter(({ rep }) => normalize(`${rep.name} ${rep.code}`).includes(term))
-      .sort((a, b) => b.repCompanies.length - a.repCompanies.length || a.rep.name.localeCompare(b.rep.name));
-  }, [reps, companiesByCode, jobCountByCompany, search]);
+      .sort((a, b) => {
+        if (sort === "vendas") return b.sales.length - a.sales.length;
+        if (sort === "clientes") return b.companies.length - a.companies.length;
+        if (sort === "recente") return (b.lastSale?.soldAt ?? "").localeCompare(a.lastSale?.soldAt ?? "");
+        return b.revenueCents - a.revenueCents;
+      });
+  }, [aggregates, search, statusFilter, sort]);
+
+  const totalRevenue = sales.filter((s) => s.paymentStatus === "pago").reduce((sum, s) => sum + s.amountCents, 0);
+  const totalClients = companies.filter((c) => {
+    const code = (c.soldBy ?? "").trim().toUpperCase();
+    return code && reps.some((r) => r.code.toUpperCase() === code);
+  }).length;
+
+  const detailAgg = aggregates.find((a) => a.rep.id === detailRepId) ?? null;
 
   async function toggleActive(rep: SalesRep) {
     try {
-      await upsertSalesRep({ id: rep.id, name: rep.name, code: rep.code, active: !rep.active });
-      await onReload();
+      await updateSalesRep(rep.id, {
+        name: rep.name,
+        email: rep.email,
+        phone: rep.phone,
+        cpf: rep.cpf,
+        notes: rep.notes,
+        active: !rep.active
+      });
+      await onReloadReps();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível atualizar.");
     }
@@ -1380,20 +1431,10 @@ function SalesRepsPanel({
   async function removeRep(rep: SalesRep) {
     try {
       await deleteSalesRep(rep.id);
-      await onReload();
+      await onReloadReps();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível remover.");
     }
-  }
-
-  function copyLink(rep: SalesRep) {
-    navigator.clipboard?.writeText(salesRepSignupLink(rep.code)).then(
-      () => {
-        setCopied(rep.id);
-        window.setTimeout(() => setCopied(""), 2000);
-      },
-      () => setError("Não foi possível copiar. Copie manualmente.")
-    );
   }
 
   return (
@@ -1401,14 +1442,25 @@ function SalesRepsPanel({
       <SectionHeader
         eyebrow="Admin"
         title="Vendedores"
-        description="Quem trouxe cada empresa. A lista é automática: toda conta com pontapp no e-mail vira vendedor, com o código tirado do e-mail."
+        description="Indicações e vendas por vendedor. Contas com pontapp no e-mail viram vendedor automaticamente; use + Novo Vendedor para os demais."
+        action={
+          <div className="grid gap-2 sm:flex">
+            <button type="button" className="secondary" disabled={!enabled} onClick={() => setSaleForm({})}>
+              <WalletCards size={16} /> Registrar venda
+            </button>
+            <button type="button" className="primary" disabled={!enabled} onClick={() => setRepForm({ mode: "new" })}>
+              <Plus size={16} /> Novo Vendedor
+            </button>
+          </div>
+        }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <InfoTile icon={<UserRound />} label="Vendedores ativos" value={String(activeReps)} />
-        <InfoTile icon={<Building2 />} label="Empresas com vendedor" value={String(totalAssigned)} />
-        <InfoTile icon={<CalendarDays />} label="Atribuídas em 30 dias" value={String(assignedLast30)} />
-        <InfoTile icon={<AlertTriangle />} label="Empresas sem vendedor" value={String(unassigned.length)} />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <InfoTile icon={<UserRound />} label="Total de vendedores" value={String(reps.length)} />
+        <InfoTile icon={<UserRound />} label="Ativos" value={String(reps.filter((r) => r.active).length)} />
+        <InfoTile icon={<Building2 />} label="Clientes indicados" value={String(totalClients)} />
+        <InfoTile icon={<ClipboardList />} label="Planos vendidos" value={String(sales.length)} />
+        <InfoTile icon={<WalletCards />} label="Faturamento" value={formatBrl(totalRevenue)} />
       </div>
 
       {!enabled && (
@@ -1418,133 +1470,501 @@ function SalesRepsPanel({
       )}
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
 
-      <input
-        className="input"
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        placeholder="Buscar vendedor por nome ou código"
-      />
+      <div className="grid gap-2 md:grid-cols-[1fr_auto_auto]">
+        <input
+          className="input"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Buscar por nome, código, e-mail ou cliente"
+        />
+        <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as RepStatusFilter)}>
+          <option value="todos">Todos</option>
+          <option value="ativos">Ativos</option>
+          <option value="inativos">Inativos</option>
+        </select>
+        <select className="input" value={sort} onChange={(e) => setSort(e.target.value as RepSort)}>
+          <option value="faturamento">Ordenar: faturamento</option>
+          <option value="vendas">Ordenar: vendas</option>
+          <option value="clientes">Ordenar: clientes</option>
+          <option value="recente">Ordenar: venda recente</option>
+        </select>
+      </div>
 
       <section className="card p-4">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="font-black text-white">Ranking</h3>
+          <h3 className="font-black text-white">Vendedores</h3>
           <span className="badge">{rows.length}</span>
         </div>
         <div className="grid gap-3">
           {rows.length === 0 ? (
             <p className="text-sm text-slate-600">Nenhum vendedor.</p>
           ) : (
-            rows.map(({ rep, repCompanies, jobsTotal }) => {
-              const isOpen = expanded === rep.id;
-              const lastCompany = repCompanies[0];
-              return (
-                <article key={rep.id} className="worker-application-card">
-                  <div className="worker-card-head">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <strong className="text-white">{rep.name}</strong>
-                        <span className="badge">{rep.code}</span>
-                        <span className={rep.active ? "badge bg-aqua-50 text-aqua-700" : "badge border-slate-200 bg-slate-50 text-slate-500"}>
-                          {rep.active ? "Ativo" : "Inativo"}
-                        </span>
-                        <span className="badge">{repCompanies.length} empresa(s)</span>
-                        <span className="badge">{jobsTotal} vaga(s)</span>
-                      </div>
-                      <p className="mt-1 flex items-center gap-1.5 break-all text-xs font-semibold text-slate-500">
-                        <Link2 size={13} /> {salesRepSignupLink(rep.code)}
-                      </p>
-                      {lastCompany && (
-                        <p className="mt-1 text-xs font-semibold text-slate-500">
-                          Última: {lastCompany.establishmentName}
-                          {lastCompany.createdAt ? ` em ${formatDate(lastCompany.createdAt.slice(0, 10))}` : ""}
-                        </p>
-                      )}
+            rows.map((agg) => (
+              <article key={agg.rep.id} className="worker-application-card">
+                <div className="worker-card-head">
+                  <button
+                    type="button"
+                    onClick={() => setDetailRepId(agg.rep.id)}
+                    className="group min-w-0 flex-1 text-left"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <strong className="text-white group-hover:underline">{agg.rep.name}</strong>
+                      <span className="badge">{agg.rep.code}</span>
+                      <span className={agg.rep.active ? "badge bg-aqua-50 text-aqua-700" : "badge border-slate-200 bg-slate-50 text-slate-500"}>
+                        {agg.rep.active ? "Ativo" : "Inativo"}
+                      </span>
+                      {!agg.rep.linked && <span className="badge border-amber-200 bg-amber-50 text-amber-700">sem conta</span>}
                     </div>
-                    <div className="grid gap-2 sm:min-w-40">
-                      <button type="button" className="secondary" onClick={() => copyLink(rep)}>
-                        <Copy size={15} /> {copied === rep.id ? "Copiado!" : "Copiar link"}
-                      </button>
-                      <button
-                        type="button"
-                        className="secondary"
-                        onClick={() => setExpanded(isOpen ? null : rep.id)}
-                        disabled={repCompanies.length === 0}
-                      >
-                        {isOpen ? "Ocultar empresas" : "Ver empresas"}
-                      </button>
-                      <button type="button" className="secondary" onClick={() => toggleActive(rep)}>
-                        {rep.active ? "Desativar" : "Ativar"}
-                      </button>
-                      <button type="button" className="danger" onClick={() => removeRep(rep)}>
+                    <div className="mt-1 flex flex-wrap gap-3 text-xs font-semibold text-slate-500">
+                      <span>{agg.companies.length} cliente(s)</span>
+                      <span>{agg.sales.length} venda(s)</span>
+                      <span className="text-aqua-700">{formatBrl(agg.revenueCents)}</span>
+                      <span>
+                        Última venda: {agg.lastSale ? formatDate(agg.lastSale.soldAt) : "—"}
+                      </span>
+                    </div>
+                  </button>
+                  <div className="grid gap-2 sm:min-w-40">
+                    <CopyButton text={salesRepSignupLink(agg.rep.code)} label="Copiar link" />
+                    <button type="button" className="secondary" onClick={() => setSaleForm({})}>
+                      <WalletCards size={15} /> Registrar venda
+                    </button>
+                    <button type="button" className="secondary" onClick={() => setRepForm({ mode: "edit", rep: agg.rep })}>
+                      Editar
+                    </button>
+                    <button type="button" className="secondary" onClick={() => toggleActive(agg.rep)}>
+                      {agg.rep.active ? "Desativar" : "Ativar"}
+                    </button>
+                    {!agg.rep.linked && (
+                      <button type="button" className="danger" onClick={() => removeRep(agg.rep)}>
                         <Trash2 size={15} /> Remover
                       </button>
-                    </div>
+                    )}
                   </div>
-
-                  {isOpen && repCompanies.length > 0 && (
-                    <div className="mt-3 grid gap-2 border-t border-white/10 pt-3">
-                      {repCompanies.map((company) => (
-                        <button
-                          key={company.id}
-                          type="button"
-                          onClick={() => onOpenCompany(company.id)}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 p-3 text-left"
-                        >
-                          <div className="min-w-0">
-                            <strong className="block truncate text-sm text-white">{company.establishmentName}</strong>
-                            <p className="truncate text-xs font-semibold text-slate-500">
-                              {company.category} - {company.neighborhood}
-                              {company.createdAt ? ` - ${formatDate(company.createdAt.slice(0, 10))}` : ""}
-                            </p>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <span className="badge">{jobCountByCompany.get(company.id) ?? 0} vaga(s)</span>
-                            <span
-                              className={
-                                blockedCompanyIds.includes(company.id)
-                                  ? "badge border-red-100 bg-red-50 text-alert"
-                                  : "badge bg-aqua-50 text-aqua-700"
-                              }
-                            >
-                              {blockedCompanyIds.includes(company.id) ? "Bloqueada" : "Ativa"}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </article>
-              );
-            })
+                </div>
+              </article>
+            ))
           )}
         </div>
       </section>
 
-      <AdminList title="Empresas sem vendedor" count={unassigned.length}>
-        {unassigned.length === 0 ? (
-          <p className="text-sm text-slate-600">Todas as empresas têm vendedor.</p>
-        ) : (
-          unassigned.map((company) => (
-            <button
-              key={company.id}
-              type="button"
-              onClick={() => onOpenCompany(company.id)}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 p-3 text-left"
-            >
-              <div className="min-w-0">
-                <strong className="block truncate text-sm text-white">{company.establishmentName}</strong>
-                <p className="truncate text-xs font-semibold text-slate-500">
-                  {company.category} - {company.neighborhood}
-                  {company.createdAt ? ` - ${formatDate(company.createdAt.slice(0, 10))}` : ""}
-                  {company.soldBy ? ` - código "${company.soldBy}" não encontrado` : ""}
-                </p>
-              </div>
-              <span className="badge shrink-0">{jobCountByCompany.get(company.id) ?? 0} vaga(s)</span>
-            </button>
-          ))
-        )}
-      </AdminList>
+      {repForm && (
+        <RepFormModal
+          rep={repForm.mode === "edit" ? repForm.rep : null}
+          onClose={() => setRepForm(null)}
+          onSaved={async () => {
+            setRepForm(null);
+            await onReloadReps();
+          }}
+        />
+      )}
+      {saleForm && (
+        <SaleFormModal
+          companies={companies}
+          reps={reps}
+          initialCompanyId={saleForm.companyId}
+          onClose={() => setSaleForm(null)}
+          onSaved={async () => {
+            setSaleForm(null);
+            await onReloadSales();
+          }}
+        />
+      )}
+      {detailAgg && (
+        <RepDetailModal
+          agg={detailAgg}
+          blockedCompanyIds={blockedCompanyIds}
+          onOpenCompany={onOpenCompany}
+          onRegisterSale={(companyId) => {
+            setDetailRepId(null);
+            setSaleForm({ companyId });
+          }}
+          onClose={() => setDetailRepId(null)}
+        />
+      )}
     </div>
+  );
+}
+
+function CopyButton({ text, label }: { text: string; label: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button
+      type="button"
+      className="secondary"
+      onClick={() =>
+        navigator.clipboard?.writeText(text).then(() => {
+          setDone(true);
+          window.setTimeout(() => setDone(false), 1800);
+        })
+      }
+    >
+      <Copy size={15} /> {done ? "Copiado!" : label}
+    </button>
+  );
+}
+
+function RepFormModal({
+  rep,
+  onClose,
+  onSaved
+}: {
+  rep: SalesRep | null;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const [form, setForm] = useState<SalesRepInput>({
+    name: rep?.name ?? "",
+    email: rep?.email ?? "",
+    phone: rep?.phone ?? "",
+    cpf: rep?.cpf ?? "",
+    notes: rep?.notes ?? "",
+    active: rep?.active ?? true
+  });
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit() {
+    if (pending) return;
+    if (!form.name.trim()) {
+      setError("Informe o nome do vendedor.");
+      return;
+    }
+    setPending(true);
+    setError("");
+    try {
+      if (rep) await updateSalesRep(rep.id, form);
+      else await createSalesRep(form);
+      await onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível salvar.");
+      setPending(false);
+    }
+  }
+
+  return (
+    <Modal title={rep ? `Editar ${rep.name}` : "Novo vendedor"} onClose={onClose}>
+      <div className="grid gap-3">
+        {rep && (
+          <p className="text-xs font-semibold text-slate-500">
+            Código <strong className="text-white">{rep.code}</strong> — gerado automaticamente, não muda.
+          </p>
+        )}
+        <label className="label">
+          Nome completo
+          <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="label">
+            E-mail
+            <input className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          </label>
+          <label className="label">
+            WhatsApp
+            <input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          </label>
+          <label className="label">
+            CPF
+            <input className="input" value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} />
+          </label>
+          <label className="label">
+            Status
+            <select
+              className="input"
+              value={form.active ? "ativo" : "inativo"}
+              onChange={(e) => setForm({ ...form, active: e.target.value === "ativo" })}
+            >
+              <option value="ativo">Ativo</option>
+              <option value="inativo">Inativo</option>
+            </select>
+          </label>
+        </div>
+        <label className="label">
+          Observações
+          <textarea className="input min-h-20 py-2" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+        </label>
+        {error && <div className="rounded-lg bg-red-50 p-2 text-xs font-bold text-alert">{error}</div>}
+        <button type="button" className="primary" disabled={pending} onClick={submit}>
+          {pending ? "Salvando..." : "Salvar vendedor"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function SaleFormModal({
+  companies,
+  reps,
+  initialCompanyId,
+  onClose,
+  onSaved
+}: {
+  companies: CompanyProfile[];
+  reps: SalesRep[];
+  initialCompanyId?: string;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const [companyId, setCompanyId] = useState(initialCompanyId ?? "");
+  const [plan, setPlan] = useState("Profissional");
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState("Pix");
+  const [status, setStatus] = useState<PaymentStatus>("pago");
+  const [soldAt, setSoldAt] = useState(new Date().toISOString().slice(0, 10));
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+
+  const sortedCompanies = useMemo(
+    () => companies.slice().sort((a, b) => a.establishmentName.localeCompare(b.establishmentName)),
+    [companies]
+  );
+  const company = companies.find((c) => c.id === companyId);
+  const repCode = (company?.soldBy ?? "").trim().toUpperCase();
+  const rep = reps.find((r) => r.code.toUpperCase() === repCode);
+
+  async function submit() {
+    if (pending) return;
+    if (!companyId) {
+      setError("Escolha a empresa.");
+      return;
+    }
+    const value = Math.round(Number(amount.replace(",", ".")) * 100);
+    if (!Number.isFinite(value) || value < 0) {
+      setError("Informe um valor válido.");
+      return;
+    }
+    setPending(true);
+    setError("");
+    try {
+      await registerSale({
+        companyId,
+        plan,
+        amountCents: value,
+        paymentMethod: method,
+        paymentStatus: status,
+        soldAt
+      });
+      await onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível registrar a venda.");
+      setPending(false);
+    }
+  }
+
+  return (
+    <Modal title="Registrar venda" onClose={onClose}>
+      <div className="grid gap-3">
+        <label className="label">
+          Empresa (cliente)
+          <select className="input" value={companyId} onChange={(e) => setCompanyId(e.target.value)}>
+            <option value="">— escolher —</option>
+            {sortedCompanies.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.establishmentName}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="rounded-lg bg-slate-50 p-2 text-xs font-semibold text-slate-600">
+          Vendedor:{" "}
+          {company
+            ? rep
+              ? `${rep.name} (${rep.code})`
+              : repCode
+                ? `código "${repCode}" não cadastrado — a venda fica sem vendedor`
+                : "esta empresa não tem vendedor — a venda fica sem atribuição"
+            : "—"}
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="label">
+            Plano
+            <input className="input" value={plan} onChange={(e) => setPlan(e.target.value)} />
+          </label>
+          <label className="label">
+            Valor (R$)
+            <input className="input" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="539,90" />
+          </label>
+          <label className="label">
+            Forma de pagamento
+            <input className="input" value={method} onChange={(e) => setMethod(e.target.value)} />
+          </label>
+          <label className="label">
+            Status do pagamento
+            <select className="input" value={status} onChange={(e) => setStatus(e.target.value as PaymentStatus)}>
+              <option value="pago">Pago</option>
+              <option value="pendente">Pendente</option>
+              <option value="estornado">Estornado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </label>
+          <label className="label">
+            Data da venda
+            <input className="input" type="date" value={soldAt} onChange={(e) => setSoldAt(e.target.value)} />
+          </label>
+        </div>
+        {error && <div className="rounded-lg bg-red-50 p-2 text-xs font-bold text-alert">{error}</div>}
+        <button type="button" className="primary" disabled={pending} onClick={submit}>
+          {pending ? "Registrando..." : "Registrar venda"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+type SaleHistFilter = { days: number; plan: string; status: string };
+
+function RepDetailModal({
+  agg,
+  blockedCompanyIds,
+  onOpenCompany,
+  onRegisterSale,
+  onClose
+}: {
+  agg: RepAgg;
+  blockedCompanyIds: string[];
+  onOpenCompany: (companyId: string) => void;
+  onRegisterSale: (companyId: string) => void;
+  onClose: () => void;
+}) {
+  const { rep } = agg;
+  const link = salesRepSignupLink(rep.code);
+  const [filter, setFilter] = useState<SaleHistFilter>({ days: 0, plan: "", status: "" });
+  const plans = Array.from(new Set(agg.sales.map((s) => s.plan)));
+  const cutoff = filter.days ? Date.now() - filter.days * 24 * 60 * 60 * 1000 : 0;
+  const filtered = agg.sales.filter((s) => {
+    if (cutoff && new Date(s.soldAt).getTime() < cutoff) return false;
+    if (filter.plan && s.plan !== filter.plan) return false;
+    if (filter.status && s.paymentStatus !== filter.status) return false;
+    return true;
+  });
+
+  return (
+    <Modal title={`Vendedor: ${rep.name}`} onClose={onClose}>
+      <div className="grid max-h-[74vh] gap-4 overflow-auto pr-1">
+        <div className="grid gap-2 sm:grid-cols-2">
+          <DetailField label="Código" value={rep.code} />
+          <DetailField label="Status" value={rep.active ? "Ativo" : "Inativo"} />
+          <DetailField icon={<Mail size={13} />} label="E-mail" value={rep.email || "—"} />
+          <DetailField icon={<Phone size={13} />} label="WhatsApp" value={rep.phone || "—"} />
+          {rep.cpf && <DetailField label="CPF" value={rep.cpf} />}
+          <DetailField label="Conta vinculada" value={rep.linked ? "Sim" : "Não"} />
+        </div>
+        <div className="rounded-lg border border-aqua-100 bg-aqua-50/40 p-3">
+          <span className="flex items-center gap-1.5 text-xs font-black uppercase text-slate-500">
+            <Link2 size={13} /> Link de indicação
+          </span>
+          <p className="mt-1 break-all text-xs font-semibold text-slate-600">{link}</p>
+          <div className="mt-2 flex gap-2">
+            <CopyButton text={link} label="Copiar link" />
+            <CopyButton text={rep.code} label="Copiar código" />
+          </div>
+        </div>
+
+        <DetailSection title="Performance">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <DetailField label="Clientes indicados" value={String(agg.companies.length)} />
+            <DetailField label="Planos vendidos" value={String(agg.sales.length)} />
+            <DetailField label="Faturamento" value={formatBrl(agg.revenueCents)} />
+            <DetailField label="Ticket médio" value={formatBrl(agg.ticketCents)} />
+            <DetailField label="Última venda" value={agg.lastSale ? formatDate(agg.lastSale.soldAt) : "—"} />
+          </div>
+          {rep.notes && <p className="text-sm leading-6 text-slate-600">Obs.: {rep.notes}</p>}
+        </DetailSection>
+
+        <DetailSection title={`Histórico de vendas (${filtered.length})`}>
+          <div className="grid gap-2 sm:grid-cols-3">
+            <select className="input" value={filter.days} onChange={(e) => setFilter({ ...filter, days: Number(e.target.value) })}>
+              <option value={0}>Período: todos</option>
+              <option value={30}>Últimos 30 dias</option>
+              <option value={90}>Últimos 90 dias</option>
+              <option value={365}>Último ano</option>
+            </select>
+            <select className="input" value={filter.plan} onChange={(e) => setFilter({ ...filter, plan: e.target.value })}>
+              <option value="">Plano: todos</option>
+              {plans.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+            <select className="input" value={filter.status} onChange={(e) => setFilter({ ...filter, status: e.target.value })}>
+              <option value="">Status: todos</option>
+              <option value="pago">Pago</option>
+              <option value="pendente">Pendente</option>
+              <option value="estornado">Estornado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </div>
+          {filtered.length === 0 ? (
+            <p className="text-sm text-slate-600">Nenhuma venda no filtro.</p>
+          ) : (
+            <div className="grid gap-2">
+              {filtered.map((sale) => (
+                <div key={sale.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 p-3">
+                  <div className="min-w-0">
+                    <strong className="block truncate text-sm text-white">
+                      Venda #{String(sale.seq).padStart(5, "0")} - {sale.companyName || "Empresa"}
+                    </strong>
+                    <p className="truncate text-xs font-semibold text-slate-500">
+                      {sale.plan} - {formatDate(sale.soldAt)}
+                      {sale.source === "payment" ? " - Mercado Pago" : ""}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <strong className="text-sm text-white">{formatBrl(sale.amountCents)}</strong>
+                    <span
+                      className={
+                        sale.paymentStatus === "pago"
+                          ? "badge bg-aqua-50 text-aqua-700"
+                          : sale.paymentStatus === "pendente"
+                            ? "badge border-amber-200 bg-amber-50 text-amber-700"
+                            : "badge border-red-100 bg-red-50 text-alert"
+                      }
+                    >
+                      {sale.paymentStatus}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DetailSection>
+
+        <DetailSection title={`Clientes indicados (${agg.companies.length})`}>
+          {agg.companies.length === 0 ? (
+            <p className="text-sm text-slate-600">Nenhum cliente ainda.</p>
+          ) : (
+            <div className="grid gap-2">
+              {agg.companies.map((company) => (
+                <div key={company.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 p-3">
+                  <button type="button" onClick={() => onOpenCompany(company.id)} className="min-w-0 text-left">
+                    <strong className="block truncate text-sm text-white hover:underline">{company.establishmentName}</strong>
+                    <p className="truncate text-xs font-semibold text-slate-500">
+                      {company.category} - {company.neighborhood}
+                      {company.createdAt ? ` - ${formatDate(company.createdAt.slice(0, 10))}` : ""}
+                    </p>
+                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span
+                      className={
+                        blockedCompanyIds.includes(company.id)
+                          ? "badge border-red-100 bg-red-50 text-alert"
+                          : "badge bg-aqua-50 text-aqua-700"
+                      }
+                    >
+                      {blockedCompanyIds.includes(company.id) ? "Bloqueada" : "Ativa"}
+                    </span>
+                    <button type="button" className="secondary min-h-8 px-2 text-xs" onClick={() => onRegisterSale(company.id)}>
+                      Registrar venda
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DetailSection>
+      </div>
+    </Modal>
   );
 }
 
