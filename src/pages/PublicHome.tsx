@@ -12,12 +12,15 @@ import {
   LogIn,
   MapPin,
   PartyPopper,
+  PlusSquare,
+  Share,
   ShieldCheck,
   Smartphone,
   UsersRound,
-  Waves
+  Waves,
+  X
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { BrandLogo, PontMark } from "../components/BrandLogo";
 import { functions } from "../data/demoData";
@@ -25,9 +28,11 @@ import { useAppStore } from "../lib/store";
 
 export function PublicHome() {
   const { setRole } = useAppStore();
+  const [showIos, setShowIos] = useState(false);
 
   return (
     <div className="min-h-screen bg-ice">
+      {showIos && <IosInstallModal onClose={() => setShowIos(false)} />}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-brand-charcoal/90 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/" className="min-w-0">
@@ -51,8 +56,15 @@ export function PublicHome() {
               download
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-3 text-sm font-black text-aqua-700 shadow-sm transition hover:bg-aqua-100 sm:px-4"
             >
-              <Download size={17} /> <span className="hidden sm:inline">Baixar app</span>
+              <Download size={17} /> <span className="hidden sm:inline">Android</span>
             </a>
+            <button
+              type="button"
+              onClick={() => setShowIos(true)}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-3 text-sm font-black text-aqua-700 shadow-sm transition hover:bg-aqua-100 sm:px-4"
+            >
+              <Smartphone size={17} /> <span className="hidden sm:inline">iPhone</span>
+            </button>
             <Link
               to="/cadastro-trabalhador"
               onClick={() => setRole("trabalhador")}
@@ -105,6 +117,13 @@ export function PublicHome() {
                 >
                   <Download size={17} /> Baixar app (Android)
                 </a>
+                <button
+                  type="button"
+                  onClick={() => setShowIos(true)}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-300/60 bg-aqua-400/15 px-4 text-sm font-black text-white transition hover:bg-aqua-400/25"
+                >
+                  <Smartphone size={17} /> Instalar no iPhone
+                </button>
               </div>
             </div>
             <div className="phone-showcase" aria-label="Previa do aplicativo PONT">
@@ -156,7 +175,8 @@ export function PublicHome() {
             <div>
               <strong className="block text-lg font-black text-white">Leve o PONT no celular</strong>
               <p className="mt-1 text-sm font-semibold text-slate-300">
-                App Android para instalar direto (fora da Play Store). Também funciona pelo navegador.
+                Android: baixe o app para instalar direto (fora da Play Store). iPhone: instale como app
+                web pelo Safari. Também funciona pelo navegador.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -167,6 +187,13 @@ export function PublicHome() {
               >
                 <Download size={17} /> Baixar app (Android)
               </a>
+              <button
+                type="button"
+                onClick={() => setShowIos(true)}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-4 text-sm font-black text-aqua-700 shadow-sm transition hover:bg-aqua-100"
+              >
+                <Smartphone size={17} /> Instalar no iPhone
+              </button>
               <Link
                 to="/app"
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-brand-charcoal px-4 text-sm font-black text-white shadow-sm transition hover:bg-white/5"
@@ -391,5 +418,107 @@ function Feature({ icon, title, text }: { icon: ReactNode; title: string; text: 
         <BadgeCheck size={14} /> PONT
       </span>
     </article>
+  );
+}
+
+function IosInstallModal({ onClose }: { onClose: () => void }) {
+  const steps: { icon: ReactNode; text: ReactNode }[] = [
+    {
+      icon: <Smartphone size={18} />,
+      text: (
+        <>
+          Abra <strong className="text-white">usepont.com.br</strong> no <strong className="text-white">Safari</strong>
+          {" "}(o Chrome do iPhone não mostra a opção de instalar).
+        </>
+      )
+    },
+    {
+      icon: <Share size={18} />,
+      text: (
+        <>
+          Toque no botão <strong className="text-white">Compartilhar</strong> — o quadrado com uma seta
+          para cima, na barra inferior.
+        </>
+      )
+    },
+    {
+      icon: <PlusSquare size={18} />,
+      text: (
+        <>
+          Escolha <strong className="text-white">Adicionar à Tela de Início</strong>.
+        </>
+      )
+    },
+    {
+      icon: <CheckCircle2 size={18} />,
+      text: (
+        <>
+          Toque em <strong className="text-white">Adicionar</strong>. O ícone do PONT fica na tela inicial
+          e abre em tela cheia, como um app.
+        </>
+      )
+    }
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Instalar o PONT no iPhone"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl border border-white/10 bg-brand-charcoal p-6 shadow-lift"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-dark ring-1 ring-white/10">
+              <img src="/apple-touch-icon.png" alt="" className="h-full w-full rounded-xl" />
+            </span>
+            <div>
+              <strong className="block text-lg font-black text-white">Instalar no iPhone</strong>
+              <span className="block text-xs font-semibold text-slate-300">iOS / iPadOS · Safari</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/10 text-slate-300 transition hover:bg-white/5 hover:text-white"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <p className="mt-4 text-sm font-semibold leading-6 text-slate-300">
+          O iPhone não permite baixar apps fora da App Store. O PONT é instalado como app web direto pelo
+          navegador — leva menos de 30 segundos:
+        </p>
+
+        <ol className="mt-4 grid gap-3">
+          {steps.map((step, index) => (
+            <li key={index} className="flex gap-3">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-navy-950 font-black text-aqua-300">
+                {index + 1}
+              </span>
+              <span className="flex items-center gap-2 pt-0.5 text-sm font-semibold leading-6 text-slate-300">
+                <span className="shrink-0 text-aqua-300">{step.icon}</span>
+                <span>{step.text}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-4 text-sm font-black text-aqua-700 shadow-sm transition hover:bg-aqua-100"
+        >
+          Entendi
+        </button>
+      </div>
+    </div>
   );
 }
