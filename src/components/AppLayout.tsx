@@ -7,6 +7,7 @@ import {
   ClipboardList,
   CreditCard,
   Home,
+  LogOut,
   MessageCircle,
   MoreHorizontal,
   Search,
@@ -62,10 +63,15 @@ const companySecondaryLinks = [
 
 export function AppLayout() {
   const { state, syncStatus, currentWorker, currentCompany, updateWorkerProfile, updateCompanyProfile } = useAppStore();
-  const { isAdmin, isModerator, isSalesRep } = useAuth();
+  const { isAdmin, isModerator, isSalesRep, authEnabled, email, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [showMoreNav, setShowMoreNav] = useState(false);
+
+  async function handleSignOut() {
+    await signOut();
+    navigate("/login");
+  }
   const syncStatusRef = useRef(syncStatus);
 
   useEffect(() => {
@@ -228,6 +234,16 @@ export function AppLayout() {
             <ReportBugButton />
           </div>
         )}
+        {authEnabled && (
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-black text-slate-200 transition hover:border-alert/40 hover:bg-alert/10 hover:text-alert"
+            title={email ? `Conectado como ${email}` : undefined}
+          >
+            <LogOut size={15} /> Sair e trocar de conta
+          </button>
+        )}
         <div className="mt-4 flex flex-wrap gap-3 text-xs font-black text-slate-400">
           <Link to="/termos" className="hover:text-aqua-300">Termos</Link>
           <Link to="/privacidade" className="hover:text-aqua-300">Privacidade</Link>
@@ -362,6 +378,25 @@ export function AppLayout() {
                 </NavLink>
               );
             })}
+
+            {authEnabled && (
+              <>
+                <div className="my-1 border-t border-white/10" />
+                {email && (
+                  <p className="truncate px-3 text-xs font-semibold text-slate-400">Conectado como {email}</p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMoreNav(false);
+                    void handleSignOut();
+                  }}
+                  className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold text-alert hover:bg-alert/10"
+                >
+                  <LogOut size={18} /> Sair e trocar de conta
+                </button>
+              </>
+            )}
           </div>
         </Modal>
       )}
