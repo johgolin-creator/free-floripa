@@ -7,7 +7,8 @@ import type { UserRole } from "./types";
 //
 // TODO(pricing): confirmar com o time os valores finais antes de ligar a loja.
 // Os números abaixo espelham o que já aparecia no app (coin_pack R$4,95 /
-// package_professional R$19,90 / package_plus R$29,90).
+// package_professional R$19,90 / package_plus R$29,90). O preço da mensalidade
+// da empresa (company_plus_30d, R$49,90) é provisório.
 
 export interface CoinProduct {
   /** Identificador estável usado no client, no servidor e na tabela payments. */
@@ -23,7 +24,12 @@ export interface CoinProduct {
   /** Dias de Plus (candidaturas/ações ilimitadas) adicionados. 0 = não é Plus. */
   plusDays: number;
   /** Valor gravado em coin_transactions.reason, para o extrato reconhecer. */
-  ledgerReason: "coin_pack" | "package_professional" | "package_plus" | "company_coin_pack";
+  ledgerReason:
+    | "coin_pack"
+    | "package_professional"
+    | "package_plus"
+    | "company_coin_pack"
+    | "company_plus";
 }
 
 export const COIN_PRODUCTS: CoinProduct[] = [
@@ -56,6 +62,16 @@ export const COIN_PRODUCTS: CoinProduct[] = [
     coins: 0,
     plusDays: 30,
     ledgerReason: "package_plus"
+  },
+  {
+    id: "company_plus_30d",
+    role: "empresa",
+    title: "Mensalidade",
+    description: "Ações da empresa ilimitadas por 30 dias — sem gastar moeda para cancelar vaga já preenchida.",
+    priceCents: 4990,
+    coins: 0,
+    plusDays: 30,
+    ledgerReason: "company_plus"
   },
   {
     id: "company_coin_pack_10",

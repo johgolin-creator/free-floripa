@@ -37,6 +37,7 @@ import {
   supabaseCoinsEnabled,
   type CoinAccount
 } from "./supabaseCoins";
+import { getCoinProduct } from "./coinCatalog";
 import { DEFAULT_AVATAR_PLACEHOLDER, resolveAvatarUrl } from "./avatars";
 import { emailNotificationsEnabled, enqueueEmailNotification, type EmailNotificationInput } from "./emailNotifications";
 import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyLead, CompanyProfile, CompanyReview, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, TrustReportTargetType, UserRole, WorkerProfile } from "./types";
@@ -137,6 +138,7 @@ interface AppContextValue {
   replaceCompanyLeads: (leads: CompanyLead[]) => void;
   toggleCompanyLeadContacted: (leadId: string) => void;
   removeCompanyLead: (leadId: string) => void;
+  purchaseDemoProduct: (productId: string) => { ok: boolean; message: string };
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -2210,6 +2212,57 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ...current,
           companyLeads: current.companyLeads.filter((lead) => lead.id !== leadId)
         }));
+      },
+      purchaseDemoProduct(productId) {
+        // Compra SIMULADA (só no modo demo, sem Supabase): credita o produto
+        // localmente como se o checkout tivesse sido aprovado. Nenhuma cobrança.
+        const product = getCoinProduct(productId);
+        if (!product) return { ok: false, message: "Produto não encontrado." };
+
+        const isCompany = product.role === "empresa";
+        const now = new Date();
+
+        commit((current) => {
+          const sub = current.subscription;
+          const currentUntil = isCompany ? sub.companyPlusActiveUntil : sub.plusActiveUntil;
+          const extendFrom =
+            currentUntil && new Date(currentUntil) > now ? new Date(currentUntil) : now;
+          const nextUntil =
+            product.plusDays > 0
+              ? new Date(extendFrom.getTime() + product.plusDays * 86_400_000).toISOString()
+              : currentUntil;
+          const currentBalance = isCompany ? sub.companyCreditsRemaining : sub.creditsRemaining;
+          const nextBalance = currentBalance + product.coins;
+
+          return {
+            ...current,
+            subscription: {
+              ...sub,
+              creditsRemaining: isCompany ? sub.creditsRemaining : nextBalance,
+              companyCreditsRemaining: isCompany ? nextBalance : sub.companyCreditsRemaining,
+              plusActiveUntil: isCompany ? sub.plusActiveUntil : nextUntil,
+              companyPlusActiveUntil: isCompany ? nextUntil : sub.companyPlusActiveUntil
+            },
+            coinLedger: [
+              coinLedgerEntry({
+                role: product.role,
+                kind: "purchase",
+                reason: product.ledgerReason,
+                amount: product.coins,
+                balanceAfter: nextBalance
+              }),
+              ...current.coinLedger
+            ]
+          };
+        });
+
+        return {
+          ok: true,
+          message:
+            product.plusDays > 0
+              ? `Mensalidade ativada por ${product.plusDays} dias (demonstração).`
+              : `${product.coins} moeda(s) adicionadas (demonstração).`
+        };
       }
     }),
     [state, syncStatus, syncError, currentWorker, currentCompany, user, localStorageKey, isAdmin, isModerator]
