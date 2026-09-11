@@ -6,14 +6,6 @@ import type { UserRole } from "./types";
 // Edge Functions / secrets do Mercado Pago não precisam existir.
 export const paymentsEnabled = Boolean(supabase) && import.meta.env.VITE_PAYMENTS_ENABLED === "on";
 
-// Modo demonstração: o "checkout" é simulado dentro do próprio app — nenhuma
-// chamada ao Mercado Pago e nenhuma cobrança. Serve para mostrar o trâmite de
-// compra ponta a ponta (ver produto → comprar → confirmar → plano/saldo ativo).
-// Liga sozinho quando não há Supabase (build demo) ou quando
-// VITE_PAYMENTS_ENABLED === "demo". Nunca liga junto com paymentsEnabled.
-export const paymentsDemo =
-  !paymentsEnabled && (!supabase || import.meta.env.VITE_PAYMENTS_ENABLED === "demo");
-
 export type PaymentStatus =
   | "pending"
   | "in_process"

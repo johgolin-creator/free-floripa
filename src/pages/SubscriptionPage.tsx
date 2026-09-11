@@ -8,11 +8,11 @@ import { useAuth } from "../lib/auth";
 import { formatDateTime } from "../lib/format";
 import { loadRemoteCoinTransactions, supabaseCoinsEnabled, type CoinTransaction } from "../lib/supabaseCoins";
 import { formatProductPrice, getCoinProductsForRole, type CoinProduct } from "../lib/coinCatalog";
-import { createCoinPayment, getPaymentStatus, openCheckout, paymentsDemo, paymentsEnabled } from "../lib/payments";
+import { createCoinPayment, getPaymentStatus, openCheckout, paymentsEnabled } from "../lib/payments";
 import type { UserRole } from "../lib/types";
 
 export function SubscriptionPage() {
-  const { state, purchaseDemoProduct } = useAppStore();
+  const { state } = useAppStore();
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<CoinTransaction[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
@@ -72,8 +72,6 @@ export function SubscriptionPage() {
 
       {paymentsEnabled ? (
         <CoinStore role={state.activeRole} />
-      ) : paymentsDemo ? (
-        <DemoCoinStore role={state.activeRole} onBuy={purchaseDemoProduct} />
       ) : (
         <section className="card p-5">
           <div className="flex items-center gap-2 text-aqua-700">
@@ -182,10 +180,7 @@ function CoinStatement({
 }
 
 function CoinTransactionRow({ transaction }: { transaction: CoinTransaction }) {
-  // Compra de plano (Plus/mensalidade) não mexe no saldo: amount 0, mas ainda
-  // é uma "entrada" no extrato.
-  const isPlan = transaction.amount === 0 && transaction.kind === "purchase";
-  const positive = transaction.amount > 0 || isPlan;
+  const positive = transaction.amount > 0;
   return (
     <article className="worker-application-card">
       <div className="worker-card-head">
@@ -204,9 +199,7 @@ function CoinTransactionRow({ transaction }: { transaction: CoinTransaction }) {
         </div>
         <div className="text-right">
           <strong className={`block text-lg font-black ${positive ? "text-aqua-700" : "text-white"}`}>
-            {isPlan
-              ? "Plano ativado"
-              : `${positive ? "+" : ""}${transaction.amount} moeda${Math.abs(transaction.amount) === 1 ? "" : "s"}`}
+            {positive ? "+" : ""}{transaction.amount} moeda{Math.abs(transaction.amount) === 1 ? "" : "s"}
           </strong>
           <span className="text-xs font-black uppercase text-slate-500">Saldo: {transaction.balanceAfter}</span>
         </div>
@@ -347,169 +340,10 @@ function CoinStore({ role }: { role: UserRole }) {
   );
 }
 
-function DemoCoinStore({
-  role,
-  onBuy
-}: {
-  role: UserRole;
-  onBuy: (productId: string) => { ok: boolean; message: string };
-}) {
-  const products = getCoinProductsForRole(role);
-  const [checkoutProduct, setCheckoutProduct] = useState<CoinProduct | null>(null);
-
-  return (
-    <section className="card p-5">
-      <div className="mb-1 flex flex-wrap items-center gap-2 text-aqua-700">
-        <CreditCard size={18} />
-        <strong>{role === "empresa" ? "Planos e moedas da empresa" : "Comprar moedas"}</strong>
-        <span className="badge bg-amber-50 text-amber-800">Demonstração</span>
-      </div>
-      <p className="mb-4 text-sm font-semibold leading-6 text-slate-600">
-        Ambiente de demonstração: o checkout é simulado e nenhuma cobrança é feita. Serve para acompanhar
-        o trâmite de compra do começo ao fim.
-      </p>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        {products.map((product) => (
-          <article key={product.id} className="worker-info-tile flex flex-col gap-2">
-            <div>
-              <strong className="block text-white">{product.title}</strong>
-              <p className="mt-1 text-sm font-semibold leading-5 text-slate-600">{product.description}</p>
-            </div>
-            <div className="mt-auto flex items-center justify-between gap-2">
-              <span className="text-lg font-black text-white">{formatProductPrice(product.priceCents)}</span>
-              <button type="button" className="primary" onClick={() => setCheckoutProduct(product)}>
-                <CreditCard size={16} /> Comprar
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
-
-      {checkoutProduct && (
-        <DemoCheckoutModal
-          product={checkoutProduct}
-          onClose={() => setCheckoutProduct(null)}
-          onConfirm={() => onBuy(checkoutProduct.id)}
-        />
-      )}
-    </section>
-  );
-}
-
-function DemoCheckoutModal({
-  product,
-  onClose,
-  onConfirm
-}: {
-  product: CoinProduct;
-  onClose: () => void;
-  onConfirm: () => { ok: boolean; message: string };
-}) {
-  const [phase, setPhase] = useState<"form" | "processing" | "done">("form");
-  const [method, setMethod] = useState<"pix" | "card">("pix");
-  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
-
-  function pay() {
-    setPhase("processing");
-    window.setTimeout(() => {
-      setResult(onConfirm());
-      setPhase("done");
-    }, 1100);
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Checkout de demonstração"
-      onClick={phase === "processing" ? undefined : onClose}
-    >
-      <div
-        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 bg-brand-charcoal shadow-lift"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-3 border-b border-white/10 p-6 pb-4">
-          <div className="flex items-center gap-2">
-            <CreditCard size={20} className="text-aqua-300" />
-            <div>
-              <strong className="block text-lg font-black text-white">Checkout</strong>
-              <span className="block text-xs font-semibold text-slate-300">Pagamento de demonstração</span>
-            </div>
-          </div>
-          <span className="badge bg-amber-50 text-amber-800">Demo</span>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto p-6">
-          <div className="rounded-lg border border-white/10 bg-brand-dark p-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="font-black text-white">{product.title}</span>
-              <span className="text-lg font-black text-white">{formatProductPrice(product.priceCents)}</span>
-            </div>
-            <p className="mt-1 text-sm font-semibold leading-5 text-slate-400">{product.description}</p>
-          </div>
-
-          {phase !== "done" ? (
-            <>
-              <p className="mt-4 text-xs font-black uppercase text-slate-400">Forma de pagamento</p>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {(["pix", "card"] as const).map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setMethod(option)}
-                    disabled={phase === "processing"}
-                    className={`min-h-11 rounded-lg border px-3 text-sm font-black transition ${
-                      method === option
-                        ? "border-aqua-300 bg-aqua-400/15 text-white"
-                        : "border-white/10 text-slate-300 hover:bg-white/5"
-                    }`}
-                  >
-                    {option === "pix" ? "Pix" : "Cartão"}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs font-bold text-amber-800">
-                Simulação: nenhuma cobrança real é feita e nenhum dado de pagamento é coletado.
-              </p>
-            </>
-          ) : (
-            result && (
-              <div
-                className={`mt-4 flex items-start gap-2 rounded-lg p-3 text-sm font-bold ${
-                  result.ok ? "bg-aqua-50 text-aqua-800" : "bg-red-50 text-alert"
-                }`}
-              >
-                <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
-                <span>{result.message}</span>
-              </div>
-            )
-          )}
-        </div>
-
-        <div className="border-t border-white/10 p-6 pt-4">
-          {phase === "done" ? (
-            <button type="button" onClick={onClose} className="primary w-full">
-              Concluir
-            </button>
-          ) : (
-            <button type="button" onClick={pay} disabled={phase === "processing"} className="primary w-full">
-              {phase === "processing" ? "Processando…" : `Pagar ${formatProductPrice(product.priceCents)}`}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function getTransactionTitle(transaction: CoinTransaction) {
   if (transaction.reason === "welcome_bonus") return "Bônus de boas-vindas";
   if (transaction.reason === "package_professional") return "Pacote Profissional comprado";
   if (transaction.reason === "package_plus") return "Pacote Plus comprado";
-  if (transaction.reason === "company_plus") return "Mensalidade da empresa";
-  if (transaction.reason === "company_coin_pack") return "Moedas da empresa compradas";
   if (transaction.reason === "coin_pack") return "Pacote de moedas comprado";
   if (transaction.reason === "unlock_job") return "Vaga completa liberada";
   if (transaction.reason === "apply_job") return "Candidatura enviada";
@@ -521,7 +355,6 @@ function getTransactionTitle(transaction: CoinTransaction) {
 
 function getTransactionDescription(transaction: CoinTransaction) {
   if (transaction.reason === "welcome_bonus") return "5 moedas para você começar a usar o PONT.";
-  if (transaction.reason === "company_plus") return "Mensalidade da empresa — ações ilimitadas por 30 dias.";
   if (transaction.reason === "unlock_job" && transaction.jobId) return `Desbloqueio da vaga ${transaction.jobId}.`;
   if (transaction.reason === "apply_job" && transaction.applicationId) return `Candidatura ${transaction.applicationId}.`;
   if (transaction.reason === "cancel_filled_job" && transaction.jobId) return `Taxa de cancelamento da vaga preenchida ${transaction.jobId}.`;
