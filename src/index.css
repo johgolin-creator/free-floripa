@@ -11,6 +11,16 @@
   text-rendering: optimizeLegibility;
   color-scheme: dark;
   accent-color: #c8ff38;
+  /* iOS Safari infla o tamanho da fonte de blocos de texto quando acha a
+     coluna "estreita" — o app inteiro parecia com zoom no iPhone. Trava em
+     100% para o texto respeitar exatamente o tamanho definido no CSS. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 * {
@@ -21,6 +31,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at 12% -10%, rgba(200, 255, 56, 0.08), transparent 42%),
     #111318;
@@ -31,6 +42,19 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+/* iOS dá zoom automático na página ao focar um campo com fonte < 16px e
+   normalmente não volta. Só no iOS, mantém os campos em 16px para o layout
+   não "pular" e ficar com zoom. Android e desktop seguem com o tamanho do
+   design. */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea,
+  .input {
+    font-size: 16px;
+  }
 }
 
 button:disabled {
