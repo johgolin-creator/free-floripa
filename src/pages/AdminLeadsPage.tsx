@@ -29,6 +29,17 @@ import { formatDateTime } from "../lib/format";
 import type { CompanyLead, CompanyLeadSegment } from "../lib/types";
 
 type SegmentFilter = "Todos" | CompanyLeadSegment;
+type ContactFilter = "Todas" | "Com contato" | "Sem contato" | "A contatar" | "Já contatadas" | "Já no PONT";
+
+/** Normaliza um nome de empresa para comparar lead x cadastro: minúsculas, sem
+ *  acento, só letras e números. */
+function normalizeCompanyName(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
 
 export function AdminLeadsPage() {
   const { state, addCompanyLeads, replaceCompanyLeads, toggleCompanyLeadContacted, removeCompanyLead } = useAppStore();
@@ -38,7 +49,8 @@ export function AdminLeadsPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [segmentFilter, setSegmentFilter] = useState<SegmentFilter>("Todos");
-  const [contactFilter, setContactFilter] = useState<"Todas" | "Sem contato" | "Contatadas">("Todas");
+  const [contactFilter, setContactFilter] = useState<ContactFilter>("Todas");
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     if (!supabaseCompanyLeadsEnabled) return;
@@ -53,17 +65,58 @@ export function AdminLeadsPage() {
   }, []);
 
   const leads = state.companyLeads;
-  const filteredLeads = useMemo(
+
+  // Nomes das empresas já cadastradas no PONT, normalizados, para marcar os
+  // leads que já são clientes / já têm contato conosco.
+  const registeredNames = useMemo(
     () =>
-      leads
-        .filter((lead) => segmentFilter === "Todos" || lead.segment === segmentFilter)
-        .filter((lead) => {
-          if (contactFilter === "Todas") return true;
-          return contactFilter === "Contatadas" ? lead.contacted : !lead.contacted;
-        })
-        .sort((a, b) => b.foundAt.localeCompare(a.foundAt)),
-    [leads, segmentFilter, contactFilter]
+      state.companies
+        .map((company) => normalizeCompanyName(company.establishmentName))
+        .filter((name) => name.length >= 3),
+    [state.companies]
   );
+
+  const isRegistered = useMemo(() => {
+    return (lead: CompanyLead) => {
+      const leadName = normalizeCompanyName(lead.name);
+      if (leadName.length < 3) return false;
+      return registeredNames.some(
+        (name) =>
+          name === leadName ||
+          (name.length >= 4 && leadName.length >= 4 && (name.includes(leadName) || leadName.includes(name)))
+      );
+    };
+  }, [registeredNames]);
+
+  const filteredLeads = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return leads
+      .filter((lead) => segmentFilter === "Todos" || lead.segment === segmentFilter)
+      .filter((lead) => {
+        const hasContact = Boolean(lead.phone || lead.email);
+        switch (contactFilter) {
+          case "Com contato":
+            return hasContact;
+          case "Sem contato":
+            return !hasContact;
+          case "A contatar":
+            return !lead.contacted;
+          case "Já contatadas":
+            return lead.contacted;
+          case "Já no PONT":
+            return isRegistered(lead);
+          default:
+            return true;
+        }
+      })
+      .filter((lead) => {
+        if (!term) return true;
+        return [lead.name, lead.address, lead.phone, lead.email, lead.segment, lead.city]
+          .filter(Boolean)
+          .some((value) => (value as string).toLowerCase().includes(term));
+      })
+      .sort((a, b) => b.foundAt.localeCompare(a.foundAt));
+  }, [leads, segmentFilter, contactFilter, query, isRegistered]);
 
   const groupedLeads = useMemo(() => {
     if (segmentFilter !== "Todos") return null;
@@ -77,7 +130,8 @@ export function AdminLeadsPage() {
   const stats = {
     total: leads.length,
     withContact: leads.filter((lead) => lead.phone || lead.email).length,
-    contacted: leads.filter((lead) => lead.contacted).length
+    contacted: leads.filter((lead) => lead.contacted).length,
+    registered: leads.filter((lead) => isRegistered(lead)).length
   };
 
   async function runSearch() {
@@ -166,9 +220,10 @@ export function AdminLeadsPage() {
         {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       </section>
 
-      <section className="mb-5 grid gap-3 sm:grid-cols-3">
+      <section className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile variant="primary" icon={<Building2 size={19} />} label="empresas encontradas" value={stats.total} />
         <StatTile tone={stats.withContact > 0 ? "positive" : "normal"} icon={<Phone size={19} />} label="com telefone ou e-mail" value={stats.withContact} />
+        <StatTile tone={stats.registered > 0 ? "positive" : "normal"} icon={<Building2 size={19} />} label="já cadastradas no PONT" value={stats.registered} />
         <StatTile icon={<CheckCircle2 size={19} />} label="já contatadas" value={stats.contacted} />
       </section>
 
@@ -178,10 +233,21 @@ export function AdminLeadsPage() {
             <h3>
               <Search size={18} /> Filtrar lista
             </h3>
-            <p>Veja por área de atuação ou por status de contato.</p>
+            <p>Busque pelo nome, endereço ou contato — ou filtre por área e status.</p>
           </div>
           <span className="badge">{filteredLeads.length} exibidas</span>
         </div>
+        <label className="relative block">
+          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar por nome, endereço, telefone ou e-mail..."
+            className="input pl-9"
+            aria-label="Buscar na lista de empresas"
+          />
+        </label>
         <div className="worker-filter-buttons">
           {(["Todos", ...COMPANY_LEAD_SEGMENTS.map((item) => item.value)] as SegmentFilter[]).map((item) => (
             <button
@@ -195,16 +261,18 @@ export function AdminLeadsPage() {
           ))}
         </div>
         <div className="worker-filter-buttons mt-2">
-          {(["Todas", "Sem contato", "Contatadas"] as const).map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setContactFilter(item)}
-              className={`worker-filter-button ${contactFilter === item ? "is-active" : ""}`}
-            >
-              {item}
-            </button>
-          ))}
+          {(["Todas", "Com contato", "Sem contato", "A contatar", "Já contatadas", "Já no PONT"] as ContactFilter[]).map(
+            (item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setContactFilter(item)}
+                className={`worker-filter-button ${contactFilter === item ? "is-active" : ""}`}
+              >
+                {item}
+              </button>
+            )
+          )}
         </div>
       </section>
 
@@ -225,6 +293,7 @@ export function AdminLeadsPage() {
                   <LeadCard
                     key={lead.id}
                     lead={lead}
+                    registered={isRegistered(lead)}
                     onToggleContacted={() => handleToggleContacted(lead)}
                     onRemove={() => handleRemove(lead)}
                   />
@@ -239,6 +308,7 @@ export function AdminLeadsPage() {
             <LeadCard
               key={lead.id}
               lead={lead}
+              registered={isRegistered(lead)}
               onToggleContacted={() => handleToggleContacted(lead)}
               onRemove={() => handleRemove(lead)}
             />
@@ -260,10 +330,12 @@ function buildSearchLinks(lead: CompanyLead) {
 
 function LeadCard({
   lead,
+  registered,
   onToggleContacted,
   onRemove
 }: {
   lead: CompanyLead;
+  registered: boolean;
   onToggleContacted: () => void;
   onRemove: () => void;
 }) {
@@ -271,7 +343,11 @@ function LeadCard({
   const searchLinks = buildSearchLinks(lead);
 
   return (
-    <article className={`worker-application-card ${lead.contacted ? "" : hasContact ? "border-aqua-200 bg-aqua-50/40" : ""}`}>
+    <article
+      className={`worker-application-card ${
+        registered ? "border-amber-200 bg-amber-50/50" : lead.contacted ? "" : hasContact ? "border-aqua-200 bg-aqua-50/40" : ""
+      }`}
+    >
       <div className="worker-card-head">
         <div className="flex min-w-0 gap-3">
           <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border border-aqua-100 bg-aqua-50 text-aqua-700">
@@ -280,6 +356,12 @@ function LeadCard({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="badge">{lead.segment}</span>
+              {registered && (
+                <span className="badge border-amber-300 bg-amber-100 text-amber-800">Já cadastrada no PONT</span>
+              )}
+              {hasContact && (
+                <span className="badge border-aqua-200 bg-aqua-50 text-aqua-700">Com contato</span>
+              )}
               {lead.contacted && <span className="badge border-aqua-200 bg-aqua-50 text-aqua-700">Contatada</span>}
               {!hasContact && <span className="badge">Sem contato direto</span>}
             </div>
