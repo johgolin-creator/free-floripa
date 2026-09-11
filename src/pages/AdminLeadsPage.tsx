@@ -144,7 +144,15 @@ export function AdminLeadsPage() {
       if (found.length === 0) {
         setMessage("Nenhuma empresa encontrada para esse segmento e cidade.");
       } else {
-        setMessage(`${found.length} empresa(s) encontrada(s): ${added} nova(s), ${updated} já conhecida(s).`);
+        // A lista acumula todas as buscas (restaurantes, hotéis, ...). Depois de
+        // buscar, já filtra a lista para o segmento pesquisado — senão o que
+        // aparece é a soma de tudo que já foi buscado antes.
+        setSegmentFilter(segment);
+        setQuery("");
+        setMessage(
+          `${found.length} empresa(s) em ${segment}: ${added} nova(s), ${updated} já conhecida(s). ` +
+            `Mostrando só ${segment} — toque em "Todos" para ver a lista inteira.`
+        );
       }
       if (supabaseCompanyLeadsEnabled) {
         upsertRemoteCompanyLeads(found).catch(() => {
