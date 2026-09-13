@@ -55,3 +55,47 @@ export async function adminDeleteJob(jobId: string): Promise<void> {
   const { error } = await supabase.rpc("admin_delete_job", { target_job_id: jobId });
   if (error) throw new Error(error.message);
 }
+
+interface WorkerContactRow {
+  id: string;
+  user_id: string | null;
+  cpf: string | null;
+  phone: string | null;
+  email: string | null;
+}
+
+/**
+ * Notifica todos os freelancers cadastrados sobre uma vaga. Usa a mesma
+ * função security-definer admin_list_worker_contacts (restrita a
+ * admin/moderador) para achar o user_id de cada trabalhador, depois insere
+ * uma linha em public.notifications por pessoa (a policy de insert dessa
+ * tabela aceita qualquer usuário autenticado gravando para qualquer user_id).
+ */
+export async function adminNotifyAllWorkers(title: string, body: string): Promise<{ count: number }> {
+  if (!supabase) {
+    throw new Error("O envio de notificações está disponível apenas no ambiente online.");
+  }
+
+  const { data, error } = await supabase.rpc("admin_list_worker_contacts");
+  if (error) throw new Error(error.message);
+
+  const rows = (data ?? []) as WorkerContactRow[];
+  const userIds = Array.from(new Set(rows.map((row) => row.user_id).filter((id): id is string => Boolean(id))));
+  if (userIds.length === 0) return { count: 0 };
+
+  const createdAt = new Date().toISOString();
+  const notifications = userIds.map((userId) => ({
+    id: crypto.randomUUID(),
+    user_id: userId,
+    role: "trabalhador",
+    title,
+    body,
+    read: false,
+    created_at: createdAt
+  }));
+
+  const { error: insertError } = await supabase.from("notifications").insert(notifications);
+  if (insertError) throw new Error(insertError.message);
+
+  return { count: userIds.length };
+}

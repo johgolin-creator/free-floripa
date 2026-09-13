@@ -5,6 +5,7 @@ import {
   Award,
   BadgeCheck,
   Ban,
+  Bell,
   BriefcaseBusiness,
   Building2,
   CalendarDays,
@@ -35,7 +36,7 @@ import { calculateReliability, getExperienceLabel, getFunctionExperience, getJob
 import { getTrustBadges } from "../lib/trust";
 import { useAppStore } from "../lib/store";
 import { adminActivatePlus, adminAdjustCoins, adminCoinsEnabled } from "../lib/supabaseAdminCoins";
-import { adminAccountsEnabled, adminDeleteAccount, adminDeleteJob } from "../lib/adminAccounts";
+import { adminAccountsEnabled, adminDeleteAccount, adminDeleteJob, adminNotifyAllWorkers } from "../lib/adminAccounts";
 import {
   adminSetCompanySalesRep,
   createSalesRep,
@@ -352,6 +353,10 @@ export function AdminPage() {
                   </div>
                   <div className="grid gap-2 sm:min-w-40">
                     <strong className="worker-next-step">{openSlots} vaga(s) em aberto</strong>
+                    <NotifyWorkersButton
+                      title="Nova vaga disponível"
+                      body={`Nova vaga disponível: ${company?.establishmentName ?? "Uma empresa"} está contratando ${openSlots} ${job.function}(s) para "${job.title}". Candidate-se agora no PONT!`}
+                    />
                     <JobDeleteButton title={job.title} onDelete={() => handleDeleteJob(job.id, job.title)} />
                   </div>
                 </div>
@@ -1188,6 +1193,55 @@ function DangerDeleteAccount({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function NotifyWorkersButton({ title, body }: { title: string; body: string }) {
+  const [armed, setArmed] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState<number | null>(null);
+
+  async function run() {
+    if (pending) return;
+    setPending(true);
+    setError("");
+    try {
+      const { count } = await adminNotifyAllWorkers(title, body);
+      setDone(count);
+      setArmed(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível notificar os freelancers.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  if (done !== null) {
+    return <span className="text-xs font-bold text-emerald-600">Notificados {done} freelancer(s).</span>;
+  }
+
+  return (
+    <div className="grid gap-1">
+      {!armed ? (
+        <button type="button" className="secondary" onClick={() => setArmed(true)}>
+          <Bell size={15} /> Notificar freelancers
+        </button>
+      ) : (
+        <div className="grid gap-1">
+          <span className="text-xs font-bold text-slate-600">Notificar todos os freelancers sobre essa vaga?</span>
+          <div className="flex gap-2">
+            <button type="button" className="secondary" disabled={pending} onClick={run}>
+              {pending ? "Enviando..." : "Confirmar"}
+            </button>
+            <button type="button" className="secondary" disabled={pending} onClick={() => setArmed(false)}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+      {error && <span className="text-xs font-bold text-alert">{error}</span>}
     </div>
   );
 }
