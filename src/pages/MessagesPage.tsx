@@ -28,8 +28,8 @@ export function MessagesPage() {
       .map((application) => {
         const job = state.jobs.find((item) => item.id === application.jobId);
         if (!job) return null;
-        if (state.activeRole === "empresa" && job.companyId !== currentCompany.id) return null;
-        if (state.activeRole === "trabalhador" && application.workerId !== currentWorker.id) return null;
+        if (state.activeRole === "empresa" && job.companyId !== currentCompany?.id) return null;
+        if (state.activeRole === "trabalhador" && application.workerId !== currentWorker?.id) return null;
 
         const worker = state.workers.find((item) => item.id === application.workerId);
         const company = state.companies.find((item) => item.id === job.companyId);
