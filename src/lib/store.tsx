@@ -818,7 +818,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [authLoading, isAdmin, isModerator]);
 
   useEffect(() => {
-    if (authLoading || role !== "trabalhador" || !user || !currentWorker || !supabaseMarketplaceEnabled) return;
+    // syncStatus === "carregando": o snapshot remoto (app_state_snapshots)
+    // ainda não voltou. Até lá, currentWorker pode ser só o fallback local
+    // (accountState/createWorkerForUser, com avatarUrl no placeholder) -
+    // publicar nesse instante grava esse fallback em cima do perfil real no
+    // banco assim que o timeout abaixo dispara, ANTES da resposta real
+    // chegar e corrigir o state. Reproduzido ao vivo: perdeu a foto real de
+    // uma conta de empresa. Espera o carregamento assentar antes de confiar
+    // no valor atual o suficiente para publicá-lo de volta.
+    if (authLoading || role !== "trabalhador" || !user || !currentWorker || !supabaseMarketplaceEnabled || syncStatus === "carregando") return;
 
     // currentWorker/user can get a new object reference - sometimes with
     // subtly different content (different key order or defaults from
@@ -852,7 +860,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }, 600);
 
     return () => window.clearTimeout(timeoutId);
-  }, [authLoading, currentWorker, role, user]);
+  }, [authLoading, currentWorker, role, user, syncStatus]);
 
   useEffect(() => {
     // Espelha o efeito de publicação do trabalhador acima, para a empresa.
@@ -862,13 +870,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // link ?vendedor=). O guard currentCompany.id === user.id garante que só
     // a própria empresa da conta é publicada (um admin vê a lista inteira em
     // state.companies e não deve regravar a empresa de outra pessoa).
+    // syncStatus === "carregando": ver o comentário equivalente no efeito do
+    // trabalhador acima - publicar currentCompany antes do snapshot remoto
+    // voltar arrisca gravar o fallback local (com logoUrl no placeholder)
+    // por cima dos dados reais no banco.
     if (
       authLoading ||
       role !== "empresa" ||
       !user ||
       !currentCompany ||
       currentCompany.id !== user.id ||
-      !supabaseMarketplaceEnabled
+      !supabaseMarketplaceEnabled ||
+      syncStatus === "carregando"
     ) {
       return;
     }
@@ -883,7 +896,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }, 600);
 
     return () => window.clearTimeout(timeoutId);
-  }, [authLoading, currentCompany, role, user]);
+  }, [authLoading, currentCompany, role, user, syncStatus]);
 
   useEffect(() => {
     if (authLoading || role !== "trabalhador" || !currentWorker || !supabaseMarketplaceEnabled) return;
