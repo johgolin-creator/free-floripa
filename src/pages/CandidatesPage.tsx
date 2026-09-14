@@ -93,6 +93,13 @@ export function CandidatesPage() {
   const selectedJobIds = new Set(selectedJobs.map((job) => job.id));
   const selectedControlValue = selectedEvent ? `event:${selectedEvent.key}` : selectedJob?.id ?? "";
   const applications = state.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId));
+  const candidateCountByJobId = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const application of applications) {
+      counts.set(application.jobId, (counts.get(application.jobId) ?? 0) + 1);
+    }
+    return counts;
+  }, [applications]);
   const selectedApplications = selectedJobs.length > 0 ? applications.filter((application) => selectedJobIds.has(application.jobId)) : [];
   const visibleApplications = useMemo(
     () =>
@@ -254,11 +261,14 @@ export function CandidatesPage() {
                   </optgroup>
                 )}
                 <optgroup label="Vagas individuais">
-                {companyJobs.map((job) => (
-                  <option key={job.id} value={job.id}>
-                    {job.title} - {formatDate(job.date)} - {job.candidates} candidato{job.candidates === 1 ? "" : "s"}
-                  </option>
-                ))}
+                {companyJobs.map((job) => {
+                  const jobCandidateCount = candidateCountByJobId.get(job.id) ?? 0;
+                  return (
+                    <option key={job.id} value={job.id}>
+                      {job.title} - {formatDate(job.date)} - {jobCandidateCount} candidato{jobCandidateCount === 1 ? "" : "s"}
+                    </option>
+                  );
+                })}
                 </optgroup>
               </select>
             </label>

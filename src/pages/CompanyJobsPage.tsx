@@ -286,7 +286,7 @@ export function CompanyJobsPage() {
 
                     <div className="company-action-grid">
                       <Link to={`/app/candidatos?vaga=${job.id}`} className="company-action company-action-primary">
-                        <ClipboardList size={17} /> Candidatos ({job.candidates})
+                        <ClipboardList size={17} /> Candidatos ({applications.length})
                       </Link>
                       <Link
                         to={`/app/empresa?acao=editar-vaga&vaga=${job.id}`}
@@ -306,7 +306,7 @@ export function CompanyJobsPage() {
                     <details className="company-history">
                       <summary><Square size={16} /> Mais ações</summary>
                       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                        <Mini label="candidatos" value={String(job.candidates)} />
+                        <Mini label="candidatos" value={String(applications.length)} />
                         <Mini label="previsto" value={formatCurrency(expectedValue)} />
                       </div>
                       <div className="mt-3 grid gap-2 sm:grid-cols-2">
