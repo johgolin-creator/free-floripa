@@ -226,6 +226,20 @@ function CoinStore({ role }: { role: UserRole }) {
     return () => window.clearTimeout(timeout);
   }, [returnStatus, searchParams, setSearchParams]);
 
+  // No site (fora do app nativo), o checkout redireciona a própria aba em
+  // vez de abrir uma nova — ao voltar, o estado em memória se perdeu, então
+  // recupera o id do pedido pela URL (back_urls do create-payment) e retoma
+  // o acompanhamento do pagamento.
+  useEffect(() => {
+    const paymentIdFromUrl = searchParams.get("payment");
+    if (!paymentIdFromUrl) return;
+    searchParams.delete("payment");
+    setSearchParams(searchParams, { replace: true });
+    if (returnStatus !== "falha") {
+      setAwaitingPaymentId(paymentIdFromUrl);
+    }
+  }, [returnStatus, searchParams, setSearchParams]);
+
   useEffect(() => {
     if (!awaitingPaymentId) return;
 

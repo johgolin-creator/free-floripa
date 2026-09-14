@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
 import type { UserRole } from "./types";
 
@@ -65,10 +66,22 @@ export async function getPaymentStatus(paymentId: string): Promise<PaymentRow | 
   return (data as PaymentRow | null) ?? null;
 }
 
-/** Abre o checkout no navegador EXTERNO (nunca no WebView) para respeitar a
- *  política de pagamentos da Play Store. */
+/** Abre o checkout do Mercado Pago.
+ *
+ *  No app nativo (APK / futura versão Play Store) abre no navegador EXTERNO,
+ *  nunca dentro do WebView, para respeitar a política de pagamentos da Play
+ *  Store (que não permite vender bem digital por Pix dentro do app).
+ *
+ *  No site (navegador comum), como essa restrição não existe, redireciona a
+ *  própria aba — fluxo mais familiar de checkout web, sem depender de pop-up
+ *  (que alguns navegadores bloqueiam) e sem deixar uma aba extra aberta. O
+ *  Mercado Pago volta pro app sozinho via back_urls/auto_return. */
 export function openCheckout(initPoint: string) {
-  window.open(initPoint, "_blank", "noopener,noreferrer");
+  if (Capacitor.isNativePlatform()) {
+    window.open(initPoint, "_blank", "noopener,noreferrer");
+    return;
+  }
+  window.location.href = initPoint;
 }
 
 async function readFunctionError(error: unknown): Promise<string> {

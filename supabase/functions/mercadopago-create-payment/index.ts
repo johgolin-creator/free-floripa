@@ -1,7 +1,8 @@
 // Cria um pedido de compra de moedas / Plus e uma preferência de checkout no
-// Mercado Pago (Pix + cartão, página hospedada pelo MP). O app abre a URL
-// retornada no NAVEGADOR EXTERNO — nunca dentro do WebView — para não
-// esbarrar na política de pagamentos da Play Store.
+// Mercado Pago (Pix + cartão, página hospedada pelo MP). No app nativo a URL
+// retornada abre no NAVEGADOR EXTERNO — nunca dentro do WebView — para não
+// esbarrar na política de pagamentos da Play Store; no site, abre na própria
+// aba (ver src/lib/payments.ts openCheckout).
 //
 // Fluxo:
 //   1. cliente autenticado chama esta função com { productId }
@@ -110,9 +111,9 @@ Deno.serve(async (req) => {
     notification_url: `${supabaseUrl}/functions/v1/mercadopago-webhook`,
     statement_descriptor: "PONT",
     back_urls: {
-      success: `${appUrl}/app/moedas?pagamento=sucesso`,
-      pending: `${appUrl}/app/moedas?pagamento=pendente`,
-      failure: `${appUrl}/app/moedas?pagamento=falha`
+      success: `${appUrl}/app/moedas?pagamento=sucesso&payment=${payment.id}`,
+      pending: `${appUrl}/app/moedas?pagamento=pendente&payment=${payment.id}`,
+      failure: `${appUrl}/app/moedas?pagamento=falha&payment=${payment.id}`
     },
     auto_return: "approved"
   };
