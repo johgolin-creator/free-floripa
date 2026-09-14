@@ -220,3 +220,4 @@ Deno.serve(async (req) => {
 
   return json({ ok: true, paymentId: payment.id, initPoint });
 });
+
