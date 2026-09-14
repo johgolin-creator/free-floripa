@@ -289,11 +289,11 @@ function CoinStore({ role }: { role: UserRole }) {
     <section className="card p-5">
       <div className="mb-1 flex items-center gap-2 text-aqua-700">
         <CreditCard size={18} />
-        <strong>Comprar moedas</strong>
+        <strong>Comprar moedas e planos</strong>
       </div>
       <p className="mb-4 text-sm font-semibold leading-6 text-slate-600">
         Pagamento por Pix ou cartão pelo Mercado Pago. O checkout abre no navegador; ao confirmar, o saldo
-        entra automaticamente aqui.
+        ou o plano Plus entra automaticamente aqui.
       </p>
 
       {returnStatus === "sucesso" && (

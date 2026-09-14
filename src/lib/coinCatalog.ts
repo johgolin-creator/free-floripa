@@ -23,7 +23,7 @@ export interface CoinProduct {
   /** Dias de Plus (candidaturas/ações ilimitadas) adicionados. 0 = não é Plus. */
   plusDays: number;
   /** Valor gravado em coin_transactions.reason, para o extrato reconhecer. */
-  ledgerReason: "coin_pack" | "package_professional" | "package_plus" | "company_coin_pack";
+  ledgerReason: "coin_pack" | "package_professional" | "package_plus" | "company_coin_pack" | "company_package_plus";
 }
 
 export const COIN_PRODUCTS: CoinProduct[] = [
@@ -66,6 +66,26 @@ export const COIN_PRODUCTS: CoinProduct[] = [
     coins: 10,
     plusDays: 0,
     ledgerReason: "company_coin_pack"
+  },
+  {
+    id: "company_plus_30d",
+    role: "empresa",
+    title: "Plus empresa — Mensal",
+    description: "Ações ilimitadas da empresa por 30 dias, sem gastar moedas.",
+    priceCents: 19990,
+    coins: 0,
+    plusDays: 30,
+    ledgerReason: "company_package_plus"
+  },
+  {
+    id: "company_plus_90d",
+    role: "empresa",
+    title: "Plus empresa — Trimestral",
+    description: "Ações ilimitadas da empresa por 90 dias, sem gastar moedas.",
+    priceCents: 53990,
+    coins: 0,
+    plusDays: 90,
+    ledgerReason: "company_package_plus"
   }
 ];
 

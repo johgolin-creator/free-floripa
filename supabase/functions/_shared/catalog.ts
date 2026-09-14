@@ -51,6 +51,24 @@ export const COIN_PRODUCTS: CoinProduct[] = [
     coins: 10,
     plusDays: 0,
     ledgerReason: "company_coin_pack"
+  },
+  {
+    id: "company_plus_30d",
+    role: "empresa",
+    title: "Plus empresa — Mensal",
+    priceCents: 19990,
+    coins: 0,
+    plusDays: 30,
+    ledgerReason: "company_package_plus"
+  },
+  {
+    id: "company_plus_90d",
+    role: "empresa",
+    title: "Plus empresa — Trimestral",
+    priceCents: 53990,
+    coins: 0,
+    plusDays: 90,
+    ledgerReason: "company_package_plus"
   }
 ];
 
