@@ -395,8 +395,6 @@ export function CandidatesPage() {
                         </button>
                       </div>
 
-                      <HiringFlow application={application} reviewed={reviewed} />
-
                       {blockedAction && (
                         <SafetyNotice title="Ações bloqueadas por segurança" tone="warning">
                           {workerBlocked
@@ -651,80 +649,6 @@ function isTrustedCandidate(worker: WorkerProfile, state: AppState) {
   const blocked = state.adminModeration.blockedWorkerIds.includes(worker.id);
 
   return calculateReliability(worker) >= 85 && worker.attendanceRate >= 90 && worker.cancellations <= 2 && !blocked && !hasOpenReport;
-}
-
-type StepState = "done" | "current" | "pending" | "blocked";
-type HiringStep = { kicker: string; label: string; state: StepState };
-
-function HiringFlow({
-  application,
-  reviewed
-}: {
-  application: Application;
-  reviewed: boolean;
-}) {
-  const steps = getHiringSteps(application, reviewed);
-
-  return (
-    <div className="hiring-flow">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <strong className="text-sm text-white">Fluxo da contratação</strong>
-        <span className="text-xs font-black uppercase text-slate-500">{getNextAction(application, reviewed)}</span>
-      </div>
-      <div className="hiring-step-grid">
-        {steps.map((step) => (
-          <span key={step.label} className={`hiring-step ${getStepClass(step.state)}`}>
-            <span className="block text-[0.65rem] uppercase text-slate-500">{step.kicker}</span>
-            {step.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function getHiringSteps(application: Application, reviewed: boolean): HiringStep[] {
-  const approved = application.status === "Aprovada" || application.status === "Trabalho concluído";
-  const completed = application.status === "Trabalho concluído";
-  const rejected = application.status === "Recusada" || application.status === "Cancelada" || application.status === "Convite recusado";
-  const isPendingInvite = application.status === "Convidada";
-
-  return [
-    { kicker: "1", label: isPendingInvite ? "Convite enviado" : "Candidatura", state: "done" },
-    {
-      kicker: "2",
-      label: approved ? "Aprovado" : rejected ? "Encerrado" : isPendingInvite ? "Aguardando resposta" : "Aprovar",
-      state: approved ? "done" : rejected ? "blocked" : "current"
-    },
-    {
-      kicker: "3",
-      label: completed ? "Trabalho concluído" : "Concluir turno",
-      state: completed ? "done" : approved ? "current" : "pending"
-    },
-    {
-      kicker: "4",
-      label: reviewed ? "Avaliado" : "Avaliar",
-      state: reviewed ? "done" : completed ? "current" : "pending"
-    }
-  ];
-}
-
-function getStepClass(state: StepState) {
-  if (state === "done") return "border-aqua-200 bg-aqua-100 text-aqua-700";
-  if (state === "current") return "border-navy-200 bg-white text-navy-950";
-  if (state === "blocked") return "border-red-100 bg-red-50 text-alert";
-  return "border-slate-200 bg-brand-charcoal text-slate-500";
-}
-
-function getNextAction(application: Application, reviewed: boolean) {
-  if (application.status === "Recusada" || application.status === "Cancelada") return "Ciclo encerrado";
-  if (application.status === "Convite recusado") return "Convite recusado pelo profissional";
-  if (application.status === "Convidada") return "Aguardando resposta do profissional";
-  if (application.status === "Falta registrada") return "Falta registrada";
-  if (application.status === "Trabalho concluído") return reviewed ? "Contratação concluída" : "Avaliar profissional";
-  if (application.status === "Aprovada") return "Concluir quando o turno terminar";
-  if (application.status === "Em análise") return "Decidir aprovação";
-  return "Novo candidato";
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

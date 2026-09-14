@@ -1123,7 +1123,7 @@ a {
 }
 
 .candidate-card {
-  @apply grid gap-2;
+  @apply grid gap-3 lg:grid-cols-[360px_1fr] lg:items-start;
 }
 
 .candidate-control-panel {
@@ -1144,18 +1144,6 @@ a {
 
 .candidate-event-context small {
   @apply text-xs font-bold text-slate-600;
-}
-
-.hiring-flow {
-  @apply grid gap-2 rounded-lg bg-slate-50 p-3;
-}
-
-.hiring-step-grid {
-  @apply grid gap-2 md:grid-cols-5;
-}
-
-.hiring-step {
-  @apply rounded-lg border p-2 text-xs font-bold;
 }
 
 .candidate-contact-card,
