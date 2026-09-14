@@ -20,7 +20,7 @@ export const COIN_PRODUCTS: CoinProduct[] = [
     id: "worker_coin_pack_10",
     role: "trabalhador",
     title: "Pacote de moedas",
-    priceCents: 495,
+    priceCents: 2599,
     coins: 10,
     plusDays: 0,
     ledgerReason: "coin_pack"
@@ -29,7 +29,7 @@ export const COIN_PRODUCTS: CoinProduct[] = [
     id: "worker_professional_30",
     role: "trabalhador",
     title: "Pacote Profissional",
-    priceCents: 1990,
+    priceCents: 3599,
     coins: 30,
     plusDays: 0,
     ledgerReason: "package_professional"
@@ -38,7 +38,7 @@ export const COIN_PRODUCTS: CoinProduct[] = [
     id: "worker_plus_30d",
     role: "trabalhador",
     title: "Plus — 30 dias",
-    priceCents: 2990,
+    priceCents: 4990,
     coins: 0,
     plusDays: 30,
     ledgerReason: "package_plus"

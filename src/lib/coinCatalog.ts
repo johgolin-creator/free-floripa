@@ -4,10 +4,6 @@ import type { UserRole } from "./types";
 // espelhado no servidor pela Edge Function mercadopago-create-payment
 // (supabase/functions/mercadopago-create-payment/index.ts) — se mudar preço,
 // quantidade de moedas ou dias de Plus aqui, atualize lá também.
-//
-// TODO(pricing): confirmar com o time os valores finais antes de ligar a loja.
-// Os números abaixo espelham o que já aparecia no app (coin_pack R$4,95 /
-// package_professional R$19,90 / package_plus R$29,90).
 
 export interface CoinProduct {
   /** Identificador estável usado no client, no servidor e na tabela payments. */
@@ -32,7 +28,7 @@ export const COIN_PRODUCTS: CoinProduct[] = [
     role: "trabalhador",
     title: "Pacote de moedas",
     description: "10 moedas para enviar candidaturas.",
-    priceCents: 495,
+    priceCents: 2599,
     coins: 10,
     plusDays: 0,
     ledgerReason: "coin_pack"
@@ -42,7 +38,7 @@ export const COIN_PRODUCTS: CoinProduct[] = [
     role: "trabalhador",
     title: "Pacote Profissional",
     description: "30 moedas com melhor custo por candidatura.",
-    priceCents: 1990,
+    priceCents: 3599,
     coins: 30,
     plusDays: 0,
     ledgerReason: "package_professional"
@@ -52,7 +48,7 @@ export const COIN_PRODUCTS: CoinProduct[] = [
     role: "trabalhador",
     title: "Plus — 30 dias",
     description: "Candidaturas ilimitadas por 30 dias, sem gastar moedas.",
-    priceCents: 2990,
+    priceCents: 4990,
     coins: 0,
     plusDays: 30,
     ledgerReason: "package_plus"
