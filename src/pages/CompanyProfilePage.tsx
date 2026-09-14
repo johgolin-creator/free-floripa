@@ -10,7 +10,7 @@ import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
-import { getCompanyProfileCompletion } from "../lib/profileCompletion";
+import { COMPANY_LOGO_PLACEHOLDER, getCompanyProfileCompletion } from "../lib/profileCompletion";
 import type { CompanyProfile } from "../lib/types";
 
 const companyCategories: CompanyProfile["category"][] = [
@@ -164,6 +164,10 @@ function CompanyProfileForm({
         const address = String(form.get("address") || "").trim();
         const description = String(form.get("description") || "").trim();
 
+        if (!logoUrl.trim() || logoUrl === COMPANY_LOGO_PLACEHOLDER) {
+          setError("Envie uma foto ou logotipo.");
+          return;
+        }
         if (!isMeaningfulText(establishmentName, { minLen: 3, minWords: 1 })) {
           setError("Informe o nome real do estabelecimento.");
           return;
@@ -260,7 +264,7 @@ function CompanyProfileForm({
       </div>
       <SignupLikeTitle number="2" title="Imagem da empresa" />
       <ProfileImageUploader
-        label="Foto ou logotipo"
+        label="Foto ou logotipo (obrigatória)"
         value={logoUrl}
         kind="empresas"
         previewAlt="Foto da empresa"

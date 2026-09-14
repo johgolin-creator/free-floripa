@@ -609,6 +609,9 @@ export function CompanySignupPage() {
         return "Descreva o estabelecimento com mais detalhes.";
       }
     }
+    if (index === 2) {
+      if (!logoFile) return "Envie uma foto ou logotipo. Os profissionais precisam ver quem está contratando.";
+    }
     return "";
   }
 
@@ -838,9 +841,9 @@ export function CompanySignupPage() {
           <label className="label">Descrição<textarea name="description" className="input min-h-20 py-3" required /></label>
         </WizardPanel>
 
-        <WizardPanel eyebrow="Etapa 3" title="Imagem e revisão" hint="Opcional — ajuda os profissionais a reconhecerem sua marca." hidden={wizard.step !== 2}>
+        <WizardPanel eyebrow="Etapa 3" title="Imagem e revisão" hint="Ajuda os profissionais a reconhecerem sua marca antes de se candidatar." hidden={wizard.step !== 2}>
           <ProfileImageUploader
-            label="Foto ou logotipo (opcional)"
+            label="Foto ou logotipo (obrigatória)"
             value={logoUrl}
             kind="empresas"
             previewAlt="Logotipo da empresa"

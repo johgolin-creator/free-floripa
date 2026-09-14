@@ -21,7 +21,7 @@ import { SectionHeader } from "../components/SectionHeader";
 import { TermHint } from "../components/TermHint";
 import { experienceLevels, functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
-import { getWorkerProfileCompletion } from "../lib/profileCompletion";
+import { getWorkerProfileCompletion, WORKER_AVATAR_PLACEHOLDER } from "../lib/profileCompletion";
 import { calculateReliability, getExperienceLabel, getFunctionExperience } from "../lib/rules";
 import type { JobFunction } from "../lib/types";
 
@@ -181,6 +181,10 @@ export function WorkerProfilePage() {
               const availability = String(form.get("availability") || "").trim();
               const maxDistanceKm = Number(form.get("maxDistanceKm"));
 
+              if (!avatarUrl.trim() || avatarUrl === WORKER_AVATAR_PLACEHOLDER) {
+                setError("Envie uma foto de perfil.");
+                return;
+              }
               if (!isPlausibleFullName(name)) {
                 setError("Informe seu nome e sobrenome completos.");
                 return;
@@ -302,7 +306,7 @@ export function WorkerProfilePage() {
                 <input name="birthDate" type="date" className="input" required defaultValue={currentWorker.birthDate} />
               </label>
               <ProfileImageUploader
-                label="Foto do perfil"
+                label="Foto do perfil (obrigatória)"
                 value={avatarUrl}
                 kind="trabalhadores"
                 previewAlt="Foto do trabalhador"
