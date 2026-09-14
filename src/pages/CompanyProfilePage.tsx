@@ -210,7 +210,7 @@ function CompanyProfileForm({
           phone: formatPhoneInput(phone),
           email,
           category: form.get("category") as CompanyProfile["category"],
-          neighborhood: form.get("neighborhood") as CompanyProfile["neighborhood"],
+          neighborhood: String(form.get("neighborhood") || "").trim(),
           logoUrl: logoUrl.trim() || company.logoUrl,
           coverUrl: coverUrl.trim(),
           address,
@@ -260,7 +260,13 @@ function CompanyProfileForm({
         </label>
         <label className="label">E-mail<input name="email" className="input" type="email" defaultValue={company.email} required /></label>
         <label className="label">Categoria<select name="category" className="input" defaultValue={company.category} required>{companyCategories.map((item) => <option key={item}>{item}</option>)}</select></label>
-        <label className="label md:col-span-2">Bairro<select name="neighborhood" className="input" defaultValue={company.neighborhood} required>{neighborhoods.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="label md:col-span-2">
+          Bairro
+          <input name="neighborhood" list="neighborhoods-company-edit" className="input" defaultValue={company.neighborhood} required placeholder="Digite o bairro" autoComplete="off" />
+          <datalist id="neighborhoods-company-edit">
+            {neighborhoods.map((item) => <option key={item} value={item} />)}
+          </datalist>
+        </label>
       </div>
       <SignupLikeTitle number="2" title="Imagem da empresa" />
       <ProfileImageUploader

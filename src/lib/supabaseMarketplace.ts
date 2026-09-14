@@ -31,14 +31,6 @@ const VALID_FUNCTIONS = new Set<JobFunction>([
   "Montador de eventos",
   "Promotor"
 ]);
-const VALID_NEIGHBORHOODS = new Set<Neighborhood>([
-  "Jurerê",
-  "Canasvieiras",
-  "Ingleses",
-  "Centro",
-  "Lagoa da Conceição",
-  "Campeche"
-]);
 const VALID_LEVELS = new Set<FunctionExperience["level"]>([
   "Iniciante",
   "Poucas diárias",
@@ -181,7 +173,8 @@ function toJobFunction(value: string): JobFunction | null {
 }
 
 function toNeighborhood(value?: string | null): Neighborhood {
-  return VALID_NEIGHBORHOODS.has(value as Neighborhood) ? (value as Neighborhood) : "Centro";
+  const trimmed = (value ?? "").trim();
+  return trimmed || "Centro";
 }
 
 function toExperienceLevel(value: string): FunctionExperience["level"] {

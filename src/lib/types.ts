@@ -23,13 +23,12 @@ export interface FunctionExperience {
   verified: boolean;
 }
 
-export type Neighborhood =
-  | "Jurerê"
-  | "Canasvieiras"
-  | "Ingleses"
-  | "Centro"
-  | "Lagoa da Conceição"
-  | "Campeche";
+// Antes era uma lista fechada de bairros; agora é texto livre digitado no
+// cadastro/edição do perfil (Florianópolis tem dezenas de bairros e a lista
+// fixa deixava muita gente sem a opção certa). `neighborhoods` em
+// data/demoData.ts continua existindo como sugestão (datalist) e para os
+// filtros de busca de vaga, mas não restringe mais o valor salvo.
+export type Neighborhood = string;
 
 export type PaymentMethod = "Dinheiro" | "Pix" | "Transferência" | "A combinar";
 export type JobStatus = "Rascunho" | "Publicada" | "Em andamento" | "Concluída" | "Cancelada";

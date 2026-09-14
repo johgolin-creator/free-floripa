@@ -466,9 +466,10 @@ export function WorkerSignupPage() {
             <label className="label">Cidade<input name="city" className="input" defaultValue="Florianópolis" required /></label>
             <label className="label">
               Bairro
-              <select name="neighborhood" className="input" required defaultValue="Centro">
-                {neighborhoods.map((item) => <option key={item}>{item}</option>)}
-              </select>
+              <input name="neighborhood" list="neighborhoods-worker" className="input" required placeholder="Digite seu bairro" autoComplete="off" />
+              <datalist id="neighborhoods-worker">
+                {neighborhoods.map((item) => <option key={item} value={item} />)}
+              </datalist>
             </label>
           </div>
         </WizardPanel>
@@ -832,9 +833,10 @@ export function CompanySignupPage() {
             <label className="label">Categoria<select name="category" className="input" required><option>Restaurante</option><option>Bar</option><option>Beach club</option><option>Hotel</option><option>Casa noturna</option><option>Buffet</option><option>Agência de eventos</option><option>Outro</option></select></label>
             <label className="label">
               Bairro
-              <select name="neighborhood" className="input" required defaultValue="Centro">
-                {neighborhoods.map((item) => <option key={item}>{item}</option>)}
-              </select>
+              <input name="neighborhood" list="neighborhoods-company" className="input" required placeholder="Digite o bairro" autoComplete="off" />
+              <datalist id="neighborhoods-company">
+                {neighborhoods.map((item) => <option key={item} value={item} />)}
+              </datalist>
             </label>
           </div>
           <label className="label">Endereço<input name="address" className="input" required /></label>

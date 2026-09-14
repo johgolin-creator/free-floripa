@@ -319,9 +319,10 @@ export function WorkerProfilePage() {
               </label>
               <label className="label">
                 Bairro
-                <select name="neighborhood" className="input" required defaultValue={currentWorker.neighborhood}>
-                  {neighborhoods.map((item) => <option key={item}>{item}</option>)}
-                </select>
+                <input name="neighborhood" list="neighborhoods-worker-edit" className="input" required defaultValue={currentWorker.neighborhood} placeholder="Digite seu bairro" autoComplete="off" />
+                <datalist id="neighborhoods-worker-edit">
+                  {neighborhoods.map((item) => <option key={item} value={item} />)}
+                </datalist>
               </label>
             </div>
             <SignupLikeTitle number="3" title="Profissões e experiência" />
