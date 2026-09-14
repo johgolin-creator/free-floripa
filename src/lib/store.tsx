@@ -752,8 +752,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (authLoading || role !== "empresa" || !currentCompany || !supabaseMarketplaceEnabled) return;
 
     let active = true;
-    function refresh() {
-      if (document.visibilityState === "hidden") return;
+    // skipWhenHidden só se aplica às atualizações periódicas do intervalo.
+    // A carga inicial (chamada com false) precisa rodar sempre, senão uma
+    // aba que monta em segundo plano (ex.: aberta sem foco, ou controlada
+    // por automação) nunca busca os dados reais - fica presa no estado
+    // local/demo até alguém focar a aba E esperar o próximo tick.
+    function refresh(skipWhenHidden: boolean) {
+      if (skipWhenHidden && document.visibilityState === "hidden") return;
       Promise.all([loadPublicWorkerProfiles(user?.id), loadCompanyMarketplace(currentCompany.id)])
         .then(([publicWorkers, companyPayload]) => {
           if (!active) return;
@@ -769,8 +774,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
     }
 
-    refresh();
-    const intervalId = window.setInterval(refresh, REMOTE_SYNC_POLL_MS);
+    refresh(false);
+    const intervalId = window.setInterval(() => refresh(true), REMOTE_SYNC_POLL_MS);
 
     return () => {
       active = false;
@@ -779,35 +784,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [authLoading, currentCompany?.id, role, user?.id]);
 
   useEffect(() => {
-    console.log(
-      `[PONT DEBUG] moderation effect check authLoading=${authLoading} isAdmin=${isAdmin} isModerator=${isModerator} supabaseModerationEnabled=${supabaseModerationEnabled}`
-    );
     if (authLoading || !(isAdmin || isModerator) || !supabaseModerationEnabled) return;
 
     let active = true;
-    function refresh() {
-      if (document.visibilityState === "hidden") return;
+    // skipWhenHidden só se aplica às atualizações periódicas do intervalo.
+    // A carga inicial (chamada com false) precisa rodar sempre, senão uma
+    // aba que monta em segundo plano (ex.: aberta sem foco, ou controlada
+    // por automação) nunca busca os dados reais - fica presa no estado
+    // local/demo até alguém focar a aba E esperar o próximo tick.
+    function refresh(skipWhenHidden: boolean) {
+      if (skipWhenHidden && document.visibilityState === "hidden") return;
       loadModerationOverview()
         .then((overview) => {
           if (!active) return;
-          console.log(
-            `[PONT DEBUG] moderation overview loaded workers=${overview.workers.length} companies=${overview.companies.length} jobs=${overview.jobs.length} applications=${overview.applications.length}`
-          );
           setState((current) => mergeModerationState(current, overview));
           setSyncError("");
         })
-        .catch((error) => {
-          console.error(
-            `[PONT DEBUG] moderation overview failed message=${error instanceof Error ? error.message : String(error)} details=${JSON.stringify(error)}`
-          );
+        .catch(() => {
           if (!active) return;
           setSyncError("Falha ao carregar o painel de moderação.");
           setSyncStatus("erro");
         });
     }
 
-    refresh();
-    const intervalId = window.setInterval(refresh, REMOTE_SYNC_POLL_MS);
+    refresh(false);
+    const intervalId = window.setInterval(() => refresh(true), REMOTE_SYNC_POLL_MS);
 
     return () => {
       active = false;
@@ -887,8 +888,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (authLoading || role !== "trabalhador" || !currentWorker || !supabaseMarketplaceEnabled) return;
 
     let active = true;
-    function refresh() {
-      if (document.visibilityState === "hidden") return;
+    // skipWhenHidden só se aplica às atualizações periódicas do intervalo.
+    // A carga inicial (chamada com false) precisa rodar sempre, senão uma
+    // aba que monta em segundo plano (ex.: aberta sem foco, ou controlada
+    // por automação) nunca busca os dados reais - fica presa no estado
+    // local/demo até alguém focar a aba E esperar o próximo tick.
+    function refresh(skipWhenHidden: boolean) {
+      if (skipWhenHidden && document.visibilityState === "hidden") return;
       loadWorkerMarketplace(currentWorker.id)
         .then((payload) => {
           if (!active) return;
@@ -902,8 +908,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
     }
 
-    refresh();
-    const intervalId = window.setInterval(refresh, REMOTE_SYNC_POLL_MS);
+    refresh(false);
+    const intervalId = window.setInterval(() => refresh(true), REMOTE_SYNC_POLL_MS);
 
     return () => {
       active = false;
@@ -916,8 +922,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const userId = user.id;
     let active = true;
-    function refresh() {
-      if (document.visibilityState === "hidden") return;
+    // skipWhenHidden só se aplica às atualizações periódicas do intervalo.
+    // A carga inicial (chamada com false) precisa rodar sempre, senão uma
+    // aba que monta em segundo plano (ex.: aberta sem foco, ou controlada
+    // por automação) nunca busca os dados reais - fica presa no estado
+    // local/demo até alguém focar a aba E esperar o próximo tick.
+    function refresh(skipWhenHidden: boolean) {
+      if (skipWhenHidden && document.visibilityState === "hidden") return;
       loadRemoteNotifications(userId)
         .then((notifications) => {
           if (!active) return;
@@ -931,8 +942,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
     }
 
-    refresh();
-    const intervalId = window.setInterval(refresh, REMOTE_SYNC_POLL_MS);
+    refresh(false);
+    const intervalId = window.setInterval(() => refresh(true), REMOTE_SYNC_POLL_MS);
 
     return () => {
       active = false;
@@ -946,8 +957,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const userId = user.id;
     const activeRole = state.activeRole;
     let active = true;
-    function refresh() {
-      if (document.visibilityState === "hidden") return;
+    // skipWhenHidden só se aplica às atualizações periódicas do intervalo.
+    // A carga inicial (chamada com false) precisa rodar sempre, senão uma
+    // aba que monta em segundo plano (ex.: aberta sem foco, ou controlada
+    // por automação) nunca busca os dados reais - fica presa no estado
+    // local/demo até alguém focar a aba E esperar o próximo tick.
+    function refresh(skipWhenHidden: boolean) {
+      if (skipWhenHidden && document.visibilityState === "hidden") return;
       loadRemoteCoinAccount(userId, activeRole)
         .then((account) => {
           if (!active) return;
@@ -961,8 +977,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
     }
 
-    refresh();
-    const intervalId = window.setInterval(refresh, REMOTE_SYNC_POLL_MS);
+    refresh(false);
+    const intervalId = window.setInterval(() => refresh(true), REMOTE_SYNC_POLL_MS);
 
     return () => {
       active = false;

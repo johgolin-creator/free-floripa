@@ -62,7 +62,7 @@ const companySecondaryLinks = [
 ];
 
 export function AppLayout() {
-  const { state, syncStatus, currentWorker, currentCompany, updateWorkerProfile, updateCompanyProfile } = useAppStore();
+  const { state, syncStatus, syncError, currentWorker, currentCompany, updateWorkerProfile, updateCompanyProfile } = useAppStore();
   const { isAdmin, isModerator, isSalesRep, authEnabled, email, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -251,6 +251,11 @@ export function AppLayout() {
       </aside>
 
       <main className="min-w-0">
+        {syncError && (
+          <div className="mx-4 mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900 md:mx-6">
+            {syncError} Os dados podem estar desatualizados — recarregue a página se o problema continuar.
+          </div>
+        )}
         <header className="app-mobile-header sticky top-0 z-20 md:hidden">
           <div className="flex items-center justify-between gap-3">
             <NavLink to={dashboardPath} className="min-w-0">
