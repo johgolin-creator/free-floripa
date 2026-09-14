@@ -228,6 +228,8 @@ export function AdminPage() {
         </div>
       </section>
 
+      <BroadcastNotificationSection />
+
       <section className="jobs-filter-panel">
         <div className="jobs-filter-title">
           <div>
@@ -1194,6 +1196,71 @@ function DangerDeleteAccount({
         </div>
       )}
     </div>
+  );
+}
+
+function BroadcastNotificationSection() {
+  const [title, setTitle] = useState("Foto de perfil obrigatória");
+  const [body, setBody] = useState(
+    "Coloque uma foto real no seu perfil — isso é muito importante para você aparecer nas vagas e ser aprovado mais rápido. Atualize agora em Perfil."
+  );
+  const [armed, setArmed] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState<number | null>(null);
+
+  async function send() {
+    if (pending || !title.trim() || !body.trim()) return;
+    setPending(true);
+    setError("");
+    try {
+      const { count } = await adminNotifyAllWorkers(title.trim(), body.trim());
+      setDone(count);
+      setArmed(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível enviar o aviso.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <section className="jobs-filter-panel">
+      <div className="jobs-filter-title">
+        <div>
+          <h3><Bell size={18} /> Aviso geral aos freelancers</h3>
+          <p>Manda uma notificação dentro do PONT para todos os trabalhadores cadastrados.</p>
+        </div>
+      </div>
+      <div className="grid gap-3">
+        <label className="label">
+          Título
+          <input className="input" value={title} onChange={(event) => { setTitle(event.target.value); setDone(null); }} maxLength={80} />
+        </label>
+        <label className="label">
+          Mensagem
+          <textarea className="input min-h-20 py-3" value={body} onChange={(event) => { setBody(event.target.value); setDone(null); }} maxLength={400} />
+        </label>
+        {error && <span className="text-xs font-bold text-alert">{error}</span>}
+        {done !== null ? (
+          <span className="text-xs font-bold text-emerald-600">Aviso enviado para {done} freelancer(s).</span>
+        ) : !armed ? (
+          <button type="button" className="secondary justify-self-start" onClick={() => setArmed(true)}>
+            <Bell size={15} /> Enviar para todos os freelancers
+          </button>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <span className="text-xs font-bold text-slate-600 self-center">Confirma o envio para todos os freelancers cadastrados?</span>
+            <button type="button" className="secondary" disabled={pending} onClick={send}>
+              {pending ? "Enviando..." : "Confirmar"}
+            </button>
+            <button type="button" className="secondary" disabled={pending} onClick={() => setArmed(false)}>
+              Cancelar
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
