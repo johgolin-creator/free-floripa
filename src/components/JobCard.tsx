@@ -1,5 +1,6 @@
-import { CalendarDays, Clock, MapPin, Star, Users } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Star, Users, UsersRound } from "lucide-react";
 import { Link } from "react-router-dom";
+import { AvatarButton } from "./AvatarButton";
 import { UrgentBadge } from "./UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, pluralize } from "../lib/format";
@@ -26,27 +27,39 @@ export function JobCard({
     <article className="card relative grid gap-4 overflow-hidden p-4 pl-5 hover:-translate-y-0.5 hover:border-aqua-200 hover:shadow-lift">
       <div className="absolute bottom-4 left-0 top-4 w-1 rounded-r-full bg-aqua-500" />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className="mb-2 flex flex-wrap gap-2">
-            {job.urgent && <UrgentBadge />}
-            <span className="badge">{job.function}</span>
-            <span className="badge">{job.paymentMethod}</span>
-            {matchLabel && <span className={matchScore && matchScore >= 62 ? "badge bg-aqua-100 text-aqua-700" : "badge bg-slate-100 text-slate-600"}><Star size={14} /> {matchLabel}</span>}
+        <div className="flex min-w-0 gap-3">
+          {company?.logoUrl && (
+            <AvatarButton
+              src={company.logoUrl}
+              name={company.establishmentName}
+              className="h-14 w-14 rounded-lg object-cover"
+              ringClassName="ring-2 ring-white/10"
+            />
+          )}
+          <div className="min-w-0">
+            <div className="mb-2 flex flex-wrap gap-2">
+              {job.urgent && <UrgentBadge />}
+              <span className="badge">{job.function}</span>
+              <span className="badge">{job.paymentMethod}</span>
+              {matchLabel && <span className={matchScore && matchScore >= 62 ? "badge bg-aqua-100 text-aqua-700" : "badge bg-slate-100 text-slate-600"}><Star size={14} /> {matchLabel}</span>}
+            </div>
+            <h3 className="text-lg font-black leading-snug text-white">{job.title}</h3>
+            <p className="text-sm font-semibold text-slate-600">{company?.establishmentName}</p>
+            {companyReviews.length > 0 && (
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-xs font-black text-slate-500">
+                <span className="inline-flex items-center gap-1"><Star size={14} /> {company?.rating.toFixed(1)}</span>
+                <span>{companyReviews.length} avaliaç{companyReviews.length === 1 ? "ão" : "ões"}</span>
+              </p>
+            )}
           </div>
-          <h3 className="text-lg font-black leading-snug text-white">{job.title}</h3>
-          <p className="text-sm font-semibold text-slate-600">{company?.establishmentName}</p>
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-xs font-black text-slate-500">
-            <span className="inline-flex items-center gap-1"><Star size={14} /> {company?.rating.toFixed(1) ?? "0.0"}</span>
-            <span>{companyReviews.length} avaliaç{companyReviews.length === 1 ? "ão" : "ões"}</span>
-          </p>
         </div>
-        <div className="w-fit rounded-lg bg-navy-950 px-3 py-2 text-left text-white shadow-soft sm:text-right">
+        <div className="w-fit shrink-0 rounded-lg bg-navy-950 px-3 py-2 text-left text-white shadow-soft sm:text-right">
           <strong className="block text-lg text-white">{formatCurrency(job.dailyValue)}</strong>
           <span className="text-xs font-black uppercase text-aqua-300">diária</span>
         </div>
       </div>
 
-      {!compact && <p className="text-sm leading-6 text-slate-600">{job.description}</p>}
+      {!compact && job.description && <p className="line-clamp-2 text-sm leading-6 text-slate-600">{job.description}</p>}
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <span className="meta-pill">
@@ -76,7 +89,9 @@ export function JobCard({
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-        <span className="text-sm font-semibold text-slate-600">{job.candidates} candidatos</span>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600">
+          <UsersRound size={14} /> {job.candidates} candidato{job.candidates === 1 ? "" : "s"}
+        </span>
         <Link to={`/app/vagas/${job.id}`} className="primary w-full sm:w-auto">
           Ver vaga
         </Link>
