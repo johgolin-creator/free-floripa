@@ -779,6 +779,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [authLoading, currentCompany?.id, role, user?.id]);
 
   useEffect(() => {
+    console.log("[PONT DEBUG] moderation effect check", { authLoading, isAdmin, isModerator, supabaseModerationEnabled });
     if (authLoading || !(isAdmin || isModerator) || !supabaseModerationEnabled) return;
 
     let active = true;
@@ -787,10 +788,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       loadModerationOverview()
         .then((overview) => {
           if (!active) return;
+          console.log("[PONT DEBUG] moderation overview loaded", {
+            workers: overview.workers.length,
+            companies: overview.companies.length,
+            jobs: overview.jobs.length,
+            applications: overview.applications.length
+          });
           setState((current) => mergeModerationState(current, overview));
           setSyncError("");
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error("[PONT DEBUG] moderation overview failed", error);
           if (!active) return;
           setSyncError("Falha ao carregar o painel de moderação.");
           setSyncStatus("erro");
