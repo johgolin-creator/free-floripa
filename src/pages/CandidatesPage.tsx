@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import {
   BriefcaseBusiness,
   CalendarCheck,
-  CheckCircle2,
   ClipboardCheck,
   Clock3,
   Heart,
@@ -413,41 +412,25 @@ export function CandidatesPage() {
                             type="button"
                             onClick={() => runStatus(application.id, "Em análise")}
                             disabled={blockedAction || application.status !== "Enviada"}
-                            className="secondary"
+                            className="candidate-action-square"
                           >
-                            <Clock3 size={17} /> Analisar
+                            <Clock3 size={20} /> Analisar
                           </button>
                           <button
                             type="button"
                             onClick={() => runStatus(application.id, "Aprovada")}
                             disabled={blockedAction || approved || completed || noSlots}
-                            className="primary"
+                            className="candidate-action-square candidate-action-square-primary"
                           >
-                            <UserCheck size={17} /> {approved || completed ? "Confirmado" : noSlots ? "Sem vaga" : "Aprovar"}
+                            <UserCheck size={20} /> {approved || completed ? "Confirmado" : noSlots ? "Sem vaga" : "Aprovar"}
                           </button>
                           <button
                             type="button"
                             onClick={() => runStatus(application.id, "Recusada")}
                             disabled={blockedAction || refused || approved || completed}
-                            className="secondary"
+                            className="candidate-action-square candidate-action-square-danger"
                           >
-                            <UserX size={17} /> Recusar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => runStatus(application.id, "Trabalho concluído")}
-                            disabled={blockedAction || !approved}
-                            className="primary"
-                          >
-                            <CheckCircle2 size={17} /> Concluir
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => runStatus(application.id, "Falta registrada")}
-                            disabled={blockedAction || !approved}
-                            className="danger"
-                          >
-                            Registrar falta
+                            <UserX size={20} /> Recusar
                           </button>
                         </div>
                       )}

@@ -1073,9 +1073,24 @@ a {
   @apply block h-full rounded-lg bg-aqua-500;
 }
 
-.company-action-grid,
-.candidate-action-grid {
+.company-action-grid {
   @apply grid gap-2 md:grid-cols-3 xl:grid-cols-6;
+}
+
+.candidate-action-grid {
+  @apply grid max-w-xs grid-cols-3 gap-2;
+}
+
+.candidate-action-square {
+  @apply flex aspect-square flex-col items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-brand-charcoal px-1 text-center text-xs font-black leading-tight text-white shadow-sm transition hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-700 disabled:cursor-not-allowed disabled:opacity-45;
+}
+
+.candidate-action-square-primary {
+  @apply border-navy-950 bg-navy-950 text-white hover:border-navy-900 hover:bg-navy-900 hover:text-white;
+}
+
+.candidate-action-square-danger {
+  @apply border-red-100 bg-red-50 text-alert hover:border-red-200 hover:bg-red-100 hover:text-alert;
 }
 
 .company-action {

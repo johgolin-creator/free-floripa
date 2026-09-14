@@ -30,9 +30,10 @@ import { formatCurrency, formatDate } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
 import type { Application, Job, JobStatus } from "../lib/types";
 
-type JobFilter = "Todas" | "Ativas" | "Urgentes" | "Rascunhos" | "Histórico";
+type JobFilter = "Ativas" | "Urgentes" | "Rascunhos" | "Histórico";
 
-const filters: JobFilter[] = ["Todas", "Ativas", "Urgentes", "Rascunhos", "Histórico"];
+const filters: JobFilter[] = ["Ativas", "Urgentes"];
+const archiveFilters: JobFilter[] = ["Rascunhos", "Histórico"];
 type EventPackage = {
   key: string;
   name: string;
@@ -50,7 +51,8 @@ type EventPackage = {
 export function CompanyJobsPage() {
   const { state, currentCompany, updateJobStatus, duplicateJob } = useAppStore();
   const navigate = useNavigate();
-  const [filter, setFilter] = useState<JobFilter>("Todas");
+  const [filter, setFilter] = useState<JobFilter>("Ativas");
+  const [showArchive, setShowArchive] = useState(false);
   const [message, setMessage] = useState("");
   const [confirmCancelJobId, setConfirmCancelJobId] = useState<string | null>(null);
   const jobListRef = useRef<HTMLDivElement | null>(null);
@@ -191,7 +193,28 @@ export function CompanyJobsPage() {
                   {item}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => setShowArchive((current) => !current)}
+                className={`company-filter-button ${archiveFilters.includes(filter) ? "is-active" : ""}`}
+              >
+                Rascunhos e histórico
+              </button>
             </div>
+            {showArchive && (
+              <div className="company-filter-buttons">
+                {archiveFilters.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setFilter(item)}
+                    className={`company-filter-button ${filter === item ? "is-active" : ""}`}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
 
           {eventPackages.length > 0 && (
