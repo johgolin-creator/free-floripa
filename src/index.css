@@ -1817,3 +1817,28 @@ a {
   }
 }
 }
+
+/* Impressão: por padrão .print-only fica fora da tela sempre (mesmo na
+   tela normal, para não afetar o layout); ao imprimir, o app inteiro some
+   e só o conteúdo marcado para impressão aparece. */
+.print-only {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-only,
+  .print-only * {
+    visibility: visible;
+  }
+
+  .print-only {
+    position: static;
+    left: auto;
+  }
+}
