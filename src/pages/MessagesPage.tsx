@@ -45,7 +45,7 @@ export function MessagesPage() {
       })
       .filter((item): item is Conversation => Boolean(item))
       .sort((a, b) => `${b.job.date} ${b.job.startsAt}`.localeCompare(`${a.job.date} ${a.job.startsAt}`));
-  }, [currentCompany.id, currentWorker.id, state.activeRole, state.applications, state.companies, state.jobs, state.workers]);
+  }, [currentCompany?.id, currentWorker?.id, state.activeRole, state.applications, state.companies, state.jobs, state.workers]);
 
   const selected = conversations.find((conversation) => conversation.application.id === selectedId) ?? conversations[0];
   const messages = selected
