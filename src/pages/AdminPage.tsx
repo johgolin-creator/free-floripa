@@ -35,7 +35,7 @@ import { formatCurrency, formatDate, todayLocalISODate } from "../lib/format";
 import { calculateReliability, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots, isWorkerVerified } from "../lib/rules";
 import { getTrustBadges } from "../lib/trust";
 import { useAppStore } from "../lib/store";
-import { adminActivatePlus, adminAdjustCoins, adminCoinsEnabled } from "../lib/supabaseAdminCoins";
+import { adminActivatePlus, adminAdjustCoins, adminCoinsEnabled, loadAdminCoinOverview, type AdminCoinOverview } from "../lib/supabaseAdminCoins";
 import { adminAccountsEnabled, adminDeleteAccount, adminDeleteJob, adminNotifyAllWorkers } from "../lib/adminAccounts";
 import {
   adminSetCompanySalesRep,
@@ -74,6 +74,8 @@ export function AdminPage() {
   const [deleteFeedback, setDeleteFeedback] = useState("");
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [coinOverview, setCoinOverview] = useState<AdminCoinOverview | null>(null);
+  const [coinOverviewError, setCoinOverviewError] = useState("");
 
   useEffect(() => {
     if (!salesRepsEnabled) return;
@@ -85,6 +87,21 @@ export function AdminPage() {
         setSales(saleRows);
       })
       .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!adminCoinsEnabled) return;
+    let active = true;
+    loadAdminCoinOverview()
+      .then((overview) => {
+        if (active) setCoinOverview(overview);
+      })
+      .catch((err) => {
+        if (active) setCoinOverviewError(err instanceof Error ? err.message : "Não foi possível carregar a contagem geral de moedas.");
+      });
     return () => {
       active = false;
     };
@@ -391,10 +408,41 @@ export function AdminPage() {
 
       {tab === "Moedas" && (
         <div className="grid gap-4">
-        <CoinGrantCard />
+        <section className="card p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <WalletCards size={18} className="text-aqua-300" />
+            <h3 className="font-black text-white">Contagem geral de moedas do app</h3>
+          </div>
+          {coinOverviewError && (
+            <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{coinOverviewError}</div>
+          )}
+          {!coinOverview ? (
+            <p className="text-sm font-bold text-slate-600">{coinOverviewError ? "" : "Carregando..."}</p>
+          ) : (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <InfoTile icon={<WalletCards />} label="Moedas em circulação (total)" value={`${coinOverview.totalBalance} moeda(s)`} />
+                <InfoTile icon={<UserRound />} label="Moedas dos trabalhadores" value={`${coinOverview.workerBalance} moeda(s)`} />
+                <InfoTile icon={<Building2 />} label="Moedas das empresas" value={`${coinOverview.companyBalance} moeda(s)`} />
+                <InfoTile icon={<ClipboardList />} label="Carteiras com saldo" value={`${coinOverview.fundedWalletCount} de ${coinOverview.walletCount}`} />
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <InfoTile icon={<ShieldCheck />} label="Trabalhadores com Plus ativo" value={String(coinOverview.workerPlusActiveCount)} />
+                <InfoTile icon={<ShieldCheck />} label="Empresas com Plus ativo" value={String(coinOverview.companyPlusActiveCount)} />
+              </div>
+            </>
+          )}
+        </section>
+        <CoinGrantCard
+          onChanged={() => {
+            loadAdminCoinOverview()
+              .then(setCoinOverview)
+              .catch(() => {});
+          }}
+        />
         <section className="grid gap-4 lg:grid-cols-[0.8fr_1fr]">
           <div className="card p-4">
-            <h3 className="mb-3 font-black text-white">Carteiras da conta atual</h3>
+            <h3 className="mb-3 font-black text-white">Carteiras da sua conta (admin)</h3>
             <div className="grid gap-3">
               <InfoTile icon={<WalletCards />} label="Saldo do trabalhador" value={`${state.subscription.creditsRemaining} moeda(s)`} />
               <InfoTile icon={<WalletCards />} label="Saldo da empresa" value={`${state.subscription.companyCreditsRemaining} moeda(s)`} />
@@ -617,7 +665,7 @@ function AdminMetric({
   return <span className={className}>{content}</span>;
 }
 
-function CoinGrantCard() {
+function CoinGrantCard({ onChanged }: { onChanged?: () => void }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<UserRole>("trabalhador");
   const [amount, setAmount] = useState("20");
@@ -639,11 +687,13 @@ function CoinGrantCard() {
         if (!Number.isFinite(value) || value === 0) throw new Error("Informe uma quantidade diferente de zero.");
         await adminAdjustCoins(email, role, value, reason);
         setFeedback({ tone: "ok", text: `Ajuste de ${value > 0 ? "+" : ""}${value} moeda(s) aplicado para ${email.trim()} (${role}).` });
+        onChanged?.();
       } else {
         const days = Number(plusDays);
         if (!Number.isFinite(days) || days <= 0) throw new Error("Informe um número de dias válido.");
         await adminActivatePlus(email, role, days);
         setFeedback({ tone: "ok", text: `Plus estendido por ${days} dia(s) para ${email.trim()} (${role}).` });
+        onChanged?.();
       }
     } catch (err) {
       setFeedback({ tone: "err", text: err instanceof Error ? err.message : "Não foi possível concluir." });
