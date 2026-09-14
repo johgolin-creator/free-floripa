@@ -25,7 +25,7 @@ import { TermHint } from "../components/TermHint";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore, type CompanyScheduleInput } from "../lib/store";
-import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
+import { formatCurrency, formatDate, getWhatsAppUrl, todayLocalISODate } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
 import { getShiftVerificationCode } from "../lib/shiftVerification";
 import type { Application, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, Neighborhood } from "../lib/types";
@@ -50,7 +50,7 @@ export function CompanySchedulePage() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<CompanySchedule | null>(null);
   const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalISODate();
   const companySchedules = state.companySchedules ?? [];
   const manualSchedules = companySchedules
     .filter((schedule) => schedule.companyId === currentCompany.id)

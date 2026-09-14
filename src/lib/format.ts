@@ -5,6 +5,20 @@ export function formatCurrency(value: number) {
   }).format(value);
 }
 
+/**
+ * "YYYY-MM-DD" de hoje no fuso do dispositivo. new Date().toISOString()
+ * sempre devolve UTC — à noite no Brasil (fuso atrás de UTC) isso já aponta
+ * pro dia seguinte, fazendo vagas e turnos "de hoje" sumirem dos filtros de
+ * "hoje" horas antes da meia-noite local.
+ */
+export function todayLocalISODate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function formatDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",

@@ -3,6 +3,7 @@ import type { User } from "@supabase/supabase-js";
 import { initialState } from "../data/demoData";
 import { track } from "./analytics";
 import { useAuth } from "./auth";
+import { todayLocalISODate } from "./format";
 import { canApply, getOpenSlots } from "./rules";
 import {
   loadCompanyMarketplace,
@@ -1358,7 +1359,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           title: `Reposição urgente: ${input.function}`,
           function: input.function,
           quantity: input.quantity,
-          date: new Date().toISOString().slice(0, 10),
+          date: todayLocalISODate(),
           startsAt: input.startsAt,
           endsAt: "A combinar",
           dailyValue: input.dailyValue,

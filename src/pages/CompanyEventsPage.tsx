@@ -6,7 +6,7 @@ import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
 import { WorkerCard } from "../components/WorkerCard";
 import { functions, neighborhoods } from "../data/demoData";
-import { formatCurrency } from "../lib/format";
+import { formatCurrency, todayLocalISODate } from "../lib/format";
 import { calculateReliability, getFunctionExperience } from "../lib/rules";
 import { useAppStore } from "../lib/store";
 import type { JobFunction, Neighborhood, PaymentMethod, WorkerProfile } from "../lib/types";
@@ -37,7 +37,7 @@ function suggestCrewSize(guests: number, functionName: JobFunction) {
 export function CompanyEventsPage() {
   const { state, currentCompany, createJob } = useAppStore();
   const lastCreatedEventKey = useRef("");
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalISODate();
   const [eventName, setEventName] = useState("");
   const [eventType, setEventType] = useState("");
   const [date, setDate] = useState(today);

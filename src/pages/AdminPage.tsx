@@ -31,7 +31,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { Modal } from "../components/Modal";
 import { AvatarButton } from "../components/AvatarButton";
-import { formatCurrency, formatDate } from "../lib/format";
+import { formatCurrency, formatDate, todayLocalISODate } from "../lib/format";
 import { calculateReliability, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots } from "../lib/rules";
 import { getTrustBadges } from "../lib/trust";
 import { useAppStore } from "../lib/store";
@@ -1831,7 +1831,7 @@ function SaleFormModal({
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("Pix");
   const [status, setStatus] = useState<PaymentStatus>("pago");
-  const [soldAt, setSoldAt] = useState(new Date().toISOString().slice(0, 10));
+  const [soldAt, setSoldAt] = useState(todayLocalISODate());
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 

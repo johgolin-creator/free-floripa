@@ -25,7 +25,7 @@ import { useWizardStep, WizardActions, WizardPanel, WizardProgress, WizardSteps 
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 import type { CreateJobInput, UrgentReplacementInput } from "../lib/store";
-import { formatCurrency, formatDate } from "../lib/format";
+import { formatCurrency, formatDate, todayLocalISODate } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
 import type { Job, JobFunction, Neighborhood, PaymentMethod } from "../lib/types";
 
@@ -113,7 +113,7 @@ export function CompanyDashboard() {
     (worker) => !state.adminModeration.blockedWorkerIds.includes(worker.id)
   ).length;
   const shownAvailableWorkers = availableWorkers + AVAILABLE_WORKERS_MARGIN;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalISODate();
   const pendingApplications = companyApplications.filter((application) => application.status === "Enviada" || application.status === "Em análise");
   const todayJobs = companyJobs
     .filter((job) => job.date === today && getJobStatus(job) !== "Cancelada" && getJobStatus(job) !== "Rascunho")
