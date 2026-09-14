@@ -49,6 +49,7 @@ import {
   type SalesRepInput
 } from "../lib/salesReps";
 import { formatBrl, listSales, registerSale, salesEnabled, type PaymentStatus, type Sale } from "../lib/sales";
+import { commissionCentsForSale, commissionRateForSale } from "../lib/salesCommission";
 import type { Application, CompanyProfile, CompanyReview, Job, TrustReport, UserRole, WorkerProfile } from "../lib/types";
 
 type AdminTab = "Resumo" | "Usuários" | "Vagas" | "Vendedores" | "Moedas" | "Alertas";
@@ -1433,6 +1434,8 @@ interface RepAgg {
   companies: CompanyProfile[];
   sales: Sale[];
   revenueCents: number;
+  commissionCents: number;
+  netCents: number;
   ticketCents: number;
   lastSale: Sale | undefined;
 }
@@ -1494,11 +1497,14 @@ function SalesRepsPanel({
       const repSales = (salesByCode.get(code) ?? []).slice().sort((a, b) => b.soldAt.localeCompare(a.soldAt));
       const paid = repSales.filter((sale) => sale.paymentStatus === "pago");
       const revenueCents = paid.reduce((sum, sale) => sum + sale.amountCents, 0);
+      const commissionCents = paid.reduce((sum, sale) => sum + commissionCentsForSale(sale), 0);
       return {
         rep,
         companies: (companiesByCode.get(code) ?? []).slice().sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? "")),
         sales: repSales,
         revenueCents,
+        commissionCents,
+        netCents: revenueCents - commissionCents,
         ticketCents: paid.length ? Math.round(revenueCents / paid.length) : 0,
         lastSale: repSales[0]
       };
@@ -1525,7 +1531,10 @@ function SalesRepsPanel({
       });
   }, [aggregates, search, statusFilter, sort]);
 
-  const totalRevenue = sales.filter((s) => s.paymentStatus === "pago").reduce((sum, s) => sum + s.amountCents, 0);
+  const paidSales = sales.filter((s) => s.paymentStatus === "pago");
+  const totalRevenue = paidSales.reduce((sum, s) => sum + s.amountCents, 0);
+  const totalCommission = paidSales.reduce((sum, s) => sum + commissionCentsForSale(s), 0);
+  const totalNetRevenue = totalRevenue - totalCommission;
   const totalClients = companies.filter((c) => {
     const code = (c.soldBy ?? "").trim().toUpperCase();
     return code && reps.some((r) => r.code.toUpperCase() === code);
@@ -1581,7 +1590,12 @@ function SalesRepsPanel({
         <InfoTile icon={<UserRound />} label="Ativos" value={String(reps.filter((r) => r.active).length)} />
         <InfoTile icon={<Building2 />} label="Clientes indicados" value={String(totalClients)} />
         <InfoTile icon={<ClipboardList />} label="Planos vendidos" value={String(sales.length)} />
-        <InfoTile icon={<WalletCards />} label="Faturamento" value={formatBrl(totalRevenue)} />
+        <InfoTile icon={<WalletCards />} label="Faturamento bruto" value={formatBrl(totalRevenue)} />
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <InfoTile icon={<WalletCards />} label="Comissão a pagar (40% mensal / 30% trimestral)" value={formatBrl(totalCommission)} />
+        <InfoTile icon={<WalletCards />} label="Faturamento líquido (já com a comissão deduzida)" value={formatBrl(totalNetRevenue)} />
       </div>
 
       {!enabled && (
@@ -1640,6 +1654,7 @@ function SalesRepsPanel({
                       <span>{agg.companies.length} cliente(s)</span>
                       <span>{agg.sales.length} venda(s)</span>
                       <span className="text-aqua-700">{formatBrl(agg.revenueCents)}</span>
+                      <span className="text-amber-600">Comissão: {formatBrl(agg.commissionCents)}</span>
                       <span>
                         Última venda: {agg.lastSale ? formatDate(agg.lastSale.soldAt) : "—"}
                       </span>
@@ -1985,7 +2000,9 @@ function RepDetailModal({
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             <DetailField label="Clientes indicados" value={String(agg.companies.length)} />
             <DetailField label="Planos vendidos" value={String(agg.sales.length)} />
-            <DetailField label="Faturamento" value={formatBrl(agg.revenueCents)} />
+            <DetailField label="Faturamento bruto" value={formatBrl(agg.revenueCents)} />
+            <DetailField label="Comissão do vendedor" value={formatBrl(agg.commissionCents)} />
+            <DetailField label="Líquido para o PONT" value={formatBrl(agg.netCents)} />
             <DetailField label="Ticket médio" value={formatBrl(agg.ticketCents)} />
             <DetailField label="Última venda" value={agg.lastSale ? formatDate(agg.lastSale.soldAt) : "—"} />
           </div>
@@ -2020,33 +2037,40 @@ function RepDetailModal({
             <p className="text-sm text-slate-600">Nenhuma venda no filtro.</p>
           ) : (
             <div className="grid gap-2">
-              {filtered.map((sale) => (
-                <div key={sale.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 p-3">
-                  <div className="min-w-0">
-                    <strong className="block truncate text-sm text-white">
-                      Venda #{String(sale.seq).padStart(5, "0")} - {sale.companyName || "Empresa"}
-                    </strong>
-                    <p className="truncate text-xs font-semibold text-slate-500">
-                      {sale.plan} - {formatDate(sale.soldAt)}
-                      {sale.source === "payment" ? " - Mercado Pago" : ""}
-                    </p>
+              {filtered.map((sale) => {
+                const rate = commissionRateForSale(sale);
+                const commission = commissionCentsForSale(sale);
+                return (
+                  <div key={sale.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 p-3">
+                    <div className="min-w-0">
+                      <strong className="block truncate text-sm text-white">
+                        Venda #{String(sale.seq).padStart(5, "0")} - {sale.companyName || "Empresa"}
+                      </strong>
+                      <p className="truncate text-xs font-semibold text-slate-500">
+                        {sale.plan} - {formatDate(sale.soldAt)}
+                        {sale.source === "payment" ? " - Mercado Pago" : ""}
+                      </p>
+                      <p className="mt-1 truncate text-xs font-semibold text-amber-600">
+                        Comissão ({Math.round(rate * 100)}%): {formatBrl(commission)} - Líquido: {formatBrl(sale.amountCents - commission)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <strong className="text-sm text-white">{formatBrl(sale.amountCents)}</strong>
+                      <span
+                        className={
+                          sale.paymentStatus === "pago"
+                            ? "badge bg-aqua-50 text-aqua-700"
+                            : sale.paymentStatus === "pendente"
+                              ? "badge border-amber-200 bg-amber-50 text-amber-700"
+                              : "badge border-red-100 bg-red-50 text-alert"
+                        }
+                      >
+                        {sale.paymentStatus}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <strong className="text-sm text-white">{formatBrl(sale.amountCents)}</strong>
-                    <span
-                      className={
-                        sale.paymentStatus === "pago"
-                          ? "badge bg-aqua-50 text-aqua-700"
-                          : sale.paymentStatus === "pendente"
-                            ? "badge border-amber-200 bg-amber-50 text-amber-700"
-                            : "badge border-red-100 bg-red-50 text-alert"
-                      }
-                    >
-                      {sale.paymentStatus}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </DetailSection>

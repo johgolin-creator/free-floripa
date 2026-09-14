@@ -7,6 +7,7 @@ import { useAuth } from "../lib/auth";
 import { formatDate } from "../lib/format";
 import { listMySalesRepCompanies, salesRepSignupLink, type SalesRepCompany } from "../lib/salesReps";
 import { formatBrl, listMySales, type Sale } from "../lib/sales";
+import { commissionCentsForSale, commissionRateForSale } from "../lib/salesCommission";
 import {
   createSalesRepLead,
   deleteSalesRepLead,
@@ -137,10 +138,12 @@ export function VendedorDashboard() {
       ...companies.map((company) => company.id),
       ...sales.map((sale) => sale.companyId).filter((id): id is string => Boolean(id))
     ]);
+    const commissionCents = paid.reduce((sum, sale) => sum + commissionCentsForSale(sale), 0);
     return {
       clients: clientIds.size,
       count: sales.length,
-      revenueCents: paid.reduce((sum, sale) => sum + sale.amountCents, 0)
+      revenueCents: paid.reduce((sum, sale) => sum + sale.amountCents, 0),
+      commissionCents
     };
   }, [sales, companies]);
 
@@ -173,12 +176,16 @@ export function VendedorDashboard() {
         </div>
       </section>
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-5">
         <StatTile icon={<UsersRound />} label="Clientes indicados" value={stats.clients} />
         <StatTile icon={<WalletCards />} label="Vendas realizadas" value={stats.count} />
         <StatTile variant="primary" icon={<WalletCards />} label="Valor total vendido" value={formatBrl(stats.revenueCents)} />
+        <StatTile variant="primary" icon={<WalletCards />} label="Sua comissão" value={formatBrl(stats.commissionCents)} />
         <StatTile tone={pendingLeadsCount > 0 ? "positive" : "normal"} icon={<UserRoundSearch />} label="Contatos pendentes" value={pendingLeadsCount} />
       </div>
+      <p className="text-xs font-semibold text-slate-500">
+        Comissão: 40% no plano mensal, 30% no trimestral.
+      </p>
 
       <section className="card p-4">
         <h3 className="mb-1 font-black text-white">Quem falta contatar</h3>
@@ -328,6 +335,9 @@ export function VendedorDashboard() {
                   <strong className="block truncate text-sm text-white">{sale.companyName || "Empresa"}</strong>
                   <p className="truncate text-xs font-semibold text-slate-500">
                     {sale.plan} - {formatDate(sale.soldAt)}
+                  </p>
+                  <p className="mt-1 truncate text-xs font-semibold text-aqua-700">
+                    Sua comissão ({Math.round(commissionRateForSale(sale) * 100)}%): {formatBrl(commissionCentsForSale(sale))}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
