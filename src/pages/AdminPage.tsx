@@ -32,7 +32,7 @@ import { UrgentBadge } from "../components/UrgentBadge";
 import { Modal } from "../components/Modal";
 import { AvatarButton } from "../components/AvatarButton";
 import { formatCurrency, formatDate, todayLocalISODate } from "../lib/format";
-import { calculateReliability, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots } from "../lib/rules";
+import { calculateReliability, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots, isWorkerVerified } from "../lib/rules";
 import { getTrustBadges } from "../lib/trust";
 import { useAppStore } from "../lib/store";
 import { adminActivatePlus, adminAdjustCoins, adminCoinsEnabled } from "../lib/supabaseAdminCoins";
@@ -874,7 +874,7 @@ function WorkerDetailModal({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-black text-white">{worker.name}</h2>
-              {worker.verified && <span className="badge bg-aqua-100 text-aqua-700"><BadgeCheck size={14} /> Verificado</span>}
+              {isWorkerVerified(worker) && <span className="badge bg-aqua-100 text-aqua-700"><BadgeCheck size={14} /> Verificado</span>}
               <span className={blocked ? "badge border-red-100 bg-red-50 text-alert" : "badge"}>{blocked ? "Bloqueado" : "Ativo"}</span>
             </div>
             <p className="mt-1 text-sm font-semibold text-slate-600">{worker.functions.join(", ") || "Sem função"}</p>

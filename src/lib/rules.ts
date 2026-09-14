@@ -1,4 +1,13 @@
+import { WORKER_AVATAR_PLACEHOLDER } from "./profileCompletion";
 import type { Application, ApplicationStatus, ExperienceLevel, FunctionExperience, Job, JobFunction, JobStatus, WorkerProfile } from "./types";
+
+/** "Perfil verificado" nunca teve um fluxo próprio para ligar - a coluna
+ *  worker_profiles.verified sempre ficava false. Em vez disso, considera
+ *  verificado todo trabalhador com uma foto real (não o placeholder), já
+ *  que é justamente o que dá confiança para a empresa contratar. */
+export function isWorkerVerified(worker: WorkerProfile) {
+  return Boolean(worker.avatarUrl) && worker.avatarUrl !== WORKER_AVATAR_PLACEHOLDER;
+}
 
 export const experienceRank: Record<ExperienceLevel, number> = {
   Iniciante: 1,
@@ -46,12 +55,13 @@ export function getFunctionExperience(worker: WorkerProfile, functionName: JobFu
   if (declared) return declared;
   if (!worker.functions.includes(functionName)) return null;
 
+  const verified = isWorkerVerified(worker);
   return {
     function: functionName,
-    level: worker.verified ? "Experiente" : "Poucas diárias",
+    level: verified ? "Experiente" : "Poucas diárias",
     months: Math.max(1, Math.round(worker.completedJobs / Math.max(1, worker.functions.length))),
     acceptsAssistant: false,
-    verified: worker.verified
+    verified
   };
 }
 

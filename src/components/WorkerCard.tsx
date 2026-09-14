@@ -4,7 +4,7 @@ import { AvatarButton } from "./AvatarButton";
 import { Modal } from "./Modal";
 import { TermHint } from "./TermHint";
 import { useAppStore } from "../lib/store";
-import { calculateReliability, getCompatibilityLabel, getExperienceLabel, getFunctionExperience } from "../lib/rules";
+import { calculateReliability, getCompatibilityLabel, getExperienceLabel, getFunctionExperience, isWorkerVerified } from "../lib/rules";
 import { getTrustBadges } from "../lib/trust";
 import type { JobFunction, WorkerProfile } from "../lib/types";
 
@@ -46,7 +46,7 @@ export function WorkerCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="truncate font-black text-white">{worker.name}</h3>
-            {worker.verified && (
+            {isWorkerVerified(worker) && (
               <span className="inline-flex items-center gap-1 text-xs font-bold text-aqua-700">
                 <CheckCircle2 size={14} /> Verificado
               </span>

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
 import { useAppStore } from "../lib/store";
+import { isWorkerVerified } from "../lib/rules";
 
 const demoWorkerIds = new Set(["worker-1", "worker-2", "worker-3", "worker-4"]);
 
@@ -12,7 +13,7 @@ export function ProfessionalBankPage() {
   const realWorkers = state.workers.filter(
     (worker) => !demoWorkerIds.has(worker.id) && !state.adminModeration.blockedWorkerIds.includes(worker.id)
   );
-  const verifiedCount = realWorkers.filter((worker) => worker.verified).length;
+  const verifiedCount = realWorkers.filter(isWorkerVerified).length;
 
   return (
     <div className="grid gap-5">

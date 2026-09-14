@@ -22,7 +22,7 @@ import { TermHint } from "../components/TermHint";
 import { experienceLevels, functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 import { getWorkerProfileCompletion, WORKER_AVATAR_PLACEHOLDER } from "../lib/profileCompletion";
-import { calculateReliability, getExperienceLabel, getFunctionExperience } from "../lib/rules";
+import { calculateReliability, getExperienceLabel, getFunctionExperience, isWorkerVerified } from "../lib/rules";
 import type { JobFunction } from "../lib/types";
 
 export function WorkerProfilePage() {
@@ -68,7 +68,7 @@ export function WorkerProfilePage() {
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-2xl font-black text-white">{currentWorker.name}</h2>
-                {currentWorker.verified && <span className="badge bg-aqua-100 text-aqua-700"><BadgeCheck size={15} /> Perfil verificado</span>}
+                {isWorkerVerified(currentWorker) && <span className="badge bg-aqua-100 text-aqua-700"><BadgeCheck size={15} /> Perfil verificado</span>}
               </div>
               <p className="mt-1 text-sm font-semibold text-slate-600">{currentWorker.functions.join(", ")}</p>
               <div className="profile-quick-actions">
