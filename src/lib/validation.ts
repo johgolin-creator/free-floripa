@@ -144,16 +144,31 @@ export function formatPhoneInput(value: string): string {
   return formatBrPhone(value);
 }
 
+/**
+ * "YYYY-MM-DD" (formato do <input type="date">). Monta a data a partir dos
+ * componentes numéricos em vez de new Date(string) — esse construtor trata
+ * uma string sem horário como meia-noite UTC, o que atrasa a data em até um
+ * dia para quem está num fuso atrás de UTC (o Brasil inteiro), bagunçando o
+ * cálculo perto do aniversário de 18 anos. Também rejeita datas que não
+ * existem de verdade (tipo 30 de fevereiro), que o Date normal só "rolaria"
+ * para o mês seguinte sem avisar.
+ */
 export function isAdult(birthDate: string): boolean {
-  if (!birthDate) return false;
-  const date = new Date(birthDate);
-  if (Number.isNaN(date.getTime())) return false;
-  if (date.getFullYear() < 1900) return false;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec((birthDate || "").trim());
+  if (!match) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (year < 1900) return false;
+
+  const birth = new Date(year, month - 1, day);
+  if (birth.getFullYear() !== year || birth.getMonth() !== month - 1 || birth.getDate() !== day) return false;
 
   const now = new Date();
-  if (date > now) return false;
+  if (birth > now) return false;
 
-  const eighteen = new Date(date.getFullYear() + 18, date.getMonth(), date.getDate());
+  const eighteen = new Date(year + 18, month - 1, day);
   return eighteen <= now;
 }
 
