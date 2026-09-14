@@ -185,7 +185,6 @@ export function CompanySchedulePage() {
             <p className="text-sm font-semibold text-slate-600">Use para planejar equipe antes de publicar vaga ou antes de alguém se candidatar.</p>
             <StatusLegend type="schedule" />
           </div>
-          <button type="button" onClick={() => setCreating(true)} disabled={companyBlocked} className="company-action"><Plus size={17} /> Nova escala</button>
         </div>
         {manualSchedules.length === 0 ? (
           <EmptyState title="Nenhuma escala criada" text="Clique em Criar escala para montar uma escala manual da empresa." />

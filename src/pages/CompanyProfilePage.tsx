@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { AlertTriangle, BadgeCheck, Building2, Edit3, ImageUp, Save, ShieldCheck, Star } from "lucide-react";
+import { AlertTriangle, BadgeCheck, Building2, Edit3, Save, ShieldCheck, Star } from "lucide-react";
 import { DeleteAccountSection } from "../components/DeleteAccountSection";
 import { Modal } from "../components/Modal";
 import { formatCNPJ, formatCPF, formatPhoneInput, isMeaningfulText, isPlausibleFullName, isValidCNPJ, isValidCPF, isValidEmail, isValidPhone, onlyDigits } from "../lib/validation";
@@ -63,9 +63,6 @@ export function CompanyProfilePage() {
               <div className="profile-quick-actions">
                 <button type="button" onClick={() => setEditing(true)} className="company-action company-action-primary">
                   <Edit3 size={17} /> Alterar dados
-                </button>
-                <button type="button" onClick={() => setEditing(true)} className="company-action">
-                  <ImageUp size={17} /> Trocar logo
                 </button>
               </div>
             </div>

@@ -11,7 +11,6 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
-  Eye,
   Mail,
   MapPin,
   Phone,
@@ -869,11 +868,6 @@ function AdminRow({
           </div>
         </button>
         <div className="grid gap-2 sm:min-w-40">
-          {onOpen && (
-            <button type="button" onClick={onOpen} className="secondary">
-              <Eye size={16} /> Ver perfil
-            </button>
-          )}
           <button type="button" onClick={onToggle} className={blocked ? "secondary" : "danger"}>
             <Ban size={16} /> {blocked ? "Desbloquear" : "Bloquear"}
           </button>
@@ -1737,9 +1731,6 @@ function SalesRepsPanel({
                   </button>
                   <div className="grid gap-2 sm:min-w-40">
                     <CopyButton text={salesRepSignupLink(agg.rep.code)} label="Copiar link" />
-                    <button type="button" className="secondary" onClick={() => setSaleForm({})}>
-                      <WalletCards size={15} /> Registrar venda
-                    </button>
                     <button type="button" className="secondary" onClick={() => setRepForm({ mode: "edit", rep: agg.rep })}>
                       Editar
                     </button>

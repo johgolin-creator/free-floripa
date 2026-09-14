@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { BadgeCheck, Edit3, ImageUp, Save, Star, UserRound } from "lucide-react";
+import { BadgeCheck, Edit3, Save, Star, UserRound } from "lucide-react";
 import { DeleteAccountSection } from "../components/DeleteAccountSection";
 import { Modal } from "../components/Modal";
 import {
@@ -84,19 +84,6 @@ export function WorkerProfilePage() {
                   className="company-action company-action-primary"
                 >
                   <Edit3 size={17} /> Alterar dados
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedFunctions(currentWorker.functions);
-                    setAvatarUrl(currentWorker.avatarUrl);
-                    setCpf(formatCPF(currentWorker.cpf));
-                    setError("");
-                    setEditing(true);
-                  }}
-                  className="company-action"
-                >
-                  <ImageUp size={17} /> Trocar foto
                 </button>
               </div>
             </div>
