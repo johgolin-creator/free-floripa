@@ -4,9 +4,13 @@ import { isValidCNPJ, isValidCPF } from "./validation";
 const DEFAULT_WORKER_TEXTS = ["Perfil recém-criado no PONT.", "Perfil recÃ©m-criado no PONT."];
 const DEFAULT_COMPANY_TEXTS = ["Empresa cadastrada no PONT."];
 
-/** Placeholders usados antes da pessoa enviar uma foto real. Foto é
- *  obrigatória: um perfil que ainda está com o placeholder conta como
- *  incompleto, e as telas de edição bloqueiam salvar nesse estado. */
+/** Placeholders usados antes da pessoa enviar uma foto real. As telas de
+ *  edição bloqueiam salvar nesse estado (foto passou a ser obrigatória),
+ *  mas de propósito NÃO entram no checklist de "perfil completo" abaixo:
+ *  esse checklist alimenta o guard em AppLayout que tranca o usuário fora
+ *  de todo o app até completar (ver "!completion.complete" lá) - contas
+ *  antigas, criadas antes da foto virar obrigatória, ficariam banidas do
+ *  próprio painel sem aviso nenhum se a foto entrasse aqui. */
 export const WORKER_AVATAR_PLACEHOLDER = "/avatar-placeholder.svg";
 export const COMPANY_LOGO_PLACEHOLDER = "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=500&q=80";
 
@@ -21,7 +25,6 @@ function notDefault(value: string, defaults: string[]) {
 export function getWorkerProfileCompletion(worker: WorkerProfile) {
   const missing: string[] = [];
 
-  if (!filled(worker.avatarUrl) || worker.avatarUrl === WORKER_AVATAR_PLACEHOLDER) missing.push("foto de perfil");
   if (!filled(worker.name)) missing.push("nome completo");
   if (!isValidCPF(worker.cpf)) missing.push("CPF");
   if (!filled(worker.phone)) missing.push("telefone");
@@ -45,7 +48,6 @@ export function getWorkerProfileCompletion(worker: WorkerProfile) {
 export function getCompanyProfileCompletion(company: CompanyProfile) {
   const missing: string[] = [];
 
-  if (!filled(company.logoUrl) || company.logoUrl === COMPANY_LOGO_PLACEHOLDER) missing.push("foto ou logotipo");
   if (!filled(company.establishmentName) || company.establishmentName === "Empresa PONT") missing.push("nome do estabelecimento");
   if (!filled(company.responsibleName) || company.responsibleName === "Responsável" || company.responsibleName === "ResponsÃ¡vel") {
     missing.push("responsável");
