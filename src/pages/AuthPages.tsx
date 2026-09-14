@@ -244,9 +244,7 @@ export function WorkerSignupPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [cpf, setCpf] = useState("");
   const [phone, setPhone] = useState("");
-  const [phoneConfirm, setPhoneConfirm] = useState("");
   const [email, setEmail] = useState("");
-  const [emailConfirm, setEmailConfirm] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
@@ -257,9 +255,7 @@ export function WorkerSignupPage() {
       if (!isPlausibleFullName(String(data.get("name") || ""))) return "Informe seu nome e sobrenome completos.";
       if (!isValidCPF(cpf)) return "Informe um CPF válido.";
       if (!isValidBrMobile(phone)) return "Informe um celular válido com DDD, no formato (48) 9XXXX-XXXX.";
-      if (onlyDigits(phone) !== onlyDigits(phoneConfirm)) return "Os telefones não conferem.";
       if (!isValidEmail(email)) return "Informe um e-mail válido.";
-      if (email.trim().toLowerCase() !== emailConfirm.trim().toLowerCase()) return "Os e-mails não conferem.";
       if (!isStrongPassword(String(data.get("password") || ""))) {
         return "A senha precisa ter ao menos 8 caracteres, com letras e números.";
       }
@@ -440,18 +436,6 @@ export function WorkerSignupPage() {
               />
             </label>
             <label className="label">
-              Confirmar telefone
-              <input
-                className="input"
-                required
-                inputMode="tel"
-                placeholder="(48) 99999-9999"
-                value={phoneConfirm}
-                onChange={(event) => setPhoneConfirm(formatBrPhone(event.target.value))}
-                onPaste={(event) => event.preventDefault()}
-              />
-            </label>
-            <label className="label">
               E-mail
               <input
                 name="email"
@@ -461,17 +445,6 @@ export function WorkerSignupPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-              />
-            </label>
-            <label className="label">
-              Confirmar e-mail
-              <input
-                className="input"
-                type="email"
-                required
-                value={emailConfirm}
-                onChange={(event) => setEmailConfirm(event.target.value)}
-                onPaste={(event) => event.preventDefault()}
               />
             </label>
             <label className="label">Senha<input name="password" className="input" type="password" required minLength={8} placeholder="Mín. 8 caracteres, com letras e números" autoComplete="new-password" /></label>
@@ -590,11 +563,11 @@ export function CompanySignupPage() {
   const wizard = useWizardStep(companySteps.length);
   const [logoUrl, setLogoUrl] = useState(DEFAULT_COMPANY_LOGO);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [documentType, setDocumentType] = useState<"cnpj" | "cpf">("cnpj");
   const [cnpj, setCnpj] = useState("");
+  const [cpf, setCpf] = useState("");
   const [phone, setPhone] = useState("");
-  const [phoneConfirm, setPhoneConfirm] = useState("");
   const [email, setEmail] = useState("");
-  const [emailConfirm, setEmailConfirm] = useState("");
   const [vendorCode, setVendorCode] = useState(getStashedSalesRepCode());
   const [vendorName, setVendorName] = useState("");
   const vendorLocked = Boolean(getStashedSalesRepCode()); // veio por link: não deixa trocar
@@ -621,11 +594,11 @@ export function CompanySignupPage() {
         return "Informe o nome real do estabelecimento.";
       }
       if (!isPlausibleFullName(String(data.get("responsibleName") || ""))) return "Informe o nome e sobrenome do responsável.";
-      if (!isValidCNPJ(cnpj)) return "Informe um CNPJ válido.";
+      if (documentType === "cnpj" ? !isValidCNPJ(cnpj) : !isValidCPF(cpf)) {
+        return documentType === "cnpj" ? "Informe um CNPJ válido." : "Informe um CPF válido.";
+      }
       if (!isValidBrMobile(phone)) return "Informe um celular válido com DDD, no formato (48) 9XXXX-XXXX.";
-      if (onlyDigits(phone) !== onlyDigits(phoneConfirm)) return "Os telefones não conferem.";
       if (!isValidEmail(email)) return "Informe um e-mail válido.";
-      if (email.trim().toLowerCase() !== emailConfirm.trim().toLowerCase()) return "Os e-mails não conferem.";
       if (!isStrongPassword(String(data.get("password") || ""))) {
         return "A senha precisa ter ao menos 8 caracteres, com letras e números.";
       }
@@ -696,7 +669,8 @@ export function CompanySignupPage() {
               metadata: {
                 establishmentName: String(form.get("establishmentName") || "").trim().replace(/\s+/g, " "),
                 responsibleName: String(form.get("responsibleName") || "").trim().replace(/\s+/g, " "),
-                cnpj: onlyDigits(cnpj),
+                cnpj: documentType === "cnpj" ? onlyDigits(cnpj) : "",
+                cpf: documentType === "cpf" ? onlyDigits(cpf) : "",
                 phone: formatBrPhone(phone),
                 category: String(form.get("category") || "").trim(),
                 neighborhood: String(form.get("neighborhood") || "").trim(),
@@ -764,21 +738,64 @@ export function CompanySignupPage() {
                   : "Digite o código recebido do seu vendedor. Se você recebeu um link de convite, esse campo já vem preenchido."}
             </p>
           </div>
+          <fieldset className="mb-3 grid gap-2">
+            <legend className="text-sm font-bold text-slate-600">Você está contratando como</legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <label className="role-choice">
+                <input
+                  type="radio"
+                  name="documentType"
+                  value="cnpj"
+                  checked={documentType === "cnpj"}
+                  onChange={() => setDocumentType("cnpj")}
+                />
+                <span><Building2 size={18} /> Empresa (CNPJ)</span>
+              </label>
+              <label className="role-choice">
+                <input
+                  type="radio"
+                  name="documentType"
+                  value="cpf"
+                  checked={documentType === "cpf"}
+                  onChange={() => setDocumentType("cpf")}
+                />
+                <span><UserRound size={18} /> Pessoa física (CPF)</span>
+              </label>
+            </div>
+          </fieldset>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="label">Nome do estabelecimento<input name="establishmentName" className="input" required /></label>
-            <label className="label">Nome do responsável<input name="responsibleName" className="input" required placeholder="Nome e sobrenome" autoComplete="name" /></label>
             <label className="label">
-              CNPJ
-              <input
-                name="cnpj"
-                className="input"
-                required
-                inputMode="numeric"
-                placeholder="00.000.000/0000-00"
-                value={cnpj}
-                onChange={(event) => setCnpj(formatCNPJ(event.target.value))}
-              />
+              {documentType === "cnpj" ? "Nome do estabelecimento" : "Nome do evento ou ocasião"}
+              <input name="establishmentName" className="input" required placeholder={documentType === "cnpj" ? "" : "Ex: Casamento Ana e Pedro"} />
             </label>
+            <label className="label">Nome do responsável<input name="responsibleName" className="input" required placeholder="Nome e sobrenome" autoComplete="name" /></label>
+            {documentType === "cnpj" ? (
+              <label className="label">
+                CNPJ
+                <input
+                  name="cnpj"
+                  className="input"
+                  required
+                  inputMode="numeric"
+                  placeholder="00.000.000/0000-00"
+                  value={cnpj}
+                  onChange={(event) => setCnpj(formatCNPJ(event.target.value))}
+                />
+              </label>
+            ) : (
+              <label className="label">
+                CPF
+                <input
+                  name="cpf"
+                  className="input"
+                  required
+                  inputMode="numeric"
+                  placeholder="000.000.000-00"
+                  value={cpf}
+                  onChange={(event) => setCpf(formatCPF(event.target.value))}
+                />
+              </label>
+            )}
             <label className="label">
               Telefone (celular)
               <input
@@ -792,18 +809,6 @@ export function CompanySignupPage() {
               />
             </label>
             <label className="label">
-              Confirmar telefone
-              <input
-                className="input"
-                required
-                inputMode="tel"
-                placeholder="(48) 99999-9999"
-                value={phoneConfirm}
-                onChange={(event) => setPhoneConfirm(formatBrPhone(event.target.value))}
-                onPaste={(event) => event.preventDefault()}
-              />
-            </label>
-            <label className="label">
               E-mail
               <input
                 name="email"
@@ -813,17 +818,6 @@ export function CompanySignupPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-              />
-            </label>
-            <label className="label">
-              Confirmar e-mail
-              <input
-                className="input"
-                type="email"
-                required
-                value={emailConfirm}
-                onChange={(event) => setEmailConfirm(event.target.value)}
-                onPaste={(event) => event.preventDefault()}
               />
             </label>
             <label className="label">Senha<input name="password" className="input" type="password" required minLength={8} placeholder="Mín. 8 caracteres, com letras e números" autoComplete="new-password" /></label>

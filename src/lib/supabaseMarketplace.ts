@@ -111,7 +111,8 @@ export interface CompanyProfileRow {
   user_id?: string | null;
   establishment_name: string;
   responsible_name: string;
-  cnpj: string;
+  cnpj: string | null;
+  cpf?: string | null;
   phone: string;
   email: string;
   category: CompanyProfile["category"] | string;
@@ -272,6 +273,7 @@ export function mapCompany(row: CompanyProfileRow): CompanyProfile {
     establishmentName: row.establishment_name || "Empresa PONT",
     responsibleName: row.responsible_name || "Responsável",
     cnpj: row.cnpj || "",
+    cpf: row.cpf || "",
     phone: row.phone || "",
     email: row.email || "",
     category: (row.category || "Outro") as CompanyProfile["category"],
@@ -491,7 +493,8 @@ export async function publishCompanyProfile(user: User, company: CompanyProfile)
       user_id: user.id,
       establishment_name: company.establishmentName,
       responsible_name: company.responsibleName,
-      cnpj: company.cnpj || user.id,
+      cnpj: company.cnpj || null,
+      cpf: company.cpf || null,
       phone: company.phone,
       email,
       category: company.category,
@@ -564,7 +567,7 @@ export async function loadPublicJobs(): Promise<MarketplaceJobsPayload> {
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status,company_profiles(id,user_id,establishment_name,responsible_name,cnpj,phone,email,category,address,neighborhood,description,logo_url,cover_url,rating)"
+      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status,company_profiles(id,user_id,establishment_name,responsible_name,cnpj,cpf,phone,email,category,address,neighborhood,description,logo_url,cover_url,rating)"
     )
     .neq("status", "Cancelada")
     .order("shift_date", { ascending: true })

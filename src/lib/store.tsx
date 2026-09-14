@@ -334,6 +334,7 @@ function createCompanyForUser(user: User): CompanyProfile {
     establishmentName: getMetadataString(user, "establishmentName", "Empresa PONT"),
     responsibleName: getMetadataString(user, "responsibleName", "Responsável"),
     cnpj: getMetadataString(user, "cnpj", ""),
+    cpf: getMetadataString(user, "cpf", ""),
     phone: getMetadataString(user, "phone", ""),
     email: user.email ?? getMetadataString(user, "email", ""),
     category: getMetadataString(user, "category", "Outro") as CompanyProfile["category"],

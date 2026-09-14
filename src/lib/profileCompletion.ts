@@ -42,7 +42,7 @@ export function getCompanyProfileCompletion(company: CompanyProfile) {
   if (!filled(company.responsibleName) || company.responsibleName === "Responsável" || company.responsibleName === "ResponsÃ¡vel") {
     missing.push("responsável");
   }
-  if (!isValidCNPJ(company.cnpj)) missing.push("CNPJ");
+  if (!isValidCNPJ(company.cnpj) && !isValidCPF(company.cpf)) missing.push("CNPJ ou CPF");
   if (!filled(company.phone)) missing.push("telefone");
   if (!filled(company.email)) missing.push("e-mail");
   if (!filled(company.category)) missing.push("categoria");

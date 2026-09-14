@@ -1056,7 +1056,7 @@ function CompanyDetailModal({
 
         <div className="grid gap-2 sm:grid-cols-2">
           <DetailField label="Responsável" value={company.responsibleName || "Não informado"} />
-          <DetailField label="CNPJ" value={company.cnpj || "Não informado"} />
+          <DetailField label={company.cnpj ? "CNPJ" : "CPF"} value={company.cnpj || company.cpf || "Não informado"} />
           <DetailField icon={<Phone size={13} />} label="Telefone" value={company.phone || "Não informado"} />
           <DetailField icon={<Mail size={13} />} label="E-mail" value={company.email || "Não informado"} />
           <DetailField label="Categoria" value={company.category} />

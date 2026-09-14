@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { AlertTriangle, BadgeCheck, Building2, Edit3, ImageUp, Save, ShieldCheck, Star } from "lucide-react";
 import { DeleteAccountSection } from "../components/DeleteAccountSection";
 import { Modal } from "../components/Modal";
-import { formatBrPhone, formatCNPJ, isMeaningfulText, isPlausibleFullName, isValidBrMobile, isValidCNPJ, isValidEmail, onlyDigits } from "../lib/validation";
+import { formatBrPhone, formatCNPJ, formatCPF, isMeaningfulText, isPlausibleFullName, isValidBrMobile, isValidCNPJ, isValidCPF, isValidEmail, onlyDigits } from "../lib/validation";
 import { isPhoneTaken } from "../lib/signupChecks";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
@@ -72,7 +72,7 @@ export function CompanyProfilePage() {
           </div>
           <div className="profile-info-grid company-profile-info-grid">
             <Info label="Responsável" value={currentCompany.responsibleName} />
-            <Info label="CNPJ" value={currentCompany.cnpj} />
+            <Info label={currentCompany.cnpj ? "CNPJ" : "CPF"} value={currentCompany.cnpj || currentCompany.cpf} />
             <Info label="Telefone protegido" value={currentCompany.phone} />
             <Info label="E-mail" value={currentCompany.email} />
             <Info label="Endereço" value={currentCompany.address} />
@@ -148,6 +148,7 @@ function CompanyProfileForm({
   const [error, setError] = useState("");
   const [logoUrl, setLogoUrl] = useState(company.logoUrl);
   const [coverUrl, setCoverUrl] = useState(company.coverUrl || "");
+  const isCpf = !company.cnpj && Boolean(company.cpf);
 
   return (
     <form
@@ -157,7 +158,7 @@ function CompanyProfileForm({
         const form = new FormData(event.currentTarget);
         const establishmentName = String(form.get("establishmentName") || "").trim();
         const responsibleName = String(form.get("responsibleName") || "").trim();
-        const cnpj = String(form.get("cnpj") || "").trim();
+        const documentValue = String(form.get(isCpf ? "cpf" : "cnpj") || "").trim();
         const phone = String(form.get("phone") || "").trim();
         const email = String(form.get("email") || "").trim();
         const address = String(form.get("address") || "").trim();
@@ -171,8 +172,8 @@ function CompanyProfileForm({
           setError("Informe o nome e sobrenome do responsável.");
           return;
         }
-        if (!isValidCNPJ(cnpj)) {
-          setError("Informe um CNPJ válido.");
+        if (isCpf ? !isValidCPF(documentValue) : !isValidCNPJ(documentValue)) {
+          setError(isCpf ? "Informe um CPF válido." : "Informe um CNPJ válido.");
           return;
         }
         if (!isValidBrMobile(phone)) {
@@ -200,7 +201,8 @@ function CompanyProfileForm({
         onSubmit({
           establishmentName: establishmentName.replace(/\s+/g, " "),
           responsibleName: responsibleName.replace(/\s+/g, " "),
-          cnpj: onlyDigits(cnpj),
+          cnpj: isCpf ? "" : onlyDigits(documentValue),
+          cpf: isCpf ? onlyDigits(documentValue) : "",
           phone: formatBrPhone(phone),
           email,
           category: form.get("category") as CompanyProfile["category"],
@@ -225,15 +227,15 @@ function CompanyProfileForm({
         <label className="label">Nome do estabelecimento<input name="establishmentName" className="input" defaultValue={company.establishmentName} required /></label>
         <label className="label">Responsável<input name="responsibleName" className="input" defaultValue={company.responsibleName} required /></label>
         <label className="label">
-          CNPJ
+          {isCpf ? "CPF" : "CNPJ"}
           <input
-            name="cnpj"
+            name={isCpf ? "cpf" : "cnpj"}
             className="input"
             inputMode="numeric"
-            placeholder="00.000.000/0000-00"
-            defaultValue={formatCNPJ(company.cnpj)}
+            placeholder={isCpf ? "000.000.000-00" : "00.000.000/0000-00"}
+            defaultValue={isCpf ? formatCPF(company.cpf) : formatCNPJ(company.cnpj)}
             onChange={(event) => {
-              event.target.value = formatCNPJ(event.target.value);
+              event.target.value = isCpf ? formatCPF(event.target.value) : formatCNPJ(event.target.value);
             }}
             required
           />

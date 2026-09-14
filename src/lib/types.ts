@@ -76,7 +76,9 @@ export interface CompanyProfile {
   id: string;
   establishmentName: string;
   responsibleName: string;
+  /** CNPJ (empresa) ou CPF (pessoa física) — sempre exatamente um dos dois preenchido. */
   cnpj: string;
+  cpf: string;
   phone: string;
   email: string;
   category: "Restaurante" | "Bar" | "Beach club" | "Hotel" | "Casa noturna" | "Buffet" | "Agência de eventos" | "Outro";

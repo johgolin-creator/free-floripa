@@ -269,9 +269,7 @@ export function CompanyJobsPage() {
                       </div>
 
                       <div className="company-mini-grid">
-                        <Mini label="candidatos" value={String(job.candidates)} />
                         <Mini label="confirmados" value={`${confirmed}/${job.quantity}`} />
-                        <Mini label="previsto" value={formatCurrency(expectedValue)} />
                         <Mini label="diária" value={formatCurrency(job.dailyValue)} />
                       </div>
                     </div>
@@ -281,25 +279,26 @@ export function CompanyJobsPage() {
                         <span style={{ width: `${progress}%` }} />
                       </div>
                       <small>
-                        {getOpenSlots(job)} vaga{getOpenSlots(job) === 1 ? "" : "s"} restante{getOpenSlots(job) === 1 ? "" : "s"} - {completed} concluído{completed === 1 ? "" : "s"} - {absences} falta{absences === 1 ? "" : "s"}
+                        {getOpenSlots(job)} vaga{getOpenSlots(job) === 1 ? "" : "s"} restante{getOpenSlots(job) === 1 ? "" : "s"}
                       </small>
                     </div>
 
                     <div className="company-action-grid">
                       <Link to={`/app/candidatos?vaga=${job.id}`} className="company-action company-action-primary">
-                        <ClipboardList size={17} /> Candidatos
+                        <ClipboardList size={17} /> Candidatos ({job.candidates})
                       </Link>
                       <button type="button" onClick={() => runStatus(job.id, "Concluída")} disabled={terminal || companyBlocked} className="company-action company-action-primary">
                         <CheckCircle2 size={17} /> Encerrar
-                      </button>
-                      <button type="button" onClick={() => runStatus(job.id, "Cancelada")} disabled={terminal || companyBlocked} className="company-action company-action-danger">
-                        <XCircle size={17} /> Cancelar{filledCancellationFee > 0 ? " (-10 moedas)" : ""}
                       </button>
                     </div>
 
                     <details className="company-history">
                       <summary><Square size={16} /> Mais ações</summary>
-                      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        <Mini label="candidatos" value={String(job.candidates)} />
+                        <Mini label="previsto" value={formatCurrency(expectedValue)} />
+                      </div>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
                         <button
                           type="button"
                           onClick={() => runStatus(job.id, "Publicada")}
@@ -313,6 +312,9 @@ export function CompanyJobsPage() {
                         </button>
                         <button type="button" onClick={() => runStatus(job.id, "Rascunho")} disabled={status === "Rascunho" || terminal || companyBlocked} className="company-action">
                           <Square size={17} /> Rascunho
+                        </button>
+                        <button type="button" onClick={() => runStatus(job.id, "Cancelada")} disabled={terminal || companyBlocked} className="company-action company-action-danger">
+                          <XCircle size={17} /> Cancelar{filledCancellationFee > 0 ? " (-10 moedas)" : ""}
                         </button>
                       </div>
                     </details>
