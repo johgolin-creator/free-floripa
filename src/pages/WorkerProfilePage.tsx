@@ -3,14 +3,14 @@ import { BadgeCheck, Edit3, ImageUp, Save, Star, UserRound } from "lucide-react"
 import { DeleteAccountSection } from "../components/DeleteAccountSection";
 import { Modal } from "../components/Modal";
 import {
-  formatBrPhone,
   formatCPF,
+  formatPhoneInput,
   isAdult,
   isMeaningfulText,
   isPlausibleFullName,
-  isValidBrMobile,
   isValidCPF,
   isValidEmail,
+  isValidPhone,
   onlyDigits
 } from "../lib/validation";
 import { isPhoneTaken } from "../lib/signupChecks";
@@ -189,8 +189,8 @@ export function WorkerProfilePage() {
                 setError("Informe um CPF válido.");
                 return;
               }
-              if (!isValidBrMobile(phone)) {
-                setError("Informe um celular válido com DDD.");
+              if (!isValidPhone(phone)) {
+                setError("Informe um celular válido: com DDD no Brasil, ou +código do país no exterior.");
                 return;
               }
               if (!isValidEmail(email)) {
@@ -225,7 +225,7 @@ export function WorkerProfilePage() {
               updateWorkerProfile({
                 name: name.replace(/\s+/g, " "),
                 cpf: onlyDigits(cpf),
-                phone: formatBrPhone(phone),
+                phone: formatPhoneInput(phone),
                 email,
                 avatarUrl: avatarUrl.trim() || currentWorker.avatarUrl,
                 birthDate,
@@ -286,10 +286,10 @@ export function WorkerProfilePage() {
                   className="input"
                   required
                   inputMode="tel"
-                  placeholder="(48) 99999-9999"
-                  defaultValue={formatBrPhone(currentWorker.phone)}
+                  placeholder="(48) 99999-9999 ou +1 234 567 8900"
+                  defaultValue={formatPhoneInput(currentWorker.phone)}
                   onChange={(event) => {
-                    event.target.value = formatBrPhone(event.target.value);
+                    event.target.value = formatPhoneInput(event.target.value);
                   }}
                 />
               </label>

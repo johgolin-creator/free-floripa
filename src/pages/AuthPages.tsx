@@ -12,17 +12,17 @@ import { isPhoneTaken } from "../lib/signupChecks";
 import { getStashedSalesRepCode, lookupSalesRepName } from "../lib/salesReps";
 import type { JobFunction, UserRole } from "../lib/types";
 import {
-  formatBrPhone,
   formatCNPJ,
   formatCPF,
+  formatPhoneInput,
   isAdult,
   isMeaningfulText,
   isPlausibleFullName,
   isStrongPassword,
-  isValidBrMobile,
   isValidCNPJ,
   isValidCPF,
   isValidEmail,
+  isValidPhone,
   onlyDigits
 } from "../lib/validation";
 
@@ -254,7 +254,7 @@ export function WorkerSignupPage() {
     if (index === 0) {
       if (!isPlausibleFullName(String(data.get("name") || ""))) return "Informe seu nome e sobrenome completos.";
       if (!isValidCPF(cpf)) return "Informe um CPF válido.";
-      if (!isValidBrMobile(phone)) return "Informe um celular válido com DDD, no formato (48) 9XXXX-XXXX.";
+      if (!isValidPhone(phone)) return "Informe um celular válido: (48) 9XXXX-XXXX no Brasil, ou +código do país para o exterior.";
       if (!isValidEmail(email)) return "Informe um e-mail válido.";
       if (!isStrongPassword(String(data.get("password") || ""))) {
         return "A senha precisa ter ao menos 8 caracteres, com letras e números.";
@@ -356,7 +356,7 @@ export function WorkerSignupPage() {
               metadata: {
                 name,
                 cpf: onlyDigits(cpf),
-                phone: formatBrPhone(phone),
+                phone: formatPhoneInput(phone),
                 city,
                 neighborhood,
                 birthDate,
@@ -430,9 +430,9 @@ export function WorkerSignupPage() {
                 className="input"
                 required
                 inputMode="tel"
-                placeholder="(48) 99999-9999"
+                placeholder="(48) 99999-9999 ou +1 234 567 8900"
                 value={phone}
-                onChange={(event) => setPhone(formatBrPhone(event.target.value))}
+                onChange={(event) => setPhone(formatPhoneInput(event.target.value))}
               />
             </label>
             <label className="label">
@@ -597,7 +597,7 @@ export function CompanySignupPage() {
       if (documentType === "cnpj" ? !isValidCNPJ(cnpj) : !isValidCPF(cpf)) {
         return documentType === "cnpj" ? "Informe um CNPJ válido." : "Informe um CPF válido.";
       }
-      if (!isValidBrMobile(phone)) return "Informe um celular válido com DDD, no formato (48) 9XXXX-XXXX.";
+      if (!isValidPhone(phone)) return "Informe um celular válido: (48) 9XXXX-XXXX no Brasil, ou +código do país para o exterior.";
       if (!isValidEmail(email)) return "Informe um e-mail válido.";
       if (!isStrongPassword(String(data.get("password") || ""))) {
         return "A senha precisa ter ao menos 8 caracteres, com letras e números.";
@@ -671,7 +671,7 @@ export function CompanySignupPage() {
                 responsibleName: String(form.get("responsibleName") || "").trim().replace(/\s+/g, " "),
                 cnpj: documentType === "cnpj" ? onlyDigits(cnpj) : "",
                 cpf: documentType === "cpf" ? onlyDigits(cpf) : "",
-                phone: formatBrPhone(phone),
+                phone: formatPhoneInput(phone),
                 category: String(form.get("category") || "").trim(),
                 neighborhood: String(form.get("neighborhood") || "").trim(),
                 address: String(form.get("address") || "").trim(),
@@ -803,9 +803,9 @@ export function CompanySignupPage() {
                 className="input"
                 required
                 inputMode="tel"
-                placeholder="(48) 99999-9999"
+                placeholder="(48) 99999-9999 ou +1 234 567 8900"
                 value={phone}
-                onChange={(event) => setPhone(formatBrPhone(event.target.value))}
+                onChange={(event) => setPhone(formatPhoneInput(event.target.value))}
               />
             </label>
             <label className="label">

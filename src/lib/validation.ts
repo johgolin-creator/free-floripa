@@ -117,6 +117,33 @@ export function toPhoneE164(value: string): string {
   return `+55${onlyDigits(value)}`;
 }
 
+/**
+ * Celular brasileiro (regra de sempre) OU número estrangeiro digitado com
+ * "+código do país" na frente. Aceita de 8 a 15 dígitos após o "+" (limite
+ * do padrão E.164), rejeitando sequências óbvias tipo "+00000000".
+ */
+export function isValidPhone(value: string): boolean {
+  const trimmed = (value || "").trim();
+  if (trimmed.startsWith("+")) {
+    const digits = onlyDigits(trimmed);
+    return digits.length >= 8 && digits.length <= 15 && !isAllSameDigit(digits);
+  }
+  return isValidBrMobile(value);
+}
+
+/**
+ * Formata o celular enquanto a pessoa digita: aplica a máscara brasileira
+ * (DDD) 9XXXX-XXXX normalmente, mas se ela começar digitando "+" (número
+ * estrangeiro), mantém só o "+" e os dígitos, sem máscara.
+ */
+export function formatPhoneInput(value: string): string {
+  if ((value || "").trimStart().startsWith("+")) {
+    const digits = onlyDigits(value).slice(0, 15);
+    return digits ? `+${digits}` : "+";
+  }
+  return formatBrPhone(value);
+}
+
 export function isAdult(birthDate: string): boolean {
   if (!birthDate) return false;
   const date = new Date(birthDate);

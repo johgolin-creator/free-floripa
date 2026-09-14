@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { AlertTriangle, BadgeCheck, Building2, Edit3, ImageUp, Save, ShieldCheck, Star } from "lucide-react";
 import { DeleteAccountSection } from "../components/DeleteAccountSection";
 import { Modal } from "../components/Modal";
-import { formatBrPhone, formatCNPJ, formatCPF, isMeaningfulText, isPlausibleFullName, isValidBrMobile, isValidCNPJ, isValidCPF, isValidEmail, onlyDigits } from "../lib/validation";
+import { formatCNPJ, formatCPF, formatPhoneInput, isMeaningfulText, isPlausibleFullName, isValidCNPJ, isValidCPF, isValidEmail, isValidPhone, onlyDigits } from "../lib/validation";
 import { isPhoneTaken } from "../lib/signupChecks";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
@@ -176,8 +176,8 @@ function CompanyProfileForm({
           setError(isCpf ? "Informe um CPF válido." : "Informe um CNPJ válido.");
           return;
         }
-        if (!isValidBrMobile(phone)) {
-          setError("Informe um celular válido com DDD.");
+        if (!isValidPhone(phone)) {
+          setError("Informe um celular válido: com DDD no Brasil, ou +código do país no exterior.");
           return;
         }
         if (!isValidEmail(email)) {
@@ -203,7 +203,7 @@ function CompanyProfileForm({
           responsibleName: responsibleName.replace(/\s+/g, " "),
           cnpj: isCpf ? "" : onlyDigits(documentValue),
           cpf: isCpf ? onlyDigits(documentValue) : "",
-          phone: formatBrPhone(phone),
+          phone: formatPhoneInput(phone),
           email,
           category: form.get("category") as CompanyProfile["category"],
           neighborhood: form.get("neighborhood") as CompanyProfile["neighborhood"],
@@ -246,10 +246,10 @@ function CompanyProfileForm({
             name="phone"
             className="input"
             inputMode="tel"
-            placeholder="(48) 99999-9999"
-            defaultValue={formatBrPhone(company.phone)}
+            placeholder="(48) 99999-9999 ou +1 234 567 8900"
+            defaultValue={formatPhoneInput(company.phone)}
             onChange={(event) => {
-              event.target.value = formatBrPhone(event.target.value);
+              event.target.value = formatPhoneInput(event.target.value);
             }}
             required
           />
