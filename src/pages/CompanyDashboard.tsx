@@ -27,7 +27,7 @@ import { useAppStore } from "../lib/store";
 import type { CreateJobInput, UrgentReplacementInput } from "../lib/store";
 import { formatCurrency, formatDate } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
-import type { JobFunction, Neighborhood, PaymentMethod } from "../lib/types";
+import type { Job, JobFunction, Neighborhood, PaymentMethod } from "../lib/types";
 
 const requiredJobFieldGroups = [
   { title: "Vaga", fields: ["Título", "Função", "Quantidade"] },
@@ -89,9 +89,10 @@ function createUrgentReplacementKey(input: UrgentReplacementInput) {
 }
 
 export function CompanyDashboard() {
-  const { state, currentCompany, createJob, createUrgentReplacement } = useAppStore();
+  const { state, currentCompany, createJob, updateJob, createUrgentReplacement } = useAppStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showJobForm, setShowJobForm] = useState(false);
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [showUrgentForm, setShowUrgentForm] = useState(false);
   const [message, setMessage] = useState("");
   const lastCreatedJobKey = useRef("");
@@ -132,7 +133,13 @@ export function CompanyDashboard() {
       setShowUrgentForm(true);
       setSearchParams({}, { replace: true });
     }
-  }, [searchParams, setSearchParams]);
+    if (action === "editar-vaga") {
+      const jobId = searchParams.get("vaga");
+      const job = state.jobs.find((item) => item.id === jobId && item.companyId === currentCompany.id);
+      if (job) setEditingJob(job);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, state.jobs, currentCompany.id]);
 
   return (
     <div className="grid gap-5">
@@ -267,6 +274,18 @@ export function CompanyDashboard() {
           }}
         />
       )}
+      {editingJob && (
+        <CreateJobModal
+          title="Editar vaga"
+          editingJob={editingJob}
+          onClose={() => setEditingJob(null)}
+          onCreate={(input) => {
+            const result = updateJob(editingJob.id, input);
+            if (result.ok) setMessage(result.message);
+            return result;
+          }}
+        />
+      )}
       {showUrgentForm && (
         <Modal title="Reposição urgente" onClose={() => setShowUrgentForm(false)}>
           <UrgentForm
@@ -293,16 +312,19 @@ export function CompanyDashboard() {
 
 function CreateJobModal({
   title,
+  editingJob,
   onClose,
   onCreate
 }: {
   title: string;
+  editingJob?: Job;
   onClose: () => void;
   onCreate: (input: CreateJobInput) => SubmitResult | void;
 }) {
   return (
     <Modal title={title} onClose={onClose}>
       <CreateJobForm
+        editingJob={editingJob}
         onSubmit={(input) => {
           const result = onCreate(input);
           if (result?.ok === false) return result;
@@ -314,30 +336,56 @@ function CreateJobModal({
   );
 }
 
-function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => SubmitResult | void }) {
+function jobToDraft(job: Job): JobDraft {
+  return {
+    title: job.title,
+    function: job.function,
+    quantity: String(job.quantity),
+    date: job.date,
+    startsAt: job.startsAt,
+    endsAt: job.endsAt,
+    dailyValue: String(job.dailyValue),
+    paymentMethod: job.paymentMethod,
+    approximateAddress: job.approximateAddress,
+    fullAddress: job.fullAddress,
+    neighborhood: job.neighborhood,
+    uniform: job.uniform,
+    requiredExperience: job.requiredExperience,
+    description: job.description,
+    benefits: job.benefits.join(", "),
+    urgent: job.urgent
+  };
+}
+
+function CreateJobForm({ editingJob, onSubmit }: { editingJob?: Job; onSubmit: (input: CreateJobInput) => SubmitResult | void }) {
+  const isEditing = Boolean(editingJob);
   const [error, setError] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
   const isPublishingRef = useRef(false);
   const lastSubmittedKey = useRef("");
   const { step, isFirst, isLast, goTo, goNext: goToNext, goBack } = useWizardStep(jobSteps.length);
-  const [draft, setDraft] = useState<JobDraft>({
-    title: "",
-    function: functions[0],
-    quantity: "1",
-    date: "",
-    startsAt: "",
-    endsAt: "",
-    dailyValue: "",
-    paymentMethod: "Pix",
-    approximateAddress: "",
-    fullAddress: "",
-    neighborhood: "Centro",
-    uniform: "",
-    requiredExperience: "",
-    description: "",
-    benefits: "",
-    urgent: false
-  });
+  const [draft, setDraft] = useState<JobDraft>(
+    editingJob
+      ? jobToDraft(editingJob)
+      : {
+          title: "",
+          function: functions[0],
+          quantity: "1",
+          date: "",
+          startsAt: "",
+          endsAt: "",
+          dailyValue: "",
+          paymentMethod: "Pix",
+          approximateAddress: "",
+          fullAddress: "",
+          neighborhood: "Centro",
+          uniform: "",
+          requiredExperience: "",
+          description: "",
+          benefits: "",
+          urgent: false
+        }
+  );
 
   const benefits = draft.benefits
     .split(",")
@@ -414,7 +462,7 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => Subm
       urgent: draft.urgent
     };
     const submitKey = createJobInputKey(input);
-    if (lastSubmittedKey.current === submitKey) {
+    if (!isEditing && lastSubmittedKey.current === submitKey) {
       setError("Essa vaga já foi enviada. Altere algum dado para publicar novamente.");
       return;
     }
@@ -426,7 +474,7 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => Subm
     if (submitResult?.ok === false) {
       isPublishingRef.current = false;
       setIsPublishing(false);
-      setError(submitResult.message ?? "Não foi possível publicar esta vaga.");
+      setError(submitResult.message ?? (isEditing ? "Não foi possível salvar as alterações." : "Não foi possível publicar esta vaga."));
       return;
     }
     lastSubmittedKey.current = submitKey;
@@ -527,11 +575,29 @@ function CreateJobForm({ onSubmit }: { onSubmit: (input: CreateJobInput) => Subm
               <ReviewItem icon={<CheckCircle2 size={16} />} label="Benefícios" value={benefits.length > 0 ? benefits.join(", ") : "não preenchido"} />
             </div>
           </div>
-          <div className="wizard-note"><ShieldCheck size={17} /> Ao publicar, a vaga aparece para freelancers compatíveis. Contato e endereço completo só liberam após aprovação.</div>
+          {isEditing && editingJob && editingJob.filled > 0 && (
+            <div className="wizard-note">
+              <AlertTriangle size={17} /> {editingJob.filled} profissional(is) já confirmado(s) nesta vaga. Mudanças de data, horário ou valor podem afetá-los — avise-os se precisar.
+            </div>
+          )}
+          <div className="wizard-note">
+            <ShieldCheck size={17} />{" "}
+            {isEditing
+              ? "Ao salvar, os candidatos e freelancers compatíveis passam a ver os dados atualizados."
+              : "Ao publicar, a vaga aparece para freelancers compatíveis. Contato e endereço completo só liberam após aprovação."}
+          </div>
         </WizardPanel>
       )}
 
-      <WizardActions isFirst={isFirst} isLast={isLast} onBack={handleBack} onNext={handleNext} submitLabel="Publicar vaga" pendingLabel="Publicando..." pending={isPublishing} />
+      <WizardActions
+        isFirst={isFirst}
+        isLast={isLast}
+        onBack={handleBack}
+        onNext={handleNext}
+        submitLabel={isEditing ? "Salvar alterações" : "Publicar vaga"}
+        pendingLabel={isEditing ? "Salvando..." : "Publicando..."}
+        pending={isPublishing}
+      />
     </form>
   );
 }

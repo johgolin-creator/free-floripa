@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Copy,
+  Edit3,
   PartyPopper,
   Plus,
   RotateCcw,
@@ -286,6 +287,16 @@ export function CompanyJobsPage() {
                     <div className="company-action-grid">
                       <Link to={`/app/candidatos?vaga=${job.id}`} className="company-action company-action-primary">
                         <ClipboardList size={17} /> Candidatos ({job.candidates})
+                      </Link>
+                      <Link
+                        to={`/app/empresa?acao=editar-vaga&vaga=${job.id}`}
+                        className="company-action"
+                        aria-disabled={terminal || companyBlocked}
+                        onClick={(event) => {
+                          if (terminal || companyBlocked) event.preventDefault();
+                        }}
+                      >
+                        <Edit3 size={17} /> Editar
                       </Link>
                       <button type="button" onClick={() => runStatus(job.id, "Concluída")} disabled={terminal || companyBlocked} className="company-action company-action-primary">
                         <CheckCircle2 size={17} /> Encerrar

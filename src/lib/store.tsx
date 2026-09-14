@@ -106,6 +106,7 @@ interface AppContextValue {
   currentCompany: AppState["companies"][number];
   setRole: (role: AppState["activeRole"]) => void;
   createJob: (input: CreateJobInput) => string;
+  updateJob: (jobId: string, input: CreateJobInput) => { ok: boolean; message: string };
   createUrgentReplacement: (input: UrgentReplacementInput) => string;
   createCompanySchedule: (input: CompanyScheduleInput) => string;
   updateCompanySchedule: (scheduleId: string, input: CompanyScheduleInput) => { ok: boolean; message: string };
@@ -1070,6 +1071,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return id;
   };
 
+  const updateJobHandler = (jobId: string, input: CreateJobInput) => {
+    if (state.adminModeration.blockedCompanyIds.includes(currentCompany.id)) {
+      return { ok: false, message: "Sua empresa está em revisão pela administração e não pode editar vagas no momento." };
+    }
+    const existing = state.jobs.find((item) => item.id === jobId && item.companyId === currentCompany.id);
+    if (!existing) {
+      return { ok: false, message: "Vaga não encontrada." };
+    }
+    if (existing.status === "Concluída" || existing.status === "Cancelada") {
+      return { ok: false, message: "Não é possível editar uma vaga concluída ou cancelada." };
+    }
+    if (input.quantity < existing.filled) {
+      return { ok: false, message: `A quantidade não pode ser menor que os ${existing.filled} profissional(is) já confirmado(s).` };
+    }
+
+    const updatedJob: Job = { ...existing, ...input };
+    commit((current) => ({
+      ...current,
+      jobs: current.jobs.map((item) => (item.id === jobId ? updatedJob : item))
+    }));
+    track("job_updated", { function: input.function, urgent: Boolean(input.urgent) });
+    if (supabaseMarketplaceEnabled) {
+      setSyncStatus("salvando");
+      publishJob(user, currentCompany, updatedJob)
+        .then(() => {
+          setSyncError("");
+          setSyncStatus("sincronizado");
+        })
+        .catch(() => {
+          setSyncError("Falha ao salvar as alterações da vaga.");
+          setSyncStatus("erro");
+        });
+    }
+    return { ok: true, message: "Vaga atualizada com sucesso." };
+  };
+
   const value = useMemo<AppContextValue>(
     () => ({
       state,
@@ -1082,6 +1119,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         commit((current) => ({ ...current, activeRole: role }));
       },
       createJob: createJobHandler,
+      updateJob: updateJobHandler,
       createCompanySchedule(input) {
         if (state.adminModeration.blockedCompanyIds.includes(currentCompany.id)) {
           return "";
