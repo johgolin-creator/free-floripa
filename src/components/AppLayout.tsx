@@ -63,7 +63,7 @@ const companySecondaryLinks = [
 
 export function AppLayout() {
   const { state, syncStatus, syncError, currentWorker, currentCompany, updateWorkerProfile, updateCompanyProfile } = useAppStore();
-  const { isAdmin, isModerator, isSalesRep, authEnabled, email, signOut } = useAuth();
+  const { isAdmin, isModerator, isSalesRep, authEnabled, email, signOut, loading: authLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [showMoreNav, setShowMoreNav] = useState(false);
@@ -138,7 +138,12 @@ export function AppLayout() {
       : getCompanyProfileCompletion(currentCompany);
   const unread = state.notifications.filter((notification) => notification.role === state.activeRole && !notification.read).length;
   const areaLabel = state.activeRole === "trabalhador" ? "Área do trabalhador" : "Área da empresa";
-  const identityName = state.activeRole === "trabalhador" ? currentWorker.name : currentCompany.establishmentName;
+  // Enquanto a sessão ainda está sendo restaurada, o state global começa com
+  // o perfil de demonstração (para não ler um localStorage sem saber ainda
+  // qual conta é essa - ver comentário em store.tsx). Mostrar esse nome
+  // fictício por alguns segundos até a sessão real resolver parece um bug
+  // de conta trocada, então some com o nome até authLoading terminar.
+  const identityName = authLoading ? "" : state.activeRole === "trabalhador" ? currentWorker.name : currentCompany.establishmentName;
   const coinBalance =
     state.activeRole === "trabalhador"
       ? state.subscription.creditsRemaining
