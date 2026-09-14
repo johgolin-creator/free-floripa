@@ -59,6 +59,7 @@ const tabs: AdminTab[] = ["Resumo", "Usuários", "Vagas", "Vendedores", "Moedas"
 export function AdminPage() {
   const {
     state,
+    moderationReady,
     resolveTrustReport,
     toggleWorkerBlock,
     toggleCompanyBlock,
@@ -199,13 +200,13 @@ export function AdminPage() {
           <AdminMetric
             icon={<UserRound size={19} />}
             label="freelancers"
-            value={String(state.workers.length)}
+            value={moderationReady ? String(state.workers.length) : "..."}
             onClick={() => goToUsersTab()}
           />
           <AdminMetric
             icon={<Building2 size={19} />}
             label="empresas"
-            value={String(state.companies.length)}
+            value={moderationReady ? String(state.companies.length) : "..."}
             onClick={() => goToUsersTab()}
           />
           <AdminMetric
@@ -286,7 +287,13 @@ export function AdminPage() {
         </section>
       )}
 
-      {tab === "Usuários" && (
+      {tab === "Usuários" && !moderationReady && (
+        <section className="card p-6 text-center text-sm font-bold text-slate-500">
+          Carregando trabalhadores e empresas...
+        </section>
+      )}
+
+      {tab === "Usuários" && moderationReady && (
         <section className="grid gap-4 xl:grid-cols-2">
           <AdminList title="Trabalhadores" count={filteredWorkers.length}>
             {filteredWorkers.map((worker) => {

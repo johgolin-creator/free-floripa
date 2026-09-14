@@ -103,6 +103,12 @@ interface AppContextValue {
   storageMode: "supabase" | "local";
   syncStatus: "carregando" | "sincronizado" | "salvando" | "local" | "erro";
   syncError: string;
+  /** true assim que loadModerationOverview() resolveu pela 1ª vez com sucesso
+   *  para um admin/moderador. Até então, state.workers/state.companies pode
+   *  ser sobra da sessão anterior (outra conta, ou lista parcial de outro
+   *  efeito) - a UI do admin deve mostrar "carregando" em vez dessa lista
+   *  parcial, que parecia dado real e sumido ("oscilação"). */
+  moderationReady: boolean;
   currentWorker: AppState["workers"][number];
   currentCompany: AppState["companies"][number];
   setRole: (role: AppState["activeRole"]) => void;
@@ -615,6 +621,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     supabaseStateEnabled ? "carregando" : "local"
   );
   const [syncError, setSyncError] = useState("");
+  const [moderationReady, setModerationReady] = useState(false);
   const pendingApplicationKeys = useRef(new Set<string>());
   // Saves used to fire concurrently (`void persistRemote(next)` per commit).
   // Two commits in quick succession (e.g. account creation followed
@@ -787,6 +794,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading || !(isAdmin || isModerator) || !supabaseModerationEnabled) return;
 
+    setModerationReady(false);
     let active = true;
     // skipWhenHidden só se aplica às atualizações periódicas do intervalo.
     // A carga inicial (chamada com false) precisa rodar sempre, senão uma
@@ -800,6 +808,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (!active) return;
           setState((current) => mergeModerationState(current, overview));
           setSyncError("");
+          setModerationReady(true);
         })
         .catch(() => {
           if (!active) return;
@@ -1112,6 +1121,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       storageMode: supabaseStateEnabled ? "supabase" : "local",
       syncStatus,
       syncError,
+      moderationReady,
       currentWorker,
       currentCompany,
       setRole(role) {
@@ -2250,7 +2260,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }));
       }
     }),
-    [state, syncStatus, syncError, currentWorker, currentCompany, user, localStorageKey, isAdmin, isModerator]
+    [state, syncStatus, syncError, moderationReady, currentWorker, currentCompany, user, localStorageKey, isAdmin, isModerator]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
