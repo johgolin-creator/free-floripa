@@ -229,14 +229,14 @@ export function AdminPage() {
           <AdminMetric
             icon={<BriefcaseBusiness size={19} />}
             label="vagas abertas"
-            value={String(openJobs.length)}
+            value={moderationReady ? String(openJobs.length) : "..."}
             onClick={() => setTab("Vagas")}
           />
           <AdminMetric
             icon={<AlertTriangle size={19} />}
             label="alertas"
-            value={String(alerts.length + openReports.length)}
-            tone={alerts.length + openReports.length > 0 ? "alert" : "normal"}
+            value={moderationReady ? String(alerts.length + openReports.length) : "..."}
+            tone={moderationReady && alerts.length + openReports.length > 0 ? "alert" : "normal"}
             onClick={() => setTab("Alertas")}
           />
         </div>
@@ -279,7 +279,13 @@ export function AdminPage() {
         </div>
       </section>
 
-      {tab === "Resumo" && (
+      {tab === "Resumo" && !moderationReady && (
+        <section className="card p-6 text-center text-sm font-bold text-slate-500">
+          Carregando indicadores...
+        </section>
+      )}
+
+      {tab === "Resumo" && moderationReady && (
         <section className="grid gap-4 lg:grid-cols-[1fr_0.8fr]">
           <div className="card p-4">
             <h3 className="mb-3 font-black text-white">Indicadores principais</h3>
@@ -357,7 +363,13 @@ export function AdminPage() {
         </section>
       )}
 
-      {tab === "Vagas" && (
+      {tab === "Vagas" && !moderationReady && (
+        <section className="card p-6 text-center text-sm font-bold text-slate-500">
+          Carregando vagas...
+        </section>
+      )}
+
+      {tab === "Vagas" && moderationReady && (
         <AdminList title="Vagas publicadas" count={filteredJobs.length}>
           {filteredJobs.map((job) => {
             const company = state.companies.find((item) => item.id === job.companyId);
@@ -467,7 +479,13 @@ export function AdminPage() {
         </div>
       )}
 
-      {tab === "Alertas" && (
+      {tab === "Alertas" && !moderationReady && (
+        <section className="card p-6 text-center text-sm font-bold text-slate-500">
+          Carregando alertas...
+        </section>
+      )}
+
+      {tab === "Alertas" && moderationReady && (
         <AdminList title="Relatos e alertas operacionais" count={alerts.length + openReports.length}>
           {openReports.map((report) => {
             const reportedJob = report.targetType === "job" ? state.jobs.find((job) => job.id === report.targetId) : undefined;
