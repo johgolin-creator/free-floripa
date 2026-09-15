@@ -86,12 +86,6 @@ export function PublicHome() {
                 <Link to="/cadastro-empresa" onClick={() => setRole("empresa")} className="primary">
                   Publicar vaga <ArrowRight size={18} />
                 </Link>
-                <Link
-                  to="/login"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/15"
-                >
-                  <LogIn size={17} /> Já tenho conta
-                </Link>
               </div>
             </div>
             <div className="phone-showcase" aria-label="Previa do aplicativo PONT">
@@ -99,31 +93,6 @@ export function PublicHome() {
               <PhoneMockup title="Beach Club Jurere" eyebrow="Vaga urgente" variant="job" featured />
               <PhoneMockup title="Painel da empresa" eyebrow="Beach Club Jurere" variant="company" />
               <PhoneMockup title="Criar evento" eyebrow="Casamento" variant="event" />
-            </div>
-          </div>
-        </section>
-
-        <section className="home-entry-section">
-          <div className="mx-auto max-w-7xl px-4 py-8">
-            <p className="text-xs font-black uppercase text-aqua-700">Comece agora</p>
-            <h2 className="mt-1 text-2xl font-black text-white">Qual dos dois é você?</h2>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <EntryCard
-                icon={<UsersRound size={20} />}
-                title="Sou freelancer — quero trabalhar"
-                text="Crie seu perfil com profissão, nível de experiência, bairro e disponibilidade. Depois é só se candidatar às vagas perto de você."
-                to="/cadastro-trabalhador"
-                label="Criar meu perfil grátis"
-                onClick={() => setRole("trabalhador")}
-              />
-              <EntryCard
-                icon={<BriefcaseBusiness size={20} />}
-                title="Sou empresa — quero contratar"
-                text="Cadastre seu estabelecimento, publique a vaga com valor e horário e aprove os candidatos que se encaixam."
-                to="/cadastro-empresa"
-                label="Cadastrar minha empresa"
-                onClick={() => setRole("empresa")}
-              />
             </div>
           </div>
         </section>
@@ -237,31 +206,6 @@ export function PublicHome() {
         </div>
       </footer>
     </div>
-  );
-}
-
-function EntryCard({
-  icon,
-  title,
-  text,
-  to,
-  label,
-  onClick
-}: {
-  icon: ReactNode;
-  title: string;
-  text: string;
-  to: string;
-  label: string;
-  onClick?: () => void;
-}) {
-  return (
-    <Link to={to} onClick={onClick} className="home-entry-card">
-      <span>{icon}</span>
-      <strong>{title}</strong>
-      <p>{text}</p>
-      <em>{label} <ArrowRight size={15} /></em>
-    </Link>
   );
 }
 
