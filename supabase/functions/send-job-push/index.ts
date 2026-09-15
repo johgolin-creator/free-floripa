@@ -150,7 +150,7 @@ async function sendWebPush(
   subscription: { endpoint: string; p256dh: string; auth: string },
   payload: Record<string, unknown>,
   vapid: { publicKey: string; privateKey: string; subject: string }
-): Promise<{ ok: boolean; expired: boolean; status?: number }> {
+): Promise<{ ok: boolean; expired: boolean; status?: number; body?: string }> {
   const body = await encryptPayload(strToBytes(JSON.stringify(payload)), subscription.p256dh, subscription.auth);
   const authHeader = await buildVapidAuthHeader(subscription.endpoint, vapid.publicKey, vapid.privateKey, vapid.subject);
 
@@ -168,7 +168,8 @@ async function sendWebPush(
   // 404/410 = inscrição não existe mais (navegador desinstalado, permissão
   // revogada etc.) - o chamador apaga a linha do banco.
   const expired = response.status === 404 || response.status === 410;
-  return { ok: response.ok, expired, status: response.status };
+  const responseBody = response.ok ? undefined : await response.text().catch(() => "");
+  return { ok: response.ok, expired, status: response.status, body: responseBody };
 }
 
 const corsHeaders = {
@@ -256,10 +257,14 @@ Deno.serve(async (req) => {
   for (const sub of (subscriptions ?? []) as { id: string; endpoint: string; p256dh: string; auth: string }[]) {
     try {
       const result = await sendWebPush(sub, payload, vapid);
-      if (result.ok) sent++;
+      if (result.ok) {
+        sent++;
+      } else {
+        console.error(`[send-job-push] envio falhou para ${sub.id}: status=${result.status} body=${result.body}`);
+      }
       if (result.expired) expiredIds.push(sub.id);
     } catch (error) {
-      console.error(`[send-job-push] falha ao enviar para ${sub.id}:`, error);
+      console.error(`[send-job-push] exceção ao enviar para ${sub.id}:`, error instanceof Error ? error.message : error);
     }
   }
 
