@@ -1689,7 +1689,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         const existing = state.applications.find((item) => item.jobId === jobId && item.workerId === workerId);
         const approvedCount = state.applications.filter(
-          (item) => item.jobId === jobId && item.id !== existing?.id && item.status === "Aprovada"
+          (item) =>
+            item.jobId === jobId &&
+            item.id !== existing?.id &&
+            (item.status === "Aprovada" || item.status === "Trabalho concluído")
         ).length;
 
         if (existing?.status === "Aprovada") {
@@ -1766,7 +1769,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         if (accept) {
           const approvedCount = state.applications.filter(
-            (item) => item.jobId === job.id && item.id !== application.id && item.status === "Aprovada"
+            (item) =>
+              item.jobId === job.id &&
+              item.id !== application.id &&
+              (item.status === "Aprovada" || item.status === "Trabalho concluído")
           ).length;
           if (approvedCount >= job.quantity) {
             return { ok: false, message: "Esta vaga não tem mais espaço disponível para confirmar o convite." };

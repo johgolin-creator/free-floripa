@@ -530,7 +530,21 @@ function ScheduleForm({
         <label className="label">Função<select name="function" className="input" required defaultValue={schedule?.function}>{functions.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="label">Quantidade<input name="quantity" type="number" min="1" className="input" required defaultValue={schedule?.quantity ?? 1} /></label>
         <label className="label">Data<input name="date" type="date" className="input" required defaultValue={schedule?.date} /></label>
-        <label className="label">Bairro<select name="neighborhood" className="input" required defaultValue={schedule?.neighborhood ?? "Centro"}>{neighborhoods.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="label">
+          Bairro
+          <input
+            name="neighborhood"
+            list="neighborhoods-schedule"
+            className="input"
+            required
+            defaultValue={schedule?.neighborhood ?? "Centro"}
+            placeholder="Digite o bairro"
+            autoComplete="off"
+          />
+          <datalist id="neighborhoods-schedule">
+            {neighborhoods.map((item) => <option key={item} value={item} />)}
+          </datalist>
+        </label>
         <label className="label">Início<input name="startsAt" type="time" className="input" required defaultValue={schedule?.startsAt} /></label>
         <label className="label">Fim<input name="endsAt" type="time" className="input" required defaultValue={schedule?.endsAt} /></label>
       </div>

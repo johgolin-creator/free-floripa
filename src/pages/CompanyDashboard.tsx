@@ -539,9 +539,17 @@ function CreateJobForm({ editingJob, onSubmit }: { editingJob?: Job; onSubmit: (
         <WizardPanel eyebrow="Etapa 3" title="Onde a pessoa vai trabalhar?">
           <label className="label">
             Bairro
-            <select value={draft.neighborhood} onChange={(event) => setField("neighborhood", event.target.value as Neighborhood)} className="input">
-              {neighborhoods.map((item) => <option key={item}>{item}</option>)}
-            </select>
+            <input
+              value={draft.neighborhood}
+              onChange={(event) => setField("neighborhood", event.target.value as Neighborhood)}
+              list="neighborhoods-job"
+              className="input"
+              placeholder="Digite o bairro"
+              autoComplete="off"
+            />
+            <datalist id="neighborhoods-job">
+              {neighborhoods.map((item) => <option key={item} value={item} />)}
+            </datalist>
           </label>
           <label className="label">Endereço aproximado<input value={draft.approximateAddress} onChange={(event) => setField("approximateAddress", event.target.value)} className="input" placeholder="Jurerê, próximo à praia" /></label>
           <label className="label">Endereço completo<input value={draft.fullAddress} onChange={(event) => setField("fullAddress", event.target.value)} className="input" placeholder="Rua, número e referência. Só aparece após aprovação." /></label>
@@ -716,7 +724,13 @@ function UrgentForm({ onSubmit }: { onSubmit: (input: UrgentReplacementInput) =>
         <label className="label">Quantidade<input name="quantity" type="number" min="1" defaultValue="1" className="input" required /></label>
         <label className="label">Horário<input name="startsAt" type="time" className="input" required /></label>
         <label className="label">Valor<input name="dailyValue" type="number" min="1" className="input" required placeholder="280" /></label>
-        <label className="label md:col-span-2">Bairro<select name="neighborhood" className="input" required>{neighborhoods.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="label md:col-span-2">
+          Bairro
+          <input name="neighborhood" list="neighborhoods-urgent" className="input" required placeholder="Digite o bairro" autoComplete="off" />
+          <datalist id="neighborhoods-urgent">
+            {neighborhoods.map((item) => <option key={item} value={item} />)}
+          </datalist>
+        </label>
       </div>
       <label className="label">Observação<textarea name="observation" className="input min-h-24 py-3" placeholder="Cobrir falta no turno da noite" /></label>
       <button type="submit" disabled={isPublishing} className="danger">

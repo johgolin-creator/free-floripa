@@ -214,11 +214,17 @@ export function CompanyEventsPage() {
             </label>
             <label className="label">
               Bairro
-              <select value={neighborhood} onChange={(event) => setNeighborhood(event.target.value as Neighborhood)} className="input">
-                {neighborhoods.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
+              <input
+                value={neighborhood}
+                onChange={(event) => setNeighborhood(event.target.value as Neighborhood)}
+                list="neighborhoods-event"
+                className="input"
+                placeholder="Digite o bairro"
+                autoComplete="off"
+              />
+              <datalist id="neighborhoods-event">
+                {neighborhoods.map((item) => <option key={item} value={item} />)}
+              </datalist>
             </label>
             <label className="label">
               Diária base
