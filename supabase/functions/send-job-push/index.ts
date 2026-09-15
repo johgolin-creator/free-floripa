@@ -1,11 +1,12 @@
-// Manda um Web Push (push notification de navegador) pra todo mundo
-// inscrito, quando uma vaga é publicada (mesma condição do trigger em
-// notify_workers_new_job.sql: acabou de sair de "Rascunho"/nunca esteve em
-// "Rascunho"/"Cancelada").
+// Manda um Web Push (push notification de navegador) pra quem tiver
+// ativado, toda vez que QUALQUER notificação do app é criada - vaga nova,
+// candidatura, escala, pagamento, aviso do admin, etc. Como tudo isso já
+// passa por um INSERT em public.notifications, um único gatilho ali cobre
+// todo tipo de notificação, sem precisar de um gatilho por funcionalidade.
 //
-// Disparado por um Database Webhook (Supabase Dashboard > Database >
-// Webhooks) em INSERT e UPDATE de public.jobs, apontando pra esta função.
-// O payload do webhook é { type: "INSERT"|"UPDATE", table, record, old_record }.
+// Disparado por um trigger em public.notifications (ver
+// supabase/notifications_push_trigger.sql), que chama esta função via
+// pg_net a cada INSERT. O payload é { type: "INSERT", table: "notifications", record }.
 //
 // Implementa o protocolo Web Push (RFC 8291 - criptografia aes128gcm, RFC
 // 8292 - VAPID) na mão com Web Crypto, porque a lib "web-push" do npm depende
@@ -178,6 +179,13 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" }
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -188,68 +196,36 @@ Deno.serve(async (req) => {
   const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:contato@usepont.com.br";
 
   if (!supabaseUrl || !serviceRoleKey || !vapidPublicKey || !vapidPrivateKey) {
-    return new Response(JSON.stringify({ ok: false, error: "Função não configurada." }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    return json({ ok: false, error: "Função não configurada." }, 500);
   }
 
-  let body: { type?: string; table?: string; record?: Record<string, unknown>; old_record?: Record<string, unknown> };
+  let body: { type?: string; table?: string; record?: Record<string, unknown> };
   try {
     body = await req.json();
   } catch {
-    return new Response(JSON.stringify({ ok: false, error: "Corpo inválido." }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    return json({ ok: false, error: "Corpo inválido." }, 400);
   }
 
   const record = body.record;
-  const oldRecord = body.old_record;
-  if (body.table !== "jobs" || !record) {
-    return new Response(JSON.stringify({ ok: true, skipped: "not a jobs event" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+  if (body.table !== "notifications" || !record) {
+    return json({ ok: true, skipped: "not a notifications event" });
   }
 
-  const status = String(record.status ?? "");
-  const closedStatuses = ["Rascunho", "Cancelada"];
-  const justPublished =
-    body.type === "INSERT"
-      ? !closedStatuses.includes(status)
-      : body.type === "UPDATE" &&
-        String(oldRecord?.status ?? "") === "Rascunho" &&
-        !closedStatuses.includes(status);
-
-  if (!justPublished) {
-    return new Response(JSON.stringify({ ok: true, skipped: "job not newly published" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+  const userId = record.user_id as string | undefined;
+  const title = (record.title as string | undefined) ?? "PONT";
+  const notifBody = (record.body as string | undefined) ?? "";
+  if (!userId) {
+    return json({ ok: true, skipped: "notification without user_id" });
   }
 
   const admin = createClient(supabaseUrl, serviceRoleKey);
 
-  const { data: company } = await admin
-    .from("company_profiles")
-    .select("establishment_name")
-    .eq("id", record.company_id as string)
-    .maybeSingle();
+  const { data: subscriptions } = await admin
+    .from("push_subscriptions")
+    .select("id, endpoint, p256dh, auth")
+    .eq("user_id", userId);
 
-  // push_subscriptions.user_id não tem FK direta pra worker_profiles (as duas
-  // só apontam pra auth.users), então filtra em duas consultas em vez de um
-  // embed do PostgREST.
-  const { data: workerAccounts } = await admin.from("worker_profiles").select("user_id").not("user_id", "is", null);
-  const workerUserIds = new Set((workerAccounts ?? []).map((row: { user_id: string }) => row.user_id));
-
-  const { data: allSubscriptions } = await admin.from("push_subscriptions").select("id, endpoint, p256dh, auth, user_id");
-  const subscriptions = (allSubscriptions ?? []).filter((sub: { user_id: string }) => workerUserIds.has(sub.user_id));
-
-  const payload = {
-    title: "Nova vaga disponível",
-    body: `${company?.establishment_name ?? "Uma empresa"} está contratando ${record.quantity} ${record.function_name}(s) para "${record.title}". Candidate-se agora no PONT!`,
-    url: "/app/vagas"
-  };
-
+  const payload = { title, body: notifBody, url: "/app/notificacoes" };
   const vapid = { publicKey: vapidPublicKey, privateKey: vapidPrivateKey, subject: vapidSubject };
   let sent = 0;
   const expiredIds: string[] = [];
@@ -272,7 +248,5 @@ Deno.serve(async (req) => {
     await admin.from("push_subscriptions").delete().in("id", expiredIds);
   }
 
-  return new Response(JSON.stringify({ ok: true, sent, total: (subscriptions ?? []).length, expiredRemoved: expiredIds.length }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" }
-  });
+  return json({ ok: true, sent, total: (subscriptions ?? []).length, expiredRemoved: expiredIds.length });
 });
