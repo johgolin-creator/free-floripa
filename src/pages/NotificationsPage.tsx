@@ -203,10 +203,10 @@ export function NotificationsPage() {
                 <h3 className="font-black text-white">Notificações no navegador</h3>
                 <p className="text-sm font-semibold text-slate-600">
                   {pushStatus === "denied"
-                    ? "Bloqueadas nas configurações do navegador. Libere lá pra ativar aqui."
+                    ? "Bloqueadas nas configurações do navegador. Procure o ícone de cadeado/sino ao lado do endereço do site, libere \"Notificações\" e recarregue a página."
                     : pushStatus === "subscribed"
-                      ? "Ativadas neste aparelho — avisos chegam mesmo com o PONT fechado."
-                      : "Receba um aviso mesmo com o PONT fechado assim que uma vaga nova for publicada."}
+                      ? "Ativadas neste aparelho — avisos de vagas, candidaturas, escala e mais chegam mesmo com o PONT fechado."
+                      : "Receba avisos de vagas, candidaturas, escala e mais direto no navegador, mesmo com o PONT fechado. Ao clicar em \"Ativar notificações\", o navegador vai perguntar se pode mandar notificações — toque em \"Permitir\"."}
                 </p>
               </div>
             </div>
