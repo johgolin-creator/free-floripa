@@ -9,6 +9,7 @@ export const functions = [
   "Recepcionista",
   "Operador de caixa",
   "Limpeza",
+  "Camareira",
   "Montador de eventos",
   "Promotor",
   "Repositor"

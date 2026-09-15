@@ -28,6 +28,7 @@ const VALID_FUNCTIONS = new Set<JobFunction>([
   "Recepcionista",
   "Operador de caixa",
   "Limpeza",
+  "Camareira",
   "Montador de eventos",
   "Promotor"
 ]);

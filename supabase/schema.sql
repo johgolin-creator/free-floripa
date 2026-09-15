@@ -427,6 +427,7 @@ insert into public.job_categories (name) values
   ('Recepcionista'),
   ('Operador de caixa'),
   ('Limpeza'),
+  ('Camareira'),
   ('Montador de eventos'),
   ('Promotor')
 on conflict (name) do nothing;

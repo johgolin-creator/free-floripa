@@ -9,6 +9,7 @@ export type JobFunction =
   | "Recepcionista"
   | "Operador de caixa"
   | "Limpeza"
+  | "Camareira"
   | "Montador de eventos"
   | "Promotor"
   | "Repositor";
