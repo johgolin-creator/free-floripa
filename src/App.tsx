@@ -223,8 +223,16 @@ function RoleRoute({ role, children }: { role: UserRole; children: ReactNode }) 
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { authEnabled, loading, user } = useAuth();
+  const { syncStatus } = useAppStore();
 
-  if (loading) {
+  // `loading` only covers Supabase resolving the session. Once that's done,
+  // the store still hydrates this account's real profile from Supabase
+  // asynchronously (see the "carregando" phase in store.tsx) and `state`
+  // keeps the generic demo profile (Ana Carolina...) until that resolves.
+  // Rendering children in that gap flashed the demo name/data before the
+  // real account's, looking like a login mix-up. Wait out both phases here
+  // instead of patching every screen that reads currentWorker/currentCompany.
+  if (loading || (user && syncStatus === "carregando")) {
     return (
       <div className="grid min-h-screen place-items-center bg-slate-100 px-4 text-center">
         <div className="card max-w-md p-5">
