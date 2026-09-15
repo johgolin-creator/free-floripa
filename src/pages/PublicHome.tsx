@@ -46,26 +46,6 @@ export function PublicHome() {
               <LogIn size={17} /> Entrar
             </Link>
             <Link
-              to="/app"
-              className="hidden min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-4 text-sm font-black text-aqua-700 shadow-sm transition hover:bg-aqua-100 lg:inline-flex"
-            >
-              <Smartphone size={17} /> Abrir app
-            </Link>
-            <a
-              href="/pont.apk"
-              download
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-3 text-sm font-black text-aqua-700 shadow-sm transition hover:bg-aqua-100 sm:px-4"
-            >
-              <Download size={17} /> <span className="hidden sm:inline">Android</span>
-            </a>
-            <button
-              type="button"
-              onClick={() => setShowIos(true)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-3 text-sm font-black text-aqua-700 shadow-sm transition hover:bg-aqua-100 sm:px-4"
-            >
-              <Smartphone size={17} /> <span className="hidden sm:inline">iPhone</span>
-            </button>
-            <Link
               to="/cadastro-trabalhador"
               onClick={() => setRole("trabalhador")}
               className="hidden min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-brand-charcoal px-4 text-sm font-black text-white shadow-sm transition hover:bg-white/5 md:inline-flex"
@@ -95,35 +75,23 @@ export function PublicHome() {
               </div>
               <h1 className="hero-title max-w-3xl text-5xl font-black leading-tight md:text-7xl">PONT</h1>
               <p className="hero-copy mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-300 md:text-lg">
-                A plataforma para empresas encontrarem mão de obra temporária com mais organização, histórico e nível de experiência por função.
+                Conecta empresas de Florianópolis a freelancers para turnos, diárias e eventos. Empresa publica a
+                vaga com valor e horário, freelancer se candidata e ambos acompanham tudo pelo app — do primeiro
+                turno até o pagamento.
               </p>
               <div className="hero-actions mt-6 grid gap-3 sm:flex">
-                <Link
-                  to="/login"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/15"
-                >
-                  <LogIn size={17} /> Entrar
+                <Link to="/cadastro-trabalhador" onClick={() => setRole("trabalhador")} className="secondary">
+                  Quero trabalhar
                 </Link>
                 <Link to="/cadastro-empresa" onClick={() => setRole("empresa")} className="primary">
                   Publicar vaga <ArrowRight size={18} />
                 </Link>
-                <Link to="/cadastro-trabalhador" onClick={() => setRole("trabalhador")} className="secondary">
-                  Quero trabalhar
+                <Link
+                  to="/login"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/15"
+                >
+                  <LogIn size={17} /> Já tenho conta
                 </Link>
-                <a
-                  href="/pont.apk"
-                  download
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-300/60 bg-aqua-400/15 px-4 text-sm font-black text-white transition hover:bg-aqua-400/25"
-                >
-                  <Download size={17} /> Baixar app (Android)
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setShowIos(true)}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-300/60 bg-aqua-400/15 px-4 text-sm font-black text-white transition hover:bg-aqua-400/25"
-                >
-                  <Smartphone size={17} /> Instalar no iPhone
-                </button>
               </div>
             </div>
             <div className="phone-showcase" aria-label="Previa do aplicativo PONT">
@@ -136,37 +104,27 @@ export function PublicHome() {
         </section>
 
         <section className="home-entry-section">
-          <div className="mx-auto grid max-w-7xl gap-3 px-4 py-5 md:grid-cols-4">
-            <EntryCard
-              icon={<LogIn size={20} />}
-              title="Já tenho conta"
-              text="Entrar como freelancer ou empresa usando e-mail e senha."
-              to="/login"
-              label="Entrar"
-            />
-            <EntryCard
-              icon={<Smartphone size={20} />}
-              title="Abrir meu painel"
-              text="Ir direto para o app instalado ou para a área logada no navegador."
-              to="/app"
-              label="Continuar"
-            />
-            <EntryCard
-              icon={<UsersRound size={20} />}
-              title="Sou freelancer"
-              text="Criar perfil com profissão, nível de experiência, bairro e disponibilidade."
-              to="/cadastro-trabalhador"
-              label="Criar perfil"
-              onClick={() => setRole("trabalhador")}
-            />
-            <EntryCard
-              icon={<BriefcaseBusiness size={20} />}
-              title="Sou empresa"
-              text="Cadastrar estabelecimento para publicar vagas, montar escala e aprovar candidatos."
-              to="/cadastro-empresa"
-              label="Cadastrar empresa"
-              onClick={() => setRole("empresa")}
-            />
+          <div className="mx-auto max-w-7xl px-4 py-8">
+            <p className="text-xs font-black uppercase text-aqua-700">Comece agora</p>
+            <h2 className="mt-1 text-2xl font-black text-white">Qual dos dois é você?</h2>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <EntryCard
+                icon={<UsersRound size={20} />}
+                title="Sou freelancer — quero trabalhar"
+                text="Crie seu perfil com profissão, nível de experiência, bairro e disponibilidade. Depois é só se candidatar às vagas perto de você."
+                to="/cadastro-trabalhador"
+                label="Criar meu perfil grátis"
+                onClick={() => setRole("trabalhador")}
+              />
+              <EntryCard
+                icon={<BriefcaseBusiness size={20} />}
+                title="Sou empresa — quero contratar"
+                text="Cadastre seu estabelecimento, publique a vaga com valor e horário e aprove os candidatos que se encaixam."
+                to="/cadastro-empresa"
+                label="Cadastrar minha empresa"
+                onClick={() => setRole("empresa")}
+              />
+            </div>
           </div>
         </section>
 
@@ -213,18 +171,22 @@ export function PublicHome() {
         </section>
 
         <section className="bg-brand-dark">
-          <div className="mx-auto grid max-w-7xl gap-4 px-4 py-12 md:grid-cols-3">
-            {[
-              ["1", "Vaga com critério", "A empresa informa função, valor, horário, bairro e experiência esperada."],
-              ["2", "Candidatura transparente", "O trabalhador aparece com nível de experiência por profissão."],
-              ["3", "Equipe confirmada", "Aprovação, conclusão do turno e avaliações ficam organizadas no histórico."]
-            ].map(([step, title, text]) => (
-              <article key={step} className="card p-5 hover:-translate-y-0.5 hover:shadow-lift">
-                <span className="grid h-10 w-10 place-items-center rounded-lg bg-navy-950 font-black text-aqua-300">{step}</span>
-                <h3 className="mt-4 font-black text-white">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
-              </article>
-            ))}
+          <div className="mx-auto max-w-7xl px-4 py-12">
+            <p className="text-xs font-black uppercase text-aqua-700">Passo a passo</p>
+            <h2 className="mt-1 text-2xl font-black text-white">Como funciona</h2>
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
+              {[
+                ["1", "Vaga com critério", "A empresa informa função, valor, horário, bairro e experiência esperada."],
+                ["2", "Candidatura transparente", "O trabalhador aparece com nível de experiência por profissão."],
+                ["3", "Equipe confirmada", "Aprovação, conclusão do turno e avaliações ficam organizadas no histórico."]
+              ].map(([step, title, text]) => (
+                <article key={step} className="card p-5 hover:-translate-y-0.5 hover:shadow-lift">
+                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-navy-950 font-black text-aqua-300">{step}</span>
+                  <h3 className="mt-4 font-black text-white">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
 
