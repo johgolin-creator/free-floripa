@@ -228,8 +228,12 @@ a {
 }
 
 .app-mobile-header {
-  @apply relative overflow-hidden border-b border-white/5 bg-navy-950 px-4 pb-5 pt-4 text-white shadow-lift;
+  @apply relative overflow-hidden border-b border-white/5 bg-navy-950 px-4 pb-5 text-white shadow-lift;
   border-radius: 0 0 24px 24px;
+  /* viewport-fit=cover deixa o conteudo passar por baixo do notch/status bar
+     do celular (pra cobrir a tela inteira no app instalado). Sem isso, o
+     sino de notificacao ficava embaixo do notch e nao dava pra tocar nele. */
+  padding-top: max(1rem, env(safe-area-inset-top));
 }
 
 .app-mobile-header::before {

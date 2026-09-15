@@ -52,6 +52,9 @@ export interface WorkerProfile {
   phone: string;
   email: string;
   avatarUrl: string;
+  /** Fotos extras do perfil, além da principal (avatarUrl). Mostradas como
+   *  galeria no perfil e para empresas avaliando o profissional. */
+  photos: string[];
   birthDate: string;
   city: string;
   neighborhood: Neighborhood;

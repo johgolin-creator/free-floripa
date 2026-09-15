@@ -120,7 +120,7 @@ interface AppContextValue {
   deleteCompanySchedule: (scheduleId: string) => { ok: boolean; message: string };
   updateJobStatus: (jobId: string, status: JobStatus) => { ok: boolean; message: string };
   duplicateJob: (jobId: string) => { ok: boolean; message: string; jobId?: string };
-  updateWorkerProfile: (input: Partial<Pick<WorkerProfile, "name" | "cpf" | "phone" | "email" | "avatarUrl" | "birthDate" | "city" | "neighborhood" | "functions" | "functionExperience" | "experience" | "description" | "availability" | "hasTransport" | "maxDistanceKm">>) => void;
+  updateWorkerProfile: (input: Partial<Pick<WorkerProfile, "name" | "cpf" | "phone" | "email" | "avatarUrl" | "photos" | "birthDate" | "city" | "neighborhood" | "functions" | "functionExperience" | "experience" | "description" | "availability" | "hasTransport" | "maxDistanceKm">>) => void;
   updateCompanyProfile: (input: Partial<CompanyProfile>) => void;
   applyToJob: (jobId: string) => { ok: boolean; message: string; requiresPlan?: boolean };
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => { ok: boolean; message: string };
@@ -297,6 +297,7 @@ function createWorkerForUser(user: User): WorkerProfile {
     phone: getMetadataString(user, "phone", ""),
     email: user.email ?? getMetadataString(user, "email", ""),
     avatarUrl: resolveAvatarUrl(getMetadataString(user, "avatarUrl", DEFAULT_WORKER_AVATAR)),
+    photos: [],
     birthDate: getMetadataString(user, "birthDate", "2000-01-01"),
     city: getMetadataString(user, "city", "Florianópolis"),
     neighborhood: getMetadataString(user, "neighborhood", "Centro") as Neighborhood,

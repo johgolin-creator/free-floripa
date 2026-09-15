@@ -15,6 +15,7 @@ import {
 } from "../lib/validation";
 import { isPhoneTaken } from "../lib/signupChecks";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
+import { PhotoGalleryUploader } from "../components/PhotoGalleryUploader";
 import { ProfileCompletionAlert } from "../components/ProfileCompletionAlert";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
@@ -32,6 +33,7 @@ export function WorkerProfilePage() {
   const [error, setError] = useState("");
   const [selectedFunctions, setSelectedFunctions] = useState<JobFunction[]>(currentWorker.functions);
   const [avatarUrl, setAvatarUrl] = useState(currentWorker.avatarUrl);
+  const [photos, setPhotos] = useState(currentWorker.photos);
   const [cpf, setCpf] = useState(formatCPF(currentWorker.cpf));
   const reliability = calculateReliability(currentWorker);
   const completion = getWorkerProfileCompletion(currentWorker);
@@ -50,6 +52,7 @@ export function WorkerProfilePage() {
         onEdit={() => {
           setSelectedFunctions(currentWorker.functions);
           setAvatarUrl(currentWorker.avatarUrl);
+          setPhotos(currentWorker.photos);
           setCpf(formatCPF(currentWorker.cpf));
           setError("");
           setEditing(true);
@@ -77,6 +80,7 @@ export function WorkerProfilePage() {
                   onClick={() => {
                     setSelectedFunctions(currentWorker.functions);
                     setAvatarUrl(currentWorker.avatarUrl);
+                    setPhotos(currentWorker.photos);
                     setCpf(formatCPF(currentWorker.cpf));
                     setError("");
                     setEditing(true);
@@ -104,6 +108,22 @@ export function WorkerProfilePage() {
             <Info label="Cancelamentos" value={String(currentWorker.cancellations)} />
             <Info label="Transporte próprio" value={currentWorker.hasTransport ? "Sim" : "Não"} />
           </div>
+
+          {currentWorker.photos.length > 0 && (
+            <div className="mt-4">
+              <h3 className="mb-2 font-black text-white">Fotos</h3>
+              <div className="flex flex-wrap gap-3">
+                {currentWorker.photos.map((url, index) => (
+                  <img
+                    key={url + index}
+                    src={url}
+                    alt={`Foto ${index + 1} de ${currentWorker.name}`}
+                    className="h-24 w-24 rounded-lg border border-white/10 object-cover shadow-sm"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="profile-section-grid">
             <div className="profile-panel">
@@ -219,6 +239,7 @@ export function WorkerProfilePage() {
                 phone: formatPhoneInput(phone),
                 email,
                 avatarUrl: avatarUrl.trim() || currentWorker.avatarUrl,
+                photos,
                 birthDate,
                 city,
                 neighborhood: neighborhood as typeof currentWorker.neighborhood,
@@ -299,6 +320,7 @@ export function WorkerProfilePage() {
                 previewAlt="Foto do trabalhador"
                 onChange={setAvatarUrl}
               />
+              <PhotoGalleryUploader label="Fotos extras (opcional)" photos={photos} kind="trabalhadores" onChange={setPhotos} />
               <SignupLikeTitle number="2" title="Localização" />
               <label className="label">
                 Cidade

@@ -170,6 +170,18 @@ export function WorkerCard({
               <Info label="Comparecimento" value={`${worker.attendanceRate}%`} />
               <Info label="Pontualidade" value={`${worker.punctualityRate}%`} />
             </div>
+            {worker.photos.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {worker.photos.map((url, index) => (
+                  <img
+                    key={url + index}
+                    src={url}
+                    alt={`Foto ${index + 1} de ${worker.name}`}
+                    className="h-20 w-20 rounded-lg border border-white/10 object-cover shadow-sm"
+                  />
+                ))}
+              </div>
+            )}
             <div className="grid gap-2">
               {worker.reviews.map((review) => (
                 <div key={review.id} className="rounded-lg bg-slate-50 p-3">

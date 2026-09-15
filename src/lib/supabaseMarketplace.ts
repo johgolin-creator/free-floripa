@@ -87,6 +87,12 @@ interface FunctionExperienceRow {
   verified: boolean | null;
 }
 
+interface WorkerPhotoRow {
+  worker_id: string;
+  url: string;
+  position: number | null;
+}
+
 interface WorkerReviewRow {
   id: string;
   worker_id: string;
@@ -211,7 +217,12 @@ function mapWorkerReview(row: WorkerReviewRow): Review {
   };
 }
 
-function mapPublicWorker(row: WorkerProfileRow, experiences: FunctionExperienceRow[], reviews: WorkerReviewRow[]): WorkerProfile {
+function mapPublicWorker(
+  row: WorkerProfileRow,
+  experiences: FunctionExperienceRow[],
+  reviews: WorkerReviewRow[],
+  photos: WorkerPhotoRow[] = []
+): WorkerProfile {
   const functions = (row.professions ?? []).map(toJobFunction).filter((item): item is JobFunction => Boolean(item));
   const fallbackFunctions: JobFunction[] = functions.length > 0 ? functions : ["Garçom"];
   const functionExperience = fallbackFunctions.map((functionName) => {
@@ -232,6 +243,10 @@ function mapPublicWorker(row: WorkerProfileRow, experiences: FunctionExperienceR
     phone: "",
     email: "",
     avatarUrl: resolveAvatarUrl(row.avatar_url),
+    photos: photos
+      .filter((photo) => photo.worker_id === row.id)
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      .map((photo) => photo.url),
     birthDate: row.birth_date || "2000-01-01",
     city: row.city || "Florianópolis",
     neighborhood: toNeighborhood(row.neighborhood),
@@ -369,7 +384,11 @@ export async function loadPublicWorkerProfiles(excludeUserId?: string | null) {
   const ids = profiles.map((row) => row.id);
   if (ids.length === 0) return [];
 
-  const [{ data: experienceRows, error: experienceError }, { data: reviewRows, error: reviewError }] = await Promise.all([
+  const [
+    { data: experienceRows, error: experienceError },
+    { data: reviewRows, error: reviewError },
+    { data: photoRows, error: photoError }
+  ] = await Promise.all([
     supabase
       .from("worker_function_experience")
       .select("worker_id,function_name,level,months,accepts_assistant,verified")
@@ -377,14 +396,21 @@ export async function loadPublicWorkerProfiles(excludeUserId?: string | null) {
     supabase
       .from("worker_reviews")
       .select("id,worker_id,application_id,job_id,author_name,rating,comment,created_at")
-      .in("worker_id", ids)
+      .in("worker_id", ids),
+    supabase.from("worker_photos").select("worker_id,url,position").in("worker_id", ids)
   ]);
 
   if (experienceError) throw new Error(experienceError.message);
   if (reviewError) throw new Error(reviewError.message);
+  if (photoError) throw new Error(photoError.message);
 
   return profiles.map((row) =>
-    mapPublicWorker(row, (experienceRows ?? []) as FunctionExperienceRow[], (reviewRows ?? []) as WorkerReviewRow[])
+    mapPublicWorker(
+      row,
+      (experienceRows ?? []) as FunctionExperienceRow[],
+      (reviewRows ?? []) as WorkerReviewRow[],
+      (photoRows ?? []) as WorkerPhotoRow[]
+    )
   );
 }
 
@@ -459,6 +485,20 @@ export async function publishWorkerProfile(user: User, worker: WorkerProfile) {
   );
 
   if (insertError) throw new Error(insertError.message);
+
+  const { error: deletePhotosError } = await supabase.from("worker_photos").delete().eq("worker_id", workerId);
+  if (deletePhotosError) throw new Error(deletePhotosError.message);
+
+  if (worker.photos.length === 0) return;
+
+  const { error: insertPhotosError } = await supabase.from("worker_photos").insert(
+    worker.photos.map((url, index) => ({
+      worker_id: workerId,
+      url,
+      position: index
+    }))
+  );
+  if (insertPhotosError) throw new Error(insertPhotosError.message);
 }
 
 export async function publishCompanyProfile(user: User, company: CompanyProfile) {
