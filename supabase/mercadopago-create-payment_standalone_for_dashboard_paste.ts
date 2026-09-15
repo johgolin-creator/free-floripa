@@ -190,9 +190,9 @@ Deno.serve(async (req) => {
     notification_url: `${supabaseUrl}/functions/v1/mercadopago-webhook`,
     statement_descriptor: "PONT",
     back_urls: {
-      success: `${appUrl}/app/moedas?pagamento=sucesso&payment=${payment.id}`,
-      pending: `${appUrl}/app/moedas?pagamento=pendente&payment=${payment.id}`,
-      failure: `${appUrl}/app/moedas?pagamento=falha&payment=${payment.id}`
+      success: `${appUrl}/app/planos?pagamento=sucesso&payment=${payment.id}`,
+      pending: `${appUrl}/app/planos?pagamento=pendente&payment=${payment.id}`,
+      failure: `${appUrl}/app/planos?pagamento=falha&payment=${payment.id}`
     },
     auto_return: "approved"
   };
