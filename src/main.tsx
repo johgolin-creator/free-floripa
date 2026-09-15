@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import * as Sentry from "@sentry/react";
 import { initSentry } from "./lib/sentry";
 import { initAnalytics } from "./lib/analytics";
+import { registerServiceWorkerForInstall } from "./lib/pwaInstall";
 import { AuthProvider } from "./lib/auth";
 import { AppProvider } from "./lib/store";
 import App from "./App";
@@ -11,6 +12,7 @@ import "./index.css";
 
 initSentry();
 initAnalytics();
+registerServiceWorkerForInstall();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

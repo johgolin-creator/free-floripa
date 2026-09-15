@@ -25,14 +25,23 @@ import { Link } from "react-router-dom";
 import { BrandLogo, PontMark } from "../components/BrandLogo";
 import { functions } from "../data/demoData";
 import { useAppStore } from "../lib/store";
+import { usePwaInstallPrompt } from "../lib/pwaInstall";
 
 export function PublicHome() {
   const { setRole } = useAppStore();
   const [showIos, setShowIos] = useState(false);
+  const [showAndroidHelp, setShowAndroidHelp] = useState(false);
+  const { canInstall, promptInstall } = usePwaInstallPrompt();
+
+  async function handleInstallAndroid() {
+    const outcome = canInstall ? await promptInstall() : null;
+    if (!outcome) setShowAndroidHelp(true);
+  }
 
   return (
     <div className="min-h-screen bg-ice">
       {showIos && <IosInstallModal onClose={() => setShowIos(false)} />}
+      {showAndroidHelp && <AndroidInstallModal onClose={() => setShowAndroidHelp(false)} />}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-brand-charcoal/90 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/" className="min-w-0">
@@ -102,18 +111,18 @@ export function PublicHome() {
             <div>
               <strong className="block text-lg font-black text-white">Leve o PONT no celular</strong>
               <p className="mt-1 text-sm font-semibold text-slate-300">
-                Android: baixe o app para instalar direto (fora da Play Store). iPhone: instale como app
-                web pelo Safari. Também funciona pelo navegador.
+                Instale como app direto pelo navegador, sem loja de aplicativos nem arquivo para baixar —
+                no Android e no iPhone. Também funciona pelo navegador, sem instalar nada.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <a
-                href="/pont.apk"
-                download
+              <button
+                type="button"
+                onClick={handleInstallAndroid}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-4 text-sm font-black text-aqua-700 shadow-sm transition hover:bg-aqua-100"
               >
-                <Download size={17} /> Baixar app (Android)
-              </a>
+                <Download size={17} /> Instalar no Android
+              </button>
               <button
                 type="button"
                 onClick={() => setShowIos(true)}
@@ -328,50 +337,126 @@ function Feature({ icon, title, text }: { icon: ReactNode; title: string; text: 
 }
 
 function IosInstallModal({ onClose }: { onClose: () => void }) {
-  const steps: { icon: ReactNode; text: ReactNode }[] = [
-    {
-      icon: <Smartphone size={18} />,
-      text: (
-        <>
-          Abra <strong className="text-white">usepont.com.br</strong> no <strong className="text-white">Safari</strong>
-          {" "}(o Chrome do iPhone não mostra a opção de instalar).
-        </>
-      )
-    },
-    {
-      icon: <Share size={18} />,
-      text: (
-        <>
-          Toque no botão <strong className="text-white">Compartilhar</strong> — o quadrado com uma seta
-          para cima, na barra inferior.
-        </>
-      )
-    },
-    {
-      icon: <PlusSquare size={18} />,
-      text: (
-        <>
-          Escolha <strong className="text-white">Adicionar à Tela de Início</strong>.
-        </>
-      )
-    },
-    {
-      icon: <CheckCircle2 size={18} />,
-      text: (
-        <>
-          Toque em <strong className="text-white">Adicionar</strong>. O ícone do PONT fica na tela inicial
-          e abre em tela cheia, como um app.
-        </>
-      )
-    }
-  ];
+  return (
+    <InstallStepsModal
+      onClose={onClose}
+      iconSrc="/apple-touch-icon.png"
+      title="Instalar no iPhone"
+      subtitle="iOS / iPadOS · Safari"
+      ariaLabel="Instalar o PONT no iPhone"
+      intro="O iPhone não permite baixar apps fora da App Store. O PONT é instalado como app web direto pelo navegador — leva menos de 30 segundos:"
+      steps={[
+        {
+          icon: <Smartphone size={18} />,
+          text: (
+            <>
+              Abra <strong className="text-white">usepont.com.br</strong> no{" "}
+              <strong className="text-white">Safari</strong> (o Chrome do iPhone não mostra a opção de instalar).
+            </>
+          )
+        },
+        {
+          icon: <Share size={18} />,
+          text: (
+            <>
+              Toque no botão <strong className="text-white">Compartilhar</strong> — o quadrado com uma seta
+              para cima, na barra inferior.
+            </>
+          )
+        },
+        {
+          icon: <PlusSquare size={18} />,
+          text: (
+            <>
+              Escolha <strong className="text-white">Adicionar à Tela de Início</strong>.
+            </>
+          )
+        },
+        {
+          icon: <CheckCircle2 size={18} />,
+          text: (
+            <>
+              Toque em <strong className="text-white">Adicionar</strong>. O ícone do PONT fica na tela inicial
+              e abre em tela cheia, como um app.
+            </>
+          )
+        }
+      ]}
+    />
+  );
+}
 
+function AndroidInstallModal({ onClose }: { onClose: () => void }) {
+  return (
+    <InstallStepsModal
+      onClose={onClose}
+      iconSrc="/icon-192.png"
+      title="Instalar no Android"
+      subtitle="Chrome (ou outro navegador Chromium)"
+      ariaLabel="Instalar o PONT no Android"
+      intro="Seu navegador não ofereceu a instalação automática agora (pode já estar instalado, ou o navegador não suporta). Dá pra instalar manualmente:"
+      steps={[
+        {
+          icon: <Smartphone size={18} />,
+          text: (
+            <>
+              Abra <strong className="text-white">usepont.com.br</strong> no <strong className="text-white">Chrome</strong>.
+            </>
+          )
+        },
+        {
+          icon: <Share size={18} />,
+          text: (
+            <>
+              Toque no menu <strong className="text-white">⋮</strong> no canto superior direito.
+            </>
+          )
+        },
+        {
+          icon: <PlusSquare size={18} />,
+          text: (
+            <>
+              Escolha <strong className="text-white">Instalar app</strong> (ou{" "}
+              <strong className="text-white">Adicionar à tela inicial</strong>).
+            </>
+          )
+        },
+        {
+          icon: <CheckCircle2 size={18} />,
+          text: (
+            <>
+              Confirme. O ícone do PONT fica na tela inicial e abre em tela cheia, como um app.
+            </>
+          )
+        }
+      ]}
+    />
+  );
+}
+
+function InstallStepsModal({
+  onClose,
+  iconSrc,
+  title,
+  subtitle,
+  ariaLabel,
+  intro,
+  steps
+}: {
+  onClose: () => void;
+  iconSrc: string;
+  title: string;
+  subtitle: string;
+  ariaLabel: string;
+  intro: string;
+  steps: { icon: ReactNode; text: ReactNode }[];
+}) {
   return (
     <div
       className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
       role="dialog"
       aria-modal="true"
-      aria-label="Instalar o PONT no iPhone"
+      aria-label={ariaLabel}
       onClick={onClose}
     >
       <div
@@ -381,11 +466,11 @@ function IosInstallModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-start justify-between gap-3 border-b border-white/10 p-6 pb-4">
           <div className="flex items-center gap-3">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-dark ring-1 ring-white/10">
-              <img src="/apple-touch-icon.png" alt="" className="h-full w-full rounded-xl" />
+              <img src={iconSrc} alt="" className="h-full w-full rounded-xl" />
             </span>
             <div>
-              <strong className="block text-lg font-black text-white">Instalar no iPhone</strong>
-              <span className="block text-xs font-semibold text-slate-300">iOS / iPadOS · Safari</span>
+              <strong className="block text-lg font-black text-white">{title}</strong>
+              <span className="block text-xs font-semibold text-slate-300">{subtitle}</span>
             </div>
           </div>
           <button
@@ -399,10 +484,7 @@ function IosInstallModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-6">
-          <p className="text-sm font-semibold leading-6 text-slate-300">
-            O iPhone não permite baixar apps fora da App Store. O PONT é instalado como app web direto pelo
-            navegador — leva menos de 30 segundos:
-          </p>
+          <p className="text-sm font-semibold leading-6 text-slate-300">{intro}</p>
 
           <ol className="mt-4 grid gap-3">
             {steps.map((step, index) => (
