@@ -30,3 +30,5 @@ services:
         sync: false
       - key: VITE_PAYMENTS_ENABLED
         sync: false
+      - key: VITE_VAPID_PUBLIC_KEY
+        value: BLHp6knaOHBqC1SkNlgMhvlER1_0Wl5G0E5txbj6P73FV52tUn7rsOTB2CKe3rQ_WLkcuWMms7j6EPusFyIgpq4

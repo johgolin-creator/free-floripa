@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
   Bell,
+  BellOff,
+  BellRing,
   BriefcaseBusiness,
   CalendarCheck,
   CheckCircle2,
@@ -10,6 +12,7 @@ import {
   Clock3,
   CreditCard,
   Filter,
+  Loader2,
   ShieldCheck,
   UserRound
 } from "lucide-react";
@@ -17,6 +20,8 @@ import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
 import { formatDateTime } from "../lib/format";
 import { useAppStore } from "../lib/store";
+import { useAuth } from "../lib/auth";
+import { getWebPushStatus, subscribeToWebPush, unsubscribeFromWebPush, webPushSupported, type WebPushStatus } from "../lib/webPush";
 import type { NotificationItem, UserRole } from "../lib/types";
 
 type NotificationKind = "Vagas" | "Candidaturas" | "Escala" | "Pagamento" | "Perfil" | "Sistema";
@@ -127,7 +132,30 @@ function isToday(createdAt: string) {
 
 export function NotificationsPage() {
   const { state, markNotificationRead, markRoleNotificationsRead } = useAppStore();
+  const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>("Todas");
+  const [pushStatus, setPushStatus] = useState<WebPushStatus>("not-subscribed");
+  const [pushPending, setPushPending] = useState(false);
+  const [pushMessage, setPushMessage] = useState("");
+
+  useEffect(() => {
+    if (!webPushSupported) {
+      setPushStatus("unsupported");
+      return;
+    }
+    getWebPushStatus().then(setPushStatus);
+  }, []);
+
+  async function handleTogglePush() {
+    if (!user) return;
+    setPushPending(true);
+    setPushMessage("");
+    const result =
+      pushStatus === "subscribed" ? await unsubscribeFromWebPush() : await subscribeToWebPush(user.id);
+    setPushMessage(result.message);
+    setPushStatus(await getWebPushStatus());
+    setPushPending(false);
+  }
 
   const notifications = useMemo(
     () =>
@@ -163,6 +191,46 @@ export function NotificationsPage() {
           ) : null
         }
       />
+
+      {pushStatus !== "unsupported" && (
+        <section className="mb-5 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-aqua-50 text-aqua-700">
+                {pushStatus === "subscribed" ? <BellRing size={20} /> : <BellOff size={20} />}
+              </span>
+              <div>
+                <h3 className="font-black text-white">Notificações no navegador</h3>
+                <p className="text-sm font-semibold text-slate-600">
+                  {pushStatus === "denied"
+                    ? "Bloqueadas nas configurações do navegador. Libere lá pra ativar aqui."
+                    : pushStatus === "subscribed"
+                      ? "Ativadas neste aparelho — avisos chegam mesmo com o PONT fechado."
+                      : "Receba um aviso mesmo com o PONT fechado assim que uma vaga nova for publicada."}
+                </p>
+              </div>
+            </div>
+            {pushStatus !== "denied" && (
+              <button
+                type="button"
+                onClick={handleTogglePush}
+                disabled={pushPending}
+                className={pushStatus === "subscribed" ? "secondary" : "primary"}
+              >
+                {pushPending ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : pushStatus === "subscribed" ? (
+                  <BellOff size={16} />
+                ) : (
+                  <Bell size={16} />
+                )}
+                {pushStatus === "subscribed" ? "Desativar" : "Ativar notificações"}
+              </button>
+            )}
+          </div>
+          {pushMessage && <p className="mt-2 text-xs font-semibold text-slate-500">{pushMessage}</p>}
+        </section>
+      )}
 
       <section className="mb-5 grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
         <div className="smart-dashboard-metrics">
