@@ -40,7 +40,7 @@ import {
 } from "./supabaseCoins";
 import { DEFAULT_AVATAR_PLACEHOLDER, resolveAvatarUrl } from "./avatars";
 import { emailNotificationsEnabled, enqueueEmailNotification, type EmailNotificationInput } from "./emailNotifications";
-import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyLead, CompanyProfile, CompanyReview, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, TrustReportTargetType, UserRole, WorkerProfile } from "./types";
+import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyLead, CompanyProfile, CompanyReview, CompanySchedule, CompanyScheduleStatus, FacebookLead, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, TrustReportTargetType, UserRole, WorkerProfile } from "./types";
 
 const STORAGE_KEY = "pont:state";
 const REMOTE_SYNC_POLL_MS = 5000;
@@ -145,6 +145,10 @@ interface AppContextValue {
   replaceCompanyLeads: (leads: CompanyLead[]) => void;
   toggleCompanyLeadContacted: (leadId: string) => void;
   removeCompanyLead: (leadId: string) => void;
+  addFacebookLead: (lead: FacebookLead) => void;
+  replaceFacebookLeads: (leads: FacebookLead[]) => void;
+  toggleFacebookLeadContacted: (leadId: string) => void;
+  removeFacebookLead: (leadId: string) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -204,6 +208,7 @@ function mergeSeedUpdates(savedState: AppState): AppState {
     coinLedger: Array.isArray(savedState.coinLedger) ? savedState.coinLedger : [],
     trustReports: Array.isArray(savedState.trustReports) ? savedState.trustReports : [],
     companyLeads: Array.isArray(savedState.companyLeads) ? savedState.companyLeads : [],
+    facebookLeads: Array.isArray(savedState.facebookLeads) ? savedState.facebookLeads : [],
     adminModeration: {
       blockedWorkerIds: Array.isArray(savedState.adminModeration?.blockedWorkerIds)
         ? savedState.adminModeration.blockedWorkerIds
@@ -220,6 +225,7 @@ function mergeSeedUpdates(savedState: AppState): AppState {
     !Array.isArray(savedState.coinLedger) ||
     !Array.isArray(savedState.trustReports) ||
     !Array.isArray(savedState.companyLeads) ||
+    !Array.isArray(savedState.facebookLeads) ||
     !Number.isFinite(savedState.subscription?.companyCreditsRemaining) ||
     !Array.isArray(savedState.subscription?.unlockedJobIds) ||
     !Array.isArray(savedState.adminModeration?.blockedWorkerIds) ||
@@ -2264,6 +2270,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
         commit((current) => ({
           ...current,
           companyLeads: current.companyLeads.filter((lead) => lead.id !== leadId)
+        }));
+      },
+      addFacebookLead(lead) {
+        commit((current) => ({
+          ...current,
+          facebookLeads: [lead, ...current.facebookLeads]
+        }));
+      },
+      replaceFacebookLeads(leads) {
+        commit((current) => ({
+          ...current,
+          facebookLeads: leads
+        }));
+      },
+      toggleFacebookLeadContacted(leadId) {
+        commit((current) => ({
+          ...current,
+          facebookLeads: current.facebookLeads.map((lead) =>
+            lead.id === leadId ? { ...lead, contacted: !lead.contacted } : lead
+          )
+        }));
+      },
+      removeFacebookLead(leadId) {
+        commit((current) => ({
+          ...current,
+          facebookLeads: current.facebookLeads.filter((lead) => lead.id !== leadId)
         }));
       }
     }),

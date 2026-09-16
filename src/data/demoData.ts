@@ -388,5 +388,6 @@ export const initialState: AppState = {
     blockedCompanyIds: []
   },
   trustReports: [],
-  companyLeads: []
+  companyLeads: [],
+  facebookLeads: []
 };

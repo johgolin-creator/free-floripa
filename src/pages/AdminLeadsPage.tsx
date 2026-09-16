@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Building2,
   CheckCircle2,
+  Facebook,
   FileSearch,
   Globe,
   Instagram,
@@ -11,7 +12,8 @@ import {
   MapPinned,
   Phone,
   Search,
-  Trash2
+  Trash2,
+  User
 } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
@@ -24,9 +26,17 @@ import {
   supabaseCompanyLeadsEnabled,
   upsertRemoteCompanyLeads
 } from "../lib/supabaseCompanyLeads";
+import {
+  deleteRemoteFacebookLead,
+  loadRemoteFacebookLeads,
+  setRemoteFacebookLeadContacted,
+  supabaseFacebookLeadsEnabled,
+  upsertRemoteFacebookLead
+} from "../lib/supabaseFacebookLeads";
+import { parseFacebookPost } from "../lib/facebookLeadParsing";
 import { useAppStore } from "../lib/store";
 import { formatDateTime } from "../lib/format";
-import type { CompanyLead, CompanyLeadSegment } from "../lib/types";
+import type { CompanyLead, CompanyLeadSegment, FacebookLead } from "../lib/types";
 
 type SegmentFilter = "Todos" | CompanyLeadSegment;
 type ContactFilter = "Todas" | "Com contato" | "Sem contato" | "A contatar" | "Já contatadas" | "Já no PONT";
@@ -42,7 +52,17 @@ function normalizeCompanyName(value: string) {
 }
 
 export function AdminLeadsPage() {
-  const { state, addCompanyLeads, replaceCompanyLeads, toggleCompanyLeadContacted, removeCompanyLead } = useAppStore();
+  const {
+    state,
+    addCompanyLeads,
+    replaceCompanyLeads,
+    toggleCompanyLeadContacted,
+    removeCompanyLead,
+    addFacebookLead,
+    replaceFacebookLeads,
+    toggleFacebookLeadContacted,
+    removeFacebookLead
+  } = useAppStore();
   const [segment, setSegment] = useState<CompanyLeadSegment>("Restaurantes");
   const [city, setCity] = useState(DEFAULT_CITY);
   const [searching, setSearching] = useState(false);
@@ -51,6 +71,7 @@ export function AdminLeadsPage() {
   const [segmentFilter, setSegmentFilter] = useState<SegmentFilter>("Todos");
   const [contactFilter, setContactFilter] = useState<ContactFilter>("Todas");
   const [query, setQuery] = useState("");
+  const [facebookError, setFacebookError] = useState("");
 
   useEffect(() => {
     if (!supabaseCompanyLeadsEnabled) return;
@@ -63,6 +84,47 @@ export function AdminLeadsPage() {
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!supabaseFacebookLeadsEnabled) return;
+    loadRemoteFacebookLeads()
+      .then((remoteLeads) => {
+        if (remoteLeads.length > 0) replaceFacebookLeads(remoteLeads);
+      })
+      .catch(() => {
+        setFacebookError("Não foi possível carregar a lista compartilhada. Mostrando apenas o que já estava neste aparelho.");
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const facebookLeads = state.facebookLeads;
+
+  function handleAddFacebookLead(lead: FacebookLead) {
+    addFacebookLead(lead);
+    if (supabaseFacebookLeadsEnabled) {
+      upsertRemoteFacebookLead(lead).catch(() => {
+        setFacebookError("Vaga salva neste aparelho, mas não foi possível sincronizar com a lista compartilhada.");
+      });
+    }
+  }
+
+  function handleToggleFacebookContacted(lead: FacebookLead) {
+    toggleFacebookLeadContacted(lead.id);
+    if (supabaseFacebookLeadsEnabled) {
+      setRemoteFacebookLeadContacted(lead.id, !lead.contacted).catch(() => {
+        setFacebookError("Não foi possível sincronizar o status de contato.");
+      });
+    }
+  }
+
+  function handleRemoveFacebookLead(lead: FacebookLead) {
+    removeFacebookLead(lead.id);
+    if (supabaseFacebookLeadsEnabled) {
+      deleteRemoteFacebookLead(lead.id).catch(() => {
+        setFacebookError("Não foi possível remover da lista compartilhada.");
+      });
+    }
+  }
 
   const leads = state.companyLeads;
 
@@ -323,6 +385,44 @@ export function AdminLeadsPage() {
           ))}
         </div>
       )}
+
+      <div className="mt-10">
+        <SectionHeader
+          eyebrow="Captação manual"
+          title="Vagas vistas no Facebook"
+          description="Cole o texto de um post de grupo — extraímos telefone, e-mail e bairro pra você conferir antes de salvar. A leitura do Facebook continua manual; só a organização é automática."
+        />
+
+        <FacebookLeadCapture onAdd={handleAddFacebookLead} />
+
+        {facebookError && <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{facebookError}</div>}
+
+        <section className="mb-5 grid gap-3 sm:grid-cols-3">
+          <StatTile variant="primary" icon={<Facebook size={19} />} label="vagas coladas" value={facebookLeads.length} />
+          <StatTile
+            tone={facebookLeads.some((lead) => lead.phone || lead.email) ? "positive" : "normal"}
+            icon={<Phone size={19} />}
+            label="com telefone ou e-mail"
+            value={facebookLeads.filter((lead) => lead.phone || lead.email).length}
+          />
+          <StatTile icon={<CheckCircle2 size={19} />} label="já contatadas" value={facebookLeads.filter((lead) => lead.contacted).length} />
+        </section>
+
+        {facebookLeads.length === 0 ? (
+          <EmptyState title="Nenhuma vaga colada ainda" text="Cole o texto de um post acima para começar a lista." />
+        ) : (
+          <div className="grid gap-3">
+            {facebookLeads.map((lead) => (
+              <FacebookLeadCard
+                key={lead.id}
+                lead={lead}
+                onToggleContacted={() => handleToggleFacebookContacted(lead)}
+                onRemove={() => handleRemoveFacebookLead(lead)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -412,6 +512,179 @@ function LeadCard({
                 <FileSearch size={16} /> Buscar CNPJ
               </a>
             </>
+          )}
+          <button type="button" onClick={onToggleContacted} className={lead.contacted ? "secondary" : "primary"}>
+            <CheckCircle2 size={16} /> {lead.contacted ? "Marcar como pendente" : "Marcar como contatada"}
+          </button>
+          <button type="button" onClick={onRemove} className="danger" aria-label="Remover">
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function FacebookLeadCapture({ onAdd }: { onAdd: (lead: FacebookLead) => void }) {
+  const [rawText, setRawText] = useState("");
+  const [title, setTitle] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [city, setCity] = useState("");
+  const [analyzed, setAnalyzed] = useState(false);
+  const [error, setError] = useState("");
+
+  function reset() {
+    setRawText("");
+    setTitle("");
+    setContactName("");
+    setPhone("");
+    setEmail("");
+    setCity("");
+    setAnalyzed(false);
+    setError("");
+  }
+
+  function handleAnalyze() {
+    if (!rawText.trim()) {
+      setError("Cole o texto do post primeiro.");
+      return;
+    }
+    const parsed = parseFacebookPost(rawText);
+    setTitle(parsed.title);
+    setPhone(parsed.phone ?? "");
+    setEmail(parsed.email ?? "");
+    setCity(parsed.city ?? "");
+    setAnalyzed(true);
+    setError("");
+  }
+
+  function handleSave() {
+    if (!title.trim()) {
+      setError("Dê um título pra essa vaga antes de salvar.");
+      return;
+    }
+    onAdd({
+      id: crypto.randomUUID(),
+      rawText,
+      title: title.trim(),
+      contactName: contactName.trim() || undefined,
+      phone: phone.trim() || undefined,
+      email: email.trim() || undefined,
+      city: city.trim() || undefined,
+      contacted: false,
+      createdAt: new Date().toISOString()
+    });
+    reset();
+  }
+
+  return (
+    <section className="mb-5 grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
+      <label className="label">
+        Texto do post
+        <textarea
+          className="input min-h-28"
+          value={rawText}
+          onChange={(event) => {
+            setRawText(event.target.value);
+            setAnalyzed(false);
+          }}
+          placeholder="Cole aqui o texto completo do post que você viu no grupo do Facebook..."
+        />
+      </label>
+
+      <button type="button" onClick={handleAnalyze} className="secondary w-fit">
+        <FileSearch size={16} /> Analisar post
+      </button>
+
+      {analyzed && (
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="label">
+            Título da vaga
+            <input className="input" value={title} onChange={(event) => setTitle(event.target.value)} />
+          </label>
+          <label className="label">
+            Nome de contato (opcional)
+            <input className="input" value={contactName} onChange={(event) => setContactName(event.target.value)} />
+          </label>
+          <label className="label">
+            Telefone
+            <input className="input" value={phone} onChange={(event) => setPhone(event.target.value)} />
+          </label>
+          <label className="label">
+            E-mail
+            <input className="input" value={email} onChange={(event) => setEmail(event.target.value)} />
+          </label>
+          <label className="label">
+            Bairro / cidade
+            <input className="input" value={city} onChange={(event) => setCity(event.target.value)} />
+          </label>
+        </div>
+      )}
+
+      {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
+
+      {analyzed && (
+        <button type="button" onClick={handleSave} className="primary w-fit">
+          <CheckCircle2 size={16} /> Salvar vaga
+        </button>
+      )}
+    </section>
+  );
+}
+
+function FacebookLeadCard({
+  lead,
+  onToggleContacted,
+  onRemove
+}: {
+  lead: FacebookLead;
+  onToggleContacted: () => void;
+  onRemove: () => void;
+}) {
+  const hasContact = Boolean(lead.phone || lead.email);
+
+  return (
+    <article className={`worker-application-card ${lead.contacted ? "" : hasContact ? "border-aqua-200 bg-aqua-50/40" : ""}`}>
+      <div className="worker-card-head">
+        <div className="flex min-w-0 gap-3">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border border-aqua-100 bg-aqua-50 text-aqua-700">
+            <Facebook size={20} />
+          </div>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              {hasContact && <span className="badge border-aqua-200 bg-aqua-50 text-aqua-700">Com contato</span>}
+              {lead.contacted && <span className="badge border-aqua-200 bg-aqua-50 text-aqua-700">Contatada</span>}
+              {!hasContact && <span className="badge">Sem contato direto</span>}
+            </div>
+            <h3 className="mt-2">{lead.title}</h3>
+            {lead.contactName && (
+              <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-slate-600">
+                <User size={14} /> {lead.contactName}
+              </p>
+            )}
+            {lead.city && (
+              <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-slate-600">
+                <MapPin size={14} /> {lead.city}
+              </p>
+            )}
+            <p className="mt-2 line-clamp-2 text-xs font-semibold text-slate-500">{lead.rawText}</p>
+            <span className="mt-2 block text-xs font-black uppercase text-slate-500">
+              Colada em {formatDateTime(lead.createdAt)}
+            </span>
+          </div>
+        </div>
+        <div className="worker-action-row">
+          {lead.phone && (
+            <a href={`tel:${lead.phone}`} className="secondary">
+              <Phone size={16} /> {lead.phone}
+            </a>
+          )}
+          {lead.email && (
+            <a href={`mailto:${lead.email}`} className="secondary">
+              <Mail size={16} /> {lead.email}
+            </a>
           )}
           <button type="button" onClick={onToggleContacted} className={lead.contacted ? "secondary" : "primary"}>
             <CheckCircle2 size={16} /> {lead.contacted ? "Marcar como pendente" : "Marcar como contatada"}

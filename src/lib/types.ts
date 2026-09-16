@@ -271,6 +271,21 @@ export interface CompanyLead {
   foundAt: string;
 }
 
+/** Vaga freelancer vista num post de rede social (hoje só Facebook), colada
+ *  manualmente por um admin — nunca coletada automaticamente (ver
+ *  lib/facebookLeadParsing.ts para o porquê). */
+export interface FacebookLead {
+  id: string;
+  rawText: string;
+  title: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  city?: string;
+  contacted: boolean;
+  createdAt: string;
+}
+
 export interface AppState {
   activeRole: UserRole;
   selectedWorkerId: string;
@@ -289,4 +304,5 @@ export interface AppState {
   adminModeration: AdminModerationState;
   trustReports: TrustReport[];
   companyLeads: CompanyLead[];
+  facebookLeads: FacebookLead[];
 }
