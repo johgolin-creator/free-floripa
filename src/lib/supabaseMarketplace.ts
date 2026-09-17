@@ -147,6 +147,10 @@ export interface JobRow {
   contact_after_confirmation?: boolean | null;
   urgent?: boolean | null;
   status?: string | null;
+  source?: string | null;
+  external_contact_name?: string | null;
+  external_contact_phone?: string | null;
+  external_contact_email?: string | null;
   company_profiles?: CompanyProfileRow | CompanyProfileRow[] | null;
 }
 
@@ -321,7 +325,11 @@ export function mapJob(row: JobRow): Job {
     contactAfterConfirmation: row.contact_after_confirmation ?? true,
     urgent: Boolean(row.urgent),
     candidates: 0,
-    distanceKm: 6
+    distanceKm: 6,
+    source: row.source === "facebook" ? "facebook" : undefined,
+    externalContactName: row.external_contact_name || undefined,
+    externalContactPhone: row.external_contact_phone || undefined,
+    externalContactEmail: row.external_contact_email || undefined
   };
 }
 
@@ -595,13 +603,58 @@ export async function publishJob(user: User | null, company: CompanyProfile, job
   if (error) throw new Error(error.message);
 }
 
+/** Publica uma vaga captada do Facebook (lib/facebookJobs.ts) sob a
+ *  empresa-vitrine compartilhada, sem passar por publishCompanyProfile: essa
+ *  função grava o admin autenticado como dono do registro em public.users, o
+ *  que aqui apagaria o papel admin/moderador da própria conta de quem está
+ *  publicando. A linha da empresa-vitrine já existe (supabase/facebook_jobs.sql)
+ *  e a inserção da vaga passa por uma policy dedicada pra admin/moderador
+ *  (não pela regra normal de "dono da empresa"). */
+export async function publishFacebookJob(job: Job) {
+  if (!supabase) return;
+
+  const { error } = await supabase.from("jobs").upsert(
+    {
+      id: job.id,
+      company_id: job.companyId,
+      title: job.title,
+      function_name: job.function,
+      quantity: job.quantity,
+      filled: job.filled,
+      shift_date: job.date,
+      starts_at: sqlTime(job.startsAt) ?? "00:00",
+      ends_at: sqlTime(job.endsAt),
+      daily_value: job.dailyValue,
+      payment_method: job.paymentMethod,
+      approximate_address: job.approximateAddress,
+      full_address: job.fullAddress,
+      neighborhood: job.neighborhood,
+      uniform: job.uniform,
+      required_experience: job.requiredExperience,
+      description: job.description,
+      benefits: job.benefits,
+      contact_after_confirmation: job.contactAfterConfirmation,
+      urgent: job.urgent,
+      status: job.status ?? "Publicada",
+      source: job.source ?? null,
+      external_contact_name: job.externalContactName ?? null,
+      external_contact_phone: job.externalContactPhone ?? null,
+      external_contact_email: job.externalContactEmail ?? null,
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: "id" }
+  );
+
+  if (error) throw new Error(error.message);
+}
+
 export async function loadPublicJobs(): Promise<MarketplaceJobsPayload> {
   if (!supabase) return { jobs: [], companies: [], applications: [] };
 
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status,company_profiles(id,user_id,establishment_name,responsible_name,cnpj,cpf,phone,email,category,address,neighborhood,description,logo_url,cover_url,rating)"
+      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status,source,external_contact_name,external_contact_phone,external_contact_email,company_profiles(id,user_id,establishment_name,responsible_name,cnpj,cpf,phone,email,category,address,neighborhood,description,logo_url,cover_url,rating)"
     )
     .neq("status", "Cancelada")
     .order("shift_date", { ascending: true })
@@ -624,7 +677,7 @@ export async function loadCompanyMarketplace(companyId: string): Promise<Marketp
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status"
+      "id,company_id,title,function_name,quantity,filled,shift_date,starts_at,ends_at,daily_value,payment_method,approximate_address,full_address,neighborhood,uniform,required_experience,description,benefits,contact_after_confirmation,urgent,status,source,external_contact_name,external_contact_phone,external_contact_email"
     )
     .eq("company_id", companyId)
     .order("created_at", { ascending: false })

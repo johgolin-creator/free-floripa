@@ -28,7 +28,7 @@ import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { useAuth } from "../lib/auth";
 import { supportEmailUrl, supportWhatsappUrl } from "../lib/support";
-import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
+import { formatCurrency, formatDate, getJobContact, getWhatsAppUrl } from "../lib/format";
 import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots, isJobOpenForApplications } from "../lib/rules";
 
 export function JobDetailsPage() {
@@ -60,6 +60,7 @@ export function JobDetailsPage() {
         (report.targetType === "job" && report.targetId === currentJob.id))
   ).length;
   const confirmed = application?.status === "Aprovada" || application?.status === "Trabalho concluído";
+  const jobContact = getJobContact(currentJob, company);
   const workerExperience = getFunctionExperience(currentWorker, currentJob.function);
   const jobStatus = getJobStatus(currentJob);
   const workerBlocked = state.adminModeration.blockedWorkerIds.includes(currentWorker.id);
@@ -248,6 +249,9 @@ export function JobDetailsPage() {
               {currentJob.urgent && jobStatus !== "Urgente" && <UrgentBadge />}
               <span className="badge">{currentJob.function}</span>
               <span className="badge">{currentJob.paymentMethod}</span>
+              {currentJob.source === "facebook" && (
+                <span className="badge border-aqua-200 bg-aqua-50 text-aqua-700">Vaga captada no Facebook</span>
+              )}
             </div>
 
             <h2>{currentJob.function}</h2>
@@ -289,16 +293,25 @@ export function JobDetailsPage() {
             {confirmed && company ? (
               <div className="contact-card">
                 <strong className="text-sm text-white">Contato liberado</strong>
-                <span className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Phone size={16} /> {company.phone}</span>
-                <span className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Mail size={16} /> {company.email}</span>
-                <a
-                  href={getWhatsAppUrl(company.phone, `Olá, sou ${currentWorker.name}. Fui aprovado para a vaga ${currentJob.title}.`)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="primary"
-                >
-                  <MessageCircle size={17} /> Chamar no WhatsApp
-                </a>
+                {jobContact.name && currentJob.source === "facebook" && (
+                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Users size={16} /> {jobContact.name}</span>
+                )}
+                {jobContact.phone && (
+                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Phone size={16} /> {jobContact.phone}</span>
+                )}
+                {jobContact.email && (
+                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-600"><Mail size={16} /> {jobContact.email}</span>
+                )}
+                {jobContact.phone && (
+                  <a
+                    href={getWhatsAppUrl(jobContact.phone, `Olá, sou ${currentWorker.name}. Fui aprovado para a vaga ${currentJob.title}.`)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="primary"
+                  >
+                    <MessageCircle size={17} /> Chamar no WhatsApp
+                  </a>
+                )}
               </div>
             ) : (
               <div className="contact-locked">

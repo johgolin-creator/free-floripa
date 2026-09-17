@@ -124,6 +124,17 @@ export interface Job {
   urgent: boolean;
   candidates: number;
   distanceKm: number;
+  /** Vaga captada de um post do Facebook e publicada automaticamente pelo
+   *  admin (ver lib/facebookJobParsing.ts). Fica sob uma empresa-vitrine
+   *  compartilhada (FACEBOOK_JOBS_COMPANY_ID em lib/facebookJobs.ts) em vez
+   *  de uma empresa real cadastrada — por isso o contato de quem publicou o
+   *  post fica nos campos externalContact* abaixo, não no perfil da
+   *  empresa. Quem se candidata primeiro é aprovado automaticamente (ver
+   *  supabase/facebook_jobs.sql) e só aí o contato é liberado. */
+  source?: "facebook";
+  externalContactName?: string;
+  externalContactPhone?: string;
+  externalContactEmail?: string;
 }
 
 export interface Application {

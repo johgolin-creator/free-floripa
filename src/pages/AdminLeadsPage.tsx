@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Briefcase,
   Building2,
   CheckCircle2,
   Facebook,
@@ -11,6 +12,7 @@ import {
   MapPin,
   MapPinned,
   Phone,
+  Rocket,
   Search,
   Trash2,
   User
@@ -18,6 +20,7 @@ import {
 import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
+import { functions as jobFunctions, neighborhoods } from "../data/demoData";
 import { CITY_OPTIONS, COMPANY_LEAD_SEGMENTS, DEFAULT_CITY, searchCompanyLeads } from "../lib/companyProspecting";
 import {
   deleteRemoteCompanyLead,
@@ -34,9 +37,10 @@ import {
   upsertRemoteFacebookLead
 } from "../lib/supabaseFacebookLeads";
 import { parseFacebookPost } from "../lib/facebookLeadParsing";
-import { useAppStore } from "../lib/store";
+import { parseFacebookJobPost } from "../lib/facebookJobParsing";
+import { useAppStore, type CreateFacebookJobInput } from "../lib/store";
 import { formatDateTime } from "../lib/format";
-import type { CompanyLead, CompanyLeadSegment, FacebookLead } from "../lib/types";
+import type { CompanyLead, CompanyLeadSegment, FacebookLead, JobFunction, PaymentMethod } from "../lib/types";
 
 type SegmentFilter = "Todos" | CompanyLeadSegment;
 type ContactFilter = "Todas" | "Com contato" | "Sem contato" | "A contatar" | "Já contatadas" | "Já no PONT";
@@ -61,7 +65,8 @@ export function AdminLeadsPage() {
     addFacebookLead,
     replaceFacebookLeads,
     toggleFacebookLeadContacted,
-    removeFacebookLead
+    removeFacebookLead,
+    createFacebookJob
   } = useAppStore();
   const [segment, setSegment] = useState<CompanyLeadSegment>("Restaurantes");
   const [city, setCity] = useState(DEFAULT_CITY);
@@ -388,9 +393,19 @@ export function AdminLeadsPage() {
 
       <div className="mt-10">
         <SectionHeader
+          eyebrow="Publicação automática"
+          title="Publicar vaga a partir de um post do Facebook"
+          description="Cole a descrição da vaga que você viu no grupo — o PONT identifica função, data, valor, bairro e contato sozinho, você confere e publica. Quem se candidatar primeiro é aprovado na hora e recebe o contato de quem postou."
+        />
+
+        <FacebookJobPublisher onPublish={createFacebookJob} />
+      </div>
+
+      <div className="mt-10">
+        <SectionHeader
           eyebrow="Captação manual"
-          title="Vagas vistas no Facebook"
-          description="Cole o texto de um post de grupo — extraímos telefone, e-mail e bairro pra você conferir antes de salvar. A leitura do Facebook continua manual; só a organização é automática."
+          title="Prospecção: vagas vistas no Facebook"
+          description="Além de publicar a vaga, use isto pra guardar o contato de quem postou como lead comercial (para oferecer o PONT depois). Cole o texto de um post de grupo — extraímos telefone, e-mail e bairro pra você conferir antes de salvar."
         />
 
         <FacebookLeadCapture onAdd={handleAddFacebookLead} />
@@ -695,5 +710,201 @@ function FacebookLeadCard({
         </div>
       </div>
     </article>
+  );
+}
+
+const paymentMethods: PaymentMethod[] = ["Dinheiro", "Pix", "Transferência", "A combinar"];
+
+function FacebookJobPublisher({ onPublish }: { onPublish: (input: CreateFacebookJobInput) => string }) {
+  const [rawText, setRawText] = useState("");
+  const [fields, setFields] = useState<CreateFacebookJobInput | null>(null);
+  const [missingFunction, setMissingFunction] = useState(false);
+  const [missingValue, setMissingValue] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  function analyze(text: string) {
+    setSuccess("");
+    if (!text.trim()) {
+      setFields(null);
+      return;
+    }
+    const parsed = parseFacebookJobPost(text);
+    setMissingFunction(!parsed.function);
+    setMissingValue(parsed.dailyValue === null);
+    setFields({
+      title: parsed.title,
+      function: parsed.function ?? jobFunctions[0],
+      quantity: parsed.quantity,
+      date: parsed.date,
+      startsAt: parsed.startsAt,
+      endsAt: parsed.endsAt,
+      dailyValue: parsed.dailyValue ?? 0,
+      paymentMethod: parsed.paymentMethod,
+      approximateAddress: parsed.approximateAddress,
+      neighborhood: parsed.neighborhood,
+      description: parsed.description,
+      urgent: parsed.urgent,
+      contactName: parsed.contactName ?? "",
+      contactPhone: parsed.contactPhone ?? "",
+      contactEmail: parsed.contactEmail ?? ""
+    });
+  }
+
+  function updateField<K extends keyof CreateFacebookJobInput>(key: K, value: CreateFacebookJobInput[K]) {
+    setFields((current) => (current ? { ...current, [key]: value } : current));
+  }
+
+  function handlePublish() {
+    if (!fields) return;
+    if (!fields.dailyValue || fields.dailyValue <= 0) {
+      setError("Informe o valor da diária antes de publicar.");
+      return;
+    }
+    if (!fields.neighborhood.trim()) {
+      setError("Informe o bairro antes de publicar.");
+      return;
+    }
+    if (!fields.contactPhone.trim() && !fields.contactEmail.trim()) {
+      setError("Sem telefone ou e-mail de contato, quem for aprovado não vai ter como falar com quem publicou. Preencha ao menos um.");
+      return;
+    }
+    onPublish(fields);
+    setSuccess(`Vaga "${fields.title}" publicada! Já aparece na lista para os trabalhadores.`);
+    setError("");
+    setRawText("");
+    setFields(null);
+  }
+
+  return (
+    <section className="mb-5 grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
+      <label className="label">
+        Descrição da vaga (cole o post do Facebook)
+        <textarea
+          className="input min-h-28"
+          value={rawText}
+          onChange={(event) => {
+            setRawText(event.target.value);
+            analyze(event.target.value);
+          }}
+          placeholder="Cole aqui o texto completo do post que você viu no grupo do Facebook..."
+        />
+      </label>
+
+      {fields && (
+        <>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="label">
+              Título da vaga
+              <input className="input" value={fields.title} onChange={(event) => updateField("title", event.target.value)} />
+            </label>
+            <label className="label">
+              Função {missingFunction && <span className="text-alert">— não identificada, confira</span>}
+              <select className="input" value={fields.function} onChange={(event) => updateField("function", event.target.value as JobFunction)}>
+                {jobFunctions.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="label">
+              Quantidade de vagas
+              <input
+                type="number"
+                min={1}
+                className="input"
+                value={fields.quantity}
+                onChange={(event) => updateField("quantity", Math.max(1, Number(event.target.value) || 1))}
+              />
+            </label>
+            <label className="label">
+              Valor da diária (R$) {missingValue && <span className="text-alert">— não identificado, confira</span>}
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                className="input"
+                value={fields.dailyValue}
+                onChange={(event) => updateField("dailyValue", Number(event.target.value) || 0)}
+              />
+            </label>
+            <label className="label">
+              Forma de pagamento
+              <select className="input" value={fields.paymentMethod} onChange={(event) => updateField("paymentMethod", event.target.value as PaymentMethod)}>
+                {paymentMethods.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="label">
+              Data
+              <input type="date" className="input" value={fields.date} onChange={(event) => updateField("date", event.target.value)} />
+            </label>
+            <label className="label">
+              Início
+              <input type="time" className="input" value={fields.startsAt} onChange={(event) => updateField("startsAt", event.target.value)} />
+            </label>
+            <label className="label">
+              Fim
+              <input type="time" className="input" value={fields.endsAt} onChange={(event) => updateField("endsAt", event.target.value)} />
+            </label>
+            <label className="label">
+              Bairro
+              <input className="input" list="admin-facebook-job-neighborhoods" value={fields.neighborhood} onChange={(event) => updateField("neighborhood", event.target.value)} />
+              <datalist id="admin-facebook-job-neighborhoods">
+                {neighborhoods.map((item) => (
+                  <option key={item} value={item} />
+                ))}
+              </datalist>
+            </label>
+            <label className="label">
+              Endereço aproximado
+              <input className="input" value={fields.approximateAddress} onChange={(event) => updateField("approximateAddress", event.target.value)} />
+            </label>
+          </div>
+
+          <label className="label">
+            Descrição (visível pra todo mundo antes de aprovar — sem telefone/e-mail)
+            <textarea className="input min-h-24" value={fields.description} onChange={(event) => updateField("description", event.target.value)} />
+          </label>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <label className="label">
+              Nome de contato (opcional)
+              <input className="input" value={fields.contactName} onChange={(event) => updateField("contactName", event.target.value)} />
+            </label>
+            <label className="label">
+              Telefone de contato
+              <input className="input" value={fields.contactPhone} onChange={(event) => updateField("contactPhone", event.target.value)} />
+            </label>
+            <label className="label">
+              E-mail de contato
+              <input className="input" value={fields.contactEmail} onChange={(event) => updateField("contactEmail", event.target.value)} />
+            </label>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+            <input type="checkbox" checked={fields.urgent} onChange={(event) => updateField("urgent", event.target.checked)} />
+            Marcar como urgente
+          </label>
+
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+            <Rocket size={14} /> Só o telefone/e-mail acima ficam guardados como contato — não aparecem na descrição pública.
+            O contato só é liberado pro trabalhador depois que a candidatura for aprovada.
+          </p>
+
+          {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
+
+          <button type="button" onClick={handlePublish} className="primary w-fit">
+            <Briefcase size={16} /> Publicar vaga no PONT
+          </button>
+        </>
+      )}
+
+      {success && <div className="rounded-lg bg-aqua-50 p-3 text-sm font-bold text-aqua-800">{success}</div>}
+    </section>
   );
 }

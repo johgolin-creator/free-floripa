@@ -68,6 +68,7 @@ export function AdminPage() {
     applyCompanySoldBy
   } = useAppStore();
   const [tab, setTab] = useState<AdminTab>("Resumo");
+  const [usersTabFocus, setUsersTabFocus] = useState<"workers" | "companies" | null>(null);
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<{ type: "worker" | "company"; id: string } | null>(null);
   const [deleteFeedback, setDeleteFeedback] = useState("");
@@ -187,10 +188,18 @@ export function AdminPage() {
   });
   const coinPurchaseCount = state.coinLedger.filter((entry) => entry.kind === "purchase").length;
 
-  function goToUsersTab() {
+  function goToUsersTab(focus: "workers" | "companies") {
     setSearch("");
     setTab("Usuários");
+    setUsersTabFocus(focus);
   }
+
+  useEffect(() => {
+    if (tab !== "Usuários" || !usersTabFocus || !moderationReady) return;
+    const elementId = usersTabFocus === "companies" ? "admin-companies-list" : "admin-workers-list";
+    document.getElementById(elementId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setUsersTabFocus(null);
+  }, [tab, usersTabFocus, moderationReady]);
 
   return (
     <div className="grid gap-5">
@@ -217,13 +226,13 @@ export function AdminPage() {
             icon={<UserRound size={19} />}
             label="freelancers"
             value={moderationReady ? String(state.workers.length) : "..."}
-            onClick={() => goToUsersTab()}
+            onClick={() => goToUsersTab("workers")}
           />
           <AdminMetric
             icon={<Building2 size={19} />}
             label="empresas"
             value={moderationReady ? String(state.companies.length) : "..."}
-            onClick={() => goToUsersTab()}
+            onClick={() => goToUsersTab("companies")}
           />
           <AdminMetric
             icon={<BriefcaseBusiness size={19} />}
@@ -317,7 +326,7 @@ export function AdminPage() {
 
       {tab === "Usuários" && moderationReady && (
         <section className="grid gap-4 xl:grid-cols-2">
-          <AdminList title="Trabalhadores" count={filteredWorkers.length}>
+          <AdminList id="admin-workers-list" title="Trabalhadores" count={filteredWorkers.length}>
             {filteredWorkers.map((worker) => {
               const blocked = blockedWorkerIds.includes(worker.id);
               const reportCount = countOpenReportsForWorker(openReports, worker.id);
@@ -337,7 +346,7 @@ export function AdminPage() {
               );
             })}
           </AdminList>
-          <AdminList title="Empresas" count={filteredCompanies.length}>
+          <AdminList id="admin-companies-list" title="Empresas" count={filteredCompanies.length}>
             {filteredCompanies.map((company) => {
               const blocked = blockedCompanyIds.includes(company.id);
               const jobs = state.jobs.filter((job) => job.companyId === company.id).length;
@@ -802,9 +811,9 @@ function InfoTile({ icon, label, value }: { icon: ReactNode; label: string; valu
   );
 }
 
-function AdminList({ title, count, children }: { title: string; count: number; children: ReactNode }) {
+function AdminList({ id, title, count, children }: { id?: string; title: string; count: number; children: ReactNode }) {
   return (
-    <section className="card p-4">
+    <section id={id} className="card p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="font-black text-white">{title}</h3>
         <span className="badge">{count}</span>

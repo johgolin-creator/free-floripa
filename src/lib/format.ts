@@ -46,3 +46,26 @@ export function getWhatsAppUrl(phone: string, message = "") {
 export function pluralize(count: number, singular: string, plural: string) {
   return `${count} ${count === 1 ? singular : plural}`;
 }
+
+/** Contato a mostrar pro trabalhador quando o contato é liberado (após
+ *  aprovação). Vaga captada do Facebook (job.source === "facebook") usa o
+ *  contato de quem publicou o post original, guardado na própria vaga - não
+ *  o perfil da empresa-vitrine que só existe pra satisfazer o modelo de
+ *  dados (lib/facebookJobs.ts). */
+export function getJobContact(
+  job: { source?: "facebook"; externalContactName?: string; externalContactPhone?: string; externalContactEmail?: string },
+  company?: { establishmentName: string; phone: string; email: string }
+) {
+  if (job.source === "facebook") {
+    return {
+      name: job.externalContactName || "Quem publicou o anúncio",
+      phone: job.externalContactPhone || "",
+      email: job.externalContactEmail || ""
+    };
+  }
+  return {
+    name: company?.establishmentName || "Empresa",
+    phone: company?.phone || "",
+    email: company?.email || ""
+  };
+}

@@ -21,7 +21,7 @@ import { ShiftReceipt } from "../components/ShiftReceipt";
 import { StatTile } from "../components/StatTile";
 import { TermHint } from "../components/TermHint";
 import { useAppStore } from "../lib/store";
-import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
+import { formatCurrency, formatDate, getJobContact, getWhatsAppUrl } from "../lib/format";
 import { getShiftVerificationCode } from "../lib/shiftVerification";
 import type { Application, CompanyProfile, Job } from "../lib/types";
 
@@ -202,22 +202,28 @@ export function MyJobsPage() {
                   <Info icon={<Shirt size={16} />} label="Uniforme" value={job.uniform} />
                 </div>
 
-                {company && application.status !== "Cancelada" && (
-                  <div className="worker-contact-panel md:grid-cols-[1fr_auto]">
-                    <div className="flex flex-wrap gap-3 text-sm font-semibold text-slate-600">
-                      <span className="flex items-center gap-1.5"><Phone size={15} /> {company.phone}</span>
-                      <span className="flex items-center gap-1.5"><Mail size={15} /> {company.email}</span>
+                {company && application.status !== "Cancelada" && (() => {
+                  const contact = getJobContact(job, company);
+                  return (
+                    <div className="worker-contact-panel md:grid-cols-[1fr_auto]">
+                      <div className="flex flex-wrap gap-3 text-sm font-semibold text-slate-600">
+                        {job.source === "facebook" && <span className="flex items-center gap-1.5">{contact.name}</span>}
+                        {contact.phone && <span className="flex items-center gap-1.5"><Phone size={15} /> {contact.phone}</span>}
+                        {contact.email && <span className="flex items-center gap-1.5"><Mail size={15} /> {contact.email}</span>}
+                      </div>
+                      {contact.phone && (
+                        <a
+                          className="company-action company-action-primary"
+                          href={getWhatsAppUrl(contact.phone, `Olá, sou ${currentWorker.name}. Estou confirmado no turno ${job.title}.`)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <MessageCircle size={17} /> WhatsApp
+                        </a>
+                      )}
                     </div>
-                    <a
-                      className="company-action company-action-primary"
-                      href={getWhatsAppUrl(company.phone, `Olá, sou ${currentWorker.name}. Estou confirmado no turno ${job.title}.`)}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <MessageCircle size={17} /> WhatsApp
-                    </a>
-                  </div>
-                )}
+                  );
+                })()}
               </article>
             );
           })}

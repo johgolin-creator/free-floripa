@@ -20,7 +20,7 @@ import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
 import { StatusBadge, StatusLegend } from "../components/StatusBadge";
 import { useAppStore } from "../lib/store";
-import { formatCurrency, formatDate, formatDateTime, getWhatsAppUrl } from "../lib/format";
+import { formatCurrency, formatDate, formatDateTime, getJobContact, getWhatsAppUrl } from "../lib/format";
 import type { Application } from "../lib/types";
 
 const cancelableStatuses: Application["status"][] = ["Enviada", "Em análise"];
@@ -106,6 +106,7 @@ export function ApplicationsPage() {
             const canCancel = cancelableStatuses.includes(application.status);
             const isPendingInvite = application.status === "Convidada";
             if (!job) return null;
+            const contact = getJobContact(job, company);
 
             return (
               <article key={application.id} className="worker-application-card">
@@ -160,12 +161,12 @@ export function ApplicationsPage() {
                 </div>
 
                 <div className="grid gap-2 md:grid-cols-[1fr_auto] md:items-center">
-                  {contactUnlocked && company ? (
+                  {contactUnlocked && contact.phone ? (
                     <div className="worker-contact-panel">
-                      <span className="flex items-center gap-1.5"><Phone size={15} /> {company.phone}</span>
+                      <span className="flex items-center gap-1.5"><Phone size={15} /> {contact.phone}</span>
                       <a
                         className="inline-flex items-center gap-1.5 font-black text-aqua-700"
-                        href={getWhatsAppUrl(company.phone, `Olá, sou ${currentWorker.name}. Minha candidatura para ${job.title} foi aprovada.`)}
+                        href={getWhatsAppUrl(contact.phone, `Olá, sou ${currentWorker.name}. Minha candidatura para ${job.title} foi aprovada.`)}
                         target="_blank"
                         rel="noreferrer"
                       >

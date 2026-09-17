@@ -5,6 +5,7 @@ import { track } from "./analytics";
 import { useAuth } from "./auth";
 import { todayLocalISODate } from "./format";
 import { canApply, getOpenSlots } from "./rules";
+import { buildFacebookJobsCompany, FACEBOOK_JOBS_COMPANY_ID } from "./facebookJobs";
 import {
   loadCompanyMarketplace,
   loadPublicWorkerProfiles,
@@ -15,6 +16,7 @@ import {
   publishApplication,
   publishCompanyProfile,
   publishCompanyReview,
+  publishFacebookJob,
   publishInvitedApplication,
   publishJob,
   publishNotification,
@@ -75,6 +77,28 @@ export interface CreateJobInput {
   urgent: boolean;
 }
 
+/** Vaga captada de um post do Facebook, criada pelo admin em
+ *  AdminLeadsPage. Vai pra empresa-vitrine compartilhada (lib/facebookJobs.ts)
+ *  com candidatura normal, mas aprovação automática pro primeiro candidato -
+ *  ver createFacebookJob em store.tsx e supabase/facebook_jobs.sql. */
+export interface CreateFacebookJobInput {
+  title: string;
+  function: JobFunction;
+  quantity: number;
+  date: string;
+  startsAt: string;
+  endsAt: string;
+  dailyValue: number;
+  paymentMethod: PaymentMethod;
+  approximateAddress: string;
+  neighborhood: Neighborhood;
+  description: string;
+  urgent: boolean;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+}
+
 export interface UrgentReplacementInput {
   function: JobFunction;
   quantity: number;
@@ -113,6 +137,7 @@ interface AppContextValue {
   currentCompany: AppState["companies"][number];
   setRole: (role: AppState["activeRole"]) => void;
   createJob: (input: CreateJobInput) => string;
+  createFacebookJob: (input: CreateFacebookJobInput) => string;
   updateJob: (jobId: string, input: CreateJobInput) => { ok: boolean; message: string };
   createUrgentReplacement: (input: UrgentReplacementInput) => string;
   createCompanySchedule: (input: CompanyScheduleInput) => string;
@@ -1086,6 +1111,74 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return id;
   };
 
+  const createFacebookJobHandler = (input: CreateFacebookJobInput) => {
+    const id = crypto.randomUUID();
+    const job: Job = {
+      id,
+      companyId: FACEBOOK_JOBS_COMPANY_ID,
+      status: "Publicada",
+      title: input.title,
+      function: input.function,
+      quantity: input.quantity,
+      filled: 0,
+      date: input.date,
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+      dailyValue: input.dailyValue,
+      paymentMethod: input.paymentMethod,
+      approximateAddress: input.approximateAddress,
+      fullAddress: input.approximateAddress,
+      neighborhood: input.neighborhood,
+      uniform: "A combinar",
+      requiredExperience: "A combinar",
+      description: input.description,
+      benefits: [],
+      contactAfterConfirmation: true,
+      urgent: input.urgent,
+      candidates: 0,
+      distanceKm: 6,
+      source: "facebook",
+      externalContactName: input.contactName.trim() || undefined,
+      externalContactPhone: input.contactPhone.trim() || undefined,
+      externalContactEmail: input.contactEmail.trim() || undefined
+    };
+    const hasFacebookCompany = state.companies.some((company) => company.id === FACEBOOK_JOBS_COMPANY_ID);
+
+    commit((current) => ({
+      ...current,
+      companies: hasFacebookCompany ? current.companies : [buildFacebookJobsCompany(), ...current.companies],
+      jobs: [job, ...current.jobs],
+      notifications: [
+        {
+          id: crypto.randomUUID(),
+          title: "Nova vaga publicada",
+          body: `${input.function} em ${input.neighborhood} por ${input.dailyValue.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL"
+          })}. Quem se candidatar primeiro é confirmado na hora.`,
+          role: "trabalhador",
+          createdAt: new Date().toISOString(),
+          read: false
+        },
+        ...current.notifications
+      ]
+    }));
+    track("job_created", { function: input.function, urgent: input.urgent, source: "facebook" });
+    if (supabaseMarketplaceEnabled) {
+      setSyncStatus("salvando");
+      publishFacebookJob(job)
+        .then(() => {
+          setSyncError("");
+          setSyncStatus("sincronizado");
+        })
+        .catch(() => {
+          setSyncError("Falha ao publicar vaga captada do Facebook.");
+          setSyncStatus("erro");
+        });
+    }
+    return id;
+  };
+
   const updateJobHandler = (jobId: string, input: CreateJobInput) => {
     if (state.adminModeration.blockedCompanyIds.includes(currentCompany.id)) {
       return { ok: false, message: "Sua empresa está em revisão pela administração e não pode editar vagas no momento." };
@@ -1135,6 +1228,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         commit((current) => ({ ...current, activeRole: role }));
       },
       createJob: createJobHandler,
+      createFacebookJob: createFacebookJobHandler,
       updateJob: updateJobHandler,
       createCompanySchedule(input) {
         if (state.adminModeration.blockedCompanyIds.includes(currentCompany.id)) {
