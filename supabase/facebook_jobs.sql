@@ -57,18 +57,35 @@ values (
 )
 on conflict (id) do nothing;
 
--- 3. Admin/moderador podem inserir e atualizar vagas mesmo sem serem donos
+-- 3. Só admin (não moderador comum) pode inserir/atualizar vagas sem ser dono
 --    da company_profiles (necessário pra publicar sob a linha-vitrine acima).
+--    Restrito a admin de propósito: publicar vaga sob a vitrine, visível pra
+--    todo trabalhador sem nenhuma empresa real por trás, é uma decisão mais
+--    sensível que moderação comum.
+--
+--    "admin" aqui espelha exatamente src/lib/auth.tsx (isAdmin): role='admin'
+--    em public.users, OU o e-mail fixo em DEFAULT_ADMIN_EMAILS (hoje
+--    'johgolin.ceo@gmail.com' - dono da conta, cujo public.users.role hoje é
+--    'moderador', não 'admin'). Se VITE_ADMIN_EMAILS mudar no futuro, ajuste
+--    a lista de e-mails abaixo junto.
 drop policy if exists "companies insert jobs" on public.jobs;
 create policy "companies insert jobs" on public.jobs for insert with check (
   exists (select 1 from public.company_profiles c where c.id = company_id and c.user_id = auth.uid())
-  or exists (select 1 from public.users u where u.id = auth.uid() and u.role in ('admin', 'moderador'))
+  or exists (
+    select 1 from public.users u
+    where u.id = auth.uid()
+      and (u.role = 'admin' or lower(u.email) = 'johgolin.ceo@gmail.com')
+  )
 );
 
 drop policy if exists "companies update own jobs" on public.jobs;
 create policy "companies update own jobs" on public.jobs for update using (
   exists (select 1 from public.company_profiles c where c.id = company_id and c.user_id = auth.uid())
-  or exists (select 1 from public.users u where u.id = auth.uid() and u.role in ('admin', 'moderador'))
+  or exists (
+    select 1 from public.users u
+    where u.id = auth.uid()
+      and (u.role = 'admin' or lower(u.email) = 'johgolin.ceo@gmail.com')
+  )
 );
 
 -- 4. De onde veio a vaga e o contato de quem publicou o post (não o da

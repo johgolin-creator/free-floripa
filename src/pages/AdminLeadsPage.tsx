@@ -38,6 +38,7 @@ import {
 } from "../lib/supabaseFacebookLeads";
 import { parseFacebookPost } from "../lib/facebookLeadParsing";
 import { parseFacebookJobPost } from "../lib/facebookJobParsing";
+import { useAuth } from "../lib/auth";
 import { useAppStore, type CreateFacebookJobInput } from "../lib/store";
 import { formatDateTime } from "../lib/format";
 import type { CompanyLead, CompanyLeadSegment, FacebookLead, JobFunction, PaymentMethod } from "../lib/types";
@@ -68,6 +69,7 @@ export function AdminLeadsPage() {
     removeFacebookLead,
     createFacebookJob
   } = useAppStore();
+  const { isAdmin } = useAuth();
   const [segment, setSegment] = useState<CompanyLeadSegment>("Restaurantes");
   const [city, setCity] = useState(DEFAULT_CITY);
   const [searching, setSearching] = useState(false);
@@ -391,15 +393,17 @@ export function AdminLeadsPage() {
         </div>
       )}
 
-      <div className="mt-10">
-        <SectionHeader
-          eyebrow="Publicação automática"
-          title="Publicar vaga a partir de um post do Facebook"
-          description="Cole a descrição da vaga que você viu no grupo — o PONT identifica função, data, valor, bairro e contato sozinho, você confere e publica. Quem se candidatar primeiro é aprovado na hora e recebe o contato de quem postou."
-        />
+      {isAdmin && (
+        <div className="mt-10">
+          <SectionHeader
+            eyebrow="Publicação automática"
+            title="Publicar vaga a partir de um post do Facebook"
+            description="Cole a descrição da vaga que você viu no grupo — o PONT identifica função, data, valor, bairro e contato sozinho, você confere e publica. Quem se candidatar primeiro é aprovado na hora e recebe o contato de quem postou."
+          />
 
-        <FacebookJobPublisher onPublish={createFacebookJob} />
-      </div>
+          <FacebookJobPublisher onPublish={createFacebookJob} />
+        </div>
+      )}
 
       <div className="mt-10">
         <SectionHeader
