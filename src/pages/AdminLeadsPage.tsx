@@ -255,6 +255,18 @@ export function AdminLeadsPage() {
 
   return (
     <div>
+      {isAdmin && (
+        <div className="mb-10">
+          <SectionHeader
+            eyebrow="Publicação automática"
+            title="Publicar vaga a partir de um post do Facebook"
+            description="Cole a descrição da vaga que você viu no grupo — o PONT identifica função, data, valor, bairro e contato sozinho, você confere e publica. Quem se candidatar primeiro é aprovado na hora e recebe o contato de quem postou."
+          />
+
+          <FacebookJobPublisher onPublish={createFacebookJob} />
+        </div>
+      )}
+
       <SectionHeader
         eyebrow="Captação de empresas"
         title="Buscar empresas potenciais"
@@ -390,18 +402,6 @@ export function AdminLeadsPage() {
               onRemove={() => handleRemove(lead)}
             />
           ))}
-        </div>
-      )}
-
-      {isAdmin && (
-        <div className="mt-10">
-          <SectionHeader
-            eyebrow="Publicação automática"
-            title="Publicar vaga a partir de um post do Facebook"
-            description="Cole a descrição da vaga que você viu no grupo — o PONT identifica função, data, valor, bairro e contato sozinho, você confere e publica. Quem se candidatar primeiro é aprovado na hora e recebe o contato de quem postou."
-          />
-
-          <FacebookJobPublisher onPublish={createFacebookJob} />
         </div>
       )}
 
