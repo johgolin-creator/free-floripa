@@ -62,19 +62,22 @@ export function VendedorDashboard() {
   useEffect(() => {
     let active = true;
     setLoading(true);
-    Promise.all([listMySales(), listMySalesRepCompanies(), listMySalesRepLeads()])
-      .then(([saleRows, companyRows, leadRows]) => {
+    // Cada bloco carrega de forma independente: se um falhar (ex.: tabela de
+    // contatos indisponível), os outros continuam aparecendo.
+    Promise.allSettled([listMySales(), listMySalesRepCompanies(), listMySalesRepLeads()]).then(
+      ([salesRes, companiesRes, leadsRes]) => {
         if (!active) return;
-        setSales(saleRows);
-        setCompanies(companyRows);
-        setLeads(leadRows);
-      })
-      .catch((err) => {
-        if (active) setError(err instanceof Error ? err.message : "Não foi possível carregar seus dados.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+        if (salesRes.status === "fulfilled") setSales(salesRes.value);
+        else setError(salesRes.reason instanceof Error ? salesRes.reason.message : "Não foi possível carregar suas vendas.");
+        if (companiesRes.status === "fulfilled") setCompanies(companiesRes.value);
+        if (leadsRes.status === "fulfilled") setLeads(leadsRes.value);
+        else
+          setLeadError(
+            leadsRes.reason instanceof Error ? leadsRes.reason.message : "Não foi possível carregar os contatos."
+          );
+        setLoading(false);
+      }
+    );
     return () => {
       active = false;
     };

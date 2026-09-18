@@ -134,16 +134,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
     setDbRoleLoading(true);
     const authClient = supabase;
-    Promise.all([
-      authClient.from("users").select("role").eq("id", userId).maybeSingle(),
-      authClient.from("sales_reps").select("id,code,name,active").eq("user_id", userId).maybeSingle()
-    ]).then(([roleRes, repRes]) => {
+    type RepRow = { id?: string; code?: string; name?: string; active?: boolean };
+
+    // Uma falha de rede (comum no celular) ou uma resposta com erro não pode
+    // deixar dbRoleLoading preso em true (a rota do vendedor ficaria em
+    // "Carregando" pra sempre) nem virar "não é vendedor" na primeira
+    // tentativa: tenta de novo antes de desistir. Lista + limit(1) em vez de
+    // maybeSingle(), que dá erro se houver mais de uma linha pro mesmo usuário.
+    async function loadRoles(attempt: number): Promise<void> {
+      let roleRes: { data: unknown; error: unknown } | null = null;
+      let repRes: { data: unknown; error: unknown } | null = null;
+      try {
+        [roleRes, repRes] = await Promise.all([
+          authClient.from("users").select("role").eq("id", userId).maybeSingle(),
+          authClient
+            .from("sales_reps")
+            .select("id,code,name,active")
+            .eq("user_id", userId)
+            .order("active", { ascending: false })
+            .limit(1)
+        ]);
+      } catch (error) {
+        console.warn("Falha ao carregar papel/vendedor:", error);
+      }
       if (!active) return;
-      setDbRole((roleRes.data as { role?: string } | null)?.role ?? null);
-      const rep = repRes.data as { id?: string; code?: string; name?: string; active?: boolean } | null;
+
+      if ((!roleRes || roleRes.error || !repRes || repRes.error) && attempt < 3) {
+        await new Promise((resolve) => window.setTimeout(resolve, attempt * 1500));
+        return loadRoles(attempt + 1);
+      }
+      if (!active) return;
+
+      setDbRole(((roleRes?.data as { role?: string } | null)?.role) ?? null);
+      const rep = ((repRes?.data as RepRow[] | null) ?? [])[0];
       setSalesRep(rep?.id && rep.active ? { id: rep.id, code: rep.code ?? "", name: rep.name ?? "" } : null);
       setDbRoleLoading(false);
-    });
+    }
+
+    void loadRoles(1);
 
     return () => {
       active = false;
