@@ -255,8 +255,6 @@ export function AdminPage() {
         </div>
       </section>
 
-      <BroadcastNotificationSection />
-
       <section className="jobs-filter-panel">
         <div className="jobs-filter-title">
           <div>
@@ -286,6 +284,8 @@ export function AdminPage() {
           </div>
         </div>
       </section>
+
+      <BroadcastNotificationSection />
 
       {tab === "Resumo" && !moderationReady && (
         <section className="card p-6 text-center text-sm font-bold text-slate-500">
@@ -1304,13 +1304,13 @@ function BroadcastNotificationSection() {
   }
 
   return (
-    <section className="jobs-filter-panel">
-      <div className="jobs-filter-title">
-        <div>
-          <h3><Bell size={18} /> Aviso geral aos freelancers</h3>
-          <p>Manda uma notificação dentro do PONT para todos os trabalhadores cadastrados.</p>
-        </div>
-      </div>
+    <details className="card p-4">
+      <summary className="flex cursor-pointer items-center gap-2 font-black text-white">
+        <Bell size={18} /> Aviso geral aos freelancers
+      </summary>
+      <p className="mb-3 mt-2 text-sm font-semibold text-slate-600">
+        Manda uma notificação dentro do PONT para todos os trabalhadores cadastrados.
+      </p>
       <div className="grid gap-3">
         <label className="label">
           Título
@@ -1339,7 +1339,7 @@ function BroadcastNotificationSection() {
           </div>
         )}
       </div>
-    </section>
+    </details>
   );
 }
 
