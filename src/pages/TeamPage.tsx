@@ -8,7 +8,7 @@ import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate } from "../lib/format";
 import { getOpenSlots } from "../lib/rules";
-import type { Job, WorkerProfile } from "../lib/types";
+import type { Application, Job, WorkerProfile } from "../lib/types";
 
 const scoreOptions = [5, 4, 3, 2, 1];
 const attendanceOptions = ["Compareceu no horário", "Compareceu com atraso", "Faltou sem aviso", "Cancelou com antecedência"];
@@ -16,14 +16,29 @@ const qualityOptions = ["Excelente", "Boa", "Regular", "Abaixo do esperado"];
 
 export function TeamPage() {
   const { state, currentCompany, addReview, inviteWorkerToJob } = useAppStore();
-  const [workerToReview, setWorkerToReview] = useState<WorkerProfile | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<{ worker: WorkerProfile; application: Application; job: Job | undefined } | null>(null);
   const [workerToInvite, setWorkerToInvite] = useState<WorkerProfile | null>(null);
   const [message, setMessage] = useState("");
   const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
   const favorites = state.workers.filter((worker) => state.favoriteWorkerIds.includes(worker.id));
-  const hiredIds = state.applications
+  const companyJobIds = new Set(state.jobs.filter((job) => job.companyId === currentCompany.id).map((job) => job.id));
+  const companyApplications = state.applications.filter((application) => companyJobIds.has(application.jobId));
+  const hiredIds = companyApplications
     .filter((application) => application.status === "Aprovada" || application.status === "Trabalho concluído")
     .map((application) => application.workerId);
+  // Trabalho concluído ainda sem avaliação desta empresa: cada avaliação fica
+  // presa a um trabalho (applicationId). Sem nenhum pendente a opção some, e
+  // não dá para avaliar duas vezes o mesmo trabalho.
+  function getPendingReviewApplication(worker: WorkerProfile) {
+    return companyApplications
+      .filter(
+        (application) =>
+          application.workerId === worker.id &&
+          application.status === "Trabalho concluído" &&
+          !worker.reviews.some((review) => review.applicationId === application.id)
+      )
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+  }
   const hired = state.workers.filter((worker) => hiredIds.includes(worker.id));
   const team = [...new Map([...favorites, ...hired].map((worker) => [worker.id, worker])).values()];
   const openJobs = state.jobs.filter((job) => job.companyId === currentCompany.id && getOpenSlots(job) > 0);
@@ -50,6 +65,7 @@ export function TeamPage() {
           {team.map((worker) => {
             const wasHired = hiredIds.includes(worker.id);
             const workerBlocked = state.adminModeration.blockedWorkerIds.includes(worker.id);
+            const pendingReview = getPendingReviewApplication(worker);
             return (
               <div key={worker.id} className="grid gap-2">
                 <WorkerCard worker={worker} showActions={false} />
@@ -57,28 +73,48 @@ export function TeamPage() {
                   <button type="button" onClick={() => setWorkerToInvite(worker)} disabled={openJobs.length === 0 || companyBlocked || workerBlocked} className="primary">
                     <RotateCcw size={17} /> Convidar novamente
                   </button>
-                  <button type="button" onClick={() => setWorkerToReview(worker)} disabled={!wasHired} className="secondary">
-                    <MessageSquareText size={17} /> Avaliar colaborador
-                  </button>
+                  {pendingReview && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setReviewTarget({
+                          worker,
+                          application: pendingReview,
+                          job: state.jobs.find((job) => job.id === pendingReview.jobId)
+                        })
+                      }
+                      className="secondary"
+                    >
+                      <MessageSquareText size={17} /> Avaliar colaborador
+                    </button>
+                  )}
                 </div>
                 {openJobs.length === 0 && <p className="text-xs font-semibold text-slate-500">Crie uma vaga com saldo disponível para convidar profissionais.</p>}
                 {!wasHired && <p className="text-xs font-semibold text-slate-500">A avaliação fica disponível após aprovar o profissional em uma vaga.</p>}
+                {wasHired && !pendingReview && (
+                  <p className="text-xs font-semibold text-slate-500">
+                    Sem avaliação pendente: o trabalho ainda não foi concluído ou já foi avaliado.
+                  </p>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
-      {workerToReview && (
-        <Modal title={`Avaliar ${workerToReview.name}`} onClose={() => setWorkerToReview(null)}>
+      {reviewTarget && (
+        <Modal title={`Avaliar ${reviewTarget.worker.name}`} onClose={() => setReviewTarget(null)}>
           <ReviewForm
             onSubmit={(review) => {
-              addReview(workerToReview.id, {
+              addReview(reviewTarget.worker.id, {
                 authorName: currentCompany.establishmentName,
                 rating: review.rating,
-                comment: review.comment
+                comment: reviewTarget.job ? `${reviewTarget.job.title}: ${review.comment}` : review.comment,
+                jobId: reviewTarget.application.jobId,
+                applicationId: reviewTarget.application.id,
+                createdAt: new Date().toISOString()
               });
-              setWorkerToReview(null);
+              setReviewTarget(null);
               setMessage("Avaliação registrada no histórico do colaborador.");
             }}
           />

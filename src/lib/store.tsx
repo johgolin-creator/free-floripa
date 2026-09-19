@@ -442,14 +442,33 @@ function removeDemoWorkers(state: AppState) {
   };
 }
 
+// Avaliação feita agora há pouco pode ainda não ter chegado ao banco quando o
+// recarregamento periódico (a cada 5s) já tinha saído buscando os dados. Sem
+// isto, ele sobrescrevia o trabalhador e a avaliação "sumia": a opção de
+// avaliar reaparecia e dava para avaliar o mesmo trabalho de novo.
+const RECENT_REVIEW_MS = 2 * 60 * 1000;
+
+function keepRecentLocalReviews(publicWorker: WorkerProfile, localWorker: WorkerProfile | undefined): WorkerProfile {
+  if (!localWorker) return publicWorker;
+  const now = Date.now();
+  const missing = localWorker.reviews.filter((review) => {
+    if (!review.createdAt || now - new Date(review.createdAt).getTime() > RECENT_REVIEW_MS) return false;
+    return !publicWorker.reviews.some(
+      (item) => item.id === review.id || (review.applicationId && item.applicationId === review.applicationId)
+    );
+  });
+  return missing.length > 0 ? { ...publicWorker, reviews: [...missing, ...publicWorker.reviews] } : publicWorker;
+}
+
 function mergePublicWorkers(state: AppState, publicWorkers: WorkerProfile[]) {
   if (publicWorkers.length === 0) return removeDemoWorkers(state);
 
   const publicIds = new Set(publicWorkers.map((worker) => worker.id));
+  const localById = new Map(state.workers.map((worker) => [worker.id, worker]));
   return {
     ...removeDemoWorkers(state),
     workers: [
-      ...publicWorkers,
+      ...publicWorkers.map((worker) => keepRecentLocalReviews(worker, localById.get(worker.id))),
       ...state.workers.filter((worker) => !DEMO_WORKER_IDS.has(worker.id) && !publicIds.has(worker.id))
     ]
   };
@@ -2116,7 +2135,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         if (supabaseMarketplaceEnabled && user) {
           publishWorkerReview(currentCompany.id, workerId, { id: reviewId, ...review }).catch(() => {
-            setSyncError("Falha ao publicar avaliação.");
+            // Não gravou: desfaz a avaliação local, senão ela ficaria valendo só
+            // nesta tela (nota alterada e a opção de avaliar escondida) sem
+            // existir no banco, e sumiria sozinha no próximo recarregamento.
+            commit((current) => ({
+              ...current,
+              workers: current.workers.map((item) => {
+                if (item.id !== workerId) return item;
+                const reviews = item.reviews.filter((entry) => entry.id !== reviewId);
+                const rating =
+                  reviews.length > 0 ? reviews.reduce((total, entry) => total + entry.rating, 0) / reviews.length : 0;
+                return {
+                  ...item,
+                  rating: Number(rating.toFixed(1)),
+                  completedJobs: Math.max(0, item.completedJobs - 1),
+                  reviews
+                };
+              })
+            }));
+            setSyncError("Não foi possível gravar a avaliação. Tente de novo.");
             setSyncStatus("erro");
           });
         }

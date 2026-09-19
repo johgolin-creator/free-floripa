@@ -471,14 +471,15 @@ export function CandidatesPage() {
                                 : "Avalie presença, postura e qualidade antes de encerrar o ciclo."}
                             </p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => openReview(application, jobForApplication, worker.id, worker.name)}
-                            disabled={reviewed}
-                            className={reviewed ? "secondary" : "primary"}
-                          >
-                            <Star size={17} /> {reviewed ? "Avaliado" : "Avaliar"}
-                          </button>
+                          {!reviewed && (
+                            <button
+                              type="button"
+                              onClick={() => openReview(application, jobForApplication, worker.id, worker.name)}
+                              className="primary"
+                            >
+                              <Star size={17} /> Avaliar
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => setReceiptTarget({ application, job: jobForApplication, worker })}
