@@ -36,7 +36,7 @@ export function ReportBugButton({ compact = false }: { compact?: boolean }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex min-h-10 w-full items-center gap-2.5 rounded-lg border border-white/10 bg-white/10 px-2.5 text-xs font-black text-slate-200 transition hover:bg-white/15 hover:text-white"
+          className="flex min-h-10 w-full items-center gap-2.5 rounded-lg border border-white/10 bg-white/10 px-2.5 text-xs font-black text-slate-300 transition hover:bg-white/15 hover:text-white"
         >
           <Bug size={16} />
           Relatar bug

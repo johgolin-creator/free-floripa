@@ -34,7 +34,7 @@ export function SupportButton({ compact = false }: { compact?: boolean }) {
   return (
     <a
       {...linkProps}
-      className="flex min-h-10 w-full items-center gap-2.5 rounded-lg border border-white/10 bg-white/10 px-2.5 text-xs font-black text-slate-200 transition hover:bg-white/15 hover:text-white"
+      className="flex min-h-10 w-full items-center gap-2.5 rounded-lg border border-aqua-300/40 bg-aqua-300/10 px-2.5 text-xs font-black text-aqua-300 transition hover:bg-aqua-300/20"
     >
       <LifeBuoy size={16} /> Falar com o suporte
     </a>

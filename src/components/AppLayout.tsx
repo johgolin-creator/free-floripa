@@ -247,7 +247,7 @@ export function AppLayout() {
           <button
             type="button"
             onClick={handleSignOut}
-            className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-black text-slate-200 transition hover:border-alert/40 hover:bg-alert/10 hover:text-alert"
+            className="mt-4 flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-black text-slate-300 transition hover:border-alert/40 hover:bg-alert/10 hover:text-alert"
             title={email ? `Conectado como ${email}` : undefined}
           >
             <LogOut size={15} /> Sair e trocar de conta
