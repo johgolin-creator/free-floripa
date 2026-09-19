@@ -155,7 +155,12 @@ export function AppLayout() {
       ? "Cada candidatura enviada usa 1 moeda."
       : "Use moedas para ações empresariais, como cancelar vagas já preenchidas.";
 
-  if (!isAdmin && !isModerator && !completion.complete && location.pathname !== profilePath) {
+  // Vendedor (conta da equipe, com e-mail pontapp) não é um trabalhador/empresa
+  // de verdade: o perfil dele costuma ficar vazio e o redirecionamento abaixo
+  // o prendia no formulário de perfil, sem nunca abrir a área do vendedor.
+  const onSalesRepArea = isSalesRep && location.pathname.startsWith("/app/vendedor");
+
+  if (!isAdmin && !isModerator && !onSalesRepArea && !completion.complete && location.pathname !== profilePath) {
     return <Navigate to={profilePath} replace />;
   }
 

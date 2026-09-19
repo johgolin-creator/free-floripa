@@ -67,7 +67,7 @@ const prefetchCompanyPages = [
 
 export default function App() {
   const { state, setRole } = useAppStore();
-  const { user, role } = useAuth();
+  const { user, role, isSalesRep, authEnabled, dbRoleLoading } = useAuth();
 
   useEffect(() => {
     if (user && role && state.activeRole !== role) {
@@ -143,7 +143,9 @@ export default function App() {
   // Admins e moderadores entram direto na área normal (Início / Painel), como
   // qualquer usuário. A área administrativa continua acessível pela aba "Admin"
   // no menu lateral.
-  const landingPath = state.activeRole === "empresa" ? "/app/empresa" : "/app/trabalhador";
+  // Vendedor entra direto na própria área (o perfil de trabalhador/empresa
+  // dele costuma estar vazio e não é o que ele usa).
+  const landingPath = isSalesRep ? "/app/vendedor" : state.activeRole === "empresa" ? "/app/empresa" : "/app/trabalhador";
 
   return (
     <Suspense fallback={<PageLoading />}>
@@ -156,7 +158,7 @@ export default function App() {
         <Route path="/termos" element={<LegalPage kind="terms" />} />
         <Route path="/privacidade" element={<LegalPage kind="privacy" />} />
         <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-          <Route index element={<Navigate to={landingPath} replace />} />
+          <Route index element={authEnabled && dbRoleLoading ? <PageLoading /> : <Navigate to={landingPath} replace />} />
           <Route path="verificar-telefone" element={<PhoneVerifyPage />} />
           <Route path="trabalhador" element={<RoleRoute role="trabalhador"><WorkerDashboard /></RoleRoute>} />
           <Route path="vagas" element={<RoleRoute role="trabalhador"><JobsPage /></RoleRoute>} />
