@@ -17,3 +17,18 @@ export function resolveAvatarUrl(url: string | null | undefined): string {
   if (!trimmed || LEGACY_DEFAULT_AVATARS.has(trimmed)) return DEFAULT_AVATAR_PLACEHOLDER;
   return trimmed;
 }
+
+/** Foto genérica de empresa usada quando ela ainda não enviou logotipo. */
+export const PLACEHOLDER_COMPANY_LOGO =
+  "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=500&q=80";
+
+/** true para "sem foto de verdade": vazio ou o logotipo genérico. */
+export function isPlaceholderCompanyLogo(url: string | null | undefined): boolean {
+  const trimmed = (url ?? "").trim();
+  return !trimmed || trimmed === PLACEHOLDER_COMPANY_LOGO;
+}
+
+/** true para "sem foto de verdade" no perfil do trabalhador. */
+export function isPlaceholderAvatar(url: string | null | undefined): boolean {
+  return resolveAvatarUrl(url) === DEFAULT_AVATAR_PLACEHOLDER;
+}

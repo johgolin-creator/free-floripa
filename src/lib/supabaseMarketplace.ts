@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
-import { resolveAvatarUrl } from "./avatars";
+import { isPlaceholderAvatar, isPlaceholderCompanyLogo, resolveAvatarUrl } from "./avatars";
 import { onlyDigits } from "./validation";
 import type {
   Application,
@@ -450,7 +450,9 @@ export async function publishWorkerProfile(user: User, worker: WorkerProfile) {
         user_id: user.id,
         cpf: onlyDigits(worker.cpf || "") || null,
         display_name: worker.name,
-        avatar_url: worker.avatarUrl,
+        // Mesma proteção da empresa: foto genérica no estado local não pode
+        // sobrescrever a foto real que já está no banco.
+        ...(isPlaceholderAvatar(worker.avatarUrl) ? {} : { avatar_url: worker.avatarUrl }),
         birth_date: worker.birthDate || null,
         city: worker.city,
         neighborhood: worker.neighborhood,
@@ -543,7 +545,11 @@ export async function publishCompanyProfile(user: User, company: CompanyProfile)
       address: company.address,
       neighborhood: company.neighborhood,
       description: company.description,
-      logo_url: company.logoUrl,
+      // Só grava o logotipo quando há foto de verdade. O estado local pode
+      // estar com a foto genérica (fallback de conta nova, snapshot antigo,
+      // outro aparelho) e gravar isso por cima apagava o logotipo real da
+      // empresa no banco. Omitir a coluna no upsert preserva o valor atual.
+      ...(isPlaceholderCompanyLogo(company.logoUrl) ? {} : { logo_url: company.logoUrl }),
       cover_url: company.coverUrl || null,
       rating: company.rating,
       updated_at: now
@@ -839,4 +845,19 @@ export async function publishCompanyReview(review: CompanyReview) {
   });
 
   if (error) throw new Error(error.message);
+}
+
+/** Logotipo que a empresa da conta tem gravado no banco (ou "" se não houver).
+ *  A empresa não recebe a própria linha de volta em loadCompanyMarketplace, então
+ *  isto permite recuperar a foto real quando o estado local só tem a genérica. */
+export async function loadOwnCompanyLogo(userId: string): Promise<string> {
+  if (!supabase) return "";
+  const { data, error } = await supabase
+    .from("company_profiles")
+    .select("logo_url")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  const url = (data as { logo_url?: string | null } | null)?.logo_url ?? "";
+  return isPlaceholderCompanyLogo(url) ? "" : url;
 }

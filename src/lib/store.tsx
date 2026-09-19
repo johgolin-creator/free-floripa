@@ -8,6 +8,7 @@ import { canApply, getOpenSlots } from "./rules";
 import { buildFacebookJobsCompany, FACEBOOK_JOBS_COMPANY_ID } from "./facebookJobs";
 import {
   loadCompanyMarketplace,
+  loadOwnCompanyLogo,
   loadPublicWorkerProfiles,
   loadRemoteNotifications,
   loadWorkerMarketplace,
@@ -40,7 +41,7 @@ import {
   supabaseCoinsEnabled,
   type CoinAccount
 } from "./supabaseCoins";
-import { DEFAULT_AVATAR_PLACEHOLDER, resolveAvatarUrl } from "./avatars";
+import { DEFAULT_AVATAR_PLACEHOLDER, isPlaceholderCompanyLogo, resolveAvatarUrl } from "./avatars";
 import { emailNotificationsEnabled, enqueueEmailNotification, type EmailNotificationInput } from "./emailNotifications";
 import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyLead, CompanyProfile, CompanyReview, CompanySchedule, CompanyScheduleStatus, FacebookLead, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, TrustReportTargetType, UserRole, WorkerProfile } from "./types";
 
@@ -902,6 +903,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     return () => window.clearTimeout(timeoutId);
   }, [authLoading, currentWorker, role, user, syncStatus]);
+
+  useEffect(() => {
+    // Autocorreção do logotipo: o estado da empresa vem do snapshot local/
+    // remoto e nunca relê a própria linha de company_profiles. Se o snapshot
+    // tiver só a foto genérica mas o banco ainda tiver o logotipo real, traz
+    // o real de volta em vez de deixar a empresa "sem foto". Roda depois do
+    // snapshot terminar de carregar, senão ele sobrescreveria esta correção.
+    if (
+      authLoading ||
+      role !== "empresa" ||
+      !user ||
+      !currentCompany ||
+      currentCompany.id !== user.id ||
+      !supabaseMarketplaceEnabled ||
+      syncStatus === "carregando" ||
+      !isPlaceholderCompanyLogo(currentCompany.logoUrl)
+    ) {
+      return;
+    }
+
+    let active = true;
+    loadOwnCompanyLogo(user.id)
+      .then((logoUrl) => {
+        if (!active || !logoUrl) return;
+        setState((current) => ({
+          ...current,
+          companies: current.companies.map((company) =>
+            company.id === user.id && isPlaceholderCompanyLogo(company.logoUrl) ? { ...company, logoUrl } : company
+          )
+        }));
+      })
+      .catch(() => {
+        // Melhor esforço: sem isso a empresa só continua com a foto que já tinha no estado.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authLoading, role, user?.id, currentCompany?.id, currentCompany?.logoUrl, syncStatus]);
 
   useEffect(() => {
     // Espelha o efeito de publicação do trabalhador acima, para a empresa.
