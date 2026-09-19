@@ -158,20 +158,6 @@ export function AdminPage() {
     const status = getJobStatus(job);
     return status === "Publicada" || status === "Urgente" || status === "Em andamento";
   });
-  const pendingApplications = state.applications.filter(
-    (application) => application.status === "Enviada" || application.status === "Em análise"
-  );
-  const approvedApplications = state.applications.filter(
-    (application) => application.status === "Aprovada" || application.status === "Trabalho concluído"
-  );
-  const plannedVolume = state.jobs.reduce((total, job) => total + job.dailyValue * job.quantity, 0);
-  const confirmedVolume = approvedApplications.reduce((total, application) => {
-    const job = state.jobs.find((item) => item.id === application.jobId);
-    return total + (job?.dailyValue ?? 0);
-  }, 0);
-  const coinRevenue = state.coinLedger
-    .filter((entry) => entry.kind === "purchase")
-    .reduce((total, entry) => total + coinPackagePrice(entry.reason), 0);
   const alerts = useMemo(() => buildAlerts(state), [state]);
   const openReports = state.trustReports.filter((report) => report.status === "Aberto");
   const resolvedReports = state.trustReports.filter((report) => report.status === "Resolvido").slice(0, 8);
@@ -294,17 +280,7 @@ export function AdminPage() {
       )}
 
       {tab === "Resumo" && moderationReady && (
-        <section className="grid gap-4 lg:grid-cols-[1fr_0.8fr]">
-          <div className="card p-4">
-            <h3 className="mb-3 font-black text-white">Indicadores principais</h3>
-            <div className="grid gap-3 md:grid-cols-2">
-              <InfoTile icon={<ClipboardList />} label="Candidaturas pendentes" value={String(pendingApplications.length)} />
-              <InfoTile icon={<CheckCircle2 />} label="Candidaturas confirmadas" value={String(approvedApplications.length)} />
-              <InfoTile icon={<WalletCards />} label="Volume previsto" value={formatCurrency(plannedVolume)} />
-              <InfoTile icon={<WalletCards />} label="Volume confirmado" value={formatCurrency(confirmedVolume)} />
-              <InfoTile icon={<WalletCards />} label="Receita de moedas" value={formatCurrency(coinRevenue)} />
-            </div>
-          </div>
+        <section className="grid gap-4">
           <div className="card p-4">
             <h3 className="mb-3 font-black text-white">Ações rápidas</h3>
             <div className="grid gap-2 text-sm font-semibold text-slate-600">
@@ -2276,13 +2252,6 @@ function getReportTargetLabel(targetType: TrustReport["targetType"]) {
   if (targetType === "worker") return "Profissional";
   if (targetType === "company") return "Empresa";
   return "Vaga";
-}
-
-function coinPackagePrice(reason: string) {
-  if (reason === "package_professional") return 19.9;
-  if (reason === "package_plus") return 29.9;
-  if (reason === "coin_pack") return 4.95;
-  return 0;
 }
 
 function getCoinAdminTitle(reason: string) {
