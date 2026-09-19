@@ -25,6 +25,7 @@ import { Modal } from "./Modal";
 import { NotificationToast } from "./NotificationToast";
 import { RoleSwitcher } from "./RoleSwitcher";
 import { ReportBugButton } from "./ReportBugButton";
+import { SupportButton } from "./SupportButton";
 import { useAppStore } from "../lib/store";
 import { useAuth } from "../lib/auth";
 import { getCompanyProfileCompletion, getWorkerProfileCompletion } from "../lib/profileCompletion";
@@ -234,6 +235,9 @@ export function AppLayout() {
           </div>
           <p className="mt-1.5 text-xs leading-5 text-slate-300">Central de avisos para convites, vagas e avaliações.</p>
         </NavLink>
+        <div className="mt-4">
+          <SupportButton />
+        </div>
         {isModerator && (
           <div className="mt-4">
             <ReportBugButton />
@@ -287,6 +291,7 @@ export function AppLayout() {
                 <Bell size={20} />
                 {unread > 0 && <span>{unread}</span>}
               </NavLink>
+              <SupportButton compact />
               {isModerator && <ReportBugButton compact />}
               <div className="hidden">
                 <RoleSwitcher compact />
