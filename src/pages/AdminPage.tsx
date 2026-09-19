@@ -1520,6 +1520,7 @@ function SalesRepsPanel({
   const [repForm, setRepForm] = useState<{ mode: "new" } | { mode: "edit"; rep: SalesRep } | null>(null);
   const [saleForm, setSaleForm] = useState<{ companyId?: string } | null>(null);
   const [detailRepId, setDetailRepId] = useState<string | null>(null);
+  const [confirmRemoveRepId, setConfirmRemoveRepId] = useState<string | null>(null);
 
   const companiesByCode = useMemo(() => {
     const map = new Map<string, CompanyProfile[]>();
@@ -1722,8 +1723,28 @@ function SalesRepsPanel({
                     <button type="button" className="secondary" onClick={() => toggleActive(agg.rep)}>
                       {agg.rep.active ? "Desativar" : "Ativar"}
                     </button>
-                    {!agg.rep.linked && (
-                      <button type="button" className="danger" onClick={() => removeRep(agg.rep)}>
+                    {confirmRemoveRepId === agg.rep.id ? (
+                      <div className="grid gap-2 rounded-lg border border-red-200 bg-red-50/60 p-2">
+                        <span className="text-xs font-bold leading-4 text-slate-600">
+                          Remover {agg.rep.name}? {agg.companies.length} cliente(s) e {agg.sales.length} venda(s)
+                          ficam sem vendedor. A conta de login não é apagada.
+                        </span>
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={async () => {
+                            setConfirmRemoveRepId(null);
+                            await removeRep(agg.rep);
+                          }}
+                        >
+                          <Trash2 size={15} /> Confirmar remoção
+                        </button>
+                        <button type="button" className="secondary" onClick={() => setConfirmRemoveRepId(null)}>
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button" className="danger" onClick={() => setConfirmRemoveRepId(agg.rep.id)}>
                         <Trash2 size={15} /> Remover
                       </button>
                     )}
