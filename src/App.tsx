@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { AppLayout } from "./components/AppLayout";
 import { useAuth } from "./lib/auth";
+import { RouteErrorBoundary } from "./components/RouteErrorBoundary";
 import { useAppStore } from "./lib/store";
 import {
   claimCompanySalesRep,
@@ -179,7 +180,7 @@ export default function App() {
           <Route path="notificacoes" element={<NotificationsPage />} />
           <Route path="admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
           <Route path="admin/captacao" element={<AdminRoute><AdminLeadsPage /></AdminRoute>} />
-          <Route path="vendedor" element={<SalesRepRoute><VendedorDashboard /></SalesRepRoute>} />
+          <Route path="vendedor" element={<SalesRepRoute><RouteErrorBoundary><VendedorDashboard /></RouteErrorBoundary></SalesRepRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

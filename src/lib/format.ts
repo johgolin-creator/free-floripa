@@ -19,21 +19,30 @@ export function todayLocalISODate(): string {
   return `${year}-${month}-${day}`;
 }
 
+/** Aceita "AAAA-MM-DD" (date) e também timestamps completos do banco
+ *  ("2026-09-14T15:32:10+00:00"). Antes só a primeira forma funcionava: um
+ *  timestamp virava "…+00:00T12:00:00", data inválida, e o Intl lançava
+ *  RangeError - o que derrubava a tela inteira (ex.: painel do vendedor).
+ *  Valor vazio ou inválido devolve "—" em vez de lançar. */
 export function formatDate(value: string) {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric"
-  }).format(new Date(`${value}T12:00:00`));
+  }).format(date);
 }
 
 export function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit"
-  }).format(new Date(value));
+  }).format(date);
 }
 
 export function getWhatsAppUrl(phone: string, message = "") {
