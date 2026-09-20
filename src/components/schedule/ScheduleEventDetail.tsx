@@ -29,7 +29,9 @@ const AMBER = "#F4B740";
 const TRACK = "#3A3F4A";
 
 const BUCKET_ORDER: Record<Bucket, number> = { confirmado: 0, aguardando: 1, candidato: 2, recusou: 3, faltou: 4 };
-const TEAM_PREVIEW = 6;
+const OTHERS_PREVIEW = 6;
+// Todas as colunas com largura definida: assim as linhas alinham entre si (a de ações não muda com o número de botões).
+const TABLE_COLUMNS = "md:grid-cols-[2rem_minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.7fr)_13.5rem]";
 
 function durationLabel(startsAt: string, endsAt: string) {
   const toMinutes = (value: string) => {
@@ -91,7 +93,6 @@ export function ScheduleEventDetail({
   event,
   today,
   companyName,
-  coverUrl,
   disabled,
   onComplete,
   onAbsence,
@@ -101,14 +102,13 @@ export function ScheduleEventDetail({
   event: JobEvent;
   today: string;
   companyName: string;
-  coverUrl?: string;
   disabled?: boolean;
   onComplete: (applicationId: string) => void;
   onAbsence: (applicationId: string) => void;
   onPrint: (jobs: JobEvent["jobs"]) => void;
   onReceipts: (event: JobEvent) => void;
 }) {
-  const [showAll, setShowAll] = useState(false);
+  const [showAllOthers, setShowAllOthers] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const status = eventStatus(event, today);
@@ -120,13 +120,14 @@ export function ScheduleEventDetail({
   const first = event.jobs[0];
   const address = [first?.approximateAddress, first?.neighborhood].filter(Boolean).join(", ");
   const notes = cleanNotes(event);
-
-  const team = [...event.people].sort(
-    (a, b) =>
-      BUCKET_ORDER[a.bucket] - BUCKET_ORDER[b.bucket] || (a.worker?.name ?? "").localeCompare(b.worker?.name ?? "")
-  );
-  const visibleTeam = showAll ? team : team.slice(0, TEAM_PREVIEW);
   const jobById = new Map(event.jobs.map((job) => [job.id, job]));
+
+  const byName = (a: Person, b: Person) => (a.worker?.name ?? "").localeCompare(b.worker?.name ?? "", "pt-BR");
+  const confirmedPeople = event.people.filter((person) => person.bucket === "confirmado").sort(byName);
+  const others = event.people
+    .filter((person) => person.bucket !== "confirmado")
+    .sort((a, b) => BUCKET_ORDER[a.bucket] - BUCKET_ORDER[b.bucket] || byName(a, b));
+  const visibleOthers = showAllOthers ? others : others.slice(0, OTHERS_PREVIEW);
 
   function copySummary() {
     navigator.clipboard
@@ -140,251 +141,248 @@ export function ScheduleEventDetail({
       });
   }
 
-  return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <div className="grid min-w-0 content-start gap-4">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-          <article
-            className="relative flex min-h-64 flex-col justify-end overflow-hidden rounded-lg border border-white/10 p-5 shadow-soft"
-            style={{
-              backgroundImage: coverUrl
-                ? `linear-gradient(180deg, rgba(17,19,24,0.25) 0%, rgba(17,19,24,0.92) 78%), url(${coverUrl})`
-                : "linear-gradient(135deg, #2E3A20 0%, #1B1E24 60%, #111318 100%)",
-              backgroundSize: "cover",
-              backgroundPosition: "center"
-            }}
-          >
-            <span className="absolute left-5 top-5 rounded-lg bg-aqua-300 px-3 py-1 text-xs font-black text-navy-950">{status}</span>
-            <h3 className="text-2xl font-black text-white">{event.name}</h3>
-            <div className="mt-3 grid gap-1.5 text-sm font-semibold text-slate-600">
-              <span className="flex items-center gap-2">
-                <CalendarDays size={16} /> {longDate(event.date)}
+  const actionButton = "secondary min-h-9 px-3 text-xs";
+
+  function renderRow(person: Person, index: number | null) {
+    const { application, worker } = person;
+    const job = jobById.get(application.jobId);
+    const personState = personStatus(person);
+    const canAct = application.status === "Aprovada";
+    const waiting = person.bucket === "aguardando";
+    const firstName = worker?.name.split(" ")[0] ?? "";
+    const whatsappText = waiting
+      ? `Olá, ${firstName}! Você consegue confirmar presença na escala de ${formatDate(event.date)} (${event.name}) no ${companyName}?`
+      : `Olá, ${firstName}. Estou organizando a escala de ${formatDate(event.date)} (${event.name}) no ${companyName}.`;
+    const iconButton =
+      "grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/5 text-white transition hover:bg-white/10";
+
+    return (
+      <div key={application.id} className={`grid gap-1.5 border-t border-white/10 px-3 py-2 md:items-center md:gap-3 ${TABLE_COLUMNS}`}>
+        <span className="hidden text-xs font-black text-slate-500 md:block">{index ?? ""}</span>
+        <div className="flex min-w-0 items-center gap-2.5">
+          {worker ? (
+            <AvatarButton src={worker.avatarUrl} name={worker.name} className="h-8 w-8 shrink-0 rounded-full object-cover" />
+          ) : (
+            <span className="h-8 w-8 shrink-0 rounded-full bg-white/10" />
+          )}
+          <div className="min-w-0">
+            <strong className="block truncate text-sm text-white">{worker?.name ?? "Profissional"}</strong>
+            {worker && (
+              <span className="flex items-center gap-1 text-[0.68rem] font-semibold text-slate-400">
+                <Star size={10} className="fill-current text-amber-400" /> {worker.rating.toFixed(1)} ({worker.completedJobs})
               </span>
-              <span className="flex items-center gap-2">
-                <Clock3 size={16} /> {event.startsAt} – {event.endsAt}
+            )}
+          </div>
+        </div>
+        <span className="text-sm font-semibold text-slate-600">{job ? functionLabel(job.function) : "—"}</span>
+        <span>
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-black text-white"
+            style={{ borderColor: `${personState.color}66`, background: `${personState.color}1f` }}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: personState.color }} /> {personState.label}
+          </span>
+        </span>
+        <span className="text-sm font-bold text-slate-300">
+          {person.bucket === "confirmado" && job && worker ? getShiftVerificationCode(job.id, worker.id) : "–"}
+        </span>
+        <div className="flex flex-wrap items-center gap-1 md:justify-end">
+          {worker?.phone && (
+            <>
+              <a
+                href={getWhatsAppUrl(worker.phone, whatsappText)}
+                target="_blank"
+                rel="noreferrer"
+                className={iconButton}
+                title={waiting ? "Cobrar confirmação no WhatsApp" : "Chamar no WhatsApp"}
+                aria-label={waiting ? "Cobrar confirmação no WhatsApp" : "Chamar no WhatsApp"}
+              >
+                <MessageCircle size={15} />
+              </a>
+              <a href={`tel:${worker.phone}`} className={iconButton} title={worker.phone} aria-label={`Ligar para ${worker.name}`}>
+                <Phone size={15} />
+              </a>
+            </>
+          )}
+          <Link to="/app/mensagens" className={iconButton} title="Mensagens" aria-label="Mensagens">
+            <MessageSquareText size={15} />
+          </Link>
+          {canAct && (
+            <>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onComplete(application.id)}
+                className="grid h-8 w-8 place-items-center rounded-lg border border-aqua-300/40 bg-aqua-300/10 text-aqua-300 transition hover:bg-aqua-300/20 disabled:opacity-40"
+                title="Concluir turno"
+                aria-label="Concluir turno"
+              >
+                <CheckCircle2 size={15} />
+              </button>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onAbsence(application.id)}
+                className="grid h-8 w-8 place-items-center rounded-lg border border-alert/40 bg-alert/10 text-alert transition hover:bg-alert/20 disabled:opacity-40"
+                title="Registrar falta"
+                aria-label="Registrar falta"
+              >
+                <UserX size={15} />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const tableHeader = (
+    <div className={`hidden gap-3 bg-white/5 px-3 py-1.5 text-[0.66rem] font-black uppercase text-slate-500 md:grid ${TABLE_COLUMNS}`}>
+      <span>Nº</span>
+      <span>Profissional</span>
+      <span>Função</span>
+      <span>Status</span>
+      <span>Código</span>
+      <span className="text-right">Ações</span>
+    </div>
+  );
+
+  return (
+    <div className="grid gap-3">
+      {/* Cabeçalho compacto do evento */}
+      <section className="grid gap-3 rounded-lg border border-white/10 bg-white/5 p-3 md:p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-md bg-aqua-300 px-2 py-0.5 text-[0.68rem] font-black text-navy-950">{status}</span>
+              <h3 className="text-lg font-black text-white">{event.name}</h3>
+            </div>
+            <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-semibold text-slate-300">
+              <span className="flex items-center gap-1.5">
+                <CalendarDays size={14} /> {longDate(event.date)}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock3 size={14} /> {event.startsAt} – {event.endsAt}
                 {duration ? ` (${duration})` : ""}
               </span>
               {address && (
-                <span className="flex items-center gap-2">
-                  <MapPin size={16} /> {address}
+                <span className="flex items-center gap-1.5">
+                  <MapPin size={14} /> {address}
                 </span>
               )}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
               {event.functions.map((item) => (
-                <span key={item.function} className="rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs font-black text-white">
+                <span key={item.function} className="rounded-md border border-white/15 bg-black/20 px-2 py-0.5 text-[0.7rem] font-black text-white">
                   {functionLabel(item.function)}
                 </span>
               ))}
             </div>
-          </article>
+          </div>
 
-          <article className="grid content-between gap-4 rounded-lg border border-white/10 bg-white/5 p-4">
-            <div>
-              <div className="flex items-baseline gap-2">
-                <strong className="text-3xl text-white">
-                  {event.confirmed}/{event.slots}
-                </strong>
-                <span className="text-sm font-semibold text-slate-300">profissionais</span>
-              </div>
-              <div className="mt-3 flex h-2.5 overflow-hidden rounded-full" style={{ background: TRACK }} aria-hidden="true">
-                <span style={{ width: pct(event.confirmed), background: LIME }} />
-                <span style={{ width: pct(event.pending), background: AMBER }} />
-              </div>
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-slate-300">
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full" style={{ background: LIME }} /> {event.confirmed} confirmados
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full" style={{ background: AMBER }} /> {event.pending} pendentes
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full" style={{ background: "#7D8494" }} /> {free} vaga{free === 1 ? "" : "s"}
-                </span>
-              </div>
-              {(event.declined > 0 || event.absent > 0) && (
-                <p className="mt-2 text-xs font-bold text-alert">
-                  {event.declined > 0 ? `${event.declined} recusaram` : ""}
-                  {event.declined > 0 && event.absent > 0 ? " · " : ""}
-                  {event.absent > 0 ? `${event.absent} faltaram` : ""}
-                </p>
-              )}
-              {missing > 0 && <p className="mt-2 text-xs font-bold text-amber-500">Faltam {missing} para completar a escala.</p>}
-            </div>
-
-            <div className="grid gap-2">
-              <div className="grid grid-cols-2 gap-2">
-                <button type="button" className="secondary min-h-10 px-3 text-sm" onClick={() => onPrint(event.jobs)}>
-                  <Printer size={16} /> Ver escala
-                </button>
-                <Link
-                  to={`/app/candidatos?vaga=${event.jobs[0].id}`}
-                  className="primary min-h-10 px-3 text-sm"
-                >
-                  Gerenciar equipe
-                </Link>
-              </div>
-              <button type="button" className="secondary min-h-10 px-3 text-sm" onClick={() => onReceipts(event)}>
-                <Receipt size={16} /> Recibos
-              </button>
-              <button type="button" className="secondary min-h-9 px-3 text-xs" onClick={copySummary}>
-                <ClipboardCopy size={15} /> {copied ? "Copiado!" : "Copiar resumo para o WhatsApp"}
-              </button>
-              {event.candidates > 0 && (
-                <Link to={`/app/candidatos?vaga=${event.jobs[0].id}`} className="text-center text-xs font-black text-aqua-300">
-                  {event.candidates} candidato{event.candidates === 1 ? "" : "s"} aguardando sua aprovação
-                </Link>
-              )}
-            </div>
-          </article>
+          <div className="flex flex-wrap gap-1.5">
+            <button type="button" className={actionButton} onClick={() => onPrint(event.jobs)}>
+              <Printer size={14} /> Ver escala
+            </button>
+            <button type="button" className={actionButton} onClick={() => onReceipts(event)}>
+              <Receipt size={14} /> Recibos
+            </button>
+            <button type="button" className={actionButton} onClick={copySummary}>
+              <ClipboardCopy size={14} /> {copied ? "Copiado!" : "Copiar resumo"}
+            </button>
+            <Link to={`/app/candidatos?vaga=${event.jobs[0].id}`} className="primary min-h-9 px-3 text-xs">
+              Gerenciar equipe
+            </Link>
+          </div>
         </div>
 
+        <div className="grid items-center gap-x-4 gap-y-2 md:grid-cols-[auto_minmax(0,1fr)]">
+          <div className="flex items-baseline gap-2">
+            <strong className="text-2xl text-white">
+              {event.confirmed}/{event.slots}
+            </strong>
+            <span className="text-sm font-semibold text-slate-300">profissionais</span>
+          </div>
+          <div className="grid gap-1.5">
+            <div className="flex h-2 overflow-hidden rounded-full" style={{ background: TRACK }} aria-hidden="true">
+              <span style={{ width: pct(event.confirmed), background: LIME }} />
+              <span style={{ width: pct(event.pending), background: AMBER }} />
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs font-bold text-slate-300">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full" style={{ background: LIME }} /> {event.confirmed} confirmados
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full" style={{ background: AMBER }} /> {event.pending} pendentes
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full" style={{ background: "#7D8494" }} /> {free} vaga{free === 1 ? "" : "s"}
+              </span>
+              {event.declined > 0 && <span className="text-alert">{event.declined} recusaram</span>}
+              {event.absent > 0 && <span className="text-alert">{event.absent} faltaram</span>}
+              {missing > 0 && <span className="text-amber-500">Faltam {missing} para completar</span>}
+              {event.candidates > 0 && (
+                <Link to={`/app/candidatos?vaga=${event.jobs[0].id}`} className="text-aqua-300">
+                  {event.candidates} candidato{event.candidates === 1 ? "" : "s"} aguardando aprovação
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Quem confirmou: logo no alto, em quadro com colunas */}
+      <section className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
+        <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+          <h4 className="flex items-center gap-2 text-base font-black text-white">
+            <Users size={16} /> Confirmados <span className="text-sm font-bold text-slate-400">({confirmedPeople.length})</span>
+          </h4>
+        </div>
+        {confirmedPeople.length === 0 ? (
+          <p className="border-t border-white/10 px-3 py-4 text-sm font-semibold text-slate-400">
+            Ninguém confirmou ainda. Convide profissionais, aprove candidatos ou envie o link de convite.
+          </p>
+        ) : (
+          <div>
+            {tableHeader}
+            {confirmedPeople.map((person, index) => renderRow(person, index + 1))}
+          </div>
+        )}
+      </section>
+
+      {others.length > 0 && (
         <section className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
-            <h4 className="flex items-center gap-2 text-base font-black text-white">
-              <Users size={17} /> Equipe do evento
+          <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+            <h4 className="text-sm font-black text-white">
+              Aguardando resposta, candidatos, recusas e faltas <span className="font-bold text-slate-400">({others.length})</span>
             </h4>
-            {team.length > TEAM_PREVIEW && (
-              <button type="button" className="text-xs font-black text-aqua-300" onClick={() => setShowAll((current) => !current)}>
-                {showAll ? "Mostrar menos" : `Ver todos (${team.length})`}
+            {others.length > OTHERS_PREVIEW && (
+              <button type="button" className="text-xs font-black text-aqua-300" onClick={() => setShowAllOthers((current) => !current)}>
+                {showAllOthers ? "Mostrar menos" : `Ver todos (${others.length})`}
               </button>
             )}
           </div>
-
-          {team.length === 0 ? (
-            <p className="px-4 py-6 text-sm font-semibold text-slate-400">
-              Ninguém na equipe ainda. Convide profissionais ou aprove candidatos para preencher esta escala.
-            </p>
-          ) : (
-            <div>
-              <div className="hidden grid-cols-[minmax(0,2fr)_1fr_1fr_0.8fr_auto] gap-3 px-4 py-2 text-[0.68rem] font-black uppercase text-slate-500 md:grid">
-                <span>Profissional</span>
-                <span>Função</span>
-                <span>Status</span>
-                <span>Código</span>
-                <span>Ações</span>
-              </div>
-              {visibleTeam.map((person) => {
-                const { application, worker } = person;
-                const job = jobById.get(application.jobId);
-                const status = personStatus(person);
-                const canAct = application.status === "Aprovada";
-                const waiting = person.bucket === "aguardando";
-                const whatsappText = waiting
-                  ? `Olá, ${worker?.name.split(" ")[0] ?? ""}! Você consegue confirmar presença na escala de ${formatDate(event.date)} (${event.name}) no ${companyName}?`
-                  : `Olá, ${worker?.name.split(" ")[0] ?? ""}. Estou organizando a escala de ${formatDate(event.date)} (${event.name}) no ${companyName}.`;
-
-                return (
-                  <div
-                    key={application.id}
-                    className="grid gap-2 border-t border-white/10 px-4 py-3 md:grid-cols-[minmax(0,2fr)_1fr_1fr_0.8fr_auto] md:items-center md:gap-3"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      {worker ? (
-                        <AvatarButton src={worker.avatarUrl} name={worker.name} className="h-10 w-10 shrink-0 rounded-full object-cover" />
-                      ) : (
-                        <span className="h-10 w-10 shrink-0 rounded-full bg-white/10" />
-                      )}
-                      <div className="min-w-0">
-                        <strong className="block truncate text-sm text-white">{worker?.name ?? "Profissional"}</strong>
-                        {worker && (
-                          <span className="flex items-center gap-1 text-xs font-semibold text-slate-400">
-                            <Star size={11} className="fill-current text-amber-400" /> {worker.rating.toFixed(1)} ({worker.completedJobs})
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-sm font-semibold text-slate-600">{job ? functionLabel(job.function) : "—"}</span>
-                    <span>
-                      <span
-                        className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-black text-white"
-                        style={{ borderColor: `${status.color}66`, background: `${status.color}1f` }}
-                      >
-                        <span className="h-2 w-2 rounded-full" style={{ background: status.color }} /> {status.label}
-                      </span>
-                    </span>
-                    <span className="text-sm font-bold text-slate-300">
-                      {person.bucket === "confirmado" && job && worker ? getShiftVerificationCode(job.id, worker.id) : "–"}
-                    </span>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {worker?.phone && (
-                        <>
-                          <a
-                            href={getWhatsAppUrl(worker.phone, whatsappText)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-                            title={waiting ? "Cobrar confirmação no WhatsApp" : "Chamar no WhatsApp"}
-                            aria-label={waiting ? "Cobrar confirmação no WhatsApp" : "Chamar no WhatsApp"}
-                          >
-                            <MessageCircle size={16} />
-                          </a>
-                          <a
-                            href={`tel:${worker.phone}`}
-                            className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-                            title={worker.phone}
-                            aria-label={`Ligar para ${worker.name}`}
-                          >
-                            <Phone size={16} />
-                          </a>
-                        </>
-                      )}
-                      <Link
-                        to="/app/mensagens"
-                        className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-                        title="Mensagens"
-                        aria-label="Mensagens"
-                      >
-                        <MessageSquareText size={16} />
-                      </Link>
-                      {canAct && (
-                        <>
-                          <button
-                            type="button"
-                            disabled={disabled}
-                            onClick={() => onComplete(application.id)}
-                            className="grid h-9 w-9 place-items-center rounded-lg border border-aqua-300/40 bg-aqua-300/10 text-aqua-300 transition hover:bg-aqua-300/20 disabled:opacity-40"
-                            title="Concluir turno"
-                            aria-label="Concluir turno"
-                          >
-                            <CheckCircle2 size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={disabled}
-                            onClick={() => onAbsence(application.id)}
-                            className="grid h-9 w-9 place-items-center rounded-lg border border-alert/40 bg-alert/10 text-alert transition hover:bg-alert/20 disabled:opacity-40"
-                            title="Registrar falta"
-                            aria-label="Registrar falta"
-                          >
-                            <UserX size={16} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {tableHeader}
+          {visibleOthers.map((person) => renderRow(person, null))}
         </section>
-      </div>
+      )}
 
-      <aside className="grid content-start gap-4">
-        <section className="rounded-lg border border-white/10 bg-white/5 p-4">
-          <h4 className="mb-3 text-base font-black text-white">Resumo das funções</h4>
-          <div className="grid gap-3">
+      {/* Informações do evento em quadros pequenos */}
+      <div className="grid gap-3 md:grid-cols-3">
+        <section className="rounded-lg border border-white/10 bg-white/5 p-3">
+          <h4 className="mb-2 text-sm font-black text-white">Resumo das funções</h4>
+          <div className="grid gap-2">
             {event.functions.map((item) => {
               const complete = item.slots > 0 && item.confirmed >= item.slots;
               const color = complete ? LIME : item.confirmed > 0 ? AMBER : TRACK;
               const width = item.slots > 0 ? Math.min(100, (item.confirmed / item.slots) * 100) : 0;
               return (
-                <div key={item.function} className="grid grid-cols-[minmax(0,7.5rem)_1fr_auto] items-center gap-3 text-sm">
+                <div key={item.function} className="grid grid-cols-[minmax(0,6.5rem)_1fr_auto] items-center gap-2 text-xs">
                   <span className="font-semibold leading-tight text-slate-600">{functionLabel(item.function)}</span>
-                  <span className="h-2 overflow-hidden rounded-full" style={{ background: TRACK }} aria-hidden="true">
+                  <span className="h-1.5 overflow-hidden rounded-full" style={{ background: TRACK }} aria-hidden="true">
                     <span className="block h-full rounded-full" style={{ width: `${width}%`, background: color }} />
                   </span>
-                  <span className="text-xs font-black text-slate-300">
+                  <span className="font-black text-slate-300">
                     {item.confirmed}/{item.slots}
                   </span>
                 </div>
@@ -393,38 +391,38 @@ export function ScheduleEventDetail({
           </div>
         </section>
 
-        <section className="rounded-lg border border-white/10 bg-white/5 p-4">
-          <h4 className="mb-3 text-base font-black text-white">Local do evento</h4>
-          <p className="flex items-start gap-2 text-sm font-semibold text-slate-600">
-            <MapPin size={16} className="mt-0.5 shrink-0" /> {address || "Local não informado."}
+        <section className="rounded-lg border border-white/10 bg-white/5 p-3">
+          <h4 className="mb-2 text-sm font-black text-white">Local do evento</h4>
+          <p className="flex items-start gap-2 text-xs font-semibold text-slate-600">
+            <MapPin size={14} className="mt-0.5 shrink-0" /> {address || "Local não informado."}
           </p>
           {address && (
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, Florianópolis, SC`)}`}
               target="_blank"
               rel="noreferrer"
-              className="secondary mt-3 min-h-10 w-full px-3 text-sm"
+              className="secondary mt-2 min-h-8 px-3 text-xs"
             >
-              Ver no mapa <ExternalLink size={14} />
+              Ver no mapa <ExternalLink size={12} />
             </a>
           )}
         </section>
 
-        <section className="rounded-lg border border-white/10 bg-white/5 p-4">
-          <h4 className="mb-3 text-base font-black text-white">Observações</h4>
+        <section className="rounded-lg border border-white/10 bg-white/5 p-3">
+          <h4 className="mb-2 text-sm font-black text-white">Observações</h4>
           {notes.length === 0 ? (
-            <p className="text-sm font-semibold text-slate-400">Nenhuma observação para este evento.</p>
+            <p className="text-xs font-semibold text-slate-400">Nenhuma observação para este evento.</p>
           ) : (
-            <div className="grid gap-2">
+            <div className="grid gap-1.5">
               {notes.map((line) => (
-                <p key={line} className="flex items-start gap-2 text-sm font-semibold leading-6 text-slate-600">
-                  <FileText size={15} className="mt-1 shrink-0 text-slate-400" /> {line}
+                <p key={line} className="flex items-start gap-2 text-xs font-semibold leading-5 text-slate-600">
+                  <FileText size={13} className="mt-0.5 shrink-0 text-slate-400" /> {line}
                 </p>
               ))}
             </div>
           )}
         </section>
-      </aside>
+      </div>
     </div>
   );
 }

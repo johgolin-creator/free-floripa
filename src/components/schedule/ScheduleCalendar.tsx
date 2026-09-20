@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Clock3, Filter, MapPin, Plus, Search, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Filter, Plus, Search } from "lucide-react";
 import { EmptyState } from "../EmptyState";
 import {
   addDays,
@@ -221,23 +221,23 @@ export function ScheduleCalendar({
 
       {view === "Semana" && (
         <div className="overflow-x-auto">
-          <div className="grid min-w-[880px] grid-cols-7 gap-2">
+          <div className="grid min-w-[760px] grid-cols-7 gap-1.5">
             {weekDates(anchor).map((date, index) => {
               const dayItems = itemsByDate.get(date) ?? [];
               const isToday = date === today;
               const isSelected = date === selectedDate;
               return (
-                <div key={date} className="grid content-start gap-2">
+                <div key={date} className="grid content-start gap-1.5">
                   <button
                     type="button"
                     onClick={() => onSelectDate(date)}
-                    className={`grid gap-0.5 rounded-lg border py-2 text-center transition ${
+                    className={`flex items-baseline justify-center gap-1.5 rounded-md border py-1 transition ${
                       isSelected ? "border-aqua-300 bg-aqua-300/10" : "border-transparent hover:bg-white/5"
                     }`}
                     aria-label={`Selecionar ${date}`}
                   >
-                    <span className={`text-[0.7rem] font-black ${isToday ? "text-aqua-300" : "text-slate-400"}`}>{WEEKDAYS[index]}</span>
-                    <strong className={`text-xl ${isToday ? "text-aqua-300" : "text-white"}`}>{parseISODate(date).getDate()}</strong>
+                    <span className={`text-[0.66rem] font-black ${isToday ? "text-aqua-300" : "text-slate-400"}`}>{WEEKDAYS[index]}</span>
+                    <strong className={`text-base ${isToday ? "text-aqua-300" : "text-white"}`}>{parseISODate(date).getDate()}</strong>
                   </button>
 
                   {dayItems.map((item) => (
@@ -249,10 +249,11 @@ export function ScheduleCalendar({
                       type="button"
                       onClick={() => onAddOnDate(date)}
                       disabled={disabled}
-                      className="grid min-h-28 place-items-center gap-1 rounded-lg border border-dashed border-white/15 p-3 text-center text-xs font-bold text-slate-400 transition hover:border-aqua-300/60 hover:text-aqua-300 disabled:opacity-40"
+                      title="Adicionar evento neste dia"
+                      aria-label="Adicionar evento"
+                      className="grid h-7 place-items-center rounded-md border border-dashed border-white/15 text-slate-500 transition hover:border-aqua-300/60 hover:text-aqua-300 disabled:opacity-40"
                     >
-                      <Plus size={18} />
-                      Adicionar evento
+                      <Plus size={14} />
                     </button>
                   )}
                 </div>
@@ -264,7 +265,7 @@ export function ScheduleCalendar({
 
       {view === "Mês" && (
         <div className="overflow-x-auto">
-          <div className="grid min-w-[720px] grid-cols-7 gap-1">
+          <div className="grid min-w-[640px] grid-cols-7 gap-1">
             {WEEKDAYS.map((day) => (
               <span key={day} className="py-1 text-center text-[0.7rem] font-black text-slate-400">
                 {day}
@@ -283,7 +284,7 @@ export function ScheduleCalendar({
                     onSelectDate(date);
                     if (dayItems[0]) onSelectItem(dayItems[0].key);
                   }}
-                  className={`grid min-h-24 content-start gap-1 rounded-lg border p-1.5 text-left transition ${
+                  className={`grid min-h-[4.25rem] content-start gap-0.5 rounded-md border p-1 text-left transition ${
                     isSelected ? "border-aqua-300 bg-aqua-300/10" : "border-white/10 bg-white/5 hover:bg-white/10"
                   } ${inMonth ? "" : "opacity-40"}`}
                 >
@@ -315,25 +316,19 @@ function WeekCard({ item, selected, onClick }: { item: CalendarItem; selected: b
     <button
       type="button"
       onClick={onClick}
-      className={`grid gap-1.5 rounded-lg border border-l-4 bg-white/5 p-2.5 text-left transition hover:bg-white/10 ${
+      title={`${item.title} · ${item.startsAt} – ${item.endsAt}${item.place ? ` · ${item.place}` : ""}`}
+      className={`grid gap-0.5 rounded-md border border-l-[3px] bg-white/5 px-2 py-1.5 text-left transition hover:bg-white/10 ${
         selected ? "border-aqua-300 ring-1 ring-aqua-300/60" : "border-white/10"
       }`}
       style={{ borderLeftColor: selected ? undefined : accentFor(item.title) }}
     >
-      <strong className="line-clamp-2 text-sm leading-tight text-white">{item.title}</strong>
-      <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
-        <Clock3 size={12} /> {item.startsAt} – {item.endsAt}
+      <strong className="truncate text-xs leading-tight text-white">{item.title}</strong>
+      <span className="text-[0.68rem] font-semibold text-slate-400">
+        {item.startsAt} – {item.endsAt}
       </span>
-      {item.place && (
-        <span className="flex items-center gap-1.5 truncate text-xs font-semibold text-slate-400">
-          <MapPin size={12} className="shrink-0" /> <span className="truncate">{item.place}</span>
-        </span>
-      )}
-      <span className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
-        <Users size={12} /> {item.filled}/{item.slots}
-      </span>
-      <span className="flex items-center gap-1.5 text-xs font-black text-slate-600">
-        <span className="h-2 w-2 rounded-full" style={{ background: STATE_DOT[item.state] }} /> {stateLabel(item)}
+      <span className="flex items-center gap-1 text-[0.68rem] font-black text-slate-300">
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: STATE_DOT[item.state] }} />
+        {item.filled}/{item.slots} · {stateLabel(item)}
       </span>
     </button>
   );

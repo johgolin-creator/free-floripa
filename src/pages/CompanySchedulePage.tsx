@@ -348,7 +348,6 @@ export function CompanySchedulePage() {
             event={selectedItem.jobEvent}
             today={today}
             companyName={currentCompany.establishmentName}
-            coverUrl={currentCompany.coverUrl || undefined}
             disabled={companyBlocked}
             onComplete={(applicationId) => runStatus(applicationId, "Trabalho concluído")}
             onAbsence={(applicationId) => runStatus(applicationId, "Falta registrada")}
@@ -459,13 +458,13 @@ function KpiCard({
 }) {
   return (
     <div
-      className="flex items-center gap-4 rounded-lg border border-l-4 border-white/10 bg-brand-charcoal p-4 shadow-soft"
+      className="flex items-center gap-3 rounded-lg border border-l-4 border-white/10 bg-brand-charcoal px-3 py-2.5 shadow-soft"
       style={{ borderLeftColor: color }}
     >
       <span style={{ color }}>{icon}</span>
       <div className="min-w-0">
-        <strong className="block text-2xl leading-none text-white">{value}</strong>
-        <span className="mt-1 block text-sm font-bold text-slate-600">{label}</span>
+        <strong className="block text-xl leading-none text-white">{value}</strong>
+        <span className="mt-0.5 block text-sm font-bold text-slate-600">{label}</span>
         <span className="block truncate text-xs font-semibold text-slate-400">{hint}</span>
       </div>
     </div>
