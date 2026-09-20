@@ -138,7 +138,7 @@ export function InvitePage() {
             <article className="card grid gap-3 p-5">
               {invite.companyName && <span className="text-xs font-black uppercase text-aqua-300">{invite.companyName}</span>}
               <h1 className="text-2xl font-black leading-tight text-white">{invite.title}</h1>
-              <div className="grid gap-2 text-sm font-semibold text-slate-200">
+              <div className="grid gap-2 text-sm font-semibold text-slate-600">
                 <span className="flex items-center gap-2">
                   <CalendarDays size={16} className="shrink-0" /> {longDate(invite.date)}
                 </span>

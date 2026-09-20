@@ -153,7 +153,7 @@ export function ScheduleEventDetail({
           >
             <span className="absolute left-5 top-5 rounded-lg bg-aqua-300 px-3 py-1 text-xs font-black text-navy-950">{status}</span>
             <h3 className="text-2xl font-black text-white">{event.name}</h3>
-            <div className="mt-3 grid gap-1.5 text-sm font-semibold text-slate-200">
+            <div className="mt-3 grid gap-1.5 text-sm font-semibold text-slate-600">
               <span className="flex items-center gap-2">
                 <CalendarDays size={16} /> {longDate(event.date)}
               </span>
@@ -288,7 +288,7 @@ export function ScheduleEventDetail({
                         )}
                       </div>
                     </div>
-                    <span className="text-sm font-semibold text-slate-200">{job ? functionLabel(job.function) : "—"}</span>
+                    <span className="text-sm font-semibold text-slate-600">{job ? functionLabel(job.function) : "—"}</span>
                     <span>
                       <span
                         className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-black text-white"
@@ -373,8 +373,8 @@ export function ScheduleEventDetail({
               const color = complete ? LIME : item.confirmed > 0 ? AMBER : TRACK;
               const width = item.slots > 0 ? Math.min(100, (item.confirmed / item.slots) * 100) : 0;
               return (
-                <div key={item.function} className="grid grid-cols-[92px_1fr_auto] items-center gap-3 text-sm">
-                  <span className="truncate font-semibold text-slate-200">{functionLabel(item.function)}</span>
+                <div key={item.function} className="grid grid-cols-[minmax(0,7.5rem)_1fr_auto] items-center gap-3 text-sm">
+                  <span className="font-semibold leading-tight text-slate-600">{functionLabel(item.function)}</span>
                   <span className="h-2 overflow-hidden rounded-full" style={{ background: TRACK }} aria-hidden="true">
                     <span className="block h-full rounded-full" style={{ width: `${width}%`, background: color }} />
                   </span>
@@ -389,7 +389,7 @@ export function ScheduleEventDetail({
 
         <section className="rounded-lg border border-white/10 bg-white/5 p-4">
           <h4 className="mb-3 text-base font-black text-white">Local do evento</h4>
-          <p className="flex items-start gap-2 text-sm font-semibold text-slate-200">
+          <p className="flex items-start gap-2 text-sm font-semibold text-slate-600">
             <MapPin size={16} className="mt-0.5 shrink-0" /> {address || "Local não informado."}
           </p>
           {address && (
@@ -411,7 +411,7 @@ export function ScheduleEventDetail({
           ) : (
             <div className="grid gap-2">
               {notes.map((line) => (
-                <p key={line} className="flex items-start gap-2 text-sm font-semibold leading-6 text-slate-200">
+                <p key={line} className="flex items-start gap-2 text-sm font-semibold leading-6 text-slate-600">
                   <FileText size={15} className="mt-1 shrink-0 text-slate-400" /> {line}
                 </p>
               ))}

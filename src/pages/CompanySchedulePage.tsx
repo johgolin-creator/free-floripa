@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, CheckCircle2, Edit3, Flag, Plus, Printer, Save, Trash2, Users } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
+import { PrintPortal } from "../components/PrintPortal";
 import { ScheduleCalendar, matchesStatusFilter, type CalendarView, type StatusFilter } from "../components/schedule/ScheduleCalendar";
 import { ScheduleEventDetail } from "../components/schedule/ScheduleEventDetail";
 import { MonthDatePicker } from "../components/schedule/MonthDatePicker";
@@ -253,7 +254,7 @@ export function CompanySchedulePage() {
                   type="button"
                   onClick={() => pickItem(item.key)}
                   className={`min-h-9 rounded-lg px-3 text-xs font-black transition ${
-                    item.key === selectedItem?.key ? "bg-aqua-300 text-navy-950" : "border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
+                    item.key === selectedItem?.key ? "bg-aqua-300 text-navy-950" : "border border-white/10 bg-white/5 text-slate-600 hover:bg-white/10"
                   }`}
                 >
                   {item.title}
@@ -339,12 +340,12 @@ export function CompanySchedulePage() {
       )}
 
       {printSchedule && (
-        <div className="print-only">
+        <PrintPortal>
           <SchedulePrintSheet companyName={currentCompany.establishmentName} schedule={printSchedule} />
-        </div>
+        </PrintPortal>
       )}
       {printJobs.length > 0 && (
-        <div className="print-only">
+        <PrintPortal>
           {printJobs.map((job, index) => (
             <div key={job.id} style={index < printJobs.length - 1 ? { pageBreakAfter: "always" } : undefined}>
               <JobSchedulePrintSheet
@@ -357,7 +358,7 @@ export function CompanySchedulePage() {
               />
             </div>
           ))}
-        </div>
+        </PrintPortal>
       )}
     </div>
   );
@@ -384,7 +385,7 @@ function KpiCard({
       <span style={{ color }}>{icon}</span>
       <div className="min-w-0">
         <strong className="block text-2xl leading-none text-white">{value}</strong>
-        <span className="mt-1 block text-sm font-bold text-slate-200">{label}</span>
+        <span className="mt-1 block text-sm font-bold text-slate-600">{label}</span>
         <span className="block truncate text-xs font-semibold text-slate-400">{hint}</span>
       </div>
     </div>

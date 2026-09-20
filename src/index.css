@@ -1822,9 +1822,9 @@ a {
 }
 }
 
-/* Impressão: por padrão .print-only fica fora da tela sempre (mesmo na
-   tela normal, para não afetar o layout); ao imprimir, o app inteiro some
-   e só o conteúdo marcado para impressão aparece. */
+/* Impressão: a folha (.print-only) é desenhada direto no <body> (ver
+   PrintPortal). Na tela ela fica fora de vista; ao imprimir, o app inteiro
+   (#root) some sem ocupar espaço e só a folha sai, no topo da página. */
 .print-only {
   position: fixed;
   left: -9999px;
@@ -1832,17 +1832,20 @@ a {
 }
 
 @media print {
-  body * {
-    visibility: hidden;
+  body > #root {
+    display: none !important;
   }
 
-  .print-only,
-  .print-only * {
-    visibility: visible;
+  html,
+  body {
+    background: #fff !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
 
   .print-only {
     position: static;
     left: auto;
+    width: auto;
   }
 }

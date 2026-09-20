@@ -27,7 +27,8 @@ export function MonthDatePicker({
 }) {
   const [month, setMonth] = useState(value || today);
   const visibleMonth = parseISODate(month).getMonth();
-  const monthLabel = parseISODate(month).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const rawMonthLabel = parseISODate(month).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const monthLabel = rawMonthLabel.charAt(0).toUpperCase() + rawMonthLabel.slice(1);
 
   return (
     <div className="grid gap-2 rounded-lg border border-white/10 bg-white/5 p-3">
@@ -42,7 +43,7 @@ export function MonthDatePicker({
         >
           <ChevronLeft size={17} />
         </button>
-        <strong className="text-sm font-black capitalize text-white">{monthLabel}</strong>
+        <strong className="text-sm font-black text-white">{monthLabel}</strong>
         <button
           type="button"
           onClick={() => setMonth(addMonths(month, 1))}
@@ -93,7 +94,7 @@ export function MonthDatePicker({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold">
-        <span className={value ? "text-slate-200" : "text-slate-400"}>{value ? longDate(value) : "Toque em um dia para escolher a data."}</span>
+        <span className={value ? "text-slate-600" : "text-slate-400"}>{value ? longDate(value) : "Toque em um dia para escolher a data."}</span>
         <button
           type="button"
           className="text-aqua-300"

@@ -48,8 +48,12 @@ export function matchesStatusFilter(item: CalendarItem, filter: StatusFilter) {
   return true;
 }
 
+function capitalizeFirst(text: string) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function formatMonthYear(date: string) {
-  return parseISODate(date).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  return capitalizeFirst(parseISODate(date).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }));
 }
 
 function formatWeekRange(anchor: string) {
@@ -150,7 +154,7 @@ export function ScheduleCalendar({
           >
             <ChevronLeft size={18} />
           </button>
-          <span className="min-w-40 px-2 text-center text-sm font-black capitalize text-white">{rangeLabel}</span>
+          <span className="min-w-40 px-2 text-center text-sm font-black text-white">{rangeLabel}</span>
           <button
             type="button"
             className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 bg-white/5 text-white transition hover:bg-white/10 disabled:opacity-40"
@@ -287,7 +291,7 @@ export function ScheduleCalendar({
                   {dayItems.slice(0, 2).map((item) => (
                     <span
                       key={item.key}
-                      className="truncate rounded border-l-4 bg-black/20 px-1.5 py-0.5 text-[0.68rem] font-bold text-slate-200"
+                      className="truncate rounded border-l-4 bg-black/20 px-1.5 py-0.5 text-[0.68rem] font-bold text-slate-600"
                       style={{ borderLeftColor: accentFor(item.title) }}
                     >
                       {item.title}
@@ -328,7 +332,7 @@ function WeekCard({ item, selected, onClick }: { item: CalendarItem; selected: b
       <span className="flex items-center gap-1.5 text-xs font-bold text-slate-300">
         <Users size={12} /> {item.filled}/{item.slots}
       </span>
-      <span className="flex items-center gap-1.5 text-xs font-black text-slate-200">
+      <span className="flex items-center gap-1.5 text-xs font-black text-slate-600">
         <span className="h-2 w-2 rounded-full" style={{ background: STATE_DOT[item.state] }} /> {stateLabel(item)}
       </span>
     </button>
@@ -376,7 +380,7 @@ function ListView({
               {item.place ? ` · ${item.place}` : ""}
             </span>
           </span>
-          <span className="flex flex-col items-end gap-1 text-xs font-black text-slate-200">
+          <span className="flex flex-col items-end gap-1 text-xs font-black text-slate-600">
             <span>
               {item.filled}/{item.slots}
             </span>
