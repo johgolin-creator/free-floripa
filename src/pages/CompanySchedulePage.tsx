@@ -1,40 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import {
-  AlertTriangle,
-  CalendarDays,
-  CheckCircle2,
-  ClipboardList,
-  Edit3,
-  Mail,
-  MessageCircle,
-  Phone,
-  Plus,
-  Printer,
-  Save,
-  Trash2,
-  UserX
-} from "lucide-react";
-import { AvatarButton } from "../components/AvatarButton";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CalendarDays, CheckCircle2, Edit3, Flag, Plus, Printer, Save, Trash2, Users } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
+import { ScheduleCalendar, matchesStatusFilter, type CalendarView, type StatusFilter } from "../components/schedule/ScheduleCalendar";
+import { ScheduleEventDetail } from "../components/schedule/ScheduleEventDetail";
 import { SafetyNotice } from "../components/SafetyNotice";
-import { ScheduleConfirmationPanel } from "../components/ScheduleConfirmationPanel";
 import { SectionHeader } from "../components/SectionHeader";
-import { StatTile } from "../components/StatTile";
-import { StatusBadge, StatusLegend } from "../components/StatusBadge";
-import { TermHint } from "../components/TermHint";
-import { UrgentBadge } from "../components/UrgentBadge";
+import { StatusBadge } from "../components/StatusBadge";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore, type CompanyScheduleInput } from "../lib/store";
-import { formatCurrency, formatDate, getWhatsAppUrl, todayLocalISODate } from "../lib/format";
-import { getJobStatus, getOpenSlots } from "../lib/rules";
-import { getShiftVerificationCode } from "../lib/shiftVerification";
-import type { Application, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, Neighborhood, WorkerProfile } from "../lib/types";
+import { formatDate, todayLocalISODate } from "../lib/format";
+import { getJobStatus } from "../lib/rules";
+import { addDays, buildCalendarItems, buildJobEvents, parseISODate } from "../lib/scheduleEvents";
+import type { Application, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, Neighborhood } from "../lib/types";
 
-type ScheduleFilter = "Todas" | "Hoje" | "Futuras" | "Concluídas";
-
-const filters: ScheduleFilter[] = ["Todas", "Hoje", "Futuras", "Concluídas"];
 const scheduleStatuses: CompanyScheduleStatus[] = ["Planejada", "Confirmada", "Concluída", "Cancelada"];
 
 export function CompanySchedulePage() {
@@ -46,61 +25,98 @@ export function CompanySchedulePage() {
     updateCompanySchedule,
     deleteCompanySchedule
   } = useAppStore();
-  const [filter, setFilter] = useState<ScheduleFilter>("Todas");
-  const [date, setDate] = useState("");
+  const today = todayLocalISODate();
+  const [view, setView] = useState<CalendarView>("Semana");
+  const [anchor, setAnchor] = useState(today);
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedItemKey, setSelectedItemKey] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("Todos");
   const [message, setMessage] = useState("");
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState<{ date?: string } | null>(null);
   const [editing, setEditing] = useState<CompanySchedule | null>(null);
   const [printSchedule, setPrintSchedule] = useState<CompanySchedule | null>(null);
-  const [printJob, setPrintJob] = useState<Job | null>(null);
+  const [printJobs, setPrintJobs] = useState<Job[]>([]);
+  const userPicked = useRef(false);
+  const autoPicked = useRef(false);
 
   useEffect(() => {
-    if (!printSchedule && !printJob) return;
+    if (!printSchedule && printJobs.length === 0) return;
     const timeoutId = window.setTimeout(() => window.print(), 100);
     function clear() {
       setPrintSchedule(null);
-      setPrintJob(null);
+      setPrintJobs([]);
     }
     window.addEventListener("afterprint", clear);
     return () => {
       window.clearTimeout(timeoutId);
       window.removeEventListener("afterprint", clear);
     };
-  }, [printSchedule, printJob]);
+  }, [printSchedule, printJobs]);
 
   const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
-  const today = todayLocalISODate();
-  const companySchedules = state.companySchedules ?? [];
-  const manualSchedules = companySchedules
-    .filter((schedule) => schedule.companyId === currentCompany.id)
-    .filter((schedule) => matchesManualScheduleFilter(schedule, filter, date, today))
-    .sort((a, b) => `${a.date} ${a.startsAt}`.localeCompare(`${b.date} ${b.startsAt}`));
-  const companyJobs = state.jobs
-    .filter((job) => job.companyId === currentCompany.id)
-    .filter((job) => getJobStatus(job) !== "Cancelada" && getJobStatus(job) !== "Rascunho");
-  const scheduleJobs = useMemo(
+  const companySchedules = useMemo(
+    () => (state.companySchedules ?? []).filter((schedule) => schedule.companyId === currentCompany.id),
+    [state.companySchedules, currentCompany.id]
+  );
+  const companyJobs = useMemo(
     () =>
-      companyJobs
-        .filter((job) => matchesJobScheduleFilter(job, filter, date, today))
-        .sort((a, b) => `${a.date} ${a.startsAt}`.localeCompare(`${b.date} ${b.startsAt}`)),
-    [companyJobs, date, filter, today]
+      state.jobs.filter(
+        (job) => job.companyId === currentCompany.id && getJobStatus(job) !== "Cancelada" && getJobStatus(job) !== "Rascunho"
+      ),
+    [state.jobs, currentCompany.id]
   );
-  const scheduleApplications = state.applications.filter((application) =>
-    companyJobs.some((job) => job.id === application.jobId)
+  const items = useMemo(
+    () => buildCalendarItems(buildJobEvents(companyJobs, state.applications, state.workers), companySchedules),
+    [companyJobs, state.applications, state.workers, companySchedules]
   );
-  const confirmedCount = scheduleApplications.filter((application) => isScheduled(application)).length;
-  const completedCount =
-    scheduleApplications.filter((application) => application.status === "Trabalho concluído").length +
-    companySchedules.filter((schedule) => schedule.companyId === currentCompany.id && schedule.status === "Concluída").length;
-  const manualTotal = companySchedules.filter((schedule) => schedule.companyId === currentCompany.id).length;
-  const todayTotal =
-    companySchedules.filter((schedule) => schedule.companyId === currentCompany.id && schedule.date === today).length +
-    companyJobs.filter((job) => job.date === today).length;
-  const openDemand =
-    companySchedules
-      .filter((schedule) => schedule.companyId === currentCompany.id && schedule.status !== "Concluída" && schedule.status !== "Cancelada")
-      .reduce((total, schedule) => total + schedule.quantity, 0) +
-    companyJobs.reduce((total, job) => total + getOpenSlots(job), 0);
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredItems = useMemo(
+    () =>
+      items
+        .filter((item) => matchesStatusFilter(item, statusFilter))
+        .filter((item) => !normalizedSearch || item.searchText.includes(normalizedSearch)),
+    [items, statusFilter, normalizedSearch]
+  );
+
+  // Ao abrir, vai para hoje; se hoje não tem nada, para o próximo evento.
+  useEffect(() => {
+    if (userPicked.current || autoPicked.current || items.length === 0) return;
+    autoPicked.current = true;
+    if (items.some((item) => item.date === today)) return;
+    const next = items.find((item) => item.date >= today);
+    if (next) {
+      setSelectedDate(next.date);
+      setAnchor(next.date);
+    }
+  }, [items, today]);
+
+  const kpis = useMemo(() => {
+    const active = items.filter((item) => item.state !== "concluido");
+    const withOpenSlots = active.filter((item) => item.slots > item.filled);
+    const weekAgo = addDays(today, -7);
+    return {
+      todayCount: items.filter((item) => item.date === today).length,
+      openSlots: withOpenSlots.reduce((total, item) => total + (item.slots - item.filled), 0),
+      openEvents: withOpenSlots.length,
+      confirmedAhead: active.filter((item) => item.date >= today).reduce((total, item) => total + item.filled, 0),
+      concludedRecent: items.filter((item) => item.state === "concluido" && item.date >= weekAgo && item.date <= today).length
+    };
+  }, [items, today]);
+
+  const dayItems = filteredItems.filter((item) => item.date === selectedDate);
+  const selectedItem = dayItems.find((item) => item.key === selectedItemKey) ?? dayItems[0];
+
+  function pickDate(date: string) {
+    userPicked.current = true;
+    setSelectedDate(date);
+    setSelectedItemKey("");
+  }
+
+  function pickItem(key: string) {
+    userPicked.current = true;
+    setSelectedItemKey(key);
+  }
 
   function runStatus(applicationId: string, status: Application["status"]) {
     if (companyBlocked) {
@@ -118,8 +134,11 @@ export function CompanySchedulePage() {
       return;
     }
     createCompanySchedule(input);
-    setCreating(false);
-    setMessage("Escala criada. Ela já aparece na aba Escala e pode ser editada a qualquer momento.");
+    setCreating(null);
+    userPicked.current = true;
+    setSelectedDate(input.date);
+    setAnchor(input.date);
+    setMessage("Escala criada. Ela já aparece no calendário e pode ser editada a qualquer momento.");
   }
 
   function handleEdit(input: CompanyScheduleInput) {
@@ -134,159 +153,145 @@ export function CompanySchedulePage() {
     setMessage(result.message);
   }
 
+  const selectedDateLabel = (() => {
+    const label = parseISODate(selectedDate).toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  })();
+
   return (
-    <div>
+    <div className="grid gap-4">
       <SectionHeader
         eyebrow="Escala"
-        title="Montar escala"
-        description="Crie suas próprias escalas, edite a operação e acompanhe também os profissionais aprovados nas vagas."
-        action={<button type="button" onClick={() => setCreating(true)} disabled={companyBlocked} className="primary"><Plus size={17} /> Criar escala</button>}
+        title="Escala"
+        description="Organize sua equipe, acompanhe confirmações e gerencie suas escalas."
+        action={
+          <button type="button" onClick={() => setCreating({})} disabled={companyBlocked} className="primary">
+            <Plus size={17} /> Nova escala
+          </button>
+        }
       />
-      {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+      {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       {companyBlocked && (
-        <div className="mb-4">
-          <SafetyNotice title="Escala em revisão" tone="warning">
-            Sua empresa está em revisão pela administração. Criar, editar, excluir e concluir escalas fica pausado até a liberação.
-          </SafetyNotice>
-        </div>
+        <SafetyNotice title="Escala em revisão" tone="warning">
+          Sua empresa está em revisão pela administração. Criar, editar, excluir e concluir escalas fica pausado até a liberação.
+        </SafetyNotice>
       )}
 
-      <section className="mb-4 grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
-        <div className="schedule-hero-metrics">
-          <StatTile variant="primary" icon={<CalendarDays size={19} />} label="hoje" value={todayTotal} />
-          <StatTile icon={<ClipboardList size={19} />} label="manuais" value={manualTotal} />
-          <StatTile tone={openDemand > 0 ? "alert" : "normal"} icon={<AlertTriangle size={19} />} label="a preencher" value={openDemand} />
-        </div>
-      </section>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
+          color="#C8FF38"
+          icon={<CalendarDays size={24} />}
+          value={kpis.todayCount}
+          label="Escalas hoje"
+          hint={kpis.todayCount === 0 ? "Nenhum evento para hoje" : `${kpis.todayCount} evento${kpis.todayCount === 1 ? "" : "s"}`}
+        />
+        <KpiCard
+          color="#FF8A4C"
+          icon={<Users size={24} />}
+          value={kpis.openSlots}
+          label="Vagas a preencher"
+          hint={kpis.openEvents === 0 ? "Tudo preenchido" : `Em ${kpis.openEvents} evento${kpis.openEvents === 1 ? "" : "s"}`}
+        />
+        <KpiCard
+          color="#34D399"
+          icon={<CheckCircle2 size={24} />}
+          value={kpis.confirmedAhead}
+          label={`Profissiona${kpis.confirmedAhead === 1 ? "l" : "is"} confirmado${kpis.confirmedAhead === 1 ? "" : "s"}`}
+          hint="Para os próximos eventos"
+        />
+        <KpiCard
+          color="#4CA8FF"
+          icon={<Flag size={24} />}
+          value={kpis.concludedRecent}
+          label={`Escala${kpis.concludedRecent === 1 ? "" : "s"} concluída${kpis.concludedRecent === 1 ? "" : "s"}`}
+          hint="Nos últimos 7 dias"
+        />
+      </div>
 
-      <section className="schedule-filter-panel">
-        <div className="schedule-stat-grid">
-          <Stat label="confirmados" value={String(confirmedCount)} />
-          <Stat label="concluídos" value={String(completedCount)} />
-        </div>
-        <div className="schedule-filter-controls">
-          <label className="label">
-            Data
-            <input className="input" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
-          </label>
-          <div className="schedule-filter-buttons">
-            {filters.map((item) => (
-              <button key={item} type="button" onClick={() => setFilter(item)} className={`schedule-filter-button ${filter === item ? "is-active" : ""}`}>
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <ScheduleConfirmationPanel
-        jobs={scheduleJobs}
-        applications={state.applications}
-        workers={state.workers}
-        companyName={currentCompany.establishmentName}
+      <ScheduleCalendar
+        items={filteredItems}
+        view={view}
+        onViewChange={setView}
+        anchor={anchor}
+        onAnchorChange={setAnchor}
+        today={today}
+        selectedDate={selectedDate}
+        onSelectDate={pickDate}
+        selectedItemKey={selectedItem?.key ?? ""}
+        onSelectItem={pickItem}
+        onAddOnDate={(date) => setCreating({ date })}
+        search={search}
+        onSearchChange={setSearch}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        disabled={companyBlocked}
       />
 
-      <section className="schedule-section">
-        <div className="schedule-section-heading">
-          <div>
-            <h3 className="text-lg font-black text-white">Escalas criadas pelo contratante</h3>
-            <p className="text-sm font-semibold text-slate-600">Use para planejar equipe antes de publicar vaga ou antes de alguém se candidatar.</p>
-            <StatusLegend type="schedule" />
-          </div>
+      <section className="grid gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-xl font-black text-white">{selectedDateLabel}</h3>
+          {dayItems.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              {dayItems.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => pickItem(item.key)}
+                  className={`min-h-9 rounded-lg px-3 text-xs font-black transition ${
+                    item.key === selectedItem?.key ? "bg-aqua-300 text-navy-950" : "border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
+                  }`}
+                >
+                  {item.title}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        {manualSchedules.length === 0 ? (
-          <EmptyState title="Nenhuma escala criada" text="Clique em Criar escala para montar uma escala manual da empresa." />
-        ) : (
+
+        {!selectedItem ? (
           <div className="grid gap-3">
-            {manualSchedules.map((schedule) => (
-              <ManualScheduleCard
-                key={schedule.id}
-                schedule={schedule}
-                disabled={companyBlocked}
-                onEdit={() => setEditing(schedule)}
-                onDelete={() => handleDelete(schedule.id)}
-                onPrint={() => setPrintSchedule(schedule)}
-              />
-            ))}
+            <EmptyState
+              title="Nenhum evento neste dia"
+              text={
+                normalizedSearch || statusFilter !== "Todos"
+                  ? "Nada corresponde à busca ou ao filtro. Limpe-os para ver todos os eventos."
+                  : "Escolha outro dia no calendário ou crie uma escala para este dia."
+              }
+            />
+            <button
+              type="button"
+              className="primary justify-self-start"
+              disabled={companyBlocked}
+              onClick={() => setCreating({ date: selectedDate })}
+            >
+              <Plus size={17} /> Criar escala neste dia
+            </button>
           </div>
-        )}
-      </section>
-
-      <section className="schedule-section">
-        <div>
-          <h3 className="text-lg font-black text-white">Escala das vagas aprovadas</h3>
-          <p className="text-sm font-semibold text-slate-600">Preenchida automaticamente quando candidatos forem aprovados em vagas.</p>
-        </div>
-        {companyJobs.length === 0 ? (
-          <EmptyState title="Nenhuma vaga para escalar" text="Publique uma vaga e aprove candidatos para montar a escala automática." />
-        ) : scheduleJobs.length === 0 ? (
-          <EmptyState title="Nada neste filtro" text="Troque a data ou o filtro para visualizar outras escalas." />
-        ) : (
-          <div className="grid gap-4">
-            {scheduleJobs.map((job) => {
-              const applications = state.applications.filter((application) => application.jobId === job.id && isRelevantToSchedule(application));
-              const confirmed = applications.filter((application) => isScheduled(application)).length;
-              const concluded = applications.filter((application) => application.status === "Trabalho concluído").length;
-
-              return (
-                <section key={job.id} className="schedule-job-card">
-                  <div className="schedule-job-head">
-                    <div>
-                      <div className="mb-2 flex flex-wrap gap-2">
-                        {job.urgent && <UrgentBadge />}
-                        <StatusBadge type="job" status={getJobStatus(job)} />
-                        <span className="badge">{job.function}</span>
-                        <span className="badge">{formatCurrency(job.dailyValue)}</span>
-                      </div>
-                      <h3>{job.title}</h3>
-                      <p className="text-sm font-semibold text-slate-600">
-                        {formatDate(job.date)} - {job.startsAt} às {job.endsAt} - {job.neighborhood}
-                      </p>
-                    </div>
-                    <div className="schedule-mini-grid">
-                      <Mini label="confirmados" value={`${confirmed}/${job.quantity}`} />
-                      <Mini label="em aberto" value={String(getOpenSlots(job))} />
-                      <Mini label="concluídos" value={String(concluded)} />
-                    </div>
-                  </div>
-
-                  <button type="button" onClick={() => setPrintJob(job)} className="company-action justify-self-start">
-                    <Printer size={17} /> Imprimir escala
-                  </button>
-
-                  {getOpenSlots(job) > 0 && (
-                    <div className="schedule-alert">
-                      {getOpenSlots(job) === 1 ? "Falta" : "Faltam"} {getOpenSlots(job)} profissional{getOpenSlots(job) === 1 ? "" : "is"} para completar esta escala.
-                      <Link to={`/app/candidatos?vaga=${job.id}`} className="ml-2 font-black text-aqua-700">Ver candidatos</Link>
-                    </div>
-                  )}
-
-                  {applications.length === 0 ? (
-                    <EmptyState title="Nenhum profissional confirmado" text="Aprove candidatos na vaga para preencher esta escala." />
-                  ) : (
-                    <div className="grid gap-3">
-                      {applications.map((application) => (
-                        <ScheduleWorker
-                          key={application.id}
-                          application={application}
-                          job={job}
-                          disabled={companyBlocked}
-                          onComplete={() => runStatus(application.id, "Trabalho concluído")}
-                          onAbsence={() => runStatus(application.id, "Falta registrada")}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </section>
-              );
-            })}
-          </div>
-        )}
+        ) : selectedItem.kind === "job" && selectedItem.jobEvent ? (
+          <ScheduleEventDetail
+            event={selectedItem.jobEvent}
+            today={today}
+            companyName={currentCompany.establishmentName}
+            coverUrl={currentCompany.coverUrl || undefined}
+            disabled={companyBlocked}
+            onComplete={(applicationId) => runStatus(applicationId, "Trabalho concluído")}
+            onAbsence={(applicationId) => runStatus(applicationId, "Falta registrada")}
+            onPrint={setPrintJobs}
+          />
+        ) : selectedItem.schedule ? (
+          <ManualScheduleCard
+            schedule={selectedItem.schedule}
+            disabled={companyBlocked}
+            onEdit={() => setEditing(selectedItem.schedule!)}
+            onDelete={() => handleDelete(selectedItem.schedule!.id)}
+            onPrint={() => setPrintSchedule(selectedItem.schedule!)}
+          />
+        ) : null}
       </section>
 
       {creating && (
-        <Modal title="Criar escala" onClose={() => setCreating(false)}>
-          <ScheduleForm onSubmit={handleCreate} />
+        <Modal title="Nova escala" onClose={() => setCreating(null)}>
+          <ScheduleForm defaultDate={creating.date} onSubmit={handleCreate} />
         </Modal>
       )}
 
@@ -301,20 +306,56 @@ export function CompanySchedulePage() {
           <SchedulePrintSheet companyName={currentCompany.establishmentName} schedule={printSchedule} />
         </div>
       )}
-      {printJob && (
+      {printJobs.length > 0 && (
         <div className="print-only">
-          <JobSchedulePrintSheet
-            companyName={currentCompany.establishmentName}
-            job={printJob}
-            applications={state.applications.filter(
-              (application) => application.jobId === printJob.id && isRelevantToSchedule(application)
-            )}
-            workers={state.workers}
-          />
+          {printJobs.map((job, index) => (
+            <div key={job.id} style={index < printJobs.length - 1 ? { pageBreakAfter: "always" } : undefined}>
+              <JobSchedulePrintSheet
+                companyName={currentCompany.establishmentName}
+                job={job}
+                applications={state.applications.filter(
+                  (application) => application.jobId === job.id && isRelevantToSchedule(application)
+                )}
+                workers={state.workers}
+              />
+            </div>
+          ))}
         </div>
       )}
     </div>
   );
+}
+
+function KpiCard({
+  color,
+  icon,
+  value,
+  label,
+  hint
+}: {
+  color: string;
+  icon: React.ReactNode;
+  value: number;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <div
+      className="flex items-center gap-4 rounded-lg border border-l-4 border-white/10 bg-brand-charcoal p-4 shadow-soft"
+      style={{ borderLeftColor: color }}
+    >
+      <span style={{ color }}>{icon}</span>
+      <div className="min-w-0">
+        <strong className="block text-2xl leading-none text-white">{value}</strong>
+        <span className="mt-1 block text-sm font-bold text-slate-200">{label}</span>
+        <span className="block truncate text-xs font-semibold text-slate-400">{hint}</span>
+      </div>
+    </div>
+  );
+}
+
+function isRelevantToSchedule(application: Application) {
+  return application.status === "Aprovada" || application.status === "Trabalho concluído" || application.status === "Falta registrada";
 }
 
 function PrintHeader({ companyName, title }: { companyName: string; title: string }) {
@@ -477,9 +518,11 @@ function ManualScheduleCard({
 
 function ScheduleForm({
   schedule,
+  defaultDate,
   onSubmit
 }: {
   schedule?: CompanySchedule;
+  defaultDate?: string;
   onSubmit: (input: CompanyScheduleInput) => void;
 }) {
   const [error, setError] = useState("");
@@ -537,7 +580,7 @@ function ScheduleForm({
         <label className="label">Status<select name="status" className="input" required defaultValue={schedule?.status ?? "Planejada"}>{scheduleStatuses.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="label">Função<select name="function" className="input" required defaultValue={schedule?.function}>{functions.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="label">Quantidade<input name="quantity" type="number" min="1" className="input" required defaultValue={schedule?.quantity ?? 1} /></label>
-        <label className="label">Data<input name="date" type="date" className="input" required defaultValue={schedule?.date} /></label>
+        <label className="label">Data<input name="date" type="date" className="input" required defaultValue={schedule?.date ?? defaultDate} /></label>
         <label className="label">
           Bairro
           <input
@@ -561,118 +604,5 @@ function ScheduleForm({
       <label className="label">Observações<textarea name="notes" className="input min-h-24 py-3" defaultValue={schedule?.notes} placeholder="Chegada 30 minutos antes, uniforme preto, briefing com gerente." /></label>
       <button type="submit" className="primary"><Save size={17} /> Salvar escala</button>
     </form>
-  );
-}
-
-function ScheduleWorker({
-  application,
-  job,
-  disabled,
-  onComplete,
-  onAbsence
-}: {
-  application: Application;
-  job: Job;
-  disabled?: boolean;
-  onComplete: () => void;
-  onAbsence: () => void;
-}) {
-  const { state, currentCompany } = useAppStore();
-  const worker = state.workers.find((item) => item.id === application.workerId);
-  if (!worker) return null;
-
-  const active = application.status === "Aprovada";
-  const completed = application.status === "Trabalho concluído";
-  const absence = application.status === "Falta registrada";
-  const verificationCode = getShiftVerificationCode(job.id, worker.id);
-
-  return (
-    <article className="schedule-worker-card">
-      <div className="flex min-w-0 gap-3">
-        <AvatarButton src={worker.avatarUrl} name={worker.name} className="h-14 w-14 rounded-lg object-cover" />
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <strong className="text-sm text-white">{worker.name}</strong>
-            <StatusBadge type="application" status={application.status} />
-            <span className="badge bg-aqua-50 text-aqua-700"><TermHint term="codigoVerificacao">Código {verificationCode}</TermHint></span>
-          </div>
-          <p className="mt-1 text-sm font-semibold text-slate-600">
-            {worker.functions.join(", ")} - {worker.neighborhood}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold text-slate-500">
-            <span className="flex items-center gap-1.5"><Phone size={14} /> {worker.phone}</span>
-            <span className="flex items-center gap-1.5"><Mail size={14} /> {worker.email}</span>
-            <a
-              href={getWhatsAppUrl(worker.phone, `Olá, ${worker.name}. Estou organizando a escala da vaga ${job.title} no ${currentCompany.establishmentName}.`)}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 font-black text-aqua-700"
-            >
-              <MessageCircle size={14} /> WhatsApp
-            </a>
-          </div>
-        </div>
-      </div>
-      <div className="schedule-worker-actions">
-        <button
-          type="button"
-          onClick={onComplete}
-          disabled={disabled || !active}
-          className="primary"
-        >
-          <CheckCircle2 size={17} /> Concluir
-        </button>
-        <button
-          type="button"
-          onClick={onAbsence}
-          disabled={disabled || !active || completed || absence}
-          className="danger"
-        >
-          <UserX size={17} /> Falta
-        </button>
-      </div>
-    </article>
-  );
-}
-
-function matchesManualScheduleFilter(schedule: CompanySchedule, filter: ScheduleFilter, selectedDate: string, today: string) {
-  if (selectedDate && schedule.date !== selectedDate) return false;
-  if (filter === "Hoje") return schedule.date === today;
-  if (filter === "Futuras") return schedule.date >= today && schedule.status !== "Concluída" && schedule.status !== "Cancelada";
-  if (filter === "Concluídas") return schedule.status === "Concluída";
-  return true;
-}
-
-function matchesJobScheduleFilter(job: Job, filter: ScheduleFilter, selectedDate: string, today: string) {
-  if (selectedDate && job.date !== selectedDate) return false;
-  if (filter === "Hoje") return job.date === today;
-  if (filter === "Futuras") return job.date >= today && getJobStatus(job) !== "Concluída";
-  if (filter === "Concluídas") return getJobStatus(job) === "Concluída";
-  return true;
-}
-
-function isRelevantToSchedule(application: Application) {
-  return application.status === "Aprovada" || application.status === "Trabalho concluído" || application.status === "Falta registrada";
-}
-
-function isScheduled(application: Application) {
-  return application.status === "Aprovada" || application.status === "Trabalho concluído";
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="schedule-stat-tile">
-      <strong>{value}</strong>
-      <span>{label}</span>
-    </span>
-  );
-}
-
-function Mini({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="schedule-mini-tile">
-      <strong>{value}</strong>
-      <span>{label}</span>
-    </span>
   );
 }
