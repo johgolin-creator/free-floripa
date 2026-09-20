@@ -3,6 +3,7 @@ import { CalendarDays, CheckCircle2, Edit3, Flag, Plus, Printer, Save, Trash2, U
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { PrintPortal } from "../components/PrintPortal";
+import { JobSchedulePrintSheet, SchedulePrintSheet } from "../components/schedule/PrintSheets";
 import { ScheduleCalendar, matchesStatusFilter, type CalendarView, type StatusFilter } from "../components/schedule/ScheduleCalendar";
 import { ScheduleEventDetail } from "../components/schedule/ScheduleEventDetail";
 import { MonthDatePicker } from "../components/schedule/MonthDatePicker";
@@ -394,115 +395,6 @@ function KpiCard({
 
 function isRelevantToSchedule(application: Application) {
   return application.status === "Aprovada" || application.status === "Trabalho concluído" || application.status === "Falta registrada";
-}
-
-function PrintHeader({ companyName, title }: { companyName: string; title: string }) {
-  return (
-    <div style={{ marginBottom: 24, borderBottom: "2px solid #000", paddingBottom: 12 }}>
-      <strong style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 1 }}>{companyName}</strong>
-      <h1 style={{ margin: "4px 0 0", fontSize: 22 }}>{title}</h1>
-      <p style={{ margin: "4px 0 0", fontSize: 12, color: "#444" }}>Impresso em {new Date().toLocaleString("pt-BR")}</p>
-    </div>
-  );
-}
-
-function SchedulePrintSheet({ companyName, schedule }: { companyName: string; schedule: CompanySchedule }) {
-  return (
-    <div style={{ padding: 24, color: "#000", background: "#fff", fontFamily: "sans-serif" }}>
-      <PrintHeader companyName={companyName} title={schedule.title} />
-      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16 }}>
-        <tbody>
-          <PrintRow label="Data" value={formatDate(schedule.date)} />
-          <PrintRow label="Horário" value={`${schedule.startsAt} às ${schedule.endsAt}`} />
-          <PrintRow label="Local" value={`${schedule.location} - ${schedule.neighborhood}`} />
-          <PrintRow label="Função" value={schedule.function} />
-          <PrintRow label="Quantidade" value={String(schedule.quantity)} />
-          <PrintRow label="Status" value={schedule.status} />
-        </tbody>
-      </table>
-      <strong>Equipe prevista</strong>
-      {schedule.workerNames.length === 0 ? (
-        <p style={{ marginTop: 4 }}>Nenhum nome adicionado ainda.</p>
-      ) : (
-        <ul style={{ marginTop: 4 }}>
-          {schedule.workerNames.map((name) => (
-            <li key={name}>{name}</li>
-          ))}
-        </ul>
-      )}
-      {schedule.notes && (
-        <>
-          <strong style={{ display: "block", marginTop: 16 }}>Observações</strong>
-          <p style={{ marginTop: 4, whiteSpace: "pre-wrap" }}>{schedule.notes}</p>
-        </>
-      )}
-    </div>
-  );
-}
-
-function JobSchedulePrintSheet({
-  companyName,
-  job,
-  applications,
-  workers
-}: {
-  companyName: string;
-  job: Job;
-  applications: Application[];
-  workers: import("../lib/types").WorkerProfile[];
-}) {
-  return (
-    <div style={{ padding: 24, color: "#000", background: "#fff", fontFamily: "sans-serif" }}>
-      <PrintHeader companyName={companyName} title={job.title} />
-      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16 }}>
-        <tbody>
-          <PrintRow label="Data" value={formatDate(job.date)} />
-          <PrintRow label="Horário" value={`${job.startsAt} às ${job.endsAt}`} />
-          <PrintRow label="Local" value={job.neighborhood} />
-          <PrintRow label="Função" value={job.function} />
-          <PrintRow label="Vagas" value={`${job.quantity}`} />
-        </tbody>
-      </table>
-      <strong>Profissionais</strong>
-      {applications.length === 0 ? (
-        <p style={{ marginTop: 4 }}>Nenhum profissional confirmado ainda.</p>
-      ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 8 }}>
-          <thead>
-            <tr>
-              <th style={printThStyle}>Nome</th>
-              <th style={printThStyle}>Telefone</th>
-              <th style={printThStyle}>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {applications.map((application) => {
-              const worker = workers.find((item) => item.id === application.workerId);
-              return (
-                <tr key={application.id}>
-                  <td style={printTdStyle}>{worker?.name ?? "—"}</td>
-                  <td style={printTdStyle}>{worker?.phone ?? "—"}</td>
-                  <td style={printTdStyle}>{application.status}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
-}
-
-const printThStyle = { textAlign: "left" as const, borderBottom: "1px solid #000", padding: "4px 8px", fontSize: 13 };
-const printTdStyle = { borderBottom: "1px solid #ccc", padding: "4px 8px", fontSize: 13 };
-
-function PrintRow({ label, value }: { label: string; value: string }) {
-  return (
-    <tr>
-      <td style={{ padding: "4px 8px", fontWeight: 700, width: 140 }}>{label}</td>
-      <td style={{ padding: "4px 8px" }}>{value}</td>
-    </tr>
-  );
 }
 
 function ManualScheduleCard({
