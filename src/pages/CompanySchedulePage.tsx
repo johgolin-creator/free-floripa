@@ -19,6 +19,7 @@ import { AvatarButton } from "../components/AvatarButton";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
+import { ScheduleConfirmationPanel } from "../components/ScheduleConfirmationPanel";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
 import { StatusBadge, StatusLegend } from "../components/StatusBadge";
@@ -177,6 +178,13 @@ export function CompanySchedulePage() {
           </div>
         </div>
       </section>
+
+      <ScheduleConfirmationPanel
+        jobs={scheduleJobs}
+        applications={state.applications}
+        workers={state.workers}
+        companyName={currentCompany.establishmentName}
+      />
 
       <section className="schedule-section">
         <div className="schedule-section-heading">
