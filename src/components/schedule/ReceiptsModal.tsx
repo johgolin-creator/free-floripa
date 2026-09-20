@@ -1,15 +1,22 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Printer } from "lucide-react";
 import { Modal } from "../Modal";
 import {
+  fillTemplate,
+  loadReceiptCustomText,
   loadReceiptDrafts,
+  MAX_CUSTOM_TEXT,
   parseMoney,
+  saveReceiptCustomText,
   saveReceiptDraft,
+  TEMPLATE_TOKENS,
   type ReceiptCompany,
+  type ReceiptCustomText,
   type ReceiptDoc,
   type ReceiptFields,
   type ReceiptKind,
-  type ReceiptPerson
+  type ReceiptPerson,
+  type ReceiptTextMode
 } from "../../lib/receipts";
 import type { PaymentMethod } from "../../lib/types";
 import { formatCPF, isValidCPF, onlyDigits } from "../../lib/validation";
@@ -49,7 +56,7 @@ export function ReceiptsModal({
   people: ReceiptPerson[];
   company: ReceiptCompany;
   onClose: () => void;
-  onPrint: (docs: ReceiptDoc[], company: ReceiptCompany) => void;
+  onPrint: (docs: ReceiptDoc[], company: ReceiptCompany, custom: ReceiptCustomText) => void;
 }) {
   const [fields, setFields] = useState(() => initialFields(people));
   const [selected, setSelected] = useState<Set<string>>(() => new Set(people.map((person) => person.key)));
@@ -57,6 +64,8 @@ export function ReceiptsModal({
   const [responsible, setResponsible] = useState(company.responsible);
   const [bulkValue, setBulkValue] = useState("");
   const [bulkMethod, setBulkMethod] = useState<PaymentMethod>("Pix");
+  const [custom, setCustom] = useState<ReceiptCustomText>(() => loadReceiptCustomText());
+  const textRef = useRef<HTMLTextAreaElement>(null);
 
   const allSelected = people.length > 0 && selected.size === people.length;
   const documentCount = selected.size * kinds.size;
@@ -86,6 +95,35 @@ export function ReceiptsModal({
     return next;
   }
 
+  function changeCustom(next: ReceiptCustomText) {
+    setCustom(next);
+    saveReceiptCustomText(next);
+  }
+
+  /** Insere o marcador na posição do cursor (ou no fim) e devolve o cursor para depois dele. */
+  function insertToken(token: string) {
+    const area = textRef.current;
+    const start = area?.selectionStart ?? custom.text.length;
+    const end = area?.selectionEnd ?? custom.text.length;
+    const text = (custom.text.slice(0, start) + token + custom.text.slice(end)).slice(0, MAX_CUSTOM_TEXT);
+    changeCustom({ ...custom, text });
+    window.requestAnimationFrame(() => {
+      area?.focus();
+      area?.setSelectionRange(start + token.length, start + token.length);
+    });
+  }
+
+  function buildDoc(person: ReceiptPerson, kind: ReceiptKind): ReceiptDoc {
+    const field = fields[person.key];
+    return { kind, person, cpf: onlyDigits(field.cpf), value: parseMoney(field.value), method: field.method, payDate: field.payDate };
+  }
+
+  const previewPerson = people.find((person) => selected.has(person.key));
+  const previewText =
+    custom.text.trim() && previewPerson
+      ? fillTemplate(custom.text, buildDoc(previewPerson, "recibo"), { ...company, responsible })
+      : "";
+
   function applyToSelected() {
     setFields((current) => {
       const next = { ...current };
@@ -102,20 +140,11 @@ export function ReceiptsModal({
     const docs: ReceiptDoc[] = [];
     for (const person of people) {
       if (!selected.has(person.key)) continue;
-      const field = fields[person.key];
       for (const { kind } of KINDS) {
-        if (!kinds.has(kind)) continue;
-        docs.push({
-          kind,
-          person,
-          cpf: onlyDigits(field.cpf),
-          value: parseMoney(field.value),
-          method: field.method,
-          payDate: field.payDate
-        });
+        if (kinds.has(kind)) docs.push(buildDoc(person, kind));
       }
     }
-    onPrint(docs, { ...company, responsible: responsible.trim() || company.responsible });
+    onPrint(docs, { ...company, responsible: responsible.trim() || company.responsible }, custom);
   }
 
   return (
@@ -173,6 +202,64 @@ export function ReceiptsModal({
             Aplicar
           </button>
         </div>
+
+        <section className="grid gap-2 rounded-lg border border-white/10 bg-white/5 p-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <strong className="text-sm text-white">Texto do recibo (opcional)</strong>
+            <span className="text-xs font-semibold text-slate-500">
+              {custom.text.length}/{MAX_CUSTOM_TEXT}
+            </span>
+          </div>
+          <textarea
+            ref={textRef}
+            className="input min-h-24 py-3"
+            rows={4}
+            maxLength={MAX_CUSTOM_TEXT}
+            value={custom.text}
+            onChange={(event) => changeCustom({ ...custom, text: event.target.value })}
+            placeholder="Cole ou escreva aqui o texto que deve sair no recibo. Ex.: Declaro que recebi de {empresa} a quantia de {valor} ({extenso}), referente à diária de {funcao} em {data}."
+            aria-label="Texto do recibo"
+          />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-black uppercase text-slate-500">Preencher sozinho:</span>
+            {TEMPLATE_TOKENS.map(({ token, label }) => (
+              <button
+                key={token}
+                type="button"
+                title={label}
+                onClick={() => insertToken(token)}
+                className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs font-black text-aqua-300 transition hover:bg-white/10"
+              >
+                {token}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-x-5 gap-y-1">
+            {(
+              [
+                ["append", "Acrescentar ao texto padrão"],
+                ["replace", "Usar só o meu texto (no lugar do texto padrão)"]
+              ] as Array<[ReceiptTextMode, string]>
+            ).map(([mode, label]) => (
+              <label key={mode} className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-300">
+                <input
+                  type="radio"
+                  name="receipt-text-mode"
+                  className="h-4 w-4 accent-aqua-500"
+                  checked={custom.mode === mode}
+                  onChange={() => changeCustom({ ...custom, mode })}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          {previewText && previewPerson && (
+            <div className="rounded-lg bg-white p-3 text-black">
+              <span className="block text-[0.68rem] font-black uppercase text-slate-500">Como vai sair para {previewPerson.name}</span>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-6">{previewText}</p>
+            </div>
+          )}
+        </section>
 
         <div className="grid gap-2">
           <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-black text-white">

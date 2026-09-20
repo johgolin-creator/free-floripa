@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { formatCurrency, formatDate } from "../../lib/format";
-import type { ReceiptCompany, ReceiptDoc } from "../../lib/receipts";
+import { fillTemplate, type ReceiptCompany, type ReceiptCustomText, type ReceiptDoc } from "../../lib/receipts";
 import { formatCPF } from "../../lib/validation";
 import { valorPorExtenso } from "../../lib/valorPorExtenso";
 
@@ -13,7 +13,9 @@ const BLOCK_HEIGHT = "134mm";
 
 const blockStyle: CSSProperties = {
   boxSizing: "border-box",
-  height: BLOCK_HEIGHT,
+  minHeight: BLOCK_HEIGHT,
+  pageBreakInside: "avoid",
+  breakInside: "avoid",
   padding: "6mm 4mm 4mm",
   color: INK,
   background: "#fff",
@@ -61,6 +63,12 @@ function Signatures({ profissional, pagador }: { profissional: string; pagador: 
   );
 }
 
+const customStyle: CSSProperties = { margin: "0 0 8px", whiteSpace: "pre-wrap", fontSize: 12.5, lineHeight: 1.45 };
+
+function hasCustom(custom: ReceiptCustomText | undefined): custom is ReceiptCustomText {
+  return Boolean(custom && custom.text.trim());
+}
+
 function Footer() {
   return <div style={{ marginTop: 6, fontSize: 9, color: "#555" }}>Emitido pelo PONT em {new Date().toLocaleDateString("pt-BR")}</div>;
 }
@@ -74,7 +82,7 @@ function CompanyId({ company }: { company: ReceiptCompany }) {
   );
 }
 
-function PaymentReceipt({ doc, company }: { doc: ReceiptDoc; company: ReceiptCompany }) {
+function PaymentReceipt({ doc, company, custom }: { doc: ReceiptDoc; company: ReceiptCompany; custom?: ReceiptCustomText }) {
   const { person } = doc;
   const cpf = formatCPF(doc.cpf);
   const where = [person.eventTitle, person.place].filter(Boolean).join(" - ");
@@ -92,6 +100,9 @@ function PaymentReceipt({ doc, company }: { doc: ReceiptDoc; company: ReceiptCom
         </div>
       </div>
 
+      {hasCustom(custom) && custom.mode === "replace" ? (
+        <p style={{ ...customStyle, margin: "14px 0 6px" }}>{fillTemplate(custom.text, doc, company)}</p>
+      ) : (
       <p style={{ margin: "14px 0 6px" }}>
         Recebi de <CompanyId company={company} />, a quantia de <strong>{valueText(doc.value)}</strong> (
         {doc.value > 0 ? <em>{valorPorExtenso(doc.value)}</em> : <Blank width="70mm" />}), referente ao pagamento da diária de{" "}
@@ -99,6 +110,8 @@ function PaymentReceipt({ doc, company }: { doc: ReceiptDoc; company: ReceiptCom
         {person.endsAt}
         {where ? `, em ${where}` : ""}.
       </p>
+      )}
+      {hasCustom(custom) && custom.mode === "append" && <p style={customStyle}>{fillTemplate(custom.text, doc, company)}</p>}
 
       <p style={{ margin: "0 0 10px" }}>
         Forma de pagamento: <strong>{doc.method === "A combinar" ? "________________" : doc.method}</strong>
@@ -118,7 +131,7 @@ function PaymentReceipt({ doc, company }: { doc: ReceiptDoc; company: ReceiptCom
   );
 }
 
-function ShiftVoucher({ doc, company }: { doc: ReceiptDoc; company: ReceiptCompany }) {
+function ShiftVoucher({ doc, company, custom }: { doc: ReceiptDoc; company: ReceiptCompany; custom?: ReceiptCustomText }) {
   const { person } = doc;
   const cpf = formatCPF(doc.cpf);
   const row: CSSProperties = { display: "grid", gridTemplateColumns: "32mm 1fr", gap: 8, padding: "2px 0", borderBottom: "1px solid #ccc" };
@@ -160,7 +173,12 @@ function ShiftVoucher({ doc, company }: { doc: ReceiptDoc; company: ReceiptCompa
         <strong>Valor da diária</strong>
         <span>{valueText(doc.value)}</span>
       </div>
-      <p style={{ margin: "8px 0 0", fontSize: 12 }}>Registro da participação do profissional no turno descrito acima.</p>
+      {hasCustom(custom) && custom.mode === "replace" ? (
+        <p style={{ ...customStyle, margin: "8px 0 0" }}>{fillTemplate(custom.text, doc, company)}</p>
+      ) : (
+        <p style={{ margin: "8px 0 0", fontSize: 12 }}>Registro da participação do profissional no turno descrito acima.</p>
+      )}
+      {hasCustom(custom) && custom.mode === "append" && <p style={{ ...customStyle, margin: "6px 0 0" }}>{fillTemplate(custom.text, doc, company)}</p>}
 
       <Signatures profissional={person.name} pagador={company.responsible || company.name} />
       <Footer />
@@ -168,12 +186,16 @@ function ShiftVoucher({ doc, company }: { doc: ReceiptDoc; company: ReceiptCompa
   );
 }
 
-function Block({ doc, company }: { doc: ReceiptDoc; company: ReceiptCompany }) {
-  return doc.kind === "recibo" ? <PaymentReceipt doc={doc} company={company} /> : <ShiftVoucher doc={doc} company={company} />;
+function Block({ doc, company, custom }: { doc: ReceiptDoc; company: ReceiptCompany; custom?: ReceiptCustomText }) {
+  return doc.kind === "recibo" ? (
+    <PaymentReceipt doc={doc} company={company} custom={custom} />
+  ) : (
+    <ShiftVoucher doc={doc} company={company} custom={custom} />
+  );
 }
 
 /** Dois documentos por folha A4, separados por linha de corte; folha nova a cada par. */
-export function ReceiptPages({ docs, company }: { docs: ReceiptDoc[]; company: ReceiptCompany }) {
+export function ReceiptPages({ docs, company, custom }: { docs: ReceiptDoc[]; company: ReceiptCompany; custom?: ReceiptCustomText }) {
   const pages: ReceiptDoc[][] = [];
   for (let index = 0; index < docs.length; index += 2) pages.push(docs.slice(index, index + 2));
 
@@ -184,13 +206,13 @@ export function ReceiptPages({ docs, company }: { docs: ReceiptDoc[]; company: R
           key={pageIndex}
           style={pageIndex < pages.length - 1 ? { pageBreakAfter: "always", breakAfter: "page" } : undefined}
         >
-          <Block doc={pair[0]} company={company} />
+          <Block doc={pair[0]} company={company} custom={custom} />
           {pair[1] && (
             <>
               <div style={{ borderTop: "1px dashed #000", margin: "0 0 0", textAlign: "center", fontSize: 9, color: "#555", lineHeight: "8px" }}>
                 <span style={{ background: "#fff", padding: "0 6px", position: "relative", top: -5 }}>✂ corte aqui</span>
               </div>
-              <Block doc={pair[1]} company={company} />
+              <Block doc={pair[1]} company={company} custom={custom} />
             </>
           )}
         </div>

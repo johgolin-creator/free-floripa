@@ -20,7 +20,7 @@ import { functionLabel } from "../lib/functionInfo";
 import { getJobStatus } from "../lib/rules";
 import { addDays, buildCalendarItems, buildJobEvents, parseISODate } from "../lib/scheduleEvents";
 import { deactivateScheduleInvite, syncScheduleInvite } from "../lib/scheduleInvites";
-import type { ReceiptCompany, ReceiptDoc, ReceiptPerson } from "../lib/receipts";
+import type { ReceiptCompany, ReceiptCustomText, ReceiptDoc, ReceiptPerson } from "../lib/receipts";
 import { formatCNPJ, formatCPF } from "../lib/validation";
 import type { JobEvent } from "../lib/scheduleEvents";
 import type { Application, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, Neighborhood } from "../lib/types";
@@ -50,7 +50,7 @@ export function CompanySchedulePage() {
   const [printSchedule, setPrintSchedule] = useState<CompanySchedule | null>(null);
   const [printJobs, setPrintJobs] = useState<Job[]>([]);
   const [receiptsFor, setReceiptsFor] = useState<{ title: string; people: ReceiptPerson[] } | null>(null);
-  const [printReceipts, setPrintReceipts] = useState<{ docs: ReceiptDoc[]; company: ReceiptCompany } | null>(null);
+  const [printReceipts, setPrintReceipts] = useState<{ docs: ReceiptDoc[]; company: ReceiptCompany; custom: ReceiptCustomText } | null>(null);
   const userPicked = useRef(false);
   const autoPicked = useRef(false);
 
@@ -387,9 +387,9 @@ export function CompanySchedulePage() {
           people={receiptsFor.people}
           company={receiptCompany}
           onClose={() => setReceiptsFor(null)}
-          onPrint={(docs, company) => {
+          onPrint={(docs, company, custom) => {
             setReceiptsFor(null);
-            setPrintReceipts({ docs, company });
+            setPrintReceipts({ docs, company, custom });
           }}
         />
       )}
@@ -421,7 +421,7 @@ export function CompanySchedulePage() {
       )}
       {printReceipts && (
         <PrintPortal>
-          <ReceiptPages docs={printReceipts.docs} company={printReceipts.company} />
+          <ReceiptPages docs={printReceipts.docs} company={printReceipts.company} custom={printReceipts.custom} />
         </PrintPortal>
       )}
       {printJobs.length > 0 && (

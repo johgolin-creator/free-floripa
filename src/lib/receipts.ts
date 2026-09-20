@@ -1,4 +1,7 @@
+import { formatCurrency, formatDate } from "./format";
 import type { PaymentMethod } from "./types";
+import { formatCPF } from "./validation";
+import { valorPorExtenso } from "./valorPorExtenso";
 
 export type ReceiptKind = "recibo" | "comprovante";
 
@@ -77,5 +80,86 @@ export function saveReceiptDraft(key: string, fields: ReceiptFields) {
     window.localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
   } catch {
     // Sem armazenamento local (aba anônima): só não lembra dos dados na próxima vez.
+  }
+}
+
+// --- Texto livre da empresa ----------------------------------------------------
+
+/** "append": entra depois do texto padrão. "replace": no lugar do texto padrão. */
+export type ReceiptTextMode = "append" | "replace";
+
+export interface ReceiptCustomText {
+  text: string;
+  mode: ReceiptTextMode;
+}
+
+export const MAX_CUSTOM_TEXT = 1500;
+
+/** Marcadores que a empresa pode usar no texto; cada recibo preenche os seus. */
+export const TEMPLATE_TOKENS: Array<{ token: string; label: string }> = [
+  { token: "{nome}", label: "nome do profissional" },
+  { token: "{cpf}", label: "CPF" },
+  { token: "{valor}", label: "valor (R$)" },
+  { token: "{extenso}", label: "valor por extenso" },
+  { token: "{funcao}", label: "função" },
+  { token: "{data}", label: "data do turno" },
+  { token: "{horario}", label: "horário" },
+  { token: "{evento}", label: "evento" },
+  { token: "{local}", label: "local" },
+  { token: "{forma}", label: "forma de pagamento" },
+  { token: "{pagamento}", label: "data do pagamento" },
+  { token: "{empresa}", label: "empresa" },
+  { token: "{documento}", label: "CNPJ/CPF da empresa" }
+];
+
+const BLANK = "________________";
+
+/** Troca os marcadores ({nome}, {valor}...) pelos dados do recibo. Marcador
+ *  desconhecido fica como foi digitado; dado que falta vira uma linha em branco. */
+export function fillTemplate(text: string, doc: ReceiptDoc, company: ReceiptCompany): string {
+  const { person } = doc;
+  const cpf = formatCPF(doc.cpf);
+  const values: Record<string, string> = {
+    nome: person.name,
+    cpf: cpf || BLANK,
+    valor: doc.value > 0 ? formatCurrency(doc.value) : "R$ ______________",
+    extenso: doc.value > 0 ? valorPorExtenso(doc.value) : BLANK,
+    funcao: person.functionName,
+    data: person.date ? formatDate(person.date) : BLANK,
+    horario: `${person.startsAt} às ${person.endsAt}`,
+    evento: person.eventTitle,
+    local: person.place || BLANK,
+    forma: doc.method === "A combinar" ? BLANK : doc.method,
+    pagamento: doc.payDate ? formatDate(doc.payDate) : BLANK,
+    empresa: company.name,
+    documento: company.document ? `${company.documentLabel} ${company.document}` : BLANK
+  };
+  return text.replace(/\{([a-zA-Zçã]+)\}/g, (whole, key: string) => {
+    const normalized = key.toLowerCase().replace("ç", "c").replace("ã", "a");
+    return normalized in values ? values[normalized] : whole;
+  });
+}
+
+const TEXT_KEY = "pont:receipt-text:v1";
+
+export function loadReceiptCustomText(): ReceiptCustomText {
+  try {
+    const raw = window.localStorage.getItem(TEXT_KEY);
+    if (!raw) return { text: "", mode: "append" };
+    const parsed = JSON.parse(raw) as Partial<ReceiptCustomText>;
+    return {
+      text: typeof parsed.text === "string" ? parsed.text.slice(0, MAX_CUSTOM_TEXT) : "",
+      mode: parsed.mode === "replace" ? "replace" : "append"
+    };
+  } catch {
+    return { text: "", mode: "append" };
+  }
+}
+
+export function saveReceiptCustomText(value: ReceiptCustomText) {
+  try {
+    window.localStorage.setItem(TEXT_KEY, JSON.stringify(value));
+  } catch {
+    // Sem armazenamento local (aba anônima): só não lembra do texto na próxima vez.
   }
 }
