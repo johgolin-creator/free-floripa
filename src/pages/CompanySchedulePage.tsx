@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, CheckCircle2, Edit3, Flag, Plus, Printer, Receipt, Save, Trash2, Users } from "lucide-react";
-import { EmptyState } from "../components/EmptyState";
+import { Edit3, Plus, Printer, Receipt, Save, Trash2 } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { PrintPortal } from "../components/PrintPortal";
 import { ReceiptsModal } from "../components/schedule/ReceiptsModal";
@@ -10,15 +9,16 @@ import { ScheduleCalendar, matchesStatusFilter, type CalendarView, type StatusFi
 import { ScheduleEventDetail } from "../components/schedule/ScheduleEventDetail";
 import { MonthDatePicker } from "../components/schedule/MonthDatePicker";
 import { ScheduleInvitePanel } from "../components/schedule/ScheduleInvitePanel";
+import { ScheduleManualPanel } from "../components/schedule/ScheduleManualPanel";
+import type { MenuAction } from "../components/schedule/KebabMenu";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
-import { StatusBadge } from "../components/StatusBadge";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore, type CompanyScheduleInput } from "../lib/store";
-import { formatDate, todayLocalISODate } from "../lib/format";
+import { todayLocalISODate } from "../lib/format";
 import { functionLabel } from "../lib/functionInfo";
 import { getJobStatus } from "../lib/rules";
-import { addDays, buildCalendarItems, buildJobEvents, parseISODate } from "../lib/scheduleEvents";
+import { buildCalendarItems, buildJobEvents, type CalendarItem } from "../lib/scheduleEvents";
 import { deactivateScheduleInvite, syncScheduleInvite } from "../lib/scheduleInvites";
 import type { ReceiptCompany, ReceiptCustomText, ReceiptDoc, ReceiptPerson } from "../lib/receipts";
 import { formatCNPJ, formatCPF } from "../lib/validation";
@@ -106,22 +106,32 @@ export function CompanySchedulePage() {
     }
   }, [items, today]);
 
-  const kpis = useMemo(() => {
-    const active = items.filter((item) => item.state !== "concluido");
-    const withOpenSlots = active.filter((item) => item.slots > item.filled);
-    const weekAgo = addDays(today, -7);
-    return {
-      todayCount: items.filter((item) => item.date === today).length,
-      openSlots: withOpenSlots.reduce((total, item) => total + (item.slots - item.filled), 0),
-      openEvents: withOpenSlots.length,
-      confirmedAhead: active.filter((item) => item.date >= today).reduce((total, item) => total + item.filled, 0),
-      concludedRecent: items.filter((item) => item.state === "concluido" && item.date >= weekAgo && item.date <= today).length
-    };
-  }, [items, today]);
-
   const markedDates = useMemo(() => new Set(items.map((item) => item.date)), [items]);
   const dayItems = filteredItems.filter((item) => item.date === selectedDate);
   const selectedItem = dayItems.find((item) => item.key === selectedItemKey) ?? dayItems[0];
+
+  /** Menu de "três pontinhos" de cada cartão de evento. */
+  function getCardActions(item: CalendarItem): MenuAction[] {
+    const open: MenuAction = { label: "Abrir detalhes", onClick: () => { pickDate(item.date); pickItem(item.key); } };
+    if (item.kind === "job" && item.jobEvent) {
+      const event = item.jobEvent;
+      return [
+        open,
+        { label: "Ver escala (imprimir)", icon: <Printer size={15} />, onClick: () => setPrintJobs(event.jobs) },
+        { label: "Recibos", icon: <Receipt size={15} />, onClick: () => openJobReceipts(event) },
+        { label: "Gerenciar equipe", to: `/app/candidatos?vaga=${event.jobs[0].id}` }
+      ];
+    }
+    const schedule = item.schedule;
+    if (!schedule) return [open];
+    return [
+      open,
+      { label: "Imprimir", icon: <Printer size={15} />, onClick: () => setPrintSchedule(schedule) },
+      { label: "Recibos", icon: <Receipt size={15} />, onClick: () => openManualReceipts(schedule) },
+      { label: "Editar escala", icon: <Edit3 size={15} />, disabled: companyBlocked, onClick: () => setEditing(schedule) },
+      { label: "Excluir", icon: <Trash2 size={15} />, danger: true, disabled: companyBlocked, onClick: () => handleDelete(schedule.id) }
+    ];
+  }
 
   function pickDate(date: string) {
     userPicked.current = true;
@@ -229,17 +239,12 @@ export function CompanySchedulePage() {
     setMessage(result.message);
   }
 
-  const selectedDateLabel = (() => {
-    const label = parseISODate(selectedDate).toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
-    return label.charAt(0).toUpperCase() + label.slice(1);
-  })();
-
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-5">
       <SectionHeader
         eyebrow="Escala"
         title="Escala"
-        description="Organize sua equipe, acompanhe confirmações e gerencie suas escalas."
+        description="Visualize, gerencie e acompanhe sua equipe em um só lugar."
         action={
           <button type="button" onClick={() => setCreating({})} disabled={companyBlocked} className="primary">
             <Plus size={17} /> Nova escala
@@ -253,98 +258,40 @@ export function CompanySchedulePage() {
         </SafetyNotice>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
-          color="#C8FF38"
-          icon={<CalendarDays size={24} />}
-          value={kpis.todayCount}
-          label="Escalas hoje"
-          hint={kpis.todayCount === 0 ? "Nenhum evento para hoje" : `${kpis.todayCount} evento${kpis.todayCount === 1 ? "" : "s"}`}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_27rem] xl:items-start">
+        <ScheduleCalendar
+          items={filteredItems}
+          view={view}
+          onViewChange={setView}
+          anchor={anchor}
+          onAnchorChange={setAnchor}
+          today={today}
+          selectedDate={selectedDate}
+          onSelectDate={pickDate}
+          selectedItemKey={selectedItem?.key ?? ""}
+          onSelectItem={pickItem}
+          onAddOnDate={(date) => setCreating({ date })}
+          search={search}
+          onSearchChange={setSearch}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          getCardActions={getCardActions}
+          disabled={companyBlocked}
         />
-        <KpiCard
-          color="#FF8A4C"
-          icon={<Users size={24} />}
-          value={kpis.openSlots}
-          label="Vagas a preencher"
-          hint={kpis.openEvents === 0 ? "Tudo preenchido" : `Em ${kpis.openEvents} evento${kpis.openEvents === 1 ? "" : "s"}`}
-        />
-        <KpiCard
-          color="#34D399"
-          icon={<CheckCircle2 size={24} />}
-          value={kpis.confirmedAhead}
-          label={`Profissiona${kpis.confirmedAhead === 1 ? "l" : "is"} confirmado${kpis.confirmedAhead === 1 ? "" : "s"}`}
-          hint="Para os próximos eventos"
-        />
-        <KpiCard
-          color="#4CA8FF"
-          icon={<Flag size={24} />}
-          value={kpis.concludedRecent}
-          label={`Escala${kpis.concludedRecent === 1 ? "" : "s"} concluída${kpis.concludedRecent === 1 ? "" : "s"}`}
-          hint="Nos últimos 7 dias"
-        />
-      </div>
-
-      <ScheduleCalendar
-        items={filteredItems}
-        view={view}
-        onViewChange={setView}
-        anchor={anchor}
-        onAnchorChange={setAnchor}
-        today={today}
-        selectedDate={selectedDate}
-        onSelectDate={pickDate}
-        selectedItemKey={selectedItem?.key ?? ""}
-        onSelectItem={pickItem}
-        onAddOnDate={(date) => setCreating({ date })}
-        search={search}
-        onSearchChange={setSearch}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        disabled={companyBlocked}
-      />
-
-      <section className="grid gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-xl font-black text-white">{selectedDateLabel}</h3>
-          {dayItems.length > 1 && (
-            <div className="flex flex-wrap gap-2">
-              {dayItems.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => pickItem(item.key)}
-                  className={`min-h-9 rounded-lg px-3 text-xs font-black transition ${
-                    item.key === selectedItem?.key ? "bg-aqua-300 text-navy-950" : "border border-white/10 bg-white/5 text-slate-600 hover:bg-white/10"
-                  }`}
-                >
-                  {item.title}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
 
         {!selectedItem ? (
-          <div className="grid gap-3">
-            <EmptyState
-              title="Nenhum evento neste dia"
-              text={
-                normalizedSearch || statusFilter !== "Todos"
-                  ? "Nada corresponde à busca ou ao filtro. Limpe-os para ver todos os eventos."
-                  : "Escolha outro dia no calendário ou crie uma escala para este dia."
-              }
-            />
-            <button
-              type="button"
-              className="primary justify-self-start"
-              disabled={companyBlocked}
-              onClick={() => setCreating({ date: selectedDate })}
-            >
+          <aside className="grid content-start justify-items-start gap-3 rounded-2xl border border-dashed border-white/15 p-6">
+            <strong className="text-base text-white">Nenhum evento selecionado</strong>
+            <p className="text-sm font-semibold text-slate-400">
+              Escolha um evento na lista para ver a equipe, os detalhes e as ações, ou crie uma escala para este dia.
+            </p>
+            <button type="button" className="primary" disabled={companyBlocked} onClick={() => setCreating({ date: selectedDate })}>
               <Plus size={17} /> Criar escala neste dia
             </button>
-          </div>
+          </aside>
         ) : selectedItem.kind === "job" && selectedItem.jobEvent ? (
           <ScheduleEventDetail
+            key={selectedItem.key}
             event={selectedItem.jobEvent}
             today={today}
             companyName={currentCompany.establishmentName}
@@ -355,24 +302,18 @@ export function CompanySchedulePage() {
             onReceipts={openJobReceipts}
           />
         ) : selectedItem.schedule ? (
-          <div className="grid gap-4">
-            <ManualScheduleCard
-              schedule={selectedItem.schedule}
-              disabled={companyBlocked}
-              onEdit={() => setEditing(selectedItem.schedule!)}
-              onDelete={() => handleDelete(selectedItem.schedule!.id)}
-              onPrint={() => setPrintSchedule(selectedItem.schedule!)}
-              onReceipts={() => openManualReceipts(selectedItem.schedule!)}
-            />
-            <ScheduleInvitePanel
-              key={selectedItem.schedule.id}
-              schedule={selectedItem.schedule}
-              companyName={currentCompany.establishmentName}
-              disabled={companyBlocked}
-            />
-          </div>
+          <ScheduleManualPanel
+            key={selectedItem.key}
+            schedule={selectedItem.schedule}
+            companyName={currentCompany.establishmentName}
+            disabled={companyBlocked}
+            onEdit={() => setEditing(selectedItem.schedule!)}
+            onDelete={() => handleDelete(selectedItem.schedule!.id)}
+            onPrint={() => setPrintSchedule(selectedItem.schedule!)}
+            onReceipts={() => openManualReceipts(selectedItem.schedule!)}
+          />
         ) : null}
-      </section>
+      </div>
 
       {creating && (
         <Modal title="Nova escala" onClose={() => setCreating(null)}>
@@ -443,88 +384,8 @@ export function CompanySchedulePage() {
   );
 }
 
-function KpiCard({
-  color,
-  icon,
-  value,
-  label,
-  hint
-}: {
-  color: string;
-  icon: React.ReactNode;
-  value: number;
-  label: string;
-  hint: string;
-}) {
-  return (
-    <div
-      className="flex items-center gap-3 rounded-lg border border-l-4 border-white/10 bg-brand-charcoal px-3 py-2.5 shadow-soft"
-      style={{ borderLeftColor: color }}
-    >
-      <span style={{ color }}>{icon}</span>
-      <div className="min-w-0">
-        <strong className="block text-xl leading-none text-white">{value}</strong>
-        <span className="mt-0.5 block text-sm font-bold text-slate-600">{label}</span>
-        <span className="block truncate text-xs font-semibold text-slate-400">{hint}</span>
-      </div>
-    </div>
-  );
-}
-
 function isRelevantToSchedule(application: Application) {
   return application.status === "Aprovada" || application.status === "Trabalho concluído" || application.status === "Falta registrada";
-}
-
-function ManualScheduleCard({
-  schedule,
-  disabled,
-  onEdit,
-  onDelete,
-  onPrint,
-  onReceipts
-}: {
-  schedule: CompanySchedule;
-  disabled?: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
-  onPrint: () => void;
-  onReceipts: () => void;
-}) {
-  return (
-    <article className="schedule-manual-card">
-      <div className="schedule-job-head">
-        <div>
-          <div className="mb-2 flex flex-wrap gap-2">
-            <StatusBadge type="schedule" status={schedule.status} />
-            <span className="badge">{schedule.function}</span>
-            <span className="badge">{schedule.quantity} vaga{schedule.quantity === 1 ? "" : "s"}</span>
-          </div>
-          <h3 className="font-black text-white">{schedule.title}</h3>
-          <p className="text-sm font-semibold text-slate-600">
-            {formatDate(schedule.date)} - {schedule.startsAt} às {schedule.endsAt} - {schedule.neighborhood}
-          </p>
-          <p className="mt-1 text-sm text-slate-600">{schedule.location}</p>
-          {schedule.notes && <p className="mt-2 text-sm leading-6 text-slate-600">{schedule.notes}</p>}
-        </div>
-        <div className="schedule-card-actions">
-          <button type="button" onClick={onPrint} className="company-action"><Printer size={17} /> Imprimir</button>
-          <button type="button" onClick={onReceipts} className="company-action"><Receipt size={17} /> Recibos</button>
-          <button type="button" onClick={onEdit} disabled={disabled} className="company-action company-action-primary"><Edit3 size={17} /> Editar</button>
-          <button type="button" onClick={onDelete} disabled={disabled} className="company-action company-action-danger"><Trash2 size={17} /> Excluir</button>
-        </div>
-      </div>
-      <div className="schedule-team-box">
-        <span className="text-xs font-black uppercase text-slate-500">Equipe prevista</span>
-        {schedule.workerNames.length === 0 ? (
-          <p className="mt-1 text-sm font-semibold text-slate-500">Nenhum nome adicionado ainda.</p>
-        ) : (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {schedule.workerNames.map((name) => <span key={name} className="badge">{name}</span>)}
-          </div>
-        )}
-      </div>
-    </article>
-  );
 }
 
 function ScheduleForm({

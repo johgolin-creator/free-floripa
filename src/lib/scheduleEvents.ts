@@ -62,6 +62,8 @@ export interface CalendarItem {
   filled: number;
   slots: number;
   state: CalendarState;
+  /** Vagas por função (cartão do evento: "Garçom 4"). */
+  functions: Array<{ function: string; slots: number }>;
   searchText: string;
   jobEvent?: JobEvent;
   schedule?: CompanySchedule;
@@ -168,6 +170,7 @@ export function buildCalendarItems(events: JobEvent[], schedules: CompanySchedul
       filled: event.confirmed,
       slots: event.slots,
       state: stateFor(event.confirmed, event.slots, event.concluded),
+      functions: event.functions.map((item) => ({ function: item.function, slots: item.slots })),
       searchText: `${event.name} ${places} ${names}`.toLowerCase(),
       jobEvent: event
     });
@@ -186,6 +189,7 @@ export function buildCalendarItems(events: JobEvent[], schedules: CompanySchedul
       filled: schedule.workerNames.length,
       slots: schedule.quantity,
       state: stateFor(schedule.workerNames.length, schedule.quantity, schedule.status === "Concluída"),
+      functions: [{ function: schedule.function, slots: schedule.quantity }],
       searchText: `${schedule.title} ${schedule.location} ${schedule.neighborhood} ${schedule.workerNames.join(" ")}`.toLowerCase(),
       schedule
     });
