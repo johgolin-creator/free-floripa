@@ -20,6 +20,7 @@ import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
 import { StatusBadge, StatusLegend } from "../components/StatusBadge";
 import { useAppStore } from "../lib/store";
+import { functionLabel } from "../lib/functionInfo";
 import { formatCurrency, formatDate, formatDateTime, getJobContact, getWhatsAppUrl } from "../lib/format";
 import type { Application } from "../lib/types";
 
@@ -114,7 +115,7 @@ export function ApplicationsPage() {
                   <div>
                     <div className="mb-2 flex flex-wrap gap-2">
                       <StatusBadge type="application" status={application.status} />
-                      <span className="badge">{job.function}</span>
+                      <span className="badge">{functionLabel(job.function)}</span>
                       <span className="badge">{formatCurrency(job.dailyValue)}</span>
                     </div>
                     <h3>{job.title}</h3>

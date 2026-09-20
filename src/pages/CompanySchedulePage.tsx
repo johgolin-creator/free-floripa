@@ -4,12 +4,14 @@ import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { ScheduleCalendar, matchesStatusFilter, type CalendarView, type StatusFilter } from "../components/schedule/ScheduleCalendar";
 import { ScheduleEventDetail } from "../components/schedule/ScheduleEventDetail";
+import { MonthDatePicker } from "../components/schedule/MonthDatePicker";
 import { ScheduleInvitePanel } from "../components/schedule/ScheduleInvitePanel";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore, type CompanyScheduleInput } from "../lib/store";
+import { functionLabel } from "../lib/functionInfo";
 import { formatDate, todayLocalISODate } from "../lib/format";
 import { getJobStatus } from "../lib/rules";
 import { addDays, buildCalendarItems, buildJobEvents, parseISODate } from "../lib/scheduleEvents";
@@ -107,6 +109,7 @@ export function CompanySchedulePage() {
     };
   }, [items, today]);
 
+  const markedDates = useMemo(() => new Set(items.map((item) => item.date)), [items]);
   const dayItems = filteredItems.filter((item) => item.date === selectedDate);
   const selectedItem = dayItems.find((item) => item.key === selectedItemKey) ?? dayItems[0];
 
@@ -311,7 +314,7 @@ export function CompanySchedulePage() {
 
       {creating && (
         <Modal title="Nova escala" onClose={() => setCreating(null)}>
-          <ScheduleForm defaultDate={creating.date} onSubmit={handleCreate} />
+          <ScheduleForm defaultDate={creating.date} markedDates={markedDates} onSubmit={handleCreate} />
         </Modal>
       )}
 
@@ -331,7 +334,7 @@ export function CompanySchedulePage() {
 
       {editing && (
         <Modal title="Editar escala" onClose={() => setEditing(null)}>
-          <ScheduleForm schedule={editing} onSubmit={handleEdit} />
+          <ScheduleForm schedule={editing} markedDates={markedDates} onSubmit={handleEdit} />
         </Modal>
       )}
 
@@ -553,13 +556,16 @@ function ManualScheduleCard({
 function ScheduleForm({
   schedule,
   defaultDate,
+  markedDates,
   onSubmit
 }: {
   schedule?: CompanySchedule;
   defaultDate?: string;
+  markedDates?: ReadonlySet<string>;
   onSubmit: (input: CompanyScheduleInput) => void;
 }) {
   const [error, setError] = useState("");
+  const [date, setDate] = useState(schedule?.date ?? defaultDate ?? "");
 
   return (
     <form
@@ -612,9 +618,8 @@ function ScheduleForm({
       <div className="grid gap-3 md:grid-cols-2">
         <label className="label">Nome da escala<input name="title" className="input" required defaultValue={schedule?.title} placeholder="Escala réveillon salão" /></label>
         <label className="label">Status<select name="status" className="input" required defaultValue={schedule?.status ?? "Planejada"}>{scheduleStatuses.map((item) => <option key={item}>{item}</option>)}</select></label>
-        <label className="label">Função<select name="function" className="input" required defaultValue={schedule?.function}>{functions.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="label">Função<select name="function" className="input" required defaultValue={schedule?.function}>{functions.map((item) => <option key={item} value={item}>{functionLabel(item)}</option>)}</select></label>
         <label className="label">Quantidade<input name="quantity" type="number" min="1" className="input" required defaultValue={schedule?.quantity ?? 1} /></label>
-        <label className="label">Data<input name="date" type="date" className="input" required defaultValue={schedule?.date ?? defaultDate} /></label>
         <label className="label">
           Bairro
           <input
@@ -632,6 +637,10 @@ function ScheduleForm({
         </label>
         <label className="label">Início<input name="startsAt" type="time" className="input" required defaultValue={schedule?.startsAt} /></label>
         <label className="label">Fim<input name="endsAt" type="time" className="input" required defaultValue={schedule?.endsAt} /></label>
+      </div>
+      <div className="grid gap-1.5">
+        <span className="text-sm font-bold text-slate-600">Data</span>
+        <MonthDatePicker name="date" value={date} onChange={setDate} markedDates={markedDates} today={todayLocalISODate()} />
       </div>
       <label className="label">Local<input name="location" className="input" required defaultValue={schedule?.location} placeholder="Salão principal, bar externo, cozinha..." /></label>
       <label className="label">Equipe prevista<input name="workerNames" className="input" defaultValue={schedule?.workerNames.join(", ")} placeholder="Maria, João, Carlos" /></label>

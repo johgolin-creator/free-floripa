@@ -4,6 +4,7 @@ import { AvatarButton } from "./AvatarButton";
 import { UrgentBadge } from "./UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate, pluralize } from "../lib/format";
+import { functionLabel } from "../lib/functionInfo";
 import { getOpenSlots } from "../lib/rules";
 import type { Job } from "../lib/types";
 
@@ -39,7 +40,7 @@ export function JobCard({
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap gap-2">
               {job.urgent && <UrgentBadge />}
-              <span className="badge">{job.function}</span>
+              <span className="badge">{functionLabel(job.function)}</span>
               <span className="badge">{job.paymentMethod}</span>
               {matchLabel && <span className={matchScore && matchScore >= 62 ? "badge bg-aqua-100 text-aqua-700" : "badge bg-slate-100 text-slate-600"}><Star size={14} /> {matchLabel}</span>}
             </div>

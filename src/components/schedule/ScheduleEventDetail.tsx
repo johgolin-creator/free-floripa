@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { AvatarButton } from "../AvatarButton";
 import { formatDate, getWhatsAppUrl } from "../../lib/format";
+import { functionLabel } from "../../lib/functionInfo";
 import { getJobStatus } from "../../lib/rules";
 import { getShiftVerificationCode } from "../../lib/shiftVerification";
 import { parseISODate, type Bucket, type JobEvent, type Person } from "../../lib/scheduleEvents";
@@ -169,7 +170,7 @@ export function ScheduleEventDetail({
             <div className="mt-4 flex flex-wrap gap-2">
               {event.functions.map((item) => (
                 <span key={item.function} className="rounded-lg border border-white/20 bg-black/30 px-3 py-1.5 text-xs font-black text-white">
-                  {item.function}
+                  {functionLabel(item.function)}
                 </span>
               ))}
             </div>
@@ -287,7 +288,7 @@ export function ScheduleEventDetail({
                         )}
                       </div>
                     </div>
-                    <span className="text-sm font-semibold text-slate-200">{job?.function ?? "—"}</span>
+                    <span className="text-sm font-semibold text-slate-200">{job ? functionLabel(job.function) : "—"}</span>
                     <span>
                       <span
                         className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-black text-white"
@@ -373,7 +374,7 @@ export function ScheduleEventDetail({
               const width = item.slots > 0 ? Math.min(100, (item.confirmed / item.slots) * 100) : 0;
               return (
                 <div key={item.function} className="grid grid-cols-[92px_1fr_auto] items-center gap-3 text-sm">
-                  <span className="truncate font-semibold text-slate-200">{item.function}</span>
+                  <span className="truncate font-semibold text-slate-200">{functionLabel(item.function)}</span>
                   <span className="h-2 overflow-hidden rounded-full" style={{ background: TRACK }} aria-hidden="true">
                     <span className="block h-full rounded-full" style={{ width: `${width}%`, background: color }} />
                   </span>

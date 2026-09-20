@@ -4,6 +4,7 @@ export const functions = [
   "Garçom",
   "Bartender",
   "Segurança",
+  "Vigilante",
   "Auxiliar de cozinha",
   "Copeiro",
   "Recepcionista",

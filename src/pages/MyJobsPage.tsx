@@ -21,6 +21,7 @@ import { ShiftReceipt } from "../components/ShiftReceipt";
 import { StatTile } from "../components/StatTile";
 import { TermHint } from "../components/TermHint";
 import { useAppStore } from "../lib/store";
+import { functionLabel } from "../lib/functionInfo";
 import { formatCurrency, formatDate, getJobContact, getWhatsAppUrl } from "../lib/format";
 import { getShiftVerificationCode } from "../lib/shiftVerification";
 import type { Application, CompanyProfile, Job } from "../lib/types";
@@ -169,7 +170,7 @@ export function MyJobsPage() {
                   <div>
                     <div className="mb-2 flex flex-wrap gap-2">
                       <span className={getStatusClass(application)}>{getWorkStatus(application)}</span>
-                      <span className="badge">{job.function}</span>
+                      <span className="badge">{functionLabel(job.function)}</span>
                       <span className="badge">{formatCurrency(job.dailyValue)}</span>
                       <span className="badge bg-aqua-50 text-aqua-700"><TermHint term="codigoVerificacao">Código {verificationCode}</TermHint></span>
                     </div>

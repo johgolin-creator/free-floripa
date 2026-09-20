@@ -24,6 +24,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { BrandLogo, PontMark } from "../components/BrandLogo";
 import { functions } from "../data/demoData";
+import { functionLabel } from "../lib/functionInfo";
 import { useAppStore } from "../lib/store";
 import { usePwaInstallPrompt } from "../lib/pwaInstall";
 
@@ -176,7 +177,7 @@ export function PublicHome() {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
             {functions.map((item) => (
               <div key={item} className="flex min-h-20 items-center rounded-lg border border-white/10 bg-brand-charcoal p-4 text-sm font-black text-white shadow-soft transition hover:-translate-y-0.5 hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-800">
-                {item}
+                {functionLabel(item)}
               </div>
             ))}
           </div>

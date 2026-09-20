@@ -8,6 +8,7 @@ import { SectionHeader } from "../components/SectionHeader";
 import { TermHint } from "../components/TermHint";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
+import { functionLabel } from "../lib/functionInfo";
 import { getFunctionExperience, isJobOpenForApplications } from "../lib/rules";
 import type { AppState, Job, JobFunction, Neighborhood, WorkerProfile } from "../lib/types";
 
@@ -159,7 +160,7 @@ export function JobsPage() {
               <select className="input" value={functionFilter} onChange={(event) => setFunctionFilter(event.target.value as JobFunction | "Todas")}>
                 <option>Todas</option>
                 {functions.map((item) => (
-                  <option key={item}>{item}</option>
+                  <option key={item} value={item}>{functionLabel(item)}</option>
                 ))}
               </select>
             </label>

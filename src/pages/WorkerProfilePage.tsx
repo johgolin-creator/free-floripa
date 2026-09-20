@@ -21,6 +21,7 @@ import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { TermHint } from "../components/TermHint";
 import { experienceLevels, functions, neighborhoods } from "../data/demoData";
+import { functionHint, functionLabel } from "../lib/functionInfo";
 import { useAppStore } from "../lib/store";
 import { getWorkerProfileCompletion, WORKER_AVATAR_PLACEHOLDER } from "../lib/profileCompletion";
 import { calculateReliability, getExperienceLabel, getFunctionExperience, isWorkerVerified } from "../lib/rules";
@@ -356,8 +357,11 @@ export function WorkerProfilePage() {
                           }}
                           className="h-4 w-4 accent-aqua-500"
                         />
-                        {functionName}
+                        {functionLabel(functionName)}
                       </label>
+                      {functionHint(functionName) && (
+                        <p className="mt-1 text-xs font-semibold text-slate-500">{functionHint(functionName)}</p>
+                      )}
                       {selected && (
                         <div className="mt-3 grid gap-2">
                           <label className="label">

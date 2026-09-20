@@ -4,6 +4,7 @@ export type JobFunction =
   | "Garçom"
   | "Bartender"
   | "Segurança"
+  | "Vigilante"
   | "Auxiliar de cozinha"
   | "Copeiro"
   | "Recepcionista"

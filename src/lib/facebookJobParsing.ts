@@ -16,7 +16,10 @@ const EMAIL_PATTERN = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
 
 const FUNCTION_KEYWORDS: Array<[JobFunction, string[]]> = [
   ["Bartender", ["bartender", "barman", "barwoman"]],
-  ["Segurança", ["seguranca", "segurancas", "vigilante"]],
+  // Vigilante (com curso de formação) vem antes de Segurança: o post que pede
+  // "vigilante" quer o profissional habilitado, não o segurança de evento.
+  ["Vigilante", ["vigilante", "vigilantes"]],
+  ["Segurança", ["seguranca", "segurancas"]],
   ["Auxiliar de cozinha", ["auxiliar de cozinha", "ajudante de cozinha", "cumim", "cumins"]],
   ["Copeiro", ["copeiro", "copeira"]],
   ["Recepcionista", ["recepcionista", "recepcao"]],

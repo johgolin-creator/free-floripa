@@ -23,6 +23,7 @@ const VALID_FUNCTIONS = new Set<JobFunction>([
   "Garçom",
   "Bartender",
   "Segurança",
+  "Vigilante",
   "Auxiliar de cozinha",
   "Copeiro",
   "Recepcionista",
@@ -30,7 +31,8 @@ const VALID_FUNCTIONS = new Set<JobFunction>([
   "Limpeza",
   "Camareira",
   "Montador de eventos",
-  "Promotor"
+  "Promotor",
+  "Repositor"
 ]);
 const VALID_LEVELS = new Set<FunctionExperience["level"]>([
   "Iniciante",

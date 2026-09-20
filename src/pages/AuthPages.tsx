@@ -5,6 +5,7 @@ import { BrandLogo } from "../components/BrandLogo";
 import { ProfileImageUploader } from "../components/ProfileImageUploader";
 import { useWizardStep, WizardActions, WizardPanel, WizardSteps } from "../components/Wizard";
 import { experienceLevels, functions, neighborhoods } from "../data/demoData";
+import { functionHint, functionLabel } from "../lib/functionInfo";
 import { track } from "../lib/analytics";
 import { useAuth } from "../lib/auth";
 import { useAppStore } from "../lib/store";
@@ -493,8 +494,9 @@ export function WorkerSignupPage() {
                       }}
                       className="h-4 w-4 accent-aqua-500"
                     />
-                    {item}
+                    {functionLabel(item)}
                   </label>
+                  {functionHint(item) && <p className="mt-1 text-xs font-semibold text-slate-500">{functionHint(item)}</p>}
                   {selectedFunctions.includes(item) && (
                     <div className="mt-3 grid gap-2">
                       <label className="label">

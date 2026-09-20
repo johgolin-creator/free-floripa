@@ -24,6 +24,7 @@ import { UrgentBadge } from "../components/UrgentBadge";
 import { useWizardStep, WizardActions, WizardPanel, WizardProgress, WizardSteps } from "../components/Wizard";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
+import { functionLabel } from "../lib/functionInfo";
 import type { CreateJobInput, UrgentReplacementInput } from "../lib/store";
 import { formatCurrency, formatDate, todayLocalISODate } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
@@ -504,7 +505,7 @@ function CreateJobForm({ editingJob, onSubmit }: { editingJob?: Job; onSubmit: (
             <label className="label">
               Função
               <select value={draft.function} onChange={(event) => setField("function", event.target.value as JobFunction)} className="input">
-                {functions.map((item) => <option key={item}>{item}</option>)}
+                {functions.map((item) => <option key={item} value={item}>{functionLabel(item)}</option>)}
               </select>
             </label>
             <label className="label">Quantidade<input value={draft.quantity} onChange={(event) => setField("quantity", event.target.value)} type="number" min="1" className="input" /></label>
@@ -720,7 +721,7 @@ function UrgentForm({ onSubmit }: { onSubmit: (input: UrgentReplacementInput) =>
         </div>
       </section>
       <div className="grid gap-3 md:grid-cols-2">
-        <label className="label">Função<select name="function" className="input" required>{functions.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label className="label">Função<select name="function" className="input" required>{functions.map((item) => <option key={item} value={item}>{functionLabel(item)}</option>)}</select></label>
         <label className="label">Quantidade<input name="quantity" type="number" min="1" defaultValue="1" className="input" required /></label>
         <label className="label">Horário<input name="startsAt" type="time" className="input" required /></label>
         <label className="label">Valor<input name="dailyValue" type="number" min="1" className="input" required placeholder="280" /></label>

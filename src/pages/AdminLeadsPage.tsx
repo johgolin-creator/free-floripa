@@ -40,6 +40,7 @@ import { parseFacebookPost } from "../lib/facebookLeadParsing";
 import { parseFacebookJobPost } from "../lib/facebookJobParsing";
 import { useAuth } from "../lib/auth";
 import { useAppStore, type CreateFacebookJobInput } from "../lib/store";
+import { functionLabel } from "../lib/functionInfo";
 import { formatDateTime } from "../lib/format";
 import type { CompanyLead, CompanyLeadSegment, FacebookLead, JobFunction, PaymentMethod } from "../lib/types";
 
@@ -807,7 +808,7 @@ function FacebookJobPublisher({ onPublish }: { onPublish: (input: CreateFacebook
               <select className="input" value={fields.function} onChange={(event) => updateField("function", event.target.value as JobFunction)}>
                 {jobFunctions.map((item) => (
                   <option key={item} value={item}>
-                    {item}
+                    {functionLabel(item)}
                   </option>
                 ))}
               </select>

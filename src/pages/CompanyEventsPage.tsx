@@ -14,7 +14,7 @@ import type { JobFunction, Neighborhood, PaymentMethod, WorkerProfile } from "..
 const demoWorkerIds = new Set(["worker-1", "worker-2", "worker-3", "worker-4"]);
 const eventTypes = ["Casamento", "Aniversário", "Evento corporativo", "Formatura", "Confraternização", "Outro"];
 const eventFunctions = functions.filter((item) =>
-  ["Garçom", "Bartender", "Segurança", "Recepcionista", "Auxiliar de cozinha", "Copeiro", "Limpeza", "Promotor"].includes(item)
+  ["Garçom", "Bartender", "Segurança", "Vigilante", "Recepcionista", "Auxiliar de cozinha", "Copeiro", "Limpeza", "Promotor"].includes(item)
 );
 
 type CrewNeeds = Record<JobFunction, number>;

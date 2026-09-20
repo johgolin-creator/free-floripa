@@ -27,6 +27,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { useAuth } from "../lib/auth";
+import { functionLabel } from "../lib/functionInfo";
 import { supportEmailUrl, supportWhatsappUrl } from "../lib/support";
 import { formatCurrency, formatDate, getJobContact, getWhatsAppUrl } from "../lib/format";
 import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots, isJobOpenForApplications } from "../lib/rules";
@@ -247,14 +248,14 @@ export function JobDetailsPage() {
             <div className="mb-3 flex flex-wrap gap-2">
               {jobStatus === "Urgente" ? <UrgentBadge /> : <StatusBadge type="job" status={jobStatus} />}
               {currentJob.urgent && jobStatus !== "Urgente" && <UrgentBadge />}
-              <span className="badge">{currentJob.function}</span>
+              <span className="badge">{functionLabel(currentJob.function)}</span>
               <span className="badge">{currentJob.paymentMethod}</span>
               {currentJob.source === "facebook" && (
                 <span className="badge border-aqua-200 bg-aqua-50 text-aqua-700">Vaga captada no Facebook</span>
               )}
             </div>
 
-            <h2>{currentJob.function}</h2>
+            <h2>{functionLabel(currentJob.function)}</h2>
             <p>{currentJob.description}</p>
 
             <div className="job-info-grid">

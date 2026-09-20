@@ -27,6 +27,7 @@ import { TermHint } from "../components/TermHint";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
+import { functionLabel } from "../lib/functionInfo";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
 import { calculateReliability, getOpenSlots } from "../lib/rules";
 import { getShiftVerificationCode } from "../lib/shiftVerification";
@@ -312,7 +313,7 @@ export function CandidatesPage() {
                 <div>
                   <div className="mb-2 flex flex-wrap gap-2">
                     {!selectedEvent && selectedJob?.urgent && <UrgentBadge />}
-                    <span className="badge">{selectedEvent ? "Pacote de evento" : selectedJob?.function}</span>
+                    <span className="badge">{selectedEvent ? "Pacote de evento" : selectedJob ? functionLabel(selectedJob.function) : ""}</span>
                     <span className="badge">
                       {selectedEvent ? `${selectedJobs.length} vagas` : formatCurrency(selectedJob?.dailyValue ?? 0)}
                     </span>
@@ -375,7 +376,7 @@ export function CandidatesPage() {
                       {selectedEvent && (
                         <div className="candidate-event-context">
                           <span>
-                            <BriefcaseBusiness size={16} /> {jobForApplication.function}
+                            <BriefcaseBusiness size={16} /> {functionLabel(jobForApplication.function)}
                           </span>
                           <strong>{jobForApplication.title}</strong>
                           <small>
