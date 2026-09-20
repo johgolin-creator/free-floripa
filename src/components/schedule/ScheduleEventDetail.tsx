@@ -12,6 +12,7 @@ import {
   MessageSquareText,
   Phone,
   Printer,
+  Receipt,
   Star,
   UserX,
   Users
@@ -94,7 +95,8 @@ export function ScheduleEventDetail({
   disabled,
   onComplete,
   onAbsence,
-  onPrint
+  onPrint,
+  onReceipts
 }: {
   event: JobEvent;
   today: string;
@@ -104,6 +106,7 @@ export function ScheduleEventDetail({
   onComplete: (applicationId: string) => void;
   onAbsence: (applicationId: string) => void;
   onPrint: (jobs: JobEvent["jobs"]) => void;
+  onReceipts: (event: JobEvent) => void;
 }) {
   const [showAll, setShowAll] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -221,6 +224,9 @@ export function ScheduleEventDetail({
                   Gerenciar equipe
                 </Link>
               </div>
+              <button type="button" className="secondary min-h-10 px-3 text-sm" onClick={() => onReceipts(event)}>
+                <Receipt size={16} /> Recibos
+              </button>
               <button type="button" className="secondary min-h-9 px-3 text-xs" onClick={copySummary}>
                 <ClipboardCopy size={15} /> {copied ? "Copiado!" : "Copiar resumo para o WhatsApp"}
               </button>

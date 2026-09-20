@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, CheckCircle2, Edit3, Flag, Plus, Printer, Save, Trash2, Users } from "lucide-react";
+import { CalendarDays, CheckCircle2, Edit3, Flag, Plus, Printer, Receipt, Save, Trash2, Users } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { PrintPortal } from "../components/PrintPortal";
+import { ReceiptsModal } from "../components/schedule/ReceiptsModal";
+import { ReceiptPages } from "../components/schedule/ReceiptSheets";
 import { JobSchedulePrintSheet, SchedulePrintSheet } from "../components/schedule/PrintSheets";
 import { ScheduleCalendar, matchesStatusFilter, type CalendarView, type StatusFilter } from "../components/schedule/ScheduleCalendar";
 import { ScheduleEventDetail } from "../components/schedule/ScheduleEventDetail";
@@ -13,11 +15,14 @@ import { SectionHeader } from "../components/SectionHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore, type CompanyScheduleInput } from "../lib/store";
-import { functionLabel } from "../lib/functionInfo";
 import { formatDate, todayLocalISODate } from "../lib/format";
+import { functionLabel } from "../lib/functionInfo";
 import { getJobStatus } from "../lib/rules";
 import { addDays, buildCalendarItems, buildJobEvents, parseISODate } from "../lib/scheduleEvents";
 import { deactivateScheduleInvite, syncScheduleInvite } from "../lib/scheduleInvites";
+import type { ReceiptCompany, ReceiptDoc, ReceiptPerson } from "../lib/receipts";
+import { formatCNPJ, formatCPF } from "../lib/validation";
+import type { JobEvent } from "../lib/scheduleEvents";
 import type { Application, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, Neighborhood } from "../lib/types";
 
 const scheduleStatuses: CompanyScheduleStatus[] = ["Planejada", "Confirmada", "Concluída", "Cancelada"];
@@ -44,22 +49,25 @@ export function CompanySchedulePage() {
   const [justCreated, setJustCreated] = useState<CompanySchedule | null>(null);
   const [printSchedule, setPrintSchedule] = useState<CompanySchedule | null>(null);
   const [printJobs, setPrintJobs] = useState<Job[]>([]);
+  const [receiptsFor, setReceiptsFor] = useState<{ title: string; people: ReceiptPerson[] } | null>(null);
+  const [printReceipts, setPrintReceipts] = useState<{ docs: ReceiptDoc[]; company: ReceiptCompany } | null>(null);
   const userPicked = useRef(false);
   const autoPicked = useRef(false);
 
   useEffect(() => {
-    if (!printSchedule && printJobs.length === 0) return;
+    if (!printSchedule && printJobs.length === 0 && !printReceipts) return;
     const timeoutId = window.setTimeout(() => window.print(), 100);
     function clear() {
       setPrintSchedule(null);
       setPrintJobs([]);
+      setPrintReceipts(null);
     }
     window.addEventListener("afterprint", clear);
     return () => {
       window.clearTimeout(timeoutId);
       window.removeEventListener("afterprint", clear);
     };
-  }, [printSchedule, printJobs]);
+  }, [printSchedule, printJobs, printReceipts]);
 
   const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
   const companySchedules = useMemo(
@@ -134,6 +142,57 @@ export function CompanySchedulePage() {
     const result = updateApplicationStatus(applicationId, status);
     setMessage(result.message);
     return result.ok;
+  }
+
+  const receiptCompany: ReceiptCompany = {
+    name: currentCompany.establishmentName,
+    documentLabel: currentCompany.cnpj ? "CNPJ" : currentCompany.cpf ? "CPF" : "",
+    document: currentCompany.cnpj ? formatCNPJ(currentCompany.cnpj) : currentCompany.cpf ? formatCPF(currentCompany.cpf) : "",
+    responsible: currentCompany.responsibleName
+  };
+
+  /** Vaga/evento publicado: um recibo por profissional confirmado, com os dados da própria vaga. */
+  function openJobReceipts(event: JobEvent) {
+    const jobById = new Map(event.jobs.map((job) => [job.id, job]));
+    const people: ReceiptPerson[] = [];
+    for (const person of event.people) {
+      if (person.bucket !== "confirmado") continue;
+      const job = jobById.get(person.application.jobId);
+      if (!job) continue;
+      people.push({
+        key: person.application.id,
+        name: person.worker?.name ?? "Profissional",
+        functionName: functionLabel(job.function),
+        eventTitle: event.name,
+        date: job.date,
+        startsAt: job.startsAt,
+        endsAt: job.endsAt,
+        place: [job.fullAddress || job.approximateAddress, job.neighborhood].filter(Boolean).join(", "),
+        value: job.dailyValue,
+        method: job.paymentMethod,
+        cpf: person.worker?.cpf ?? ""
+      });
+    }
+    people.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+    setReceiptsFor({ title: event.name, people });
+  }
+
+  /** Escala criada à mão: um recibo por nome da equipe prevista (valor a preencher). */
+  function openManualReceipts(schedule: CompanySchedule) {
+    const people: ReceiptPerson[] = schedule.workerNames.map((name, index) => ({
+      key: `manual:${schedule.id}:${index}:${name}`,
+      name,
+      functionName: functionLabel(schedule.function),
+      eventTitle: schedule.title,
+      date: schedule.date,
+      startsAt: schedule.startsAt,
+      endsAt: schedule.endsAt,
+      place: [schedule.location, schedule.neighborhood].filter(Boolean).join(" - "),
+      value: 0,
+      method: "Pix",
+      cpf: ""
+    }));
+    setReceiptsFor({ title: schedule.title, people });
   }
 
   function handleCreate(input: CompanyScheduleInput) {
@@ -294,6 +353,7 @@ export function CompanySchedulePage() {
             onComplete={(applicationId) => runStatus(applicationId, "Trabalho concluído")}
             onAbsence={(applicationId) => runStatus(applicationId, "Falta registrada")}
             onPrint={setPrintJobs}
+            onReceipts={openJobReceipts}
           />
         ) : selectedItem.schedule ? (
           <div className="grid gap-4">
@@ -303,6 +363,7 @@ export function CompanySchedulePage() {
               onEdit={() => setEditing(selectedItem.schedule!)}
               onDelete={() => handleDelete(selectedItem.schedule!.id)}
               onPrint={() => setPrintSchedule(selectedItem.schedule!)}
+              onReceipts={() => openManualReceipts(selectedItem.schedule!)}
             />
             <ScheduleInvitePanel
               key={selectedItem.schedule.id}
@@ -318,6 +379,19 @@ export function CompanySchedulePage() {
         <Modal title="Nova escala" onClose={() => setCreating(null)}>
           <ScheduleForm defaultDate={creating.date} markedDates={markedDates} onSubmit={handleCreate} />
         </Modal>
+      )}
+
+      {receiptsFor && (
+        <ReceiptsModal
+          title={receiptsFor.title}
+          people={receiptsFor.people}
+          company={receiptCompany}
+          onClose={() => setReceiptsFor(null)}
+          onPrint={(docs, company) => {
+            setReceiptsFor(null);
+            setPrintReceipts({ docs, company });
+          }}
+        />
       )}
 
       {justCreated && (
@@ -343,6 +417,11 @@ export function CompanySchedulePage() {
       {printSchedule && (
         <PrintPortal>
           <SchedulePrintSheet companyName={currentCompany.establishmentName} schedule={printSchedule} />
+        </PrintPortal>
+      )}
+      {printReceipts && (
+        <PrintPortal>
+          <ReceiptPages docs={printReceipts.docs} company={printReceipts.company} />
         </PrintPortal>
       )}
       {printJobs.length > 0 && (
@@ -402,13 +481,15 @@ function ManualScheduleCard({
   disabled,
   onEdit,
   onDelete,
-  onPrint
+  onPrint,
+  onReceipts
 }: {
   schedule: CompanySchedule;
   disabled?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onPrint: () => void;
+  onReceipts: () => void;
 }) {
   return (
     <article className="schedule-manual-card">
@@ -428,6 +509,7 @@ function ManualScheduleCard({
         </div>
         <div className="schedule-card-actions">
           <button type="button" onClick={onPrint} className="company-action"><Printer size={17} /> Imprimir</button>
+          <button type="button" onClick={onReceipts} className="company-action"><Receipt size={17} /> Recibos</button>
           <button type="button" onClick={onEdit} disabled={disabled} className="company-action company-action-primary"><Edit3 size={17} /> Editar</button>
           <button type="button" onClick={onDelete} disabled={disabled} className="company-action company-action-danger"><Trash2 size={17} /> Excluir</button>
         </div>
