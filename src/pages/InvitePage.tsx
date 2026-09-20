@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { CalendarDays, CheckCircle2, Clock3, Loader2, MapPin, UserRound, XCircle } from "lucide-react";
 import { BrandLogo } from "../components/BrandLogo";
 import { fetchPublicInvite, respondToInvite, type InviteStatus, type PublicInvite, type RespondError } from "../lib/scheduleInvites";
-import { formatPhoneInput, isValidPhone } from "../lib/validation";
+import { formatCPF, formatPhoneInput, isValidCPF, isValidPhone } from "../lib/validation";
 
 const CONTACT_KEY = "pont:invite-contact";
 
@@ -14,6 +14,8 @@ const ERROR_TEXT: Record<RespondError, string> = {
   closed: "Este convite já foi encerrado.",
   name: "Informe seu nome completo.",
   phone: "Informe um celular válido, com DDD.",
+  cpf: "Informe um CPF válido.",
+  cpf_in_use: "Este CPF já respondeu por outro celular. Use o mesmo celular da primeira resposta ou fale com quem organiza a escala.",
   answer: "Escolha uma das opções.",
   full: "Este convite atingiu o limite de respostas. Fale com quem organiza a escala.",
   unavailable: "Não foi possível enviar sua resposta agora. Tente de novo em instantes."
@@ -53,6 +55,8 @@ export function InvitePage() {
   const [loadError, setLoadError] = useState("");
   const [name, setName] = useState(() => loadContact().name);
   const [phone, setPhone] = useState(() => loadContact().phone);
+  // O CPF não é guardado no aparelho: só o nome e o celular são lembrados.
+  const [cpf, setCpf] = useState("");
   const [pending, setPending] = useState<Answer | null>(null);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ status: InviteStatus } | null>(null);
@@ -86,9 +90,13 @@ export function InvitePage() {
       setError(ERROR_TEXT.phone);
       return;
     }
+    if (!isValidCPF(cpf)) {
+      setError(ERROR_TEXT.cpf);
+      return;
+    }
     setError("");
     setPending(choice);
-    const response = await respondToInvite(code, name.trim(), phone, choice);
+    const response = await respondToInvite(code, name.trim(), phone, cpf, choice);
     setPending(null);
     if (!response.ok) {
       setError(ERROR_TEXT[response.error]);
@@ -225,6 +233,19 @@ export function InvitePage() {
                     placeholder="(48) 99999-9999"
                   />
                 </label>
+                <label className="label">
+                  Seu CPF
+                  <input
+                    className="input"
+                    value={cpf}
+                    onChange={(event) => setCpf(formatCPF(event.target.value))}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="000.000.000-00"
+                    maxLength={14}
+                    aria-invalid={cpf.length > 0 && !isValidCPF(cpf)}
+                  />
+                </label>
                 {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
                 <button type="button" className="primary min-h-12 w-full text-base" disabled={pending !== null} onClick={() => answer("confirmo")}>
                   {pending === "confirmo" ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />} Confirmo presença
@@ -233,7 +254,7 @@ export function InvitePage() {
                   {pending === "recuso" ? <Loader2 className="animate-spin" size={18} /> : <XCircle size={18} />} Não posso
                 </button>
                 <p className="text-center text-xs font-semibold text-slate-400">
-                  Usamos seu nome e celular só para esta escala. Não precisa de cadastro.
+                  Usamos seu nome, celular e CPF só para a lista de presença e o recibo desta escala. Não precisa de cadastro.
                 </p>
               </form>
             )}

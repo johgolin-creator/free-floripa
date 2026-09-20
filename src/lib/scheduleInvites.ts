@@ -16,6 +16,8 @@ export interface InviteResponse {
   id: string;
   name: string;
   phoneDigits: string;
+  /** Só dígitos; "" para quem respondeu antes de o CPF ser pedido. */
+  cpf: string;
   status: InviteStatus;
   inPont: boolean;
   createdAt: string;
@@ -37,7 +39,7 @@ export interface PublicInvite {
   confirmed: number;
 }
 
-export type RespondError = "invite_not_found" | "closed" | "name" | "phone" | "answer" | "full" | "unavailable";
+export type RespondError = "invite_not_found" | "closed" | "name" | "phone" | "cpf" | "cpf_in_use" | "answer" | "full" | "unavailable";
 
 // Sem 0/O, 1/I/L: o código pode ser lido em voz alta ou digitado.
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -174,6 +176,7 @@ interface ResponseRow {
   id: string;
   name: string;
   phone_digits: string;
+  cpf: string | null;
   status: InviteStatus;
   worker_user_id: string | null;
   created_at: string;
@@ -184,7 +187,7 @@ export async function listInviteResponses(inviteId: string): Promise<InviteRespo
   if (!supabase) return [];
   const { data, error } = await supabase
     .from("schedule_invite_responses")
-    .select("id,name,phone_digits,status,worker_user_id,created_at,updated_at")
+    .select("id,name,phone_digits,cpf,status,worker_user_id,created_at,updated_at")
     .eq("invite_id", inviteId)
     .order("created_at", { ascending: true });
   if (error) throw new Error(friendlyError(error.message));
@@ -192,6 +195,7 @@ export async function listInviteResponses(inviteId: string): Promise<InviteRespo
     id: row.id,
     name: row.name,
     phoneDigits: row.phone_digits,
+    cpf: row.cpf ?? "",
     status: row.status,
     inPont: Boolean(row.worker_user_id),
     createdAt: row.created_at,
@@ -256,6 +260,7 @@ export async function respondToInvite(
   code: string,
   name: string,
   phone: string,
+  cpf: string,
   answer: "confirmo" | "recuso"
 ): Promise<{ ok: true; status: InviteStatus } | { ok: false; error: RespondError }> {
   if (!supabase) return { ok: false, error: "unavailable" };
@@ -263,6 +268,7 @@ export async function respondToInvite(
     p_code: code,
     p_name: name,
     p_phone: phone,
+    p_cpf: cpf,
     p_answer: answer
   });
   if (error) return { ok: false, error: "unavailable" };

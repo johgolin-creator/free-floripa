@@ -9,7 +9,9 @@
 --                                 do evento + código).
 --   * schedule_invite_responses   uma linha por celular que respondeu.
 --   * schedule_invite_public()    lê o evento pelo código (anônimo).
---   * schedule_invite_respond()   grava a resposta (anônimo), respeitando o
+--   * schedule_invite_respond()   grava a resposta (anônimo), com nome, celular
+--                                 e CPF obrigatórios (o CPF é validado aqui, não
+--                                 só na tela), respeitando o
 --                                 limite de vagas: passou do limite, vai para
 --                                 a lista de espera e sobe sozinho se alguém
 --                                 desistir.
@@ -43,6 +45,7 @@ create table if not exists public.schedule_invite_responses (
   invite_id uuid not null references public.schedule_invites(id) on delete cascade,
   phone_digits text not null,
   name text not null,
+  cpf text,
   worker_user_id uuid references public.users(id) on delete set null,
   status text not null check (status in ('confirmado', 'recusado', 'lista_espera')),
   created_at timestamptz not null default now(),
@@ -52,6 +55,9 @@ create table if not exists public.schedule_invite_responses (
 
 create index if not exists schedule_invite_responses_invite_idx
   on public.schedule_invite_responses (invite_id, status);
+
+-- Instalações anteriores não tinham o CPF.
+alter table public.schedule_invite_responses add column if not exists cpf text;
 
 alter table public.schedule_invites enable row level security;
 alter table public.schedule_invite_responses enable row level security;
@@ -115,12 +121,53 @@ as $$
   limit 1
 $$;
 
+-- --- CPF: confere os dígitos verificadores -----------------------------------
+
+create or replace function public.schedule_invite_valid_cpf(p_cpf text)
+returns boolean
+language plpgsql
+immutable
+as $$
+declare
+  d text := regexp_replace(coalesce(p_cpf, ''), '\D', '', 'g');
+  total integer;
+  check_digit integer;
+  i integer;
+begin
+  if length(d) <> 11 or d = repeat(substr(d, 1, 1), 11) then
+    return false;
+  end if;
+
+  total := 0;
+  for i in 1..9 loop
+    total := total + substr(d, i, 1)::integer * (11 - i);
+  end loop;
+  check_digit := (total * 10) % 11;
+  if check_digit = 10 then check_digit := 0; end if;
+  if check_digit <> substr(d, 10, 1)::integer then
+    return false;
+  end if;
+
+  total := 0;
+  for i in 1..10 loop
+    total := total + substr(d, i, 1)::integer * (12 - i);
+  end loop;
+  check_digit := (total * 10) % 11;
+  if check_digit = 10 then check_digit := 0; end if;
+  return check_digit = substr(d, 11, 1)::integer;
+end;
+$$;
+
 -- --- Resposta do freelancer (anônimo) ---------------------------------------
+-- A versão antiga (sem CPF) sai do ar: se ficasse, dava para responder sem CPF.
+
+drop function if exists public.schedule_invite_respond(text, text, text, text);
 
 create or replace function public.schedule_invite_respond(
   p_code text,
   p_name text,
   p_phone text,
+  p_cpf text,
   p_answer text
 )
 returns jsonb
@@ -131,6 +178,7 @@ as $$
 declare
   inv public.schedule_invites;
   digits text := regexp_replace(coalesce(p_phone, ''), '\D', '', 'g');
+  cpf_digits text := regexp_replace(coalesce(p_cpf, ''), '\D', '', 'g');
   clean_name text := left(trim(coalesce(p_name, '')), 80);
   new_status text;
   taken integer;
@@ -150,11 +198,22 @@ begin
   if length(digits) < 10 or length(digits) > 15 then
     return jsonb_build_object('ok', false, 'error', 'phone');
   end if;
+  if not public.schedule_invite_valid_cpf(cpf_digits) then
+    return jsonb_build_object('ok', false, 'error', 'cpf');
+  end if;
   if p_answer not in ('confirmo', 'recuso') then
     return jsonb_build_object('ok', false, 'error', 'answer');
   end if;
 
   perform pg_advisory_xact_lock(hashtext(inv.id::text));
+
+  -- O mesmo CPF não pode ocupar duas vagas usando celulares diferentes.
+  if exists (
+    select 1 from public.schedule_invite_responses
+    where invite_id = inv.id and cpf = cpf_digits and phone_digits <> digits
+  ) then
+    return jsonb_build_object('ok', false, 'error', 'cpf_in_use');
+  end if;
 
   select count(*) into total from public.schedule_invite_responses where invite_id = inv.id;
   if total >= 500 and not exists (
@@ -181,10 +240,11 @@ begin
   end if;
 
   insert into public.schedule_invite_responses as r
-    (invite_id, phone_digits, name, worker_user_id, status)
-  values (inv.id, digits, clean_name, known_user, new_status)
+    (invite_id, phone_digits, name, cpf, worker_user_id, status)
+  values (inv.id, digits, clean_name, cpf_digits, known_user, new_status)
   on conflict (invite_id, phone_digits) do update
     set name = excluded.name,
+        cpf = excluded.cpf,
         status = excluded.status,
         worker_user_id = coalesce(excluded.worker_user_id, r.worker_user_id),
         updated_at = now();
@@ -209,6 +269,6 @@ end;
 $$;
 
 revoke all on function public.schedule_invite_public(text) from public;
-revoke all on function public.schedule_invite_respond(text, text, text, text) from public;
+revoke all on function public.schedule_invite_respond(text, text, text, text, text) from public;
 grant execute on function public.schedule_invite_public(text) to anon, authenticated;
-grant execute on function public.schedule_invite_respond(text, text, text, text) to anon, authenticated;
+grant execute on function public.schedule_invite_respond(text, text, text, text, text) to anon, authenticated;

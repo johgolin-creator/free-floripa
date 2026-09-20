@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, ClipboardCopy, Link2, Loader2, MessageCircle, Trash2, XCircle } from "lucide-react";
 import { getWhatsAppUrl } from "../../lib/format";
+import { formatCPF } from "../../lib/validation";
 import {
   findScheduleInvite,
   getOrCreateScheduleInvite,
@@ -234,6 +235,7 @@ function ResponseList({
               <span className="block truncate text-sm font-bold text-white">{row.name}</span>
               <span className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-400">
                 {formatPhone(row.phoneDigits)}
+                <span>{row.cpf ? `CPF ${formatCPF(row.cpf)}` : "CPF não informado"}</span>
                 <span className={row.inPont ? "text-aqua-300" : "text-slate-500"}>{row.inPont ? "Tem conta no PONT" : "Sem cadastro"}</span>
               </span>
             </span>
