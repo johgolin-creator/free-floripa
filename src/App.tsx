@@ -38,6 +38,7 @@ const MessagesPage = lazy(() => import("./pages/MessagesPage").then(({ MessagesP
 const AdminPage = lazy(() => import("./pages/AdminPage").then(({ AdminPage }) => ({ default: AdminPage })));
 const AdminLeadsPage = lazy(() => import("./pages/AdminLeadsPage").then(({ AdminLeadsPage }) => ({ default: AdminLeadsPage })));
 const VendedorDashboard = lazy(() => import("./pages/VendedorDashboard").then(({ VendedorDashboard }) => ({ default: VendedorDashboard })));
+const InvitePage = lazy(() => import("./pages/InvitePage").then(({ InvitePage }) => ({ default: InvitePage })));
 const LegalPage = lazy(() => import("./pages/LegalPage").then(({ LegalPage }) => ({ default: LegalPage })));
 const PhoneVerifyPage = lazy(() => import("./pages/PhoneVerifyPage").then(({ PhoneVerifyPage }) => ({ default: PhoneVerifyPage })));
 
@@ -154,6 +155,7 @@ export default function App() {
         <Route path="/" element={<PublicHome />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/recuperar-senha" element={<ResetPasswordPage />} />
+        <Route path="/convite/:code" element={<InvitePage />} />
         <Route path="/cadastro-trabalhador" element={<WorkerSignupPage />} />
         <Route path="/cadastro-empresa" element={<CompanySignupPage />} />
         <Route path="/termos" element={<LegalPage kind="terms" />} />

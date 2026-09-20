@@ -4,6 +4,7 @@ import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { ScheduleCalendar, matchesStatusFilter, type CalendarView, type StatusFilter } from "../components/schedule/ScheduleCalendar";
 import { ScheduleEventDetail } from "../components/schedule/ScheduleEventDetail";
+import { ScheduleInvitePanel } from "../components/schedule/ScheduleInvitePanel";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatusBadge } from "../components/StatusBadge";
@@ -12,6 +13,7 @@ import { useAppStore, type CompanyScheduleInput } from "../lib/store";
 import { formatDate, todayLocalISODate } from "../lib/format";
 import { getJobStatus } from "../lib/rules";
 import { addDays, buildCalendarItems, buildJobEvents, parseISODate } from "../lib/scheduleEvents";
+import { deactivateScheduleInvite, syncScheduleInvite } from "../lib/scheduleInvites";
 import type { Application, CompanySchedule, CompanyScheduleStatus, Job, JobFunction, Neighborhood } from "../lib/types";
 
 const scheduleStatuses: CompanyScheduleStatus[] = ["Planejada", "Confirmada", "Concluída", "Cancelada"];
@@ -35,6 +37,7 @@ export function CompanySchedulePage() {
   const [message, setMessage] = useState("");
   const [creating, setCreating] = useState<{ date?: string } | null>(null);
   const [editing, setEditing] = useState<CompanySchedule | null>(null);
+  const [justCreated, setJustCreated] = useState<CompanySchedule | null>(null);
   const [printSchedule, setPrintSchedule] = useState<CompanySchedule | null>(null);
   const [printJobs, setPrintJobs] = useState<Job[]>([]);
   const userPicked = useRef(false);
@@ -133,23 +136,32 @@ export function CompanySchedulePage() {
       setMessage("Sua empresa está em revisão pela administração e não pode criar escalas no momento.");
       return;
     }
-    createCompanySchedule(input);
+    const id = createCompanySchedule(input);
     setCreating(null);
+    if (!id) return;
     userPicked.current = true;
     setSelectedDate(input.date);
     setAnchor(input.date);
     setMessage("Escala criada. Ela já aparece no calendário e pode ser editada a qualquer momento.");
+    // O link de convite é gerado logo em seguida, no painel que abre com a escala nova.
+    const now = new Date().toISOString();
+    setJustCreated({ id, companyId: currentCompany.id, ...input, createdAt: now, updatedAt: now });
   }
 
   function handleEdit(input: CompanyScheduleInput) {
     if (!editing) return;
     const result = updateCompanySchedule(editing.id, input);
-    if (result.ok) setEditing(null);
+    if (result.ok) {
+      // Mantém o convite igual à escala (título, data, vagas...). Melhor esforço.
+      void syncScheduleInvite({ ...editing, ...input }, currentCompany.establishmentName);
+      setEditing(null);
+    }
     setMessage(result.message);
   }
 
   function handleDelete(scheduleId: string) {
     const result = deleteCompanySchedule(scheduleId);
+    if (result.ok) void deactivateScheduleInvite(scheduleId);
     setMessage(result.message);
   }
 
@@ -279,19 +291,41 @@ export function CompanySchedulePage() {
             onPrint={setPrintJobs}
           />
         ) : selectedItem.schedule ? (
-          <ManualScheduleCard
-            schedule={selectedItem.schedule}
-            disabled={companyBlocked}
-            onEdit={() => setEditing(selectedItem.schedule!)}
-            onDelete={() => handleDelete(selectedItem.schedule!.id)}
-            onPrint={() => setPrintSchedule(selectedItem.schedule!)}
-          />
+          <div className="grid gap-4">
+            <ManualScheduleCard
+              schedule={selectedItem.schedule}
+              disabled={companyBlocked}
+              onEdit={() => setEditing(selectedItem.schedule!)}
+              onDelete={() => handleDelete(selectedItem.schedule!.id)}
+              onPrint={() => setPrintSchedule(selectedItem.schedule!)}
+            />
+            <ScheduleInvitePanel
+              key={selectedItem.schedule.id}
+              schedule={selectedItem.schedule}
+              companyName={currentCompany.establishmentName}
+              disabled={companyBlocked}
+            />
+          </div>
         ) : null}
       </section>
 
       {creating && (
         <Modal title="Nova escala" onClose={() => setCreating(null)}>
           <ScheduleForm defaultDate={creating.date} onSubmit={handleCreate} />
+        </Modal>
+      )}
+
+      {justCreated && (
+        <Modal title="Escala criada" onClose={() => setJustCreated(null)}>
+          <div className="grid gap-3">
+            <p className="text-sm font-semibold text-slate-300">
+              {justCreated.title} já está no calendário. Envie o link abaixo na lista de transmissão ou no grupo para a equipe confirmar.
+            </p>
+            <ScheduleInvitePanel schedule={justCreated} companyName={currentCompany.establishmentName} disabled={companyBlocked} autoCreate />
+            <button type="button" className="secondary" onClick={() => setJustCreated(null)}>
+              Fechar
+            </button>
+          </div>
         </Modal>
       )}
 
