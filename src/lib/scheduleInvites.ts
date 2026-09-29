@@ -218,6 +218,92 @@ export async function removeInviteResponse(responseId: string): Promise<void> {
   if (error) throw new Error(friendlyError(error.message));
 }
 
+/** Quem confirmou pelo link, de uma escala. Usado para montar a equipe. */
+export interface ConfirmedInviteMember {
+  responseId: string;
+  inviteId: string;
+  scheduleId: string;
+  name: string;
+  /** Só dígitos. */
+  cpf: string;
+  phoneDigits: string;
+}
+
+interface ConfirmedRow {
+  id: string;
+  invite_id: string;
+  name: string;
+  phone_digits: string;
+  cpf: string | null;
+  schedule_invites: { schedule_id: string } | { schedule_id: string }[] | null;
+}
+
+/** Todos os confirmados pelo link, de todas as escalas da empresa, numa consulta só. */
+export async function listConfirmedInviteMembers(): Promise<ConfirmedInviteMember[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("schedule_invite_responses")
+    .select("id,invite_id,name,phone_digits,cpf,schedule_invites!inner(schedule_id)")
+    .eq("status", "confirmado")
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(friendlyError(error.message));
+
+  const members: ConfirmedInviteMember[] = [];
+  for (const row of (data ?? []) as unknown as ConfirmedRow[]) {
+    const invite = Array.isArray(row.schedule_invites) ? row.schedule_invites[0] : row.schedule_invites;
+    if (!invite?.schedule_id) continue;
+    members.push({
+      responseId: row.id,
+      inviteId: row.invite_id,
+      scheduleId: invite.schedule_id,
+      name: row.name,
+      cpf: row.cpf ?? "",
+      phoneDigits: row.phone_digits
+    });
+  }
+  return members;
+}
+
+/** Abriu vaga (alguém foi removido, ou a escala ganhou vagas): sobe da lista de espera,
+ *  por ordem de chegada, até completar. Devolve quantos subiram. */
+export async function rebalanceScheduleInvite(scheduleId: string): Promise<number> {
+  if (!supabase) return 0;
+  const { data: invite, error: inviteError } = await supabase
+    .from("schedule_invites")
+    .select("id,quantity")
+    .eq("schedule_id", scheduleId)
+    .maybeSingle();
+  if (inviteError || !invite) return 0;
+
+  const { count, error: countError } = await supabase
+    .from("schedule_invite_responses")
+    .select("id", { count: "exact", head: true })
+    .eq("invite_id", invite.id)
+    .eq("status", "confirmado");
+  if (countError) return 0;
+
+  const free = Number(invite.quantity) - (count ?? 0);
+  if (free <= 0) return 0;
+
+  const { data: waiting, error: waitingError } = await supabase
+    .from("schedule_invite_responses")
+    .select("id")
+    .eq("invite_id", invite.id)
+    .eq("status", "lista_espera")
+    .order("created_at", { ascending: true })
+    .limit(free);
+  if (waitingError || !waiting || waiting.length === 0) return 0;
+
+  const { error: updateError } = await supabase
+    .from("schedule_invite_responses")
+    .update({ status: "confirmado", updated_at: new Date().toISOString() })
+    .in(
+      "id",
+      waiting.map((row) => row.id as string)
+    );
+  return updateError ? 0 : waiting.length;
+}
+
 interface PublicInviteRow {
   title: string;
   function_name: string;

@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { Edit3, MapPin, Printer, Receipt, Trash2, UserPlus, FileText } from "lucide-react";
+import { Edit3, FileText, MapPin, MessageCircle, Printer, Receipt, Trash2, UserMinus, UserPlus } from "lucide-react";
+import { KebabMenu, type MenuAction } from "./KebabMenu";
 import { PanelShell } from "./PanelShell";
 import { ScheduleInvitePanel } from "./ScheduleInvitePanel";
-import { formatDate } from "../../lib/format";
+import { formatDate, getWhatsAppUrl } from "../../lib/format";
 import { functionLabel } from "../../lib/functionInfo";
+import type { TeamMember } from "../../lib/scheduleTeam";
+import { formatCPF } from "../../lib/validation";
 import { parseISODate } from "../../lib/scheduleEvents";
 import type { CompanySchedule } from "../../lib/types";
 
@@ -29,16 +32,23 @@ function scheduleStatus(status: CompanySchedule["status"]): { label: string; col
 /** Painel de uma escala criada à mão: equipe prevista, detalhes e o link de convite. */
 export function ScheduleManualPanel({
   schedule,
+  members,
   companyName,
   disabled,
+  onRemoveMember,
+  onInviteChanged,
   onEdit,
   onDelete,
   onPrint,
   onReceipts
 }: {
   schedule: CompanySchedule;
+  /** Equipe já somada: nomes digitados + quem confirmou pelo link. */
+  members: TeamMember[];
   companyName: string;
   disabled?: boolean;
+  onRemoveMember: (member: TeamMember) => void;
+  onInviteChanged: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onPrint: () => void;
@@ -47,24 +57,41 @@ export function ScheduleManualPanel({
   const [tab, setTab] = useState("equipe");
   const status = scheduleStatus(schedule.status);
   const place = [schedule.location, schedule.neighborhood].filter(Boolean).join(" - ");
-  const open = Math.max(0, schedule.quantity - schedule.workerNames.length);
+  const open = Math.max(0, schedule.quantity - members.length);
+
+  function memberActions(member: TeamMember): MenuAction[] {
+    const actions: MenuAction[] = [];
+    if (member.phone) {
+      actions.push({
+        label: "Chamar no WhatsApp",
+        icon: <MessageCircle size={15} />,
+        href: getWhatsAppUrl(member.phone, `Olá, ${member.name.split(" ")[0]}. Estou organizando a escala ${schedule.title} no ${companyName}.`)
+      });
+    }
+    if (member.source === "convite" && member.responseId) {
+      actions.push({ label: "Remover da equipe", icon: <UserMinus size={15} />, danger: true, disabled, onClick: () => onRemoveMember(member) });
+    } else {
+      actions.push({ label: "Para tirar este nome, use Editar escala", icon: <Edit3 size={15} />, disabled: true });
+    }
+    return actions;
+  }
 
   const team = (
     <div className="grid gap-3">
       <h4 className="text-lg font-black text-white">
-        Equipe prevista ({schedule.workerNames.length}/{schedule.quantity})
+        Equipe ({members.length}/{schedule.quantity})
       </h4>
       <div className="overflow-hidden rounded-xl border border-white/10">
-        {schedule.workerNames.length === 0 ? (
+        {members.length === 0 ? (
           <p className="px-3 py-4 text-sm font-semibold text-slate-400">
-            Nenhum nome adicionado ainda. Use "Editar escala" para incluir a equipe, ou envie o link de convite na aba Convite.
+            Ninguém na equipe ainda. Quem confirmar pelo link de convite (aba Convite) entra aqui sozinho, ou use "Editar escala" para incluir nomes.
           </p>
         ) : (
           <ul className="divide-y divide-white/10">
-            {schedule.workerNames.map((name, index) => (
-              <li key={`${name}-${index}`} className="flex items-center gap-3 px-3 py-2.5">
+            {members.map((member, index) => (
+              <li key={`${member.name}-${index}`} className="flex items-center gap-3 px-3 py-2.5">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-xs font-black text-white">
-                  {name
+                  {member.name
                     .split(" ")
                     .filter(Boolean)
                     .slice(0, 2)
@@ -72,15 +99,20 @@ export function ScheduleManualPanel({
                     .join("")}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <strong className="block truncate text-sm text-white">{name}</strong>
-                  <span className="text-xs font-semibold text-slate-400">{functionLabel(schedule.function)}</span>
+                  <strong className="block truncate text-sm text-white">{member.name}</strong>
+                  <span className="block truncate text-xs font-semibold text-slate-400">
+                    {functionLabel(schedule.function)}
+                    {member.cpf && <span className="text-slate-500"> · CPF {formatCPF(member.cpf)}</span>}
+                  </span>
                 </div>
                 <span
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-black text-white"
                   style={{ borderColor: `${LIME}66`, background: `${LIME}1f` }}
                 >
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: LIME }} /> Previsto
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: LIME }} />
+                  {member.source === "convite" ? "Confirmou pelo link" : "Previsto"}
                 </span>
+                <KebabMenu actions={memberActions(member)} label={`Ações de ${member.name}`} vertical />
               </li>
             ))}
           </ul>
@@ -164,7 +196,7 @@ export function ScheduleManualPanel({
       ) : tab === "detalhes" ? (
         details
       ) : (
-        <ScheduleInvitePanel key={schedule.id} schedule={schedule} companyName={companyName} disabled={disabled} />
+        <ScheduleInvitePanel key={schedule.id} schedule={schedule} companyName={companyName} disabled={disabled} onChanged={onInviteChanged} />
       )}
     </PanelShell>
   );

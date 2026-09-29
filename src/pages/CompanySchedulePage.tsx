@@ -10,6 +10,7 @@ import { ScheduleEventDetail } from "../components/schedule/ScheduleEventDetail"
 import { MonthDatePicker } from "../components/schedule/MonthDatePicker";
 import { ScheduleInvitePanel } from "../components/schedule/ScheduleInvitePanel";
 import { ScheduleManualPanel } from "../components/schedule/ScheduleManualPanel";
+import { useInviteTeams } from "../components/schedule/useInviteTeams";
 import type { MenuAction } from "../components/schedule/KebabMenu";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
@@ -19,7 +20,8 @@ import { todayLocalISODate } from "../lib/format";
 import { functionLabel } from "../lib/functionInfo";
 import { getJobStatus } from "../lib/rules";
 import { buildCalendarItems, buildJobEvents, type CalendarItem } from "../lib/scheduleEvents";
-import { deactivateScheduleInvite, syncScheduleInvite } from "../lib/scheduleInvites";
+import { deactivateScheduleInvite, rebalanceScheduleInvite, removeInviteResponse, syncScheduleInvite } from "../lib/scheduleInvites";
+import { buildTeam, type TeamMember } from "../lib/scheduleTeam";
 import type { ReceiptCompany, ReceiptCustomText, ReceiptDoc, ReceiptPerson } from "../lib/receipts";
 import { formatCNPJ, formatCPF } from "../lib/validation";
 import type { JobEvent } from "../lib/scheduleEvents";
@@ -74,6 +76,21 @@ export function CompanySchedulePage() {
     () => (state.companySchedules ?? []).filter((schedule) => schedule.companyId === currentCompany.id),
     [state.companySchedules, currentCompany.id]
   );
+  // Equipe = nomes digitados em "Equipe prevista" + quem confirmou pelo link de convite.
+  const inviteTeams = useInviteTeams();
+  const teamByScheduleId = useMemo(() => {
+    const map = new Map<string, TeamMember[]>();
+    for (const schedule of companySchedules) map.set(schedule.id, buildTeam(schedule, inviteTeams.bySchedule.get(schedule.id) ?? []));
+    return map;
+  }, [companySchedules, inviteTeams.bySchedule]);
+  // Cópia com a equipe já somada: o calendário, o painel, a impressão e os recibos leem daqui.
+  // A edição usa o original (companySchedules), para não gravar nomes do link como digitados.
+  const schedulesWithTeam = useMemo(
+    () => companySchedules.map((schedule) => ({ ...schedule, workerNames: (teamByScheduleId.get(schedule.id) ?? []).map((member) => member.name) })),
+    [companySchedules, teamByScheduleId]
+  );
+  const originalSchedule = (id: string) => companySchedules.find((schedule) => schedule.id === id);
+
   const companyJobs = useMemo(
     () =>
       state.jobs.filter(
@@ -82,8 +99,8 @@ export function CompanySchedulePage() {
     [state.jobs, currentCompany.id]
   );
   const items = useMemo(
-    () => buildCalendarItems(buildJobEvents(companyJobs, state.applications, state.workers), companySchedules),
-    [companyJobs, state.applications, state.workers, companySchedules]
+    () => buildCalendarItems(buildJobEvents(companyJobs, state.applications, state.workers), schedulesWithTeam),
+    [companyJobs, state.applications, state.workers, schedulesWithTeam]
   );
   const normalizedSearch = search.trim().toLowerCase();
   const filteredItems = useMemo(
@@ -128,7 +145,7 @@ export function CompanySchedulePage() {
       open,
       { label: "Imprimir", icon: <Printer size={15} />, onClick: () => setPrintSchedule(schedule) },
       { label: "Recibos", icon: <Receipt size={15} />, onClick: () => openManualReceipts(schedule) },
-      { label: "Editar escala", icon: <Edit3 size={15} />, disabled: companyBlocked, onClick: () => setEditing(schedule) },
+      { label: "Editar escala", icon: <Edit3 size={15} />, disabled: companyBlocked, onClick: () => setEditing(originalSchedule(schedule.id) ?? schedule) },
       { label: "Excluir", icon: <Trash2 size={15} />, danger: true, disabled: companyBlocked, onClick: () => handleDelete(schedule.id) }
     ];
   }
@@ -189,9 +206,10 @@ export function CompanySchedulePage() {
 
   /** Escala criada à mão: um recibo por nome da equipe prevista (valor a preencher). */
   function openManualReceipts(schedule: CompanySchedule) {
-    const people: ReceiptPerson[] = schedule.workerNames.map((name, index) => ({
-      key: `manual:${schedule.id}:${index}:${name}`,
-      name,
+    const team = teamByScheduleId.get(schedule.id) ?? schedule.workerNames.map((name): TeamMember => ({ name, cpf: "", phone: "", source: "manual" }));
+    const people: ReceiptPerson[] = team.map((member, index) => ({
+      key: `manual:${schedule.id}:${index}:${member.name}`,
+      name: member.name,
       functionName: functionLabel(schedule.function),
       eventTitle: schedule.title,
       date: schedule.date,
@@ -200,9 +218,30 @@ export function CompanySchedulePage() {
       place: [schedule.location, schedule.neighborhood].filter(Boolean).join(" - "),
       value: 0,
       method: "Pix",
-      cpf: ""
+      cpf: member.cpf
     }));
     setReceiptsFor({ title: schedule.title, people });
+  }
+
+  /** Tira da equipe quem confirmou pelo link; abriu vaga, então o primeiro da espera sobe. */
+  async function removeMember(scheduleId: string, member: TeamMember) {
+    if (!member.responseId) return;
+    if (companyBlocked) {
+      setMessage("Sua empresa está em revisão pela administração e não pode alterar a escala no momento.");
+      return;
+    }
+    try {
+      await removeInviteResponse(member.responseId);
+      const promoted = await rebalanceScheduleInvite(scheduleId);
+      inviteTeams.refresh();
+      setMessage(
+        promoted > 0
+          ? `${member.name} saiu da equipe. ${promoted === 1 ? "O primeiro da lista de espera subiu" : `${promoted} da lista de espera subiram`} para o lugar.`
+          : `${member.name} saiu da equipe.`
+      );
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Não foi possível remover da equipe.");
+    }
   }
 
   function handleCreate(input: CompanyScheduleInput) {
@@ -226,8 +265,11 @@ export function CompanySchedulePage() {
     if (!editing) return;
     const result = updateCompanySchedule(editing.id, input);
     if (result.ok) {
-      // Mantém o convite igual à escala (título, data, vagas...). Melhor esforço.
-      void syncScheduleInvite({ ...editing, ...input }, currentCompany.establishmentName);
+      // Mantém o convite igual à escala (título, data, vagas...) e, se ganhou vagas, sobe a lista de espera.
+      void syncScheduleInvite({ ...editing, ...input }, currentCompany.establishmentName)
+        .then(() => rebalanceScheduleInvite(editing.id))
+        .then(() => inviteTeams.refresh())
+        .catch(() => {});
       setEditing(null);
     }
     setMessage(result.message);
@@ -305,9 +347,12 @@ export function CompanySchedulePage() {
           <ScheduleManualPanel
             key={selectedItem.key}
             schedule={selectedItem.schedule}
+            members={teamByScheduleId.get(selectedItem.schedule.id) ?? []}
             companyName={currentCompany.establishmentName}
             disabled={companyBlocked}
-            onEdit={() => setEditing(selectedItem.schedule!)}
+            onRemoveMember={(member) => void removeMember(selectedItem.schedule!.id, member)}
+            onInviteChanged={inviteTeams.refresh}
+            onEdit={() => setEditing(originalSchedule(selectedItem.schedule!.id) ?? selectedItem.schedule!)}
             onDelete={() => handleDelete(selectedItem.schedule!.id)}
             onPrint={() => setPrintSchedule(selectedItem.schedule!)}
             onReceipts={() => openManualReceipts(selectedItem.schedule!)}
@@ -356,7 +401,7 @@ export function CompanySchedulePage() {
 
       {printSchedule && (
         <PrintPortal>
-          <SchedulePrintSheet companyName={currentCompany.establishmentName} schedule={printSchedule} />
+          <SchedulePrintSheet companyName={currentCompany.establishmentName} schedule={printSchedule} members={teamByScheduleId.get(printSchedule.id)} />
         </PrintPortal>
       )}
       {printReceipts && (

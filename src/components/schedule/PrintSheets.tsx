@@ -1,6 +1,7 @@
 import type { Application, CompanySchedule, Job, WorkerProfile } from "../../lib/types";
 import { formatDate } from "../../lib/format";
 import { functionLabel } from "../../lib/functionInfo";
+import { formatCPF } from "../../lib/validation";
 
 // Folhas para imprimir da Escala. São uma lista de presença: nomes numa
 // coluna e, à frente, um espaço para o CPF e outro para a assinatura, com
@@ -60,7 +61,7 @@ const tdStyle = {
 };
 
 /** Lista de presença: Nº | Nome | CPF | Assinatura. Sem nome = linha em branco para preencher. */
-export function AttendanceTable({ names, minRows }: { names: string[]; minRows: number }) {
+export function AttendanceTable({ names, minRows, cpfs }: { names: string[]; minRows: number; cpfs?: string[] }) {
   const total = Math.min(MAX_ROWS, Math.max(names.length + EXTRA_BLANK_ROWS, minRows));
   const rows = Array.from({ length: total }, (_, index) => names[index] ?? "");
 
@@ -85,7 +86,7 @@ export function AttendanceTable({ names, minRows }: { names: string[]; minRows: 
           <tr key={index} style={{ pageBreakInside: "avoid" }}>
             <td style={{ ...tdStyle, textAlign: "center", fontSize: 12 }}>{index + 1}</td>
             <td style={{ ...tdStyle, fontWeight: 600 }}>{name}</td>
-            <td style={tdStyle} />
+            <td style={tdStyle}>{cpfs?.[index] ? formatCPF(cpfs[index]) : ""}</td>
             <td style={tdStyle} />
           </tr>
         ))}
@@ -95,7 +96,18 @@ export function AttendanceTable({ names, minRows }: { names: string[]; minRows: 
 }
 
 /** Escala criada à mão: os nomes vêm da "Equipe prevista". */
-export function SchedulePrintSheet({ companyName, schedule }: { companyName: string; schedule: CompanySchedule }) {
+export function SchedulePrintSheet({
+  companyName,
+  schedule,
+  members
+}: {
+  companyName: string;
+  schedule: CompanySchedule;
+  /** Equipe com CPF (quem confirmou pelo link já traz o CPF). Sem isto, usa só os nomes. */
+  members?: Array<{ name: string; cpf: string }>;
+}) {
+  const names = members ? members.map((member) => member.name) : schedule.workerNames;
+  const cpfs = members ? members.map((member) => member.cpf) : undefined;
   return (
     <div style={sheetStyle}>
       <PrintHeader companyName={companyName} title={schedule.title} />
@@ -109,7 +121,7 @@ export function SchedulePrintSheet({ companyName, schedule }: { companyName: str
         </tbody>
       </table>
       <strong style={{ display: "block", marginBottom: 6, fontSize: 14 }}>Lista de presença</strong>
-      <AttendanceTable names={schedule.workerNames} minRows={schedule.quantity} />
+      <AttendanceTable names={names} minRows={schedule.quantity} cpfs={cpfs} />
       {schedule.notes && (
         <>
           <strong style={{ display: "block", marginTop: 16, fontSize: 13 }}>Observações</strong>

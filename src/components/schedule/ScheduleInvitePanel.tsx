@@ -7,6 +7,7 @@ import {
   getOrCreateScheduleInvite,
   inviteWhatsappShareUrl,
   listInviteResponses,
+  rebalanceScheduleInvite,
   removeInviteResponse,
   scheduleInviteMessage,
   scheduleInviteUrl,
@@ -29,11 +30,14 @@ export function ScheduleInvitePanel({
   schedule,
   companyName,
   disabled,
-  autoCreate
+  autoCreate,
+  onChanged
 }: {
   schedule: CompanySchedule;
   companyName: string;
   disabled?: boolean;
+  /** Chamado depois de confirmar, remover ou promover alguém: a equipe da escala precisa se atualizar. */
+  onChanged?: () => void;
   /** Cria o link assim que o painel abre (usado logo depois de criar a escala). */
   autoCreate?: boolean;
 }) {
@@ -123,6 +127,7 @@ export function ScheduleInvitePanel({
     setResponses((current) => current.map((item) => (item.id === response.id ? { ...item, status } : item)));
     try {
       await setInviteResponseStatus(response.id, status);
+      onChanged?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível atualizar.");
       if (invite) listInviteResponses(invite.id).then(setResponses).catch(() => {});
@@ -133,6 +138,10 @@ export function ScheduleInvitePanel({
     setResponses((current) => current.filter((item) => item.id !== response.id));
     try {
       await removeInviteResponse(response.id);
+      // Abriu uma vaga: o primeiro da lista de espera sobe.
+      await rebalanceScheduleInvite(schedule.id);
+      if (invite) listInviteResponses(invite.id).then(setResponses).catch(() => {});
+      onChanged?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível remover.");
       if (invite) listInviteResponses(invite.id).then(setResponses).catch(() => {});
