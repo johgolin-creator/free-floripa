@@ -378,51 +378,78 @@ async function loadApplicationsForJobs(jobIds: string[]) {
   return ((data ?? []) as ApplicationRow[]).map(mapApplication);
 }
 
-export async function loadPublicWorkerProfiles(excludeUserId?: string | null) {
+const WORKER_PROFILE_COLUMNS =
+  "id,user_id,display_name,avatar_url,birth_date,city,neighborhood,professions,experience,description,availability,has_transport,max_distance_km,rating,completed_jobs,attendance_rate,punctuality_rate,cancellations,verified";
+/** O Supabase devolve no máximo 1000 linhas por consulta: acima disso, busca em páginas. */
+const SUPABASE_PAGE_SIZE = 1000;
+/** Ids por consulta em .in(): mantém a URL curta mesmo com muitos perfis. */
+const IN_CHUNK_SIZE = 100;
+
+/** Busca linhas por worker_id em lotes, para não estourar o tamanho da URL. */
+async function selectByWorkerIds<T>(table: string, columns: string, ids: string[]): Promise<T[]> {
+  if (!supabase) return [];
+  const client = supabase;
+  const chunks: string[][] = [];
+  for (let index = 0; index < ids.length; index += IN_CHUNK_SIZE) chunks.push(ids.slice(index, index + IN_CHUNK_SIZE));
+  const results = await Promise.all(chunks.map((chunk) => client.from(table).select(columns).in("worker_id", chunk)));
+  const rows: T[] = [];
+  for (const { data, error } of results) {
+    if (error) throw new Error(error.message);
+    rows.push(...((data ?? []) as unknown as T[]));
+  }
+  return rows;
+}
+
+/**
+ * Perfis de trabalhador. A busca das empresas usa o limite padrão (os mais recentes);
+ * o painel admin passa `{ all: true }` para trazer todos os cadastrados.
+ */
+export async function loadPublicWorkerProfiles(excludeUserId?: string | null, options: { all?: boolean } = {}) {
   if (!supabase) return [];
 
-  const { data: rows, error } = await supabase
-    .from("worker_profiles")
-    .select(
-      "id,user_id,display_name,avatar_url,birth_date,city,neighborhood,professions,experience,description,availability,has_transport,max_distance_km,rating,completed_jobs,attendance_rate,punctuality_rate,cancellations,verified"
-    )
-    .order("updated_at", { ascending: false })
-    .limit(PUBLIC_WORKERS_LIMIT);
+  let rows: WorkerProfileRow[] = [];
+  if (options.all) {
+    for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+      const { data, error } = await supabase
+        .from("worker_profiles")
+        .select(WORKER_PROFILE_COLUMNS)
+        .order("updated_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, from + SUPABASE_PAGE_SIZE - 1);
+      if (error) throw new Error(error.message);
+      const page = (data ?? []) as WorkerProfileRow[];
+      rows.push(...page);
+      if (page.length < SUPABASE_PAGE_SIZE) break;
+    }
+  } else {
+    const { data, error } = await supabase
+      .from("worker_profiles")
+      .select(WORKER_PROFILE_COLUMNS)
+      .order("updated_at", { ascending: false })
+      .limit(PUBLIC_WORKERS_LIMIT);
+    if (error) throw new Error(error.message);
+    rows = (data ?? []) as WorkerProfileRow[];
+  }
 
-  if (error) throw new Error(error.message);
-
-  const profiles = ((rows ?? []) as WorkerProfileRow[]).filter((row) => row.user_id !== excludeUserId);
+  const profiles = rows.filter((row) => row.user_id !== excludeUserId);
   const ids = profiles.map((row) => row.id);
   if (ids.length === 0) return [];
 
-  const [
-    { data: experienceRows, error: experienceError },
-    { data: reviewRows, error: reviewError },
-    { data: photoRows, error: photoError }
-  ] = await Promise.all([
-    supabase
-      .from("worker_function_experience")
-      .select("worker_id,function_name,level,months,accepts_assistant,verified")
-      .in("worker_id", ids),
-    supabase
-      .from("worker_reviews")
-      .select("id,worker_id,application_id,job_id,author_name,rating,comment,created_at")
-      .in("worker_id", ids),
-    supabase.from("worker_photos").select("worker_id,url,position").in("worker_id", ids)
+  const [experienceRows, reviewRows, photoRows] = await Promise.all([
+    selectByWorkerIds<FunctionExperienceRow>(
+      "worker_function_experience",
+      "worker_id,function_name,level,months,accepts_assistant,verified",
+      ids
+    ),
+    selectByWorkerIds<WorkerReviewRow>(
+      "worker_reviews",
+      "id,worker_id,application_id,job_id,author_name,rating,comment,created_at",
+      ids
+    ),
+    selectByWorkerIds<WorkerPhotoRow>("worker_photos", "worker_id,url,position", ids)
   ]);
 
-  if (experienceError) throw new Error(experienceError.message);
-  if (reviewError) throw new Error(reviewError.message);
-  if (photoError) throw new Error(photoError.message);
-
-  return profiles.map((row) =>
-    mapPublicWorker(
-      row,
-      (experienceRows ?? []) as FunctionExperienceRow[],
-      (reviewRows ?? []) as WorkerReviewRow[],
-      (photoRows ?? []) as WorkerPhotoRow[]
-    )
-  );
+  return profiles.map((row) => mapPublicWorker(row, experienceRows, reviewRows, photoRows));
 }
 
 export async function publishWorkerProfile(user: User, worker: WorkerProfile) {

@@ -180,7 +180,8 @@ export async function loadModerationOverview(): Promise<ModerationOverview> {
   }
 
   const [workers, workerContacts, companies, soldByMap, jobsPayload, applications, trustReports, adminModeration] = await Promise.all([
-    loadPublicWorkerProfiles(null),
+    // Admin vê todos os cadastrados, sem o limite da busca pública.
+    loadPublicWorkerProfiles(null, { all: true }),
     loadWorkerContactsForModeration().catch((error) => {
       console.warn("[admin] contato completo dos trabalhadores indisponível:", error);
       return new Map<string, { cpf: string; phone: string; email: string }>();
