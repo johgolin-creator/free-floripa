@@ -25,7 +25,7 @@ export function JobCard({
   const openSlots = getOpenSlots(job);
 
   return (
-    <article className="card relative grid gap-4 overflow-hidden p-4 pl-5 hover:-translate-y-0.5 hover:border-aqua-200 hover:shadow-lift">
+    <article className="card relative grid gap-4 overflow-hidden p-4 pl-5 hover:border-aqua-200/60 hover:shadow-lift">
       <div className="absolute bottom-4 left-0 top-4 w-1 rounded-r-full bg-aqua-500" />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 gap-3">

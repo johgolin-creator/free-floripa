@@ -92,7 +92,7 @@ export function PhoneVerifyPage() {
         </label>
 
         {!sent ? (
-          <button type="button" className="primary" disabled={pending} onClick={handleSend}>
+          <button aria-busy={pending} type="button" className="primary" disabled={pending} onClick={handleSend}>
             <MessageSquare size={17} /> {pending ? "Enviando..." : "Enviar código por SMS"}
           </button>
         ) : (
@@ -108,7 +108,7 @@ export function PhoneVerifyPage() {
                 onChange={(event) => setCode(onlyDigits(event.target.value))}
               />
             </label>
-            <button type="button" className="primary" disabled={pending} onClick={handleVerify}>
+            <button aria-busy={pending} type="button" className="primary" disabled={pending} onClick={handleVerify}>
               {pending ? "Confirmando..." : "Confirmar telefone"}
             </button>
             <div className="flex flex-wrap gap-3">

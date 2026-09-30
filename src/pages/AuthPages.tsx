@@ -110,7 +110,7 @@ export function LoginPage() {
             </label>
           </div>
         </fieldset>
-        <button type="submit" disabled={pending} className="primary"><LogIn size={17} /> {pending ? "Entrando..." : "Entrar"}</button>
+        <button aria-busy={pending} type="submit" disabled={pending} className="primary"><LogIn size={17} /> {pending ? "Entrando..." : "Entrar"}</button>
         <div className="grid gap-2 text-sm font-semibold text-slate-600 sm:grid-cols-2">
           <Link to="/cadastro-trabalhador" className="secondary">Criar conta trabalhador</Link>
           <Link to="/cadastro-empresa" className="secondary">Criar conta empresa</Link>
@@ -203,7 +203,7 @@ export function ResetPasswordPage() {
               Confirmar nova senha
               <input name="confirmPassword" className="input" type="password" required placeholder="Repita a nova senha" />
             </label>
-            <button type="submit" disabled={pending} className="primary">
+            <button aria-busy={pending} type="submit" disabled={pending} className="primary">
               <KeyRound size={17} /> {pending ? "Salvando..." : "Salvar nova senha"}
             </button>
             {message && (
@@ -222,7 +222,7 @@ export function ResetPasswordPage() {
               E-mail cadastrado
               <input name="email" className="input" type="email" required placeholder="seu@email.com" />
             </label>
-            <button type="submit" disabled={pending || !authEnabled || isOpeningRecoveryLink} className="primary">
+            <button aria-busy={pending} type="submit" disabled={pending || !authEnabled || isOpeningRecoveryLink} className="primary">
               <Mail size={17} /> {pending ? "Enviando..." : "Enviar link de recuperação"}
             </button>
             <Link to="/login" className="secondary">Voltar para o login</Link>

@@ -93,7 +93,7 @@ export function WorkerDashboard() {
       <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
         <section>
           <SectionHeader eyebrow="Recomendadas" title="Boas vagas para você" />
-          <div className="grid gap-3">
+          <div className="stagger-list grid gap-3">
             {bestMatches.map(({ job, score }) => (
               <JobCard key={job.id} job={job} matchLabel={score >= 75 ? "Ótima combinação" : score >= 55 ? "Boa combinação" : "Compatível"} matchScore={score} />
             ))}
@@ -122,7 +122,7 @@ export function WorkerDashboard() {
 
           <div>
             <SectionHeader eyebrow="Agora" title="Vagas urgentes" />
-            <div className="grid gap-3">
+            <div className="stagger-list grid gap-3">
               {urgentJobs.map((job) => (
                 <JobCard key={job.id} job={job} compact />
               ))}

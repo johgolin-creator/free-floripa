@@ -1,20 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  CheckCircle2,
-  ClipboardCopy,
-  ExternalLink,
-  FileText,
-  MapPin,
-  MessageCircle,
-  MessageSquareText,
-  Phone,
-  Printer,
-  Receipt,
-  Send,
-  UserPlus,
-  UserX
-} from "lucide-react";
+import { Check, CheckCircle2, ClipboardCopy, ExternalLink, FileText, MapPin, MessageCircle, MessageSquareText, Phone, Printer, Receipt, Send, UserPlus, UserX } from "lucide-react";
 import { AvatarButton } from "../AvatarButton";
 import { KebabMenu, type MenuAction } from "./KebabMenu";
 import { PanelShell } from "./PanelShell";
@@ -355,7 +341,7 @@ export function ScheduleEventDetail({
         </label>
         <div className="flex flex-wrap gap-2">
           <button type="button" className={quickButton} onClick={() => copy(draft)}>
-            <ClipboardCopy size={14} /> {copied ? "Copiado!" : "Copiar resumo"}
+            {copied ? <span key="ok" className="icon-swap"><Check size={14} /></span> : <ClipboardCopy size={14} />} {copied ? "Copiado!" : "Copiar resumo"}
           </button>
           <a
             href={`https://wa.me/?text=${encodeURIComponent(draft)}`}

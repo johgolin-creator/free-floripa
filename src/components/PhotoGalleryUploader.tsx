@@ -81,7 +81,7 @@ export function PhotoGalleryUploader({ label, photos, kind, onChange }: PhotoGal
         <div className="flex flex-wrap gap-3">
           {photos.map((url, index) => (
             <div key={url + index} className="group relative h-20 w-20 shrink-0">
-              <img src={url} alt="" className="h-20 w-20 rounded-lg border border-white/10 object-cover shadow-sm" />
+              <img src={url} alt="" loading="lazy" decoding="async" className="h-20 w-20 rounded-lg border border-white/10 object-cover shadow-sm" />
               <button
                 type="button"
                 onClick={() => removeAt(index)}

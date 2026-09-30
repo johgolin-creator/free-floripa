@@ -61,7 +61,7 @@ export function TeamPage() {
       {team.length === 0 ? (
         <EmptyState title="Nenhum profissional salvo" text="Favorite candidatos para montar sua base de confiança." />
       ) : (
-        <div className="grid gap-3 xl:grid-cols-2">
+        <div className="stagger-list grid gap-3 xl:grid-cols-2">
           {team.map((worker) => {
             const wasHired = hiredIds.includes(worker.id);
             const workerBlocked = state.adminModeration.blockedWorkerIds.includes(worker.id);

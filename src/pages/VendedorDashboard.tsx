@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Copy, Link2, Loader2, Phone, Plus, Trash2, UserRoundSearch, UsersRound, WalletCards } from "lucide-react";
+import { Check, Copy, Link2, Loader2, Phone, Plus, Trash2, UserRoundSearch, UsersRound, WalletCards } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
 import { EmptyState } from "../components/EmptyState";
@@ -18,6 +18,7 @@ import {
   type SalesRepLead,
   type SalesRepLeadStatus
 } from "../lib/salesRepLeads";
+import { SkeletonRows } from "../components/Skeleton";
 
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [done, setDone] = useState(false);
@@ -32,7 +33,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
         })
       }
     >
-      <Copy size={16} /> {done ? "Copiado!" : label}
+      {done ? <span key="ok" className="icon-swap"><Check size={16} /></span> : <Copy size={16} />} {done ? "Copiado!" : label}
     </button>
   );
 }
@@ -251,7 +252,7 @@ export function VendedorDashboard() {
         </div>
 
         {loading ? (
-          <p className="text-sm font-bold text-slate-600">Carregando…</p>
+          <SkeletonRows rows={3} />
         ) : filteredLeads.length === 0 ? (
           <EmptyState title="Nenhum contato aqui" text="Adicione as empresas que você está prospectando para acompanhar quem falta contatar." />
         ) : (
@@ -297,7 +298,7 @@ export function VendedorDashboard() {
           Empresas que se cadastraram pelo seu link. Aparecem aqui assim que entram no app, antes de comprar qualquer pacote.
         </p>
         {loading ? (
-          <p className="text-sm font-bold text-slate-600">Carregando…</p>
+          <SkeletonRows rows={3} />
         ) : companies.length === 0 ? (
           <EmptyState
             title="Nenhuma indicação ainda"
@@ -325,7 +326,7 @@ export function VendedorDashboard() {
       <section className="card p-4">
         <h3 className="mb-3 font-black text-white">Minhas vendas</h3>
         {loading ? (
-          <p className="text-sm font-bold text-slate-600">Carregando…</p>
+          <SkeletonRows rows={3} />
         ) : error ? (
           <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>
         ) : sales.length === 0 ? (

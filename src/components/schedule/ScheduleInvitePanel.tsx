@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, ClipboardCopy, Link2, Loader2, MessageCircle, Trash2, XCircle } from "lucide-react";
+import { Check, CheckCircle2, ClipboardCopy, Link2, Loader2, MessageCircle, Trash2, XCircle } from "lucide-react";
 import { getWhatsAppUrl } from "../../lib/format";
 import { formatCPF } from "../../lib/validation";
 import {
@@ -17,6 +17,7 @@ import {
   type ScheduleInvite
 } from "../../lib/scheduleInvites";
 import type { CompanySchedule } from "../../lib/types";
+import { SkeletonRows } from "../Skeleton";
 
 const POLL_MS = 15_000;
 
@@ -161,9 +162,7 @@ export function ScheduleInvitePanel({
       </h4>
 
       {loading ? (
-        <p className="flex items-center gap-2 text-sm font-semibold text-slate-400">
-          <Loader2 className="animate-spin" size={15} /> Carregando...
-        </p>
+        <SkeletonRows rows={1} label="Carregando link de convite" />
       ) : !invite ? (
         <div className="grid gap-2">
           <p className="text-sm font-semibold text-slate-300">
@@ -178,7 +177,7 @@ export function ScheduleInvitePanel({
           <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
             <input className="input !min-h-10" readOnly value={url} onFocus={(event) => event.currentTarget.select()} aria-label="Link de convite" />
             <button type="button" className="secondary min-h-10 px-4 text-sm" onClick={() => copy("link", url)}>
-              <ClipboardCopy size={15} /> {copied === "link" ? "Copiado!" : "Copiar link"}
+              {copied === "link" ? <span key="ok" className="icon-swap"><Check size={15} /></span> : <ClipboardCopy size={15} />} {copied === "link" ? "Copiado!" : "Copiar link"}
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -186,7 +185,7 @@ export function ScheduleInvitePanel({
               <MessageCircle size={16} /> Enviar no WhatsApp
             </a>
             <button type="button" className="secondary min-h-10 px-4 text-sm" onClick={() => copy("message", message)}>
-              <ClipboardCopy size={15} /> {copied === "message" ? "Copiado!" : "Copiar mensagem pronta"}
+              {copied === "message" ? <span key="ok" className="icon-swap"><Check size={15} /></span> : <ClipboardCopy size={15} />} {copied === "message" ? "Copiado!" : "Copiar mensagem pronta"}
             </button>
           </div>
 

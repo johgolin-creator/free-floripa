@@ -1,9 +1,10 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { lazy, Suspense, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { AppLayout } from "./components/AppLayout";
 import { useAuth } from "./lib/auth";
 import { RouteErrorBoundary } from "./components/RouteErrorBoundary";
+import { AppShellSkeleton, PageSkeleton, PublicPageSkeleton } from "./components/Skeleton";
 import { useAppStore } from "./lib/store";
 import {
   claimCompanySalesRep,
@@ -70,6 +71,7 @@ const prefetchCompanyPages = [
 export default function App() {
   const { state, setRole } = useAppStore();
   const { user, role, isSalesRep, authEnabled, dbRoleLoading } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
     if (user && role && state.activeRole !== role) {
@@ -149,8 +151,14 @@ export default function App() {
   // dele costuma estar vazio e não é o que ele usa).
   const landingPath = isSalesRep ? "/app/vendedor" : state.activeRole === "empresa" ? "/app/empresa" : "/app/trabalhador";
 
+  // Telas públicas entram com uma transição curta a cada troca de rota. A
+  // área /app fica de fora: ela tem a própria transição dentro do AppLayout
+  // (o menu e o cabeçalho não piscam ao trocar de tela).
+  const isAppArea = location.pathname.startsWith("/app");
+
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense fallback={<PublicPageSkeleton />}>
+      <div key={isAppArea ? "app" : location.pathname} className={isAppArea ? undefined : "page-enter"}>
       <Routes>
         <Route path="/" element={<PublicHome />} />
         <Route path="/login" element={<LoginPage />} />
@@ -186,19 +194,14 @@ export default function App() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </div>
     </Suspense>
   );
 }
 
+// Usado dentro do AppLayout, enquanto a permissão da conta ainda carrega.
 function PageLoading() {
-  return (
-    <div className="grid min-h-screen place-items-center bg-ice px-4 text-center">
-      <div className="card max-w-sm p-5">
-        <strong className="text-lg text-navy-950">Carregando</strong>
-        <p className="mt-2 text-sm text-slate-600">Abrindo esta área do PONT.</p>
-      </div>
-    </div>
-  );
+  return <PageSkeleton label="Abrindo esta área do PONT" />;
 }
 
 function RoleRoute({ role, children }: { role: UserRole; children: ReactNode }) {
@@ -238,14 +241,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   // real account's, looking like a login mix-up. Wait out both phases here
   // instead of patching every screen that reads currentWorker/currentCompany.
   if (loading || (user && syncStatus === "carregando")) {
-    return (
-      <div className="grid min-h-screen place-items-center bg-slate-100 px-4 text-center">
-        <div className="card max-w-md p-5">
-          <strong className="text-lg text-navy-950">Carregando sua conta</strong>
-          <p className="mt-2 text-sm text-slate-600">Estamos verificando sua sessão no PONT.</p>
-        </div>
-      </div>
-    );
+    return <AppShellSkeleton label="Carregando sua conta" />;
   }
 
   if (authEnabled && !user) {

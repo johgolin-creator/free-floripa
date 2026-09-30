@@ -171,7 +171,7 @@ export function JobDetailsPage() {
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           <button type="button" onClick={() => setShowApplyConfirm(false)} className="secondary">Cancelar</button>
-          <button type="button" onClick={confirmApply} disabled={isApplying} className="primary">
+          <button aria-busy={isApplying} type="button" onClick={confirmApply} disabled={isApplying} className="primary">
             {isApplying ? "Enviando..." : "Enviar candidatura"}
           </button>
         </div>
@@ -340,7 +340,7 @@ export function JobDetailsPage() {
                 )}
               </div>
             )}
-            <button type="button" onClick={handleApply} disabled={Boolean(application) || isApplying || workerBlocked || companyBlocked || !isJobOpenForApplications(currentJob)} className="primary">
+            <button aria-busy={isApplying} type="button" onClick={handleApply} disabled={Boolean(application) || isApplying || workerBlocked || companyBlocked || !isJobOpenForApplications(currentJob)} className="primary">
               {application ? `Status: ${application.status}` : workerBlocked || companyBlocked ? "Bloqueado por segurança" : isApplying ? "Enviando..." : isJobOpenForApplications(currentJob) ? "Candidatar-se" : `Vaga ${jobStatus}`}
             </button>
             <p className="text-xs leading-5 text-slate-500">

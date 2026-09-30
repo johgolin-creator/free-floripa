@@ -88,7 +88,7 @@ export function DeleteAccountSection() {
             </label>
             {error && <p className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</p>}
             <div className="flex flex-wrap gap-3">
-              <button
+              <button aria-busy={busy}
                 type="button"
                 onClick={handleDelete}
                 disabled={busy || confirmText.trim().toUpperCase() !== CONFIRM_WORD}

@@ -734,7 +734,7 @@ function UrgentForm({ onSubmit }: { onSubmit: (input: UrgentReplacementInput) =>
         </label>
       </div>
       <label className="label">Observação<textarea name="observation" className="input min-h-24 py-3" placeholder="Cobrir falta no turno da noite" /></label>
-      <button type="submit" disabled={isPublishing} className="danger">
+      <button aria-busy={isPublishing} type="submit" disabled={isPublishing} className="danger">
         {isPublishing ? "Criando..." : "Criar vaga URGENTE"}
       </button>
     </form>

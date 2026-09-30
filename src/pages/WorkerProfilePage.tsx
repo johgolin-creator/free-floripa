@@ -119,6 +119,8 @@ export function WorkerProfilePage() {
                     key={url + index}
                     src={url}
                     alt={`Foto ${index + 1} de ${currentWorker.name}`}
+                    loading="lazy"
+                    decoding="async"
                     className="h-24 w-24 rounded-lg border border-white/10 object-cover shadow-sm"
                   />
                 ))}

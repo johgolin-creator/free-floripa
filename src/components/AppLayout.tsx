@@ -17,7 +17,7 @@ import {
   UsersRound,
   WalletCards
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import { BrandLogo } from "./BrandLogo";
@@ -26,6 +26,7 @@ import { NotificationToast } from "./NotificationToast";
 import { RoleSwitcher } from "./RoleSwitcher";
 import { ReportBugButton } from "./ReportBugButton";
 import { SupportButton } from "./SupportButton";
+import { PageSkeleton } from "./Skeleton";
 import { useAppStore } from "../lib/store";
 import { useAuth } from "../lib/auth";
 import { getCompanyProfileCompletion, getWorkerProfileCompletion } from "../lib/profileCompletion";
@@ -294,7 +295,7 @@ export function AppLayout() {
                 aria-label="Notificações"
               >
                 <Bell size={20} />
-                {unread > 0 && <span>{unread}</span>}
+                {unread > 0 && <span key={unread}>{unread}</span>}
               </NavLink>
               <SupportButton compact />
               {isModerator && <ReportBugButton compact />}
@@ -337,7 +338,7 @@ export function AppLayout() {
                 aria-label="Notificações"
               >
                 <Bell size={18} />
-                {unread > 0 && <span className="app-header-bell-badge">{unread}</span>}
+                {unread > 0 && <span key={unread} className="app-header-bell-badge">{unread}</span>}
               </NavLink>
               <div className="max-w-full">
                 <RoleSwitcher compact />
@@ -347,7 +348,14 @@ export function AppLayout() {
         </header>
 
         <div className="app-content mx-auto w-full max-w-[1440px] px-4 py-5 md:px-8 md:py-7">
-          <Outlet />
+          {/* Suspense aqui (e não só no App) mantém o menu e o cabeçalho na
+              tela enquanto uma tela nova baixa; só o conteúdo vira skeleton.
+              A chave pela rota refaz a transição de entrada a cada troca. */}
+          <Suspense fallback={<PageSkeleton />}>
+            <div key={location.pathname} className="page-enter">
+              <Outlet />
+            </div>
+          </Suspense>
         </div>
       </main>
 

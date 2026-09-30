@@ -93,7 +93,7 @@ export function ReportBugButton({ compact = false }: { compact?: boolean }) {
                 placeholder="O que aconteceu, o que você esperava e como reproduzir."
               />
             </label>
-            <button type="submit" className="primary" disabled={pending}>
+            <button aria-busy={pending} type="submit" className="primary" disabled={pending}>
               <Bug size={17} /> {pending ? "Enviando..." : "Enviar relato"}
             </button>
           </form>

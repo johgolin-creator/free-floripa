@@ -225,7 +225,7 @@ export function JobsPage() {
       {filteredJobs.length === 0 ? (
         <EmptyState title="Nenhuma vaga encontrada" text="Tente remover um filtro, reduzir o valor mínimo ou desmarcar boa combinação para visualizar mais oportunidades." />
       ) : (
-        <div className="grid gap-4">
+        <div className="stagger-list grid gap-4">
           {visibleScoredJobs.map(({ job, match }) => (
             <JobCard key={job.id} job={job} matchLabel={match.label} matchScore={match.score} />
           ))}

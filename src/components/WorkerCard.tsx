@@ -177,6 +177,8 @@ export function WorkerCard({
                     key={url + index}
                     src={url}
                     alt={`Foto ${index + 1} de ${worker.name}`}
+                    loading="lazy"
+                    decoding="async"
                     className="h-20 w-20 rounded-lg border border-white/10 object-cover shadow-sm"
                   />
                 ))}
