@@ -294,7 +294,7 @@ export function NotificationsPage() {
       ) : filteredNotifications.length === 0 ? (
         <EmptyState title="Nada neste filtro" text="Troque o filtro para ver outros avisos recebidos." />
       ) : (
-        <div className="grid gap-3">
+        <div className="stagger-list grid gap-3">
           {filteredNotifications.map(({ notification, meta }) => {
             const Icon = meta.Icon;
             return (

@@ -27,7 +27,7 @@ export function AvatarButton({
         aria-label={`Ver a foto de ${name} em tamanho maior`}
         className={`shrink-0 cursor-zoom-in overflow-hidden rounded-lg transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-aqua-400 disabled:cursor-default ${ringClassName ?? ""}`}
       >
-        <img src={src} alt="" className={className} />
+        <img src={src} alt="" loading="lazy" decoding="async" className={className} />
       </button>
       {open && (
         <Modal title={`Foto de ${name}`} onClose={() => setOpen(false)}>

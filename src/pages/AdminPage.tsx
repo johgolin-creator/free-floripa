@@ -1,30 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import {
-  AlertTriangle,
-  Award,
-  BadgeCheck,
-  Ban,
-  Bell,
-  BriefcaseBusiness,
-  Building2,
-  CalendarDays,
-  CheckCircle2,
-  ClipboardList,
-  Mail,
-  MapPin,
-  Phone,
-  Copy,
-  Link2,
-  Plus,
-  Search,
-  ShieldCheck,
-  Star,
-  Target,
-  Trash2,
-  UserRound,
-  WalletCards
-} from "lucide-react";
+import { AlertTriangle, Award, BadgeCheck, Ban, Bell, BriefcaseBusiness, Building2, CalendarDays, Check, CheckCircle2, ClipboardList, Copy, Link2, Mail, MapPin, Phone, Plus, Search, ShieldCheck, Star, Target, Trash2, UserRound, WalletCards } from "lucide-react";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { UrgentBadge } from "../components/UrgentBadge";
@@ -50,6 +26,7 @@ import {
 import { formatBrl, listSales, registerSale, salesEnabled, type PaymentStatus, type Sale } from "../lib/sales";
 import { commissionCentsForSale, commissionRateForSale } from "../lib/salesCommission";
 import type { Application, CompanyProfile, CompanyReview, Job, TrustReport, UserRole, WorkerProfile } from "../lib/types";
+import { SkeletonRows } from "../components/Skeleton";
 
 type AdminTab = "Resumo" | "Usuários" | "Vagas" | "Vendedores" | "Moedas" | "Alertas";
 
@@ -274,8 +251,8 @@ export function AdminPage() {
       <BroadcastNotificationSection />
 
       {tab === "Resumo" && !moderationReady && (
-        <section className="card p-6 text-center text-sm font-bold text-slate-500">
-          Carregando indicadores...
+        <section className="card p-4">
+          <SkeletonRows rows={4} label="Carregando indicadores" />
         </section>
       )}
 
@@ -295,8 +272,8 @@ export function AdminPage() {
       )}
 
       {tab === "Usuários" && !moderationReady && (
-        <section className="card p-6 text-center text-sm font-bold text-slate-500">
-          Carregando trabalhadores e empresas...
+        <section className="card p-4">
+          <SkeletonRows rows={5} label="Carregando trabalhadores e empresas" />
         </section>
       )}
 
@@ -348,8 +325,8 @@ export function AdminPage() {
       )}
 
       {tab === "Vagas" && !moderationReady && (
-        <section className="card p-6 text-center text-sm font-bold text-slate-500">
-          Carregando vagas...
+        <section className="card p-4">
+          <SkeletonRows rows={5} label="Carregando vagas" />
         </section>
       )}
 
@@ -413,7 +390,7 @@ export function AdminPage() {
             <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{coinOverviewError}</div>
           )}
           {!coinOverview ? (
-            <p className="text-sm font-bold text-slate-600">{coinOverviewError ? "" : "Carregando..."}</p>
+            coinOverviewError ? null : <SkeletonRows rows={3} label="Carregando moedas" />
           ) : (
             <>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -464,8 +441,8 @@ export function AdminPage() {
       )}
 
       {tab === "Alertas" && !moderationReady && (
-        <section className="card p-6 text-center text-sm font-bold text-slate-500">
-          Carregando alertas...
+        <section className="card p-4">
+          <SkeletonRows rows={3} label="Carregando alertas" />
         </section>
       )}
 
@@ -751,7 +728,7 @@ function CoinGrantCard({ onChanged }: { onChanged?: () => void }) {
           <input className="input" value={reason} onChange={(event) => setReason(event.target.value)} />
         </label>
       </div>
-      <button
+      <button aria-busy={pending === "coins"}
         type="button"
         className="primary mt-3"
         disabled={!adminCoinsEnabled || pending !== ""}
@@ -765,7 +742,7 @@ function CoinGrantCard({ onChanged }: { onChanged?: () => void }) {
           Ativar Plus por (dias)
           <input className="input" type="number" value={plusDays} onChange={(event) => setPlusDays(event.target.value)} />
         </label>
-        <button
+        <button aria-busy={pending === "plus"}
           type="button"
           className="secondary self-end"
           disabled={!adminCoinsEnabled || pending !== ""}
@@ -835,6 +812,8 @@ function AdminRow({
             <img
               src={avatarUrl}
               alt=""
+              loading="lazy"
+              decoding="async"
               className={`h-16 w-16 shrink-0 rounded-lg border-2 ${blocked ? "border-red-200" : "border-brand-dark"} ${avatarFit === "contain" ? "bg-white object-contain" : "object-cover"}`}
             />
           ) : (
@@ -1232,7 +1211,7 @@ function DangerDeleteAccount({
           </label>
           {error && <div className="rounded-lg bg-red-50 p-2 text-xs font-bold text-alert">{error}</div>}
           <div className="flex gap-2">
-            <button type="button" className="danger" disabled={!ready || pending} onClick={run}>
+            <button aria-busy={pending} type="button" className="danger" disabled={!ready || pending} onClick={run}>
               <Trash2 size={16} /> {pending ? "Excluindo..." : "Excluir definitivamente"}
             </button>
             <button
@@ -1306,7 +1285,7 @@ function BroadcastNotificationSection() {
         ) : (
           <div className="flex flex-wrap gap-2">
             <span className="text-xs font-bold text-slate-600 self-center">Confirma o envio para todos os freelancers cadastrados?</span>
-            <button type="button" className="secondary" disabled={pending} onClick={send}>
+            <button aria-busy={pending} type="button" className="secondary" disabled={pending} onClick={send}>
               {pending ? "Enviando..." : "Confirmar"}
             </button>
             <button type="button" className="secondary" disabled={pending} onClick={() => setArmed(false)}>
@@ -1354,7 +1333,7 @@ function NotifyWorkersButton({ title, body }: { title: string; body: string }) {
         <div className="grid gap-1">
           <span className="text-xs font-bold text-slate-600">Notificar todos os freelancers sobre essa vaga?</span>
           <div className="flex gap-2">
-            <button type="button" className="secondary" disabled={pending} onClick={run}>
+            <button aria-busy={pending} type="button" className="secondary" disabled={pending} onClick={run}>
               {pending ? "Enviando..." : "Confirmar"}
             </button>
             <button type="button" className="secondary" disabled={pending} onClick={() => setArmed(false)}>
@@ -1396,7 +1375,7 @@ function JobDeleteButton({ title, onDelete }: { title: string; onDelete: () => P
         <div className="grid gap-1">
           <span className="text-xs font-bold text-alert">Excluir "{title}" e suas candidaturas?</span>
           <div className="flex gap-2">
-            <button type="button" className="danger" disabled={pending} onClick={run}>
+            <button aria-busy={pending} type="button" className="danger" disabled={pending} onClick={run}>
               {pending ? "Excluindo..." : "Confirmar"}
             </button>
             <button type="button" className="secondary" disabled={pending} onClick={() => setArmed(false)}>
@@ -1465,7 +1444,7 @@ function CompanySalesRepField({
           ))}
           {orphanCode && <option value={orphanCode}>{orphanCode} (não cadastrado)</option>}
         </select>
-        <button type="button" className="primary" disabled={!dirty || pending} onClick={save}>
+        <button aria-busy={pending} type="button" className="primary" disabled={!dirty || pending} onClick={save}>
           {pending ? "Salvando..." : "Salvar"}
         </button>
       </div>
@@ -1807,7 +1786,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
         })
       }
     >
-      <Copy size={15} /> {done ? "Copiado!" : label}
+      {done ? <span key="ok" className="icon-swap"><Check size={15} /></span> : <Copy size={15} />} {done ? "Copiado!" : label}
     </button>
   );
 }
@@ -1892,7 +1871,7 @@ function RepFormModal({
           <textarea className="input min-h-20 py-2" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
         </label>
         {error && <div className="rounded-lg bg-red-50 p-2 text-xs font-bold text-alert">{error}</div>}
-        <button type="button" className="primary" disabled={pending} onClick={submit}>
+        <button aria-busy={pending} type="button" className="primary" disabled={pending} onClick={submit}>
           {pending ? "Salvando..." : "Salvar vendedor"}
         </button>
       </div>
@@ -2011,7 +1990,7 @@ function SaleFormModal({
           </label>
         </div>
         {error && <div className="rounded-lg bg-red-50 p-2 text-xs font-bold text-alert">{error}</div>}
-        <button type="button" className="primary" disabled={pending} onClick={submit}>
+        <button aria-busy={pending} type="button" className="primary" disabled={pending} onClick={submit}>
           {pending ? "Registrando..." : "Registrar venda"}
         </button>
       </div>

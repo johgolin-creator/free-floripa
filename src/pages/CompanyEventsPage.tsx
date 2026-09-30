@@ -307,7 +307,7 @@ export function CompanyEventsPage() {
           </div>
         )}
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button
+          <button aria-busy={isCreating}
             type="button"
             onClick={createEventJobs}
             disabled={isCreating || requestedFunctions.length === 0 || companyBlocked || eventAlreadyCreated}

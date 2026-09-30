@@ -63,7 +63,7 @@ export function KebabMenu({
         <Icon size={17} />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-full z-30 mt-1 w-56 rounded-xl border border-white/10 bg-brand-charcoal p-1.5 shadow-lift">
+        <div role="menu" className="menu-pop absolute right-0 top-full z-30 mt-1 w-56 rounded-xl border border-white/10 bg-brand-charcoal p-1.5 shadow-lift">
           {actions.map((action) => {
             const content = (
               <>

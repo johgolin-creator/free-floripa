@@ -155,7 +155,7 @@ export function MyJobsPage() {
       {filtered.length === 0 ? (
         <EmptyState title="Nenhum trabalho nesta aba" text="Quando houver turnos nesse status, eles aparecerão aqui." />
       ) : (
-        <div className="grid gap-3">
+        <div className="stagger-list grid gap-3">
           {filtered.map((item) => {
             const { application, job } = item;
             const company = state.companies.find((companyItem) => companyItem.id === job.companyId);

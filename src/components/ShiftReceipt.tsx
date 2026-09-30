@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { CalendarDays, ClipboardCheck, Copy, MapPin, Star, WalletCards } from "lucide-react";
+import { CalendarDays, Check, ClipboardCheck, Copy, MapPin, Star, WalletCards } from "lucide-react";
 import { formatCurrency, formatDate } from "../lib/format";
 import type { Application, CompanyProfile, Job, Review, WorkerProfile } from "../lib/types";
 
@@ -76,7 +76,7 @@ export function ShiftReceipt({
       </div>
 
       <button type="button" onClick={copyReceipt} className="primary">
-        <Copy size={17} /> {copied ? "Comprovante copiado" : "Copiar comprovante"}
+        {copied ? <span key="ok" className="icon-swap"><Check size={17} /></span> : <Copy size={17} />} {copied ? "Comprovante copiado" : "Copiar comprovante"}
       </button>
     </div>
   );

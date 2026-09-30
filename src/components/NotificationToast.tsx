@@ -1,15 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, X } from "lucide-react";
 import { useAppStore } from "../lib/store";
 import type { NotificationItem } from "../lib/types";
 
 const VISIBLE_MS = 7000;
+// Mesma duração de .notification-toast.is-leaving no index.css.
+const EXIT_MS = 150;
 
 export function NotificationToast() {
   const { state, markNotificationRead } = useAppStore();
   const navigate = useNavigate();
   const [toasts, setToasts] = useState<NotificationItem[]>([]);
+  const [leavingIds, setLeavingIds] = useState<string[]>([]);
   const seenIds = useRef<Set<string>>(new Set());
   // Marco temporal definido na primeira carga: tudo que já existia quando o
   // app abriu é histórico e não deve virar toast de novo a cada login. Só
@@ -44,21 +47,22 @@ export function NotificationToast() {
     setToasts((current) => [...fresh, ...current].slice(0, 3));
   }, [state.notifications, state.activeRole]);
 
+  // Toca a saída e só depois tira o aviso da pilha.
+  const dismiss = useCallback((id: string) => {
+    setLeavingIds((current) => (current.includes(id) ? current : [...current, id]));
+    window.setTimeout(() => {
+      setToasts((current) => current.filter((item) => item.id !== id));
+      setLeavingIds((current) => current.filter((item) => item !== id));
+    }, EXIT_MS);
+  }, []);
+
   useEffect(() => {
     if (toasts.length === 0) return;
-    const timers = toasts.map((toast) =>
-      window.setTimeout(() => {
-        setToasts((current) => current.filter((item) => item.id !== toast.id));
-      }, VISIBLE_MS)
-    );
+    const timers = toasts.map((toast) => window.setTimeout(() => dismiss(toast.id), VISIBLE_MS));
     return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [toasts]);
+  }, [toasts, dismiss]);
 
   if (toasts.length === 0) return null;
-
-  function dismiss(id: string) {
-    setToasts((current) => current.filter((item) => item.id !== id));
-  }
 
   function openNotification(notification: NotificationItem) {
     markNotificationRead(notification.id);
@@ -69,7 +73,7 @@ export function NotificationToast() {
   return (
     <div className="notification-toast-stack">
       {toasts.map((toast) => (
-        <article key={toast.id} className="notification-toast" role="alert">
+        <article key={toast.id} className={`notification-toast ${leavingIds.includes(toast.id) ? "is-leaving" : ""}`} role="alert">
           <button type="button" className="notification-toast-body" onClick={() => openNotification(toast)}>
             <span className="notification-toast-icon">
               <Bell size={18} />

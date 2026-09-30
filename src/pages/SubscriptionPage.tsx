@@ -10,6 +10,7 @@ import { loadRemoteCoinTransactions, supabaseCoinsEnabled, type CoinTransaction 
 import { formatProductPrice, getCoinProductsForRole, type CoinProduct } from "../lib/coinCatalog";
 import { createCoinPayment, getPaymentStatus, openCheckout, paymentsEnabled } from "../lib/payments";
 import type { UserRole } from "../lib/types";
+import { SkeletonRows } from "../components/Skeleton";
 
 export function SubscriptionPage() {
   const { state } = useAppStore();
@@ -149,7 +150,7 @@ function CoinStatement({
       </div>
 
       {loading ? (
-        <div className="rounded-lg bg-slate-50 p-4 text-sm font-bold text-slate-600">Carregando extrato de moedas...</div>
+        <SkeletonRows rows={3} label="Carregando extrato de moedas" />
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm font-bold text-alert">{error}</div>
       ) : transactions.length === 0 ? (
@@ -332,7 +333,7 @@ function CoinStore({ role }: { role: UserRole }) {
             </div>
             <div className="mt-auto flex items-center justify-between gap-2">
               <span className="text-lg font-black text-white">{formatProductPrice(product.priceCents)}</span>
-              <button
+              <button aria-busy={pendingProductId === product.id}
                 type="button"
                 className="primary"
                 disabled={pendingProductId !== null}

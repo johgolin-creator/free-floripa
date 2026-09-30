@@ -4,6 +4,7 @@ import { CalendarDays, CheckCircle2, Clock3, Loader2, MapPin, UserRound, XCircle
 import { BrandLogo } from "../components/BrandLogo";
 import { fetchPublicInvite, respondToInvite, type InviteStatus, type PublicInvite, type RespondError } from "../lib/scheduleInvites";
 import { formatCPF, formatPhoneInput, isValidCPF, isValidPhone } from "../lib/validation";
+import { SkeletonRows } from "../components/Skeleton";
 
 const CONTACT_KEY = "pont:invite-contact";
 
@@ -123,9 +124,8 @@ export function InvitePage() {
         </div>
 
         {loading ? (
-          <div className="card grid place-items-center gap-2 p-8 text-center">
-            <Loader2 className="animate-spin text-aqua-300" size={26} />
-            <span className="text-sm font-bold text-slate-300">Abrindo convite...</span>
+          <div className="card p-5">
+            <SkeletonRows rows={3} label="Abrindo convite" />
           </div>
         ) : loadError ? (
           <div className="card p-6 text-center">

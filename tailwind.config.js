@@ -2,8 +2,24 @@
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   darkMode: "class",
+  // hover: só vale em aparelhos com mouse. No celular o hover "grudava" no
+  // elemento depois do toque (card levantado, botão aceso) até tocar em outro lugar.
+  future: {
+    hoverOnlyWhenSupported: true
+  },
   theme: {
     extend: {
+      // Movimento: toda classe `transition` do app usa a mesma curva e duração
+      // (ver tokens --ease-* / --dur-* no index.css).
+      transitionTimingFunction: {
+        DEFAULT: "cubic-bezier(0.23, 1, 0.32, 1)",
+        out: "cubic-bezier(0.23, 1, 0.32, 1)",
+        "in-out": "cubic-bezier(0.77, 0, 0.175, 1)",
+        drawer: "cubic-bezier(0.32, 0.72, 0, 1)"
+      },
+      transitionDuration: {
+        DEFAULT: "180ms"
+      },
       fontFamily: {
         sans: [
           "Space Grotesk",

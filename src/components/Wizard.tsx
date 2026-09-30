@@ -102,7 +102,7 @@ export function WizardActions({
         Voltar
       </button>
       {isLast ? (
-        <button key="submit" type="submit" disabled={pending} className={nextClassName}>
+        <button aria-busy={pending} key="submit" type="submit" disabled={pending} className={nextClassName}>
           {pending ? pendingLabel : submitLabel}
         </button>
       ) : (

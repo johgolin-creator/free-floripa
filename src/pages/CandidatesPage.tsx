@@ -349,7 +349,7 @@ export function CandidatesPage() {
           ) : visibleApplications.length === 0 ? (
             <EmptyState title="Nenhum candidato neste filtro" text="Altere o status ou desmarque somente confiáveis para ver mais candidatos." />
           ) : (
-            <div className="grid gap-3">
+            <div className="stagger-list grid gap-3">
               {visibleApplications.map((application) => {
                 const worker = state.workers.find((item) => item.id === application.workerId);
                 const jobForApplication = companyJobs.find((job) => job.id === application.jobId);

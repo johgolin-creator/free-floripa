@@ -16,6 +16,19 @@
      100% para o texto respeitar exatamente o tamanho definido no CSS. */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+
+  /* Movimento (skill Motion Principles: Jakub Krehel + Emil Kowalski).
+     ease-out forte para entradas e respostas; saídas mais curtas e sutis
+     que as entradas; drawer = curva de sheet do iOS. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in: cubic-bezier(0.5, 0, 0.75, 0);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-press: 120ms;
+  --dur-fast: 160ms;
+  --dur-enter: 240ms;
+  --dur-exit: 150ms;
+  --dur-sheet: 380ms;
 }
 
 html {
@@ -62,6 +75,14 @@ button:disabled {
   opacity: 0.6;
 }
 
+/* Foco de teclado visível e igual em todo o app (o clique com mouse/toque
+   não mostra o anel). */
+:where(a, button, summary, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid #c8ff38;
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
 a {
   text-decoration: none;
 }
@@ -89,7 +110,10 @@ a {
 }
 
 .card {
-  @apply rounded-lg border border-white/10 bg-brand-charcoal shadow-soft ring-1 ring-white/5 transition duration-200;
+  @apply rounded-lg border border-white/10 bg-brand-charcoal shadow-soft ring-1 ring-white/5;
+  transition-property: border-color, box-shadow, background-color, transform;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease-out);
 }
 
 .soft-panel {
@@ -105,15 +129,18 @@ a {
 }
 
 .primary {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-aqua-500 px-4 text-sm font-black text-navy-950 shadow-glow ring-1 ring-aqua-300/70 transition duration-200 hover:-translate-y-0.5 hover:bg-aqua-300 hover:shadow-lift active:translate-y-0;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-aqua-500 px-4 text-sm font-black text-navy-950 shadow-glow ring-1 ring-aqua-300/70 hover:bg-aqua-700 hover:shadow-lift;
+  --spinner-color: #111318;
 }
 
 .secondary {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-brand-charcoal px-4 text-sm font-black text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-aqua-200 hover:bg-aqua-50 active:translate-y-0;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/15 bg-brand-charcoal px-4 text-sm font-black text-white shadow-sm hover:border-aqua-200 hover:bg-aqua-50;
+  --spinner-color: #ffffff;
 }
 
 .danger {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-alert px-4 text-sm font-black text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-red-700 active:translate-y-0;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-alert px-4 text-sm font-black text-white shadow-sm hover:brightness-110;
+  --spinner-color: #ffffff;
 }
 
 .badge {
@@ -144,7 +171,10 @@ a {
 }
 
 .metric-card {
-  @apply relative rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5 transition duration-200;
+  @apply relative rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5;
+  transition-property: border-color, box-shadow, background-color, transform;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease-out);
 }
 
 .metric-card::before {
@@ -174,7 +204,7 @@ a {
 }
 
 .metric-card.is-clickable {
-  @apply cursor-pointer hover:-translate-y-0.5 hover:border-aqua-300/40 hover:shadow-lift active:translate-y-0;
+  @apply cursor-pointer hover:border-aqua-300/40 hover:shadow-lift active:scale-[0.98];
 }
 
 .metric-tile {
@@ -199,6 +229,8 @@ a {
 
 .term-hint-bubble {
   @apply absolute left-0 z-20 mt-1.5 w-64 max-w-[80vw] rounded-lg border border-white/10 bg-navy-950 p-3 text-xs font-semibold leading-5 text-slate-200 shadow-lift;
+  transform-origin: top left;
+  animation: pop-in var(--dur-fast) var(--ease-out) backwards;
 }
 
 .status-legend {
@@ -219,6 +251,7 @@ a {
 
 .mobile-nav-icon {
   @apply grid h-7 w-7 place-items-center rounded-md transition;
+  transition-property: background-color, color, box-shadow, transform;
 }
 
 .app-shell {
@@ -265,7 +298,7 @@ a {
 
 .app-mobile-bell span {
   @apply absolute -right-1 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-alert px-1 text-[0.62rem] font-black text-white ring-2 ring-navy-950;
-  animation: notification-pulse 1.6s ease-in-out infinite;
+  animation: badge-pop var(--dur-enter) var(--ease-out) backwards;
 }
 
 .app-mobile-bell.has-unread {
@@ -282,16 +315,19 @@ a {
 
 .app-header-bell-badge {
   @apply grid h-5 min-w-5 place-items-center rounded-full bg-alert px-1 text-[0.62rem] font-black text-white;
-  animation: notification-pulse 1.6s ease-in-out infinite;
+  animation: badge-pop var(--dur-enter) var(--ease-out) backwards;
 }
 
-@keyframes notification-pulse {
-  0%,
-  100% {
-    transform: scale(1);
+/* Contador de avisos: um "pop" curto quando o número muda (a chave do
+   elemento é o próprio número), em vez de pulsar sem parar. */
+@keyframes badge-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
   }
-  50% {
-    transform: scale(1.18);
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -301,17 +337,30 @@ a {
 
 .notification-toast {
   @apply pointer-events-auto flex items-start gap-2 rounded-lg border border-white/10 bg-navy-950/95 p-3 text-white shadow-lift backdrop-blur-xl;
-  animation: notification-toast-in 0.25s ease-out;
+  animation: notification-toast-in var(--dur-enter) var(--ease-out) backwards;
+}
+
+.notification-toast.is-leaving {
+  animation: notification-toast-out var(--dur-exit) var(--ease-in) both;
+}
+
+@keyframes notification-toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
 }
 
 @keyframes notification-toast-in {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-12px);
+    filter: blur(4px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+    filter: blur(0);
   }
 }
 
@@ -696,7 +745,7 @@ a {
 }
 
 .job-plan-option {
-  @apply flex items-center justify-between gap-3 rounded-lg border border-aqua-200 bg-aqua-50 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lift;
+  @apply flex items-center justify-between gap-3 rounded-lg border border-aqua-200 bg-aqua-50 p-4 text-left transition hover:border-aqua-300/60 hover:shadow-lift active:scale-[0.98];
 }
 
 .job-plan-option strong {
@@ -1428,7 +1477,7 @@ a {
 }
 
 .home-entry-card {
-  @apply grid gap-2 rounded-lg border border-slate-200 bg-brand-charcoal p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-aqua-200 hover:bg-aqua-50 hover:shadow-lift;
+  @apply grid gap-2 rounded-lg border border-slate-200 bg-brand-charcoal p-4 shadow-soft transition hover:border-aqua-200 hover:bg-aqua-50 hover:shadow-lift active:scale-[0.98];
 }
 
 .home-entry-card > span {
@@ -1740,7 +1789,7 @@ a {
 }
 
 .smart-dashboard-metric.is-clickable {
-  @apply w-full cursor-pointer text-left transition hover:-translate-y-0.5 hover:border-aqua-300/60 hover:shadow-lift active:translate-y-0;
+  @apply w-full cursor-pointer text-left transition hover:border-aqua-300/60 hover:shadow-lift active:scale-[0.98];
 }
 
 .smart-panel {
@@ -1852,5 +1901,294 @@ a {
     position: static;
     left: auto;
     width: auto;
+  }
+}
+
+/* =====================================================================
+   Movimento, carregamento e feedback (Issue #3)
+   Base: skill Motion Principles. Peso: Jakub Krehel (polimento sutil,
+   app mobile) + Emil Kowalski (rapidez, restrição em ações frequentes).
+   Regras: só transform/opacity/filter; saída mais curta e sutil que a
+   entrada; nada em loop chamando atenção; reduced-motion desliga tudo.
+   ===================================================================== */
+
+/* --- Botões: resposta ao toque e estado de progresso --- */
+/* :where() = especificidade zero, para classes utilitárias (ex.: absolute)
+   continuarem valendo sobre este padrão. */
+:where(.primary, .secondary, .danger) {
+  position: relative;
+  transition-property: background-color, border-color, box-shadow, color, filter, transform;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease-out);
+}
+
+.primary:active:not(:disabled),
+.secondary:active:not(:disabled),
+.danger:active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: var(--dur-press);
+}
+
+/* <button aria-busy="true">: o texto fica no lugar (a largura não pula) e
+   um spinner aparece por cima. Use em toda ação que espera o servidor. */
+:where(button[aria-busy="true"]) {
+  position: relative;
+}
+
+button[aria-busy="true"] {
+  color: transparent !important;
+  pointer-events: none;
+  cursor: progress;
+  opacity: 1;
+}
+
+button[aria-busy="true"] > * {
+  visibility: hidden;
+}
+
+button[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 1.1em;
+  height: 1.1em;
+  border-radius: 9999px;
+  border: 2px solid var(--spinner-color, #f5f6f8);
+  border-right-color: transparent;
+  animation: spin 700ms linear infinite;
+}
+
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Skeleton screens --- */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: skeleton-shimmer 1.5s var(--ease-in-out) infinite;
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Carregamentos rápidos não piscam: o skeleton só aparece se a espera
+   passar de ~150ms. */
+.skeleton-screen {
+  animation: fade-in var(--dur-enter) var(--ease-out) 150ms backwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* --- Troca de tela --- */
+.page-enter {
+  animation: page-in var(--dur-enter) var(--ease-out) backwards;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* --- Listas e cards: entrada em cascata curta (máx. ~200ms no total) --- */
+.stagger-list > * {
+  animation: list-item-in var(--dur-enter) var(--ease-out) backwards;
+}
+
+.stagger-list > :nth-child(2) { animation-delay: 30ms; }
+.stagger-list > :nth-child(3) { animation-delay: 60ms; }
+.stagger-list > :nth-child(4) { animation-delay: 90ms; }
+.stagger-list > :nth-child(5) { animation-delay: 120ms; }
+.stagger-list > :nth-child(6) { animation-delay: 150ms; }
+.stagger-list > :nth-child(n + 7) { animation-delay: 180ms; }
+
+@keyframes list-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Aparece no lugar (painéis que abrem, mensagens, resultados). */
+.fade-up {
+  animation: list-item-in var(--dur-enter) var(--ease-out) backwards;
+}
+
+/* Menus e balões: nascem do botão que os abriu. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+}
+
+.menu-pop {
+  transform-origin: top right;
+  animation: pop-in var(--dur-fast) var(--ease-out) backwards;
+}
+
+/* --- Modal: sheet de baixo no celular, janela no desktop --- */
+.modal-backdrop {
+  animation: fade-in 200ms var(--ease-out) backwards;
+}
+
+.modal-backdrop.is-closing {
+  animation: fade-out var(--dur-exit) var(--ease-in) both;
+}
+
+.modal-panel {
+  animation: sheet-in var(--dur-sheet) var(--ease-drawer) backwards;
+}
+
+.modal-backdrop.is-closing .modal-panel {
+  animation: sheet-out 200ms var(--ease-in) both;
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes sheet-out {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@media (min-width: 768px) {
+  .modal-panel {
+    animation: dialog-in var(--dur-enter) var(--ease-out) backwards;
+  }
+
+  .modal-backdrop.is-closing .modal-panel {
+    animation: dialog-out var(--dur-exit) var(--ease-in) both;
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+@keyframes dialog-out {
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+/* --- Toast simples (mensagens de confirmação) --- */
+.toast {
+  animation: toast-in var(--dur-enter) var(--ease-out) backwards;
+}
+
+.toast.is-leaving {
+  animation: toast-out var(--dur-exit) var(--ease-in) both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(4px);
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Troca de ícone (copiar -> copiado, etc.). */
+.icon-swap {
+  display: inline-flex;
+  animation: icon-swap-in 200ms var(--ease-out) backwards;
+}
+
+@keyframes icon-swap-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+    filter: blur(2px);
+  }
+}
+
+/* Imagens carregadas sob demanda entram suaves, sem "estalo". */
+img.img-fade {
+  animation: fade-in 300ms var(--ease-out) backwards;
+}
+
+/* Seções que abrem (<details>) e avisos de formulário não "estalam" na tela. */
+details:not(.term-hint)[open] > :not(summary),
+.auth-alert {
+  animation: list-item-in var(--dur-enter) var(--ease-out) backwards;
+}
+
+/* --- Acessibilidade: quem pede menos movimento não vê animação --- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* O spinner é informação (algo está acontecendo), não enfeite: continua
+     girando, mais devagar. O brilho do skeleton é enfeite: some. */
+  .spinner,
+  button[aria-busy="true"]::after {
+    animation-duration: 1.4s !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  .skeleton::after {
+    display: none;
   }
 }

@@ -159,7 +159,7 @@ export function PublicHome() {
                 ["2", "Candidatura transparente", "O trabalhador aparece com nível de experiência por profissão."],
                 ["3", "Equipe confirmada", "Aprovação, conclusão do turno e avaliações ficam organizadas no histórico."]
               ].map(([step, title, text]) => (
-                <article key={step} className="card p-5 hover:-translate-y-0.5 hover:shadow-lift">
+                <article key={step} className="card p-5">
                   <span className="grid h-10 w-10 place-items-center rounded-lg bg-navy-950 font-black text-aqua-300">{step}</span>
                   <h3 className="mt-4 font-black text-white">{title}</h3>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
@@ -176,7 +176,7 @@ export function PublicHome() {
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
             {functions.map((item) => (
-              <div key={item} className="flex min-h-20 items-center rounded-lg border border-white/10 bg-brand-charcoal p-4 text-sm font-black text-white shadow-soft transition hover:-translate-y-0.5 hover:border-aqua-200 hover:bg-aqua-50 hover:text-aqua-800">
+              <div key={item} className="flex min-h-20 items-center rounded-lg border border-white/10 bg-brand-charcoal p-4 text-sm font-black text-white shadow-soft">
                 {functionLabel(item)}
               </div>
             ))}
@@ -326,7 +326,7 @@ function BenefitBlock({ icon, title, items }: { icon: ReactNode; title: string; 
 
 function Feature({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
   return (
-    <article className="card p-5 hover:-translate-y-0.5 hover:shadow-lift">
+    <article className="card p-5">
       <div className="mb-3 text-aqua-700">{icon}</div>
       <h3 className="font-black text-white">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
@@ -454,14 +454,14 @@ function InstallStepsModal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
+      className="modal-backdrop fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel}
       onClick={onClose}
     >
       <div
-        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 bg-brand-charcoal shadow-lift"
+        className="modal-panel flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 bg-brand-charcoal shadow-lift"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 border-b border-white/10 p-6 pb-4">

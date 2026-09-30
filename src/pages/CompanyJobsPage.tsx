@@ -265,7 +265,7 @@ export function CompanyJobsPage() {
           {filteredJobs.length === 0 ? (
             <EmptyState title="Nada neste filtro" text="Troque o filtro para visualizar outras vagas." />
           ) : (
-            <div className="grid gap-3">
+            <div className="stagger-list grid gap-3">
               {filteredJobs.map((job) => {
                 const status = getJobStatus(job);
                 const applications = state.applications.filter((application) => application.jobId === job.id);
