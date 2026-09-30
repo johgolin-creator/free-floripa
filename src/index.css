@@ -228,7 +228,7 @@ a {
 }
 
 .term-hint-bubble {
-  @apply absolute left-0 z-20 mt-1.5 w-64 max-w-[80vw] rounded-lg border border-white/10 bg-navy-950 p-3 text-xs font-semibold leading-5 text-slate-200 shadow-lift;
+  @apply absolute left-0 z-20 mt-1.5 w-64 max-w-[80vw] rounded-lg border border-white/10 bg-navy-950 p-3 text-xs font-semibold leading-5 text-slate-300 shadow-lift;
   transform-origin: top left;
   animation: pop-in var(--dur-fast) var(--ease-out) backwards;
 }
