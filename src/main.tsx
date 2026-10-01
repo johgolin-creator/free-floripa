@@ -8,6 +8,7 @@ import { registerServiceWorkerForInstall } from "./lib/pwaInstall";
 import { AuthProvider } from "./lib/auth";
 import { AppProvider } from "./lib/store";
 import App from "./App";
+import { PontIntro } from "./components/PontIntro";
 import "./index.css";
 
 initSentry();
@@ -37,6 +38,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <AuthProvider>
           <AppProvider>
             <App />
+            {/* Abertura da marca: por cima de tudo, com o app já carregando por trás. */}
+            <PontIntro />
           </AppProvider>
         </AuthProvider>
       </BrowserRouter>

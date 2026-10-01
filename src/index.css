@@ -2192,3 +2192,169 @@ details:not(.term-hint)[open] > :not(summary),
     display: none;
   }
 }
+
+/* =====================================================================
+   Abertura da PONT (Issue #9) — ver src/components/PontIntro.tsx
+   O vídeo oficial é 9:16 com fundo preto puro. A moldura tem sempre a
+   proporção exata do vídeo (nunca estica, nunca corta) e o tamanho sai da
+   área visível: largura = min(largura disponível, altura disponível x 9/16).
+   ===================================================================== */
+
+/* Antes do React carregar (script inline do index.html) e enquanto a
+   abertura está na tela, o fundo da página é preto: sem "piscar" cinza. */
+html.pont-intro-pending,
+html.pont-intro-pending body,
+html.pont-intro-active,
+html.pont-intro-active body {
+  background: #000;
+}
+
+.pont-intro {
+  /* Área útil: viewport real (dvh acompanha a barra do navegador no
+     celular) menos notch / barra de gestos. */
+  --pi-vh: 100vh;
+  --pi-avail-w: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  --pi-avail-h: calc(var(--pi-vh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  /* Celular em pé: o vídeo ocupa a tela, como uma abertura nativa. */
+  --pi-gap: 0px;
+  --pi-max-w: 100vw;
+  --pi-glow: 0.55;
+
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  width: 100vw;
+  height: var(--pi-vh);
+  display: grid;
+  place-items: center;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+  background: #000;
+  overflow: hidden;
+  contain: strict;
+  overscroll-behavior: contain;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@supports (height: 100dvh) {
+  .pont-intro {
+    --pi-vh: 100dvh;
+  }
+}
+
+/* Tablet, notebook, desktop, monitor grande e celular deitado: palco.
+   O vídeo vertical fica centralizado com respiro, entre ~360 e 560px de
+   largura conforme a altura da tela, e um halo lima discreto ao redor. */
+@media (min-width: 640px), (orientation: landscape) {
+  .pont-intro {
+    --pi-gap: clamp(12px, 4vh, 56px);
+    --pi-max-w: 560px;
+    --pi-glow: 1;
+  }
+}
+
+.pont-intro-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.pont-intro-frame {
+  position: relative;
+  width: min(var(--pi-max-w), var(--pi-avail-w), calc((var(--pi-avail-h) - 2 * var(--pi-gap)) * 9 / 16));
+  aspect-ratio: 9 / 16;
+  /* Bordas esfumadas: os rastros de luz da animação encostam na borda do
+     quadro em alguns frames; no palco do desktop isso virava uma "quina"
+     reta. O símbolo fica bem longe das bordas e não é afetado. */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent),
+    linear-gradient(to bottom, transparent, #000 4%, #000 96%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent),
+    linear-gradient(to bottom, transparent, #000 4%, #000 96%, transparent);
+  mask-composite: intersect;
+  /* "screen" sobre o fundo: o preto do vídeo não tampa o halo (sem a faixa
+     escura que entregava o retângulo do vídeo no desktop) e o logo continua
+     por cima. Onde não há halo, o pixel do vídeo fica idêntico ao original. */
+  mix-blend-mode: screen;
+}
+
+.pont-intro-media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* A moldura já tem a proporção do vídeo; contain é só garantia de que
+     nada é cortado nem esticado. */
+  object-fit: contain;
+  background: #000;
+  pointer-events: none;
+}
+
+/* Halo lima (mesmo tom do vídeo) atrás do símbolo, que acende junto com a
+   formação do logo. Fica atrás da moldura e não altera o vídeo. */
+.pont-intro-glow {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: calc(min(var(--pi-max-w), var(--pi-avail-w), calc((var(--pi-avail-h) - 2 * var(--pi-gap)) * 9 / 16)) * 2.4);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: radial-gradient(
+    closest-side,
+    rgba(200, 212, 38, 0.14),
+    rgba(200, 212, 38, 0.06) 38%,
+    rgba(200, 212, 38, 0.02) 62%,
+    transparent 100%
+  );
+  opacity: 0;
+  pointer-events: none;
+  animation: pont-intro-glow 1.8s cubic-bezier(0.23, 1, 0.32, 1) 0.9s forwards;
+}
+
+.pont-intro.is-still .pont-intro-glow {
+  animation-delay: 0s;
+  animation-duration: 0.6s;
+}
+
+@keyframes pont-intro-glow {
+  to {
+    opacity: var(--pi-glow);
+  }
+}
+
+/* Fallback (frame final do vídeo ou símbolo) entra com um fade curto. */
+.pont-intro-still,
+.pont-intro-mark {
+  animation: fade-in 300ms var(--ease-out) backwards;
+}
+
+.pont-intro-mark {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 17%;
+  filter: drop-shadow(0 0 18px rgba(200, 212, 38, 0.35));
+}
+
+/* Saída: a abertura inteira some e revela o sistema já pronto atrás. */
+.pont-intro.is-leaving {
+  pointer-events: none;
+  animation: pont-intro-out 450ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes pont-intro-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pont-intro-glow {
+    opacity: var(--pi-glow);
+    animation: none;
+  }
+}
