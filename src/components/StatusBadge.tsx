@@ -1,3 +1,5 @@
+import { keepBubbleInViewport } from "../lib/keepBubbleInViewport";
+
 export type StatusBadgeType = "application" | "schedule" | "job";
 
 function toneClass(type: StatusBadgeType, status: string) {
@@ -54,7 +56,7 @@ const legendCopy: Record<StatusBadgeType, { status: string; meaning: string }[]>
 
 export function StatusLegend({ type }: { type: StatusBadgeType }) {
   return (
-    <details className="term-hint status-legend">
+    <details className="term-hint status-legend" onToggle={keepBubbleInViewport}>
       <summary className="term-hint-trigger">O que significa cada status?</summary>
       <div className="term-hint-bubble status-legend-bubble">
         <ul className="grid gap-1.5">
