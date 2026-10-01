@@ -1,6 +1,17 @@
 <!doctype html>
 <html lang="pt-BR">
   <head>
+    <!-- Abertura da PONT (src/components/PontIntro.tsx): no primeiro acesso da
+         sessão o fundo já nasce preto, antes do app carregar, para a
+         sequência tela preta -> vídeo não piscar cinza. -->
+    <style>html.pont-intro-pending,html.pont-intro-pending body{background:#000}</style>
+    <script>
+      try {
+        if (sessionStorage.getItem("pont:intro-played") !== "1") {
+          document.documentElement.classList.add("pont-intro-pending");
+        }
+      } catch (e) {}
+    </script>
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
       new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
