@@ -228,6 +228,9 @@ function mergeSeedUpdates(savedState: AppState): AppState {
         ? savedState.subscription.unlockedJobIds
         : []
     },
+    // Estados salvos antes das múltiplas fotos não têm `photos`; o perfil e os
+    // cards de trabalhador leem photos.length e derrubavam o app inteiro.
+    workers: savedState.workers.map((worker) => (Array.isArray(worker.photos) ? worker : { ...worker, photos: [] })),
     companySchedules: Array.isArray(savedState.companySchedules) ? savedState.companySchedules : [],
     chatMessages: Array.isArray(savedState.chatMessages) ? savedState.chatMessages : [],
     companyReviews: Array.isArray(savedState.companyReviews) ? savedState.companyReviews : [],
