@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   AlertTriangle,
@@ -15,7 +15,7 @@ import {
   Zap
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
-import { EmptyState } from "../components/EmptyState";
+import { Feed } from "../components/Feed";
 import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
@@ -28,6 +28,7 @@ import { functionLabel } from "../lib/functionInfo";
 import type { CreateJobInput, UrgentReplacementInput } from "../lib/store";
 import { formatCurrency, formatDate, todayLocalISODate } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
+import { buildCompanyFeed, type FeedTab } from "../lib/feed";
 import type { Job, JobFunction, Neighborhood, PaymentMethod } from "../lib/types";
 
 const requiredJobFieldGroups = [
@@ -122,6 +123,7 @@ export function CompanyDashboard() {
   const incompleteJobs = openJobs
     .filter((job) => getOpenSlots(job) > 0)
     .sort((a, b) => getOpenSlots(b) - getOpenSlots(a));
+  const buildItems = useCallback((tab: FeedTab) => buildCompanyFeed(state, currentCompany, tab), [state, currentCompany]);
   const nextJob = todayJobs[0] ?? [...openJobs].sort((a, b) => `${a.date} ${a.startsAt}`.localeCompare(`${b.date} ${b.startsAt}`))[0];
 
   useEffect(() => {
@@ -160,7 +162,7 @@ export function CompanyDashboard() {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="company-stats-row">
         <StatTile icon={<UsersRound />} label="Profissionais disponíveis" value={`${shownAvailableWorkers}+`} />
         <StatTile variant="primary" icon={<BriefcaseBusiness />} label="Vagas abertas" value={openJobs.length} />
         <StatTile icon={<CheckCircle2 />} label="Profissionais confirmados" value={confirmed} />
@@ -175,7 +177,7 @@ export function CompanyDashboard() {
         </SafetyNotice>
       )}
 
-      <section className="smart-dashboard-hero">
+      <section className={`smart-dashboard-hero ${todayJobs.length > 0 ? "" : "hidden lg:block"}`}>
         <div>
           <span className="section-eyebrow">Central de hoje</span>
           <h2>{nextJob ? `Próximo foco: ${nextJob.title}` : "Nenhuma operação ativa hoje"}</h2>
@@ -192,33 +194,34 @@ export function CompanyDashboard() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="card p-4">
-          <h3 className="mb-3 font-black text-white">Vagas abertas</h3>
-          {companyJobs.length === 0 ? (
-            <EmptyState title="Nenhuma vaga publicada" text="Use os botões acima para criar uma vaga comum ou uma reposição urgente." />
-          ) : (
-          <div className="grid gap-3">
-            {companyJobs.map((job) => (
-              <article key={job.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-3">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    {job.urgent ? <UrgentBadge /> : <span className="badge">{job.function}</span>}
-                    <h4 className="mt-2 font-black text-white">{job.title}</h4>
-                    <p className="text-sm text-slate-600">{job.neighborhood} - {job.startsAt} às {job.endsAt} - {formatCurrency(job.dailyValue)}</p>
-                  </div>
-                  <span className="text-sm font-bold text-slate-600">{job.filled}/{job.quantity} confirmados</span>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Link to="/app/minhas-vagas" className="secondary min-h-10 px-3">Ver vaga</Link>
-                  <Link to={`/app/candidatos?vaga=${job.id}`} className="secondary min-h-10 px-3">Candidatos</Link>
-                </div>
-              </article>
-            ))}
-          </div>
-          )}
-        </div>
+        <Feed
+          tabs={["Para você", "Candidatos", "Novidades"]}
+          buildItems={buildItems}
+          emptyText={{
+            "Para você": "Publique uma vaga para começar a receber candidatos e novidades aqui.",
+            Candidatos: "Quando alguém se candidatar às suas vagas, aparece aqui.",
+            Novidades: "Profissionais em destaque, avaliações e conquistas aparecem aqui."
+          }}
+        />
 
-        <aside className="grid content-start gap-4">
+        <aside className="hidden content-start gap-4 lg:grid">
+          <section className="smart-panel">
+            <div className="smart-panel-head">
+              <h3>Suas vagas abertas</h3>
+              <span>{openJobs.length}</span>
+            </div>
+            <div className="grid gap-2">
+              {openJobs.slice(0, 4).map((job) => (
+                <Link key={job.id} to={`/app/candidatos?vaga=${job.id}`} className="smart-action-item">
+                  {job.urgent ? <Zap size={16} /> : <BriefcaseBusiness size={16} />}
+                  <span>{job.title} · {job.filled}/{job.quantity} · {formatCurrency(job.dailyValue)}</span>
+                </Link>
+              ))}
+              {openJobs.length === 0 && <p className="smart-empty-text">Nenhuma vaga aberta. Use "Criar nova vaga" acima.</p>}
+              {openJobs.length > 4 && <Link to="/app/minhas-vagas" className="secondary min-h-10">Ver todas</Link>}
+            </div>
+          </section>
+
           <section className="smart-panel">
             <div className="smart-panel-head">
               <h3>Pendências rápidas</h3>
