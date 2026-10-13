@@ -2358,3 +2358,320 @@ html.pont-intro-active body {
     animation: none;
   }
 }
+
+/* =====================================================================
+   Página inicial com a identidade da PONT (Issue #11)
+   Continua a linguagem da abertura (vídeo oficial): preto absoluto,
+   branco e neon-lima no mesmo tom do vídeo, brilho difuso e reflexo.
+   ===================================================================== */
+
+.home-brand {
+  --home-lime: 200, 212, 38; /* tom do neon no vídeo oficial */
+  background: #000;
+  color: #fff;
+}
+
+/* Seções abaixo do topo: mesma paleta, sem o cinza-azulado do app. */
+.home-brand .bg-brand-dark {
+  background-color: #000;
+}
+
+.home-brand .bg-brand-charcoal,
+.home-brand .card {
+  background-color: #0a0b0d;
+}
+
+.home-brand .card,
+.home-brand .border-white\/10 {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.home-brand .cta-section {
+  background:
+    radial-gradient(60% 120% at 50% 0%, rgba(var(--home-lime), 0.1), transparent 70%),
+    #000;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.home-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.72);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* Sem "display" aqui: quem usa decide (inline-flex, ou hidden md:inline-flex). */
+.home-ghost-button {
+  @apply min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-black text-white;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .home-ghost-button:hover {
+    border-color: rgba(var(--home-lime), 0.45);
+    background: rgba(var(--home-lime), 0.06);
+  }
+}
+
+.home-ghost-button:active {
+  transform: scale(0.97);
+}
+
+/* --- Topo --- */
+.home-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: #000;
+}
+
+/* Halo lima atrás dos celulares + leve brilho no alto, como a luz do vídeo. */
+.home-hero-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 52% at 72% 58%, rgba(var(--home-lime), 0.16), rgba(var(--home-lime), 0.05) 45%, transparent 72%),
+    radial-gradient(40% 30% at 18% 22%, rgba(var(--home-lime), 0.06), transparent 70%);
+}
+
+@media (max-width: 1023px) {
+  .home-hero-glow {
+    background:
+      radial-gradient(70% 34% at 50% 80%, rgba(var(--home-lime), 0.16), rgba(var(--home-lime), 0.05) 50%, transparent 75%),
+      radial-gradient(60% 22% at 30% 12%, rgba(var(--home-lime), 0.06), transparent 70%);
+  }
+}
+
+.home-hero-content {
+  @apply relative mx-auto grid max-w-7xl content-center gap-14 px-4 pb-16 pt-12 lg:min-h-[640px] lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:gap-8 lg:py-16;
+}
+
+.home-hero-copy {
+  @apply max-w-xl;
+}
+
+/* Lockup igual ao fim do vídeo: símbolo brilhando sobre PONT espaçado. */
+.home-lockup {
+  @apply mb-7 grid justify-items-start gap-3;
+}
+
+.home-lockup-mark {
+  width: 4.5rem;
+  height: 4.5rem;
+  margin-left: -0.35rem;
+  filter: drop-shadow(0 0 10px rgba(var(--home-lime), 0.55)) drop-shadow(0 0 28px rgba(var(--home-lime), 0.25));
+}
+
+.home-wordmark {
+  font-size: clamp(3rem, 9vw, 5.5rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  /* compensa o espaçamento depois da última letra */
+  margin-right: -0.16em;
+  color: #fff;
+}
+
+.home-eyebrow {
+  @apply flex items-start gap-2.5 text-sm font-bold leading-5 text-slate-300;
+}
+
+.home-eyebrow-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  margin-top: 0.375rem;
+  border-radius: 9999px;
+  background: #c8ff38;
+  box-shadow: 0 0 10px rgba(var(--home-lime), 0.9);
+}
+
+.home-lead {
+  @apply mt-4 text-base font-medium leading-7 md:text-lg md:leading-8;
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.home-actions {
+  @apply mt-8 grid gap-3 sm:flex;
+}
+
+.home-actions .primary {
+  min-height: 3rem;
+}
+
+/* --- Celulares: vidro preto com acentos lima --- */
+.home-brand .phone-showcase {
+  @apply relative grid grid-cols-2 items-end gap-4 sm:grid-cols-4 sm:gap-3 lg:min-h-[540px];
+}
+
+/* No celular: só os dois principais (início + vaga em destaque). */
+@media (max-width: 639px) {
+  .home-brand .phone-showcase > .phone-mockup:nth-of-type(n + 3) {
+    display: none;
+  }
+}
+
+.home-brand .phone-mockup {
+  @apply relative grid min-h-[340px] content-start gap-3 overflow-hidden rounded-[2rem] p-3 pt-7 text-white;
+  border: 6px solid #000;
+  background: linear-gradient(180deg, #0d0e11 0%, #08090b 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.09),
+    0 30px 60px -20px rgba(0, 0, 0, 0.9);
+}
+
+/* "Ilha" da câmera, no topo da tela. */
+.home-brand .phone-mockup::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 34%;
+  height: 12px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: #000;
+}
+
+.home-brand .phone-mockup::after {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.home-brand .phone-mockup.is-featured {
+  transform: translateY(-1.5rem);
+  box-shadow:
+    0 0 0 1px rgba(var(--home-lime), 0.35),
+    0 0 40px rgba(var(--home-lime), 0.18),
+    0 30px 70px -20px rgba(0, 0, 0, 0.9);
+}
+
+.home-brand .phone-status {
+  @apply absolute left-4 right-4 top-1.5 flex items-center justify-between text-[0.6rem] font-black;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.home-brand .phone-app-head {
+  @apply flex min-h-9 items-center justify-between rounded-lg px-2.5 text-xs font-black text-white;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.home-brand .phone-app-head svg,
+.home-brand .phone-detail-list svg,
+.home-brand .phone-event-card svg,
+.home-brand .phone-price svg,
+.home-brand .phone-job-card svg {
+  color: #c8ff38;
+}
+
+.home-brand .phone-search,
+.home-brand .phone-category-row span,
+.home-brand .phone-job-card,
+.home-brand .phone-event-card,
+.home-brand .phone-metric-grid span {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.home-brand .phone-category-row span:first-child {
+  border-color: rgba(var(--home-lime), 0.5);
+  color: #c8ff38;
+}
+
+.home-brand .phone-detail-list {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.home-brand .phone-metric-grid strong,
+.home-brand .phone-job-card strong,
+.home-brand .phone-event-card strong {
+  color: #fff;
+}
+
+.home-brand .phone-step-row span {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.home-brand .phone-step-row span:first-child {
+  background: #c8ff38;
+  color: #000;
+  box-shadow: 0 0 12px rgba(var(--home-lime), 0.6);
+}
+
+.home-brand .phone-price {
+  background: rgba(var(--home-lime), 0.08);
+  border: 1px solid rgba(var(--home-lime), 0.25);
+  color: #c8ff38;
+}
+
+/* Botões dentro dos celulares: contorno lima; o lima cheio fica só no
+   celular em destaque, para ele puxar o olhar. */
+.home-brand .phone-mockup button {
+  @apply mt-auto min-h-10 rounded-lg px-3 text-xs font-black;
+  background: rgba(var(--home-lime), 0.06);
+  border: 1px solid rgba(var(--home-lime), 0.35);
+  color: #c8ff38;
+}
+
+.home-brand .phone-mockup.is-featured button {
+  background: #c8ff38;
+  border-color: #c8ff38;
+  color: #000;
+  box-shadow: 0 0 18px rgba(var(--home-lime), 0.35);
+}
+
+/* Reflexo dos celulares no "chão", como o reflexo do símbolo no vídeo
+   (Chrome/Safari; nos outros navegadores simplesmente não aparece). */
+@media (min-width: 1024px) {
+  .home-brand .phone-mockup {
+    -webkit-box-reflect: below 14px linear-gradient(transparent 86%, rgba(255, 255, 255, 0.07));
+  }
+}
+
+.phone-floor {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: -7px;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(var(--home-lime), 0.55) 50%, transparent);
+  box-shadow: 0 0 24px 2px rgba(var(--home-lime), 0.25);
+}
+
+@media (max-width: 639px) {
+  .phone-floor {
+    bottom: -1rem;
+  }
+}
+
+/* Entrada única do topo: textos e celulares sobem em cascata curta. */
+.home-hero-copy > *,
+.home-brand .phone-showcase > .phone-mockup {
+  animation: home-rise 700ms var(--ease-out) backwards;
+}
+
+.home-hero-copy > :nth-child(2) { animation-delay: 60ms; }
+.home-hero-copy > :nth-child(3) { animation-delay: 120ms; }
+.home-hero-copy > :nth-child(4) { animation-delay: 180ms; }
+.home-brand .phone-showcase > .phone-mockup:nth-of-type(1) { animation-delay: 160ms; }
+.home-brand .phone-showcase > .phone-mockup:nth-of-type(2) { animation-delay: 240ms; }
+.home-brand .phone-showcase > .phone-mockup:nth-of-type(3) { animation-delay: 320ms; }
+.home-brand .phone-showcase > .phone-mockup:nth-of-type(4) { animation-delay: 400ms; }
+
+@keyframes home-rise {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+}

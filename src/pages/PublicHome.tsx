@@ -17,7 +17,6 @@ import {
   ShieldCheck,
   Smartphone,
   UsersRound,
-  Waves,
   X
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -40,25 +39,22 @@ export function PublicHome() {
   }
 
   return (
-    <div className="min-h-screen bg-ice">
+    <div className="home-brand min-h-screen">
       {showIos && <IosInstallModal onClose={() => setShowIos(false)} />}
       {showAndroidHelp && <AndroidInstallModal onClose={() => setShowAndroidHelp(false)} />}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-brand-charcoal/90 shadow-sm backdrop-blur-xl">
+      <header className="home-header sticky top-0 z-40">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/" className="min-w-0">
             <BrandLogo compact />
           </Link>
           <div className="flex shrink-0 gap-2">
-            <Link
-              to="/login"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-brand-charcoal px-4 text-sm font-black text-white shadow-sm transition hover:bg-white/5"
-            >
+            <Link to="/login" className="home-ghost-button inline-flex">
               <LogIn size={17} /> Entrar
             </Link>
             <Link
               to="/cadastro-trabalhador"
               onClick={() => setRole("trabalhador")}
-              className="hidden min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-brand-charcoal px-4 text-sm font-black text-white shadow-sm transition hover:bg-white/5 md:inline-flex"
+              className="home-ghost-button hidden md:inline-flex"
             >
               Trabalhar
             </Link>
@@ -70,27 +66,27 @@ export function PublicHome() {
       </header>
 
       <main>
-        <section className="hero-section relative overflow-hidden bg-navy-950 text-white">
-          <img
-            src="https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1900&q=80"
-            alt=""
-            className="hero-bg absolute inset-0 h-full w-full object-cover opacity-40"
-          />
-          <div className="hero-overlay absolute inset-0" />
-          <div className="hero-content public-hero-content relative mx-auto grid min-h-[620px] max-w-7xl content-center gap-8 px-4 py-10">
-            <div className="max-w-4xl">
-              <PontMark className="hero-brand-logo" />
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-sm font-black text-aqua-300 shadow-soft backdrop-blur">
-                <Waves size={17} /> Florianópolis pronta para turnos, diárias e eventos
+        {/* Topo na linguagem da abertura (vídeo oficial): preto absoluto, halo
+            neon-lima, símbolo brilhando sobre "PONT" espaçado e um "chão" com
+            reflexo embaixo dos celulares. */}
+        <section className="home-hero">
+          <div className="home-hero-glow" aria-hidden="true" />
+          <div className="home-hero-content">
+            <div className="home-hero-copy">
+              <div className="home-lockup">
+                <PontMark className="home-lockup-mark" />
+                <h1 className="home-wordmark">PONT</h1>
               </div>
-              <h1 className="hero-title max-w-3xl text-5xl font-black leading-tight md:text-7xl">PONT</h1>
-              <p className="hero-copy mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-300 md:text-lg">
+              <p className="home-eyebrow">
+                <span className="home-eyebrow-dot" aria-hidden="true" /> Florianópolis pronta para turnos, diárias e eventos
+              </p>
+              <p className="home-lead">
                 Conecta empresas de Florianópolis a freelancers para turnos, diárias e eventos. Empresa publica a
                 vaga com valor e horário, freelancer se candidata e ambos acompanham tudo pelo app — do primeiro
                 turno até o pagamento.
               </p>
-              <div className="hero-actions mt-6 grid gap-3 sm:flex">
-                <Link to="/cadastro-trabalhador" onClick={() => setRole("trabalhador")} className="secondary">
+              <div className="home-actions">
+                <Link to="/cadastro-trabalhador" onClick={() => setRole("trabalhador")} className="home-ghost-button inline-flex min-h-12">
                   Quero trabalhar
                 </Link>
                 <Link to="/cadastro-empresa" onClick={() => setRole("empresa")} className="primary">
@@ -98,11 +94,12 @@ export function PublicHome() {
                 </Link>
               </div>
             </div>
-            <div className="phone-showcase" aria-label="Previa do aplicativo PONT">
-              <PhoneMockup title="PONT" eyebrow="Ola, Gabriela!" variant="worker" />
-              <PhoneMockup title="Beach Club Jurere" eyebrow="Vaga urgente" variant="job" featured />
-              <PhoneMockup title="Painel da empresa" eyebrow="Beach Club Jurere" variant="company" />
+            <div className="phone-showcase" aria-label="Prévia do aplicativo PONT">
+              <PhoneMockup title="PONT" eyebrow="Olá, Gabriela!" variant="worker" />
+              <PhoneMockup title="Beach Club Jurerê" eyebrow="Vaga urgente" variant="job" featured />
+              <PhoneMockup title="Painel da empresa" eyebrow="Beach Club Jurerê" variant="company" />
               <PhoneMockup title="Criar evento" eyebrow="Casamento" variant="event" />
+              <div className="phone-floor" aria-hidden="true" />
             </div>
           </div>
         </section>
