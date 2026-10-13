@@ -26,18 +26,14 @@ import { SectionHeader } from "../components/SectionHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
-import { useAuth } from "../lib/auth";
 import { functionLabel } from "../lib/functionInfo";
-import { supportEmailUrl, supportWhatsappUrl } from "../lib/support";
 import { formatCurrency, formatDate, getJobContact, getWhatsAppUrl } from "../lib/format";
 import { getCompatibilityLabel, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots, isJobOpenForApplications } from "../lib/rules";
 
 export function JobDetailsPage() {
   const { id } = useParams();
   const { state, currentWorker, applyToJob, updateApplicationStatus, submitTrustReport } = useAppStore();
-  const { email } = useAuth();
   const [message, setMessage] = useState("");
-  const [showPlans, setShowPlans] = useState(false);
   const [showApplyConfirm, setShowApplyConfirm] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
@@ -81,11 +77,6 @@ export function JobDetailsPage() {
       setMessage("Esta vaga não está mais aberta para candidatura.");
       return;
     }
-    if (state.subscription.creditsRemaining <= 0) {
-      setMessage("Use 1 moeda para se candidatar a esta vaga.");
-      setShowPlans(true);
-      return;
-    }
     setShowApplyConfirm(true);
   }
 
@@ -97,7 +88,6 @@ export function JobDetailsPage() {
 
     const result = applyToJob(currentJob.id);
     setMessage(result.message);
-    if (result.requiresPlan) setShowPlans(true);
     applyingRef.current = false;
     setIsApplying(false);
   }
@@ -124,49 +114,13 @@ export function JobDetailsPage() {
     }
   }
 
-  const plansModal = showPlans ? (
-    <Modal title="Comprar moedas" onClose={() => setShowPlans(false)}>
-      <div className="job-plan-modal">
-        <div>
-          <span className="badge bg-aqua-50 text-aqua-700">
-            <CreditCard size={15} /> Saldo: {state.subscription.creditsRemaining} moeda(s)
-          </span>
-          <h3>Você está sem moedas</h3>
-          <p>
-            Cada candidatura usa 1 moeda. A recarga é feita pelo suporte: combine o pagamento no WhatsApp e a
-            equipe do PONT credita as moedas na sua conta.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="primary w-full"
-          onClick={() => {
-            const text = `Olá! Quero comprar moedas do PONT.\nConta: ${email || "(informe seu e-mail)"} (trabalhador).`;
-            const whatsapp = supportWhatsappUrl(text);
-            if (whatsapp) window.open(whatsapp, "_blank", "noopener");
-            else window.location.href = supportEmailUrl("Compra de moedas PONT", text);
-            setShowPlans(false);
-            setMessage("Abrimos o suporte com sua solicitação. As moedas são liberadas após a confirmação do pagamento.");
-          }}
-        >
-          <MessageCircle size={17} /> Comprar pelo WhatsApp
-        </button>
-        <Link to="/app/planos" onClick={() => setShowPlans(false)} className="secondary">
-          Ver os pacotes <ArrowRight size={17} />
-        </Link>
-      </div>
-    </Modal>
-  ) : null;
   const applyConfirmModal = showApplyConfirm ? (
     <Modal title="Confirmar candidatura" onClose={() => setShowApplyConfirm(false)}>
       <div className="grid gap-4">
         <div className="rounded-lg border border-aqua-100 bg-aqua-50 p-4">
-          <span className="badge bg-aqua-50 text-aqua-700">
-            <CreditCard size={15} /> Saldo: {state.subscription.creditsRemaining} moeda(s)
-          </span>
-          <h3 className="mt-3 text-xl font-black text-white">Enviar candidatura para esta vaga?</h3>
+          <h3 className="text-xl font-black text-white">Enviar candidatura para esta vaga?</h3>
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-            O envio usa 1 moeda. Depois disso, a empresa poderá analisar seu perfil e responder pela plataforma.
+            Depois do envio, a empresa poderá analisar seu perfil e responder pela plataforma.
           </p>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -344,7 +298,7 @@ export function JobDetailsPage() {
               {application ? `Status: ${application.status}` : workerBlocked || companyBlocked ? "Bloqueado por segurança" : isApplying ? "Enviando..." : isJobOpenForApplications(currentJob) ? "Candidatar-se" : `Vaga ${jobStatus}`}
             </button>
             <p className="text-xs leading-5 text-slate-500">
-              Cadastro gratuito. Cada candidatura enviada usa 1 moeda.
+              O PONT é gratuito: cadastro e candidaturas sem custo.
             </p>
             <button type="button" onClick={() => setShowReport(true)} className="secondary">
               <Flag size={17} /> Relatar problema
@@ -355,7 +309,6 @@ export function JobDetailsPage() {
 
       {applyConfirmModal}
       {cancelApplyModal}
-      {plansModal}
       {reportModal}
     </div>
   );

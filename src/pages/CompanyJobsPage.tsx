@@ -23,7 +23,6 @@ import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { StatTile } from "../components/StatTile";
 import { StatusBadge, StatusLegend } from "../components/StatusBadge";
-import { TermHint } from "../components/TermHint";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate } from "../lib/format";
@@ -179,9 +178,6 @@ export function CompanyJobsPage() {
           </section>
 
           <section className="company-filter-bar" ref={jobListRef}>
-            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-800 lg:col-span-2">
-              Cancelar uma vaga já preenchida custa 10 <TermHint term="moedas" role="empresa">moedas</TermHint> da empresa. Vagas sem equipe completa podem ser canceladas sem taxa.
-            </p>
             <div className="company-filter-buttons">
               {filters.map((item) => (
                 <button
@@ -275,7 +271,6 @@ export function CompanyJobsPage() {
                 const expectedValue = confirmed * job.dailyValue;
                 const terminal = status === "Concluída" || status === "Cancelada";
                 const progress = Math.min(100, Math.round((confirmed / job.quantity) * 100));
-                const filledCancellationFee = confirmed >= job.quantity ? 10 : 0;
 
                 return (
                   <article key={job.id} className="company-job-card">
@@ -348,7 +343,7 @@ export function CompanyJobsPage() {
                           <Square size={17} /> Rascunho
                         </button>
                         <button type="button" onClick={() => runStatus(job.id, "Cancelada")} disabled={terminal || companyBlocked} className="company-action company-action-danger">
-                          <XCircle size={17} /> Cancelar{filledCancellationFee > 0 ? " (-10 moedas)" : ""}
+                          <XCircle size={17} /> Cancelar
                         </button>
                       </div>
                     </details>
@@ -368,9 +363,8 @@ export function CompanyJobsPage() {
       {confirmCancelJobTarget && (
         <Modal title="Cancelar vaga preenchida?" onClose={() => setConfirmCancelJobId(null)}>
           <p className="text-sm leading-6 text-slate-600">
-            Esta vaga já está preenchida ({confirmCancelConfirmedCount}/{confirmCancelJobTarget.quantity}). Cancelar agora vai
-            cobrar 10 <TermHint term="moedas" role="empresa">moedas</TermHint> da empresa. Vagas sem equipe completa podem ser
-            canceladas sem taxa.
+            Esta vaga já está preenchida ({confirmCancelConfirmedCount}/{confirmCancelJobTarget.quantity}). Ao cancelar, os
+            profissionais confirmados são avisados e perdem o turno.
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             <button type="button" className="secondary" onClick={() => setConfirmCancelJobId(null)}>

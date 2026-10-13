@@ -281,7 +281,7 @@ function PhoneMockup({
             <span><strong>8</strong> vagas abertas</span>
             <span><strong>24</strong> equipe</span>
             <span><strong>56</strong> candidatos</span>
-            <span><strong>1.250</strong> moedas</span>
+            <span><strong>12</strong> turnos hoje</span>
           </div>
           <button type="button">+ Criar vaga</button>
         </>

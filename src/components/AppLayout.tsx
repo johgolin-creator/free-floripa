@@ -5,7 +5,6 @@ import {
   CalendarCheck,
   CalendarDays,
   ClipboardList,
-  CreditCard,
   Home,
   LogOut,
   MessageCircle,
@@ -14,8 +13,7 @@ import {
   ShieldCheck,
   Star,
   UserRound,
-  UsersRound,
-  WalletCards
+  UsersRound
 } from "lucide-react";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -43,7 +41,6 @@ const workerPrimaryLinks = [
 
 const workerSecondaryLinks = [
   MENSAGENS_LINK,
-  { to: "/app/planos", label: "Planos", mobileLabel: "Planos", icon: CreditCard },
   { to: "/app/perfil-trabalhador", label: "Perfil", mobileLabel: "Perfil", icon: UserRound }
 ];
 
@@ -58,7 +55,6 @@ const companySecondaryLinks = [
   { to: "/app/profissionais", label: "Banco", mobileLabel: "Banco", icon: Search },
   { to: "/app/escala", label: "Escala", mobileLabel: "Escala", icon: CalendarDays },
   MENSAGENS_LINK,
-  { to: "/app/planos", label: "Moedas", mobileLabel: "Moedas", icon: CreditCard },
   { to: "/app/equipe", label: "Minha equipe", mobileLabel: "Equipe", icon: Star },
   { to: "/app/perfil-empresa", label: "Perfil", mobileLabel: "Perfil", icon: Building2 }
 ];
@@ -146,15 +142,6 @@ export function AppLayout() {
   // fictício por alguns segundos até a sessão real resolver parece um bug
   // de conta trocada, então some com o nome até authLoading terminar.
   const identityName = authLoading ? "" : state.activeRole === "trabalhador" ? currentWorker.name : currentCompany.establishmentName;
-  const coinBalance =
-    state.activeRole === "trabalhador"
-      ? state.subscription.creditsRemaining
-      : state.subscription.companyCreditsRemaining;
-  const coinLabel = state.activeRole === "trabalhador" ? "Moedas" : "Moedas da empresa";
-  const coinHelp =
-    state.activeRole === "trabalhador"
-      ? "Cada candidatura enviada usa 1 moeda."
-      : "Use moedas para ações empresariais, como cancelar vagas já preenchidas.";
 
   // Vendedor (conta da equipe, com e-mail pontapp) não é um trabalhador/empresa
   // de verdade: o perfil dele costuma ficar vazio e o redirecionamento abaixo
@@ -212,21 +199,6 @@ export function AppLayout() {
           })}
         </nav>
 
-        <Link
-          to="/app/planos"
-          className="mt-4 rounded-lg border border-white/10 bg-white/10 p-3 text-white shadow-soft transition hover:bg-white/15"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <span className="flex items-center gap-2 text-xs font-black text-aqua-300">
-              <WalletCards size={16} /> {coinLabel}
-            </span>
-            <strong className="rounded-md bg-aqua-300 px-2.5 py-1 text-base font-black text-navy-950">{coinBalance}</strong>
-          </div>
-          <p className="mt-1.5 text-[0.7rem] font-semibold leading-4 text-slate-300">
-            {coinHelp}
-          </p>
-        </Link>
-
         <NavLink
           to="/app/notificacoes"
           className={`mt-auto rounded-lg border p-3 shadow-soft transition ${
@@ -281,14 +253,6 @@ export function AppLayout() {
               <h1 className="text-xl font-black text-white">{identityName || areaLabel}</h1>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <Link
-                to="/app/planos"
-                className="app-mobile-coin"
-                title={coinLabel}
-              >
-                <WalletCards size={15} />
-                <strong>{coinBalance}</strong>
-              </Link>
               <NavLink
                 to="/app/notificacoes"
                 className={`app-mobile-bell ${unread > 0 ? "has-unread" : ""}`}
@@ -323,15 +287,6 @@ export function AppLayout() {
               <h1 className="text-xl font-black text-white">{identityName || areaLabel}</h1>
             </div>
             <div className="flex min-w-0 items-center gap-2">
-              <Link
-                to="/app/planos"
-                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-3 text-xs font-black text-aqua-800 shadow-soft transition hover:border-aqua-300 hover:bg-aqua-100"
-                title={coinLabel}
-              >
-                <WalletCards size={16} />
-                <span className="hidden sm:inline">{state.activeRole === "trabalhador" ? "Moedas:" : "Empresa:"}</span>
-                <strong className="text-sm">{coinBalance}</strong>
-              </Link>
               <NavLink
                 to="/app/notificacoes"
                 className={`app-header-bell ${unread > 0 ? "has-unread" : ""}`}

@@ -4,7 +4,6 @@ export type EmailNotificationEvent =
   | "application_status"
   | "urgent_job"
   | "chat_message"
-  | "low_coins"
   | "system";
 
 export interface EmailNotificationInput {

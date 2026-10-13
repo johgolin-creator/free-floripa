@@ -75,15 +75,6 @@ export function ApplicationsPage() {
           </section>
 
           <section className="worker-filter-panel">
-            <div className="worker-filter-summary">
-              <div>
-                <strong>Saldo atual: {state.subscription.creditsRemaining} moeda(s)</strong>
-                <span>Cada candidatura enviada usa 1 moeda.</span>
-              </div>
-              <Link to="/app/planos" className="secondary min-h-10">
-                Comprar moedas
-              </Link>
-            </div>
             <div className="worker-filter-buttons">
               {filters.map((item) => (
                 <button

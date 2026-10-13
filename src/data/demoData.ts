@@ -376,14 +376,6 @@ export const initialState: AppState = {
   notifications,
   chatMessages: [],
   companyReviews: [],
-  coinLedger: [],
-  subscription: {
-    plan: "Gratuito",
-    creditsRemaining: 5,
-    companyCreditsRemaining: 5,
-    renewalDate: "2026-02-01",
-    unlockedJobIds: []
-  },
   adminModeration: {
     blockedWorkerIds: [],
     blockedCompanyIds: []

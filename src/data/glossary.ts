@@ -1,15 +1,8 @@
 import type { UserRole } from "../lib/types";
 
-export type GlossaryTermId = "moedas" | "confiabilidade" | "codigoVerificacao";
+export type GlossaryTermId = "confiabilidade" | "codigoVerificacao";
 
 export const glossary: Record<GlossaryTermId, { label: string; body: (role?: UserRole) => string }> = {
-  moedas: {
-    label: "Moedas",
-    body: (role) =>
-      role === "empresa"
-        ? "Moedas são créditos do PONT. Sua empresa usa moedas em ações pontuais, como cancelar uma vaga que já está com a equipe completa. Não são dinheiro de verdade — compre mais na página Moedas."
-        : "Moedas são créditos do PONT. Você usa 1 moeda pra ver todos os detalhes de uma vaga (endereço completo, contato) antes de se candidatar. Não são dinheiro de verdade — compre pacotes na página Planos."
-  },
   confiabilidade: {
     label: "Índice de confiabilidade",
     body: () =>

@@ -10,7 +10,6 @@ import { formatCurrency, formatDate, todayLocalISODate } from "../lib/format";
 import { calculateReliability, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots, isWorkerVerified } from "../lib/rules";
 import { getTrustBadges } from "../lib/trust";
 import { useAppStore } from "../lib/store";
-import { adminActivatePlus, adminAdjustCoins, adminCoinsEnabled, loadAdminCoinOverview, type AdminCoinOverview } from "../lib/supabaseAdminCoins";
 import { adminAccountsEnabled, adminDeleteAccount, adminDeleteJob, adminNotifyAllWorkers } from "../lib/adminAccounts";
 import {
   adminSetCompanySalesRep,
@@ -25,12 +24,12 @@ import {
 } from "../lib/salesReps";
 import { formatBrl, listSales, registerSale, salesEnabled, type PaymentStatus, type Sale } from "../lib/sales";
 import { commissionCentsForSale, commissionRateForSale } from "../lib/salesCommission";
-import type { Application, CompanyProfile, CompanyReview, Job, TrustReport, UserRole, WorkerProfile } from "../lib/types";
+import type { Application, CompanyProfile, CompanyReview, Job, TrustReport, WorkerProfile } from "../lib/types";
 import { SkeletonRows } from "../components/Skeleton";
 
-type AdminTab = "Resumo" | "Usuários" | "Vagas" | "Vendedores" | "Moedas" | "Alertas";
+type AdminTab = "Resumo" | "Usuários" | "Vagas" | "Vendedores" | "Alertas";
 
-const tabs: AdminTab[] = ["Resumo", "Usuários", "Vagas", "Vendedores", "Moedas", "Alertas"];
+const tabs: AdminTab[] = ["Resumo", "Usuários", "Vagas", "Vendedores", "Alertas"];
 
 export function AdminPage() {
   const {
@@ -51,8 +50,6 @@ export function AdminPage() {
   const [deleteFeedback, setDeleteFeedback] = useState("");
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
-  const [coinOverview, setCoinOverview] = useState<AdminCoinOverview | null>(null);
-  const [coinOverviewError, setCoinOverviewError] = useState("");
 
   useEffect(() => {
     if (!salesRepsEnabled) return;
@@ -64,21 +61,6 @@ export function AdminPage() {
         setSales(saleRows);
       })
       .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!adminCoinsEnabled) return;
-    let active = true;
-    loadAdminCoinOverview()
-      .then((overview) => {
-        if (active) setCoinOverview(overview);
-      })
-      .catch((err) => {
-        if (active) setCoinOverviewError(err instanceof Error ? err.message : "Não foi possível carregar a contagem geral de moedas.");
-      });
     return () => {
       active = false;
     };
@@ -149,7 +131,6 @@ export function AdminPage() {
     const company = state.companies.find((item) => item.id === job.companyId);
     return normalize(`${job.title} ${job.function} ${job.neighborhood} ${company?.establishmentName ?? ""}`).includes(normalizedSearch);
   });
-  const coinPurchaseCount = state.coinLedger.filter((entry) => entry.kind === "purchase").length;
 
   function goToUsersTab(focus: "workers" | "companies") {
     setSearch("");
@@ -169,7 +150,7 @@ export function AdminPage() {
       <SectionHeader
         eyebrow="Admin"
         title="Painel administrativo"
-        description="Acompanhe usuários, empresas, vagas, moedas e sinais de risco em um só lugar."
+        description="Acompanhe usuários, empresas, vagas e sinais de risco em um só lugar."
       />
 
       {deleteFeedback && (
@@ -264,8 +245,6 @@ export function AdminPage() {
               <span className="flex items-center gap-2"><ShieldCheck size={16} /> Revisar {openReports.length} relato(s) e {alerts.length} alerta(s) operacionais.</span>
               <span className="flex items-center gap-2"><Ban size={16} /> {blockedWorkerIds.length} trabalhador(es) bloqueado(s).</span>
               <span className="flex items-center gap-2"><Ban size={16} /> {blockedCompanyIds.length} empresa(s) bloqueada(s).</span>
-              <span className="flex items-center gap-2"><WalletCards size={16} /> Trabalhador: {state.subscription.creditsRemaining} moeda(s).</span>
-              <span className="flex items-center gap-2"><WalletCards size={16} /> Empresa: {state.subscription.companyCreditsRemaining} moeda(s).</span>
             </div>
           </div>
         </section>
@@ -377,67 +356,6 @@ export function AdminPage() {
           onReloadSales={reloadSales}
           onOpenCompany={(id) => setDetail({ type: "company", id })}
         />
-      )}
-
-      {tab === "Moedas" && (
-        <div className="grid gap-4">
-        <section className="card p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <WalletCards size={18} className="text-aqua-300" />
-            <h3 className="font-black text-white">Contagem geral de moedas do app</h3>
-          </div>
-          {coinOverviewError && (
-            <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{coinOverviewError}</div>
-          )}
-          {!coinOverview ? (
-            coinOverviewError ? null : <SkeletonRows rows={3} label="Carregando moedas" />
-          ) : (
-            <>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <InfoTile icon={<WalletCards />} label="Moedas em circulação (total)" value={`${coinOverview.totalBalance} moeda(s)`} />
-                <InfoTile icon={<UserRound />} label="Moedas dos trabalhadores" value={`${coinOverview.workerBalance} moeda(s)`} />
-                <InfoTile icon={<Building2 />} label="Moedas das empresas" value={`${coinOverview.companyBalance} moeda(s)`} />
-                <InfoTile icon={<ClipboardList />} label="Carteiras com saldo" value={`${coinOverview.fundedWalletCount} de ${coinOverview.walletCount}`} />
-              </div>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <InfoTile icon={<ShieldCheck />} label="Trabalhadores com Plus ativo" value={String(coinOverview.workerPlusActiveCount)} />
-                <InfoTile icon={<ShieldCheck />} label="Empresas com Plus ativo" value={String(coinOverview.companyPlusActiveCount)} />
-              </div>
-            </>
-          )}
-        </section>
-        <CoinGrantCard
-          onChanged={() => {
-            loadAdminCoinOverview()
-              .then(setCoinOverview)
-              .catch(() => {});
-          }}
-        />
-        <section className="grid gap-4 lg:grid-cols-[0.8fr_1fr]">
-          <div className="card p-4">
-            <h3 className="mb-3 font-black text-white">Carteiras da sua conta (admin)</h3>
-            <div className="grid gap-3">
-              <InfoTile icon={<WalletCards />} label="Saldo do trabalhador" value={`${state.subscription.creditsRemaining} moeda(s)`} />
-              <InfoTile icon={<WalletCards />} label="Saldo da empresa" value={`${state.subscription.companyCreditsRemaining} moeda(s)`} />
-              <InfoTile icon={<BriefcaseBusiness />} label="Compras de moedas" value={String(coinPurchaseCount)} />
-              <InfoTile icon={<ClipboardList />} label="Candidaturas enviadas" value={String(state.applications.length)} />
-            </div>
-          </div>
-          <AdminList title="Uso recente de moedas" count={state.coinLedger.length}>
-            {state.coinLedger.slice(0, 12).map((transaction) => {
-              const job = transaction.jobId ? state.jobs.find((item) => item.id === transaction.jobId) : undefined;
-              return (
-                <CoinRow
-                  key={transaction.id}
-                  title={getCoinAdminTitle(transaction.reason)}
-                  text={`${transaction.role === "empresa" ? "Empresa" : "Trabalhador"} - ${job?.title ?? "Sem vaga vinculada"}`}
-                  amount={`${transaction.amount > 0 ? "+" : ""}${transaction.amount} moeda${Math.abs(transaction.amount) === 1 ? "" : "s"}`}
-                />
-              );
-            })}
-          </AdminList>
-        </section>
-        </div>
       )}
 
       {tab === "Alertas" && !moderationReady && (
@@ -642,117 +560,6 @@ function AdminMetric({
   }
 
   return <span className={className}>{content}</span>;
-}
-
-function CoinGrantCard({ onChanged }: { onChanged?: () => void }) {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<UserRole>("trabalhador");
-  const [amount, setAmount] = useState("20");
-  const [reason, setReason] = useState("Compra confirmada pelo suporte");
-  const [plusDays, setPlusDays] = useState("30");
-  const [pending, setPending] = useState<"" | "coins" | "plus">("");
-  const [feedback, setFeedback] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
-
-  async function run(kind: "coins" | "plus") {
-    if (!email.trim()) {
-      setFeedback({ tone: "err", text: "Informe o e-mail da conta." });
-      return;
-    }
-    setPending(kind);
-    setFeedback(null);
-    try {
-      if (kind === "coins") {
-        const value = Number(amount);
-        if (!Number.isFinite(value) || value === 0) throw new Error("Informe uma quantidade diferente de zero.");
-        await adminAdjustCoins(email, role, value, reason);
-        setFeedback({ tone: "ok", text: `Ajuste de ${value > 0 ? "+" : ""}${value} moeda(s) aplicado para ${email.trim()} (${role}).` });
-        onChanged?.();
-      } else {
-        const days = Number(plusDays);
-        if (!Number.isFinite(days) || days <= 0) throw new Error("Informe um número de dias válido.");
-        await adminActivatePlus(email, role, days);
-        setFeedback({ tone: "ok", text: `Plus estendido por ${days} dia(s) para ${email.trim()} (${role}).` });
-        onChanged?.();
-      }
-    } catch (err) {
-      setFeedback({ tone: "err", text: err instanceof Error ? err.message : "Não foi possível concluir." });
-    } finally {
-      setPending("");
-    }
-  }
-
-  return (
-    <section className="card p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <WalletCards size={18} className="text-aqua-300" />
-        <h3 className="font-black text-white">Creditar moedas / ativar Plus</h3>
-      </div>
-      <p className="mb-4 text-sm font-semibold leading-6 text-slate-600">
-        Use depois que o pagamento for confirmado pelo WhatsApp. Precisa que sua conta tenha papel
-        admin/moderador no banco.
-      </p>
-
-      {!adminCoinsEnabled && (
-        <div className="mb-3 rounded-lg bg-slate-100 p-3 text-sm font-bold text-slate-600">
-          Disponível apenas no ambiente online (Supabase configurado).
-        </div>
-      )}
-      {feedback && (
-        <div
-          className={`mb-3 rounded-lg p-3 text-sm font-bold ${
-            feedback.tone === "ok" ? "bg-aqua-50 text-aqua-800" : "bg-red-50 text-alert"
-          }`}
-        >
-          {feedback.text}
-        </div>
-      )}
-
-      <div className="grid gap-3 md:grid-cols-2">
-        <label className="label">
-          E-mail da conta
-          <input className="input" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="pessoa@email.com" />
-        </label>
-        <label className="label">
-          Carteira
-          <select className="input" value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
-            <option value="trabalhador">Trabalhador</option>
-            <option value="empresa">Empresa</option>
-          </select>
-        </label>
-        <label className="label">
-          Quantidade de moedas (negativo para estornar)
-          <input className="input" type="number" value={amount} onChange={(event) => setAmount(event.target.value)} />
-        </label>
-        <label className="label">
-          Motivo
-          <input className="input" value={reason} onChange={(event) => setReason(event.target.value)} />
-        </label>
-      </div>
-      <button aria-busy={pending === "coins"}
-        type="button"
-        className="primary mt-3"
-        disabled={!adminCoinsEnabled || pending !== ""}
-        onClick={() => run("coins")}
-      >
-        {pending === "coins" ? "Aplicando..." : "Aplicar ajuste de moedas"}
-      </button>
-
-      <div className="mt-5 grid gap-3 border-t border-white/10 pt-4 md:grid-cols-2">
-        <label className="label">
-          Ativar Plus por (dias)
-          <input className="input" type="number" value={plusDays} onChange={(event) => setPlusDays(event.target.value)} />
-        </label>
-        <button aria-busy={pending === "plus"}
-          type="button"
-          className="secondary self-end"
-          disabled={!adminCoinsEnabled || pending !== ""}
-          onClick={() => run("plus")}
-        >
-          {pending === "plus" ? "Ativando..." : "Estender Plus da conta"}
-        </button>
-      </div>
-    </section>
-  );
 }
 
 function InfoTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
@@ -2233,35 +2040,10 @@ function ResolvedReportRow({ report }: { report: TrustReport }) {
   );
 }
 
-function CoinRow({ title, text, amount }: { title: string; text: string; amount: string }) {
-  return (
-    <article className="worker-application-card">
-      <div className="worker-card-head">
-        <div>
-          <span className="badge border-aqua-100 bg-aqua-50 text-aqua-700">Moeda</span>
-          <h3 className="mt-2">{title}</h3>
-          <p className="text-sm font-semibold text-slate-600">{text}</p>
-        </div>
-        <strong className="worker-next-step">{amount}</strong>
-      </div>
-    </article>
-  );
-}
-
 function getReportTargetLabel(targetType: TrustReport["targetType"]) {
   if (targetType === "worker") return "Profissional";
   if (targetType === "company") return "Empresa";
   return "Vaga";
-}
-
-function getCoinAdminTitle(reason: string) {
-  if (reason === "package_professional") return "Pacote Profissional";
-  if (reason === "package_plus") return "Pacote Plus";
-  if (reason === "coin_pack") return "Pacote de moedas";
-  if (reason === "unlock_job") return "Vaga liberada";
-  if (reason === "apply_job") return "Candidatura enviada";
-  if (reason === "cancel_filled_job") return "Cancelamento de vaga preenchida";
-  return "Movimentação de moedas";
 }
 
 function normalize(value: string) {
