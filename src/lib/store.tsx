@@ -35,12 +35,6 @@ import {
   setModerationBlock,
   supabaseModerationEnabled
 } from "./supabaseModeration";
-import {
-  loadRemoteCoinAccount,
-  loadRemoteWalletBalance,
-  supabaseCoinsEnabled,
-  type CoinAccount
-} from "./supabaseCoins";
 import { DEFAULT_AVATAR_PLACEHOLDER, isPlaceholderCompanyLogo, resolveAvatarUrl } from "./avatars";
 import { emailNotificationsEnabled, enqueueEmailNotification, type EmailNotificationInput } from "./emailNotifications";
 import type { AppState, Application, ApplicationStatus, ChatMessage, CompanyLead, CompanyProfile, CompanyReview, CompanySchedule, CompanyScheduleStatus, FacebookLead, Job, JobFunction, JobStatus, Neighborhood, PaymentMethod, Review, TrustReportTargetType, UserRole, WorkerProfile } from "./types";
@@ -148,7 +142,7 @@ interface AppContextValue {
   duplicateJob: (jobId: string) => { ok: boolean; message: string; jobId?: string };
   updateWorkerProfile: (input: Partial<Pick<WorkerProfile, "name" | "cpf" | "phone" | "email" | "avatarUrl" | "photos" | "birthDate" | "city" | "neighborhood" | "functions" | "functionExperience" | "experience" | "description" | "availability" | "hasTransport" | "maxDistanceKm">>) => void;
   updateCompanyProfile: (input: Partial<CompanyProfile>) => void;
-  applyToJob: (jobId: string) => { ok: boolean; message: string; requiresPlan?: boolean };
+  applyToJob: (jobId: string) => { ok: boolean; message: string };
   updateApplicationStatus: (applicationId: string, status: ApplicationStatus) => { ok: boolean; message: string };
   toggleFavorite: (workerId: string) => void;
   inviteWorkerToJob: (workerId: string, jobId: string) => { ok: boolean; message: string };
@@ -203,38 +197,16 @@ function countApproved(applications: Application[], jobId: string) {
   ).length;
 }
 
-function coinLedgerEntry(input: Omit<AppState["coinLedger"][number], "id" | "createdAt">): AppState["coinLedger"][number] {
-  return {
-    id: crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
-    ...input
-  };
-}
-
-function hasUnlimitedAccess(activeUntil: string | undefined): boolean {
-  return Boolean(activeUntil) && new Date(activeUntil as string) > new Date();
-}
-
 function mergeSeedUpdates(savedState: AppState): AppState {
   const seededWorker = initialState.workers.find((worker) => worker.id === "worker-3");
   const normalizedState = {
     ...savedState,
-    subscription: {
-      ...savedState.subscription,
-      companyCreditsRemaining: Number.isFinite(savedState.subscription?.companyCreditsRemaining)
-        ? savedState.subscription.companyCreditsRemaining
-        : 0,
-      unlockedJobIds: Array.isArray(savedState.subscription?.unlockedJobIds)
-        ? savedState.subscription.unlockedJobIds
-        : []
-    },
     // Estados salvos antes das múltiplas fotos não têm `photos`; o perfil e os
     // cards de trabalhador leem photos.length e derrubavam o app inteiro.
     workers: savedState.workers.map((worker) => (Array.isArray(worker.photos) ? worker : { ...worker, photos: [] })),
     companySchedules: Array.isArray(savedState.companySchedules) ? savedState.companySchedules : [],
     chatMessages: Array.isArray(savedState.chatMessages) ? savedState.chatMessages : [],
     companyReviews: Array.isArray(savedState.companyReviews) ? savedState.companyReviews : [],
-    coinLedger: Array.isArray(savedState.coinLedger) ? savedState.coinLedger : [],
     trustReports: Array.isArray(savedState.trustReports) ? savedState.trustReports : [],
     companyLeads: Array.isArray(savedState.companyLeads) ? savedState.companyLeads : [],
     facebookLeads: Array.isArray(savedState.facebookLeads) ? savedState.facebookLeads : [],
@@ -251,12 +223,9 @@ function mergeSeedUpdates(savedState: AppState): AppState {
     !Array.isArray(savedState.companySchedules) ||
     !Array.isArray(savedState.chatMessages) ||
     !Array.isArray(savedState.companyReviews) ||
-    !Array.isArray(savedState.coinLedger) ||
     !Array.isArray(savedState.trustReports) ||
     !Array.isArray(savedState.companyLeads) ||
     !Array.isArray(savedState.facebookLeads) ||
-    !Number.isFinite(savedState.subscription?.companyCreditsRemaining) ||
-    !Array.isArray(savedState.subscription?.unlockedJobIds) ||
     !Array.isArray(savedState.adminModeration?.blockedWorkerIds) ||
     !Array.isArray(savedState.adminModeration?.blockedCompanyIds);
 
@@ -728,43 +697,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function queueLowCoinsEmail(nextBalance: number) {
-    if (nextBalance > 2 || !currentWorker?.email) return;
-    queueEmail({
-      recipientUserId: user?.id ?? currentWorker.id,
-      recipientEmail: currentWorker.email,
-      recipientName: currentWorker.name,
-      subject: "Suas moedas PONT estão acabando",
-      preview: `Você tem ${nextBalance} moeda${nextBalance === 1 ? "" : "s"} disponível${nextBalance === 1 ? "" : "is"}.`,
-      body: `Oi, ${currentWorker.name}. Seu saldo atual é de ${nextBalance} moeda${nextBalance === 1 ? "" : "s"}. Recarregue para continuar se candidatando às vagas.`,
-      eventType: "low_coins",
-      metadata: { balance: nextBalance }
-    });
-  }
-
-  function applyCoinAccount(account: CoinAccount | null, role: UserRole) {
-    if (!account) return;
-
-    setState((current) => {
-      const unlockedJobIds = Array.from(
-        new Set([...current.subscription.unlockedJobIds, ...account.unlockedJobIds])
-      );
-      const next = {
-        ...current,
-        subscription: {
-          ...current.subscription,
-          creditsRemaining: role === "trabalhador" ? account.balance : current.subscription.creditsRemaining,
-          companyCreditsRemaining: role === "empresa" ? account.balance : current.subscription.companyCreditsRemaining,
-          plusActiveUntil: role === "trabalhador" ? account.plusActiveUntil : current.subscription.plusActiveUntil,
-          companyPlusActiveUntil: role === "empresa" ? account.plusActiveUntil : current.subscription.companyPlusActiveUntil,
-          unlockedJobIds
-        }
-      };
-      persist(next, localStorageKey);
-      return next;
-    });
-  }
-
   useEffect(() => {
     if (authLoading) return;
 
@@ -1068,41 +1000,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, [authLoading, user?.id]);
 
-  useEffect(() => {
-    if (authLoading || !user || !supabaseCoinsEnabled) return;
-
-    const userId = user.id;
-    const activeRole = state.activeRole;
-    let active = true;
-    // skipWhenHidden só se aplica às atualizações periódicas do intervalo.
-    // A carga inicial (chamada com false) precisa rodar sempre, senão uma
-    // aba que monta em segundo plano (ex.: aberta sem foco, ou controlada
-    // por automação) nunca busca os dados reais - fica presa no estado
-    // local/demo até alguém focar a aba E esperar o próximo tick.
-    function refresh(skipWhenHidden: boolean) {
-      if (skipWhenHidden && document.visibilityState === "hidden") return;
-      loadRemoteCoinAccount(userId, activeRole)
-        .then((account) => {
-          if (!active) return;
-          applyCoinAccount(account, activeRole);
-          setSyncError("");
-        })
-        .catch(() => {
-          if (!active) return;
-          setSyncError("Falha ao carregar carteira de moedas.");
-          setSyncStatus("erro");
-        });
-    }
-
-    refresh(false);
-    const intervalId = window.setInterval(() => refresh(true), REMOTE_SYNC_POLL_MS);
-
-    return () => {
-      active = false;
-      window.clearInterval(intervalId);
-    };
-  }, [authLoading, user?.id, localStorageKey, state.activeRole]);
-
   const createJobHandler = (input: CreateJobInput) => {
     if (state.adminModeration.blockedCompanyIds.includes(currentCompany.id)) {
       return "";
@@ -1366,20 +1263,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return { ok: false, message: "Sua empresa está em revisão pela administração e não pode alterar vagas no momento." };
         }
         const affectedApplications = state.applications.filter((application) => application.jobId === jobId);
-        const approvedCount = countApproved(state.applications, jobId);
-        const companyHasUnlimited = hasUnlimitedAccess(state.subscription.companyPlusActiveUntil);
-        const jobIsFilled = status === "Cancelada" && approvedCount >= job.quantity;
-        const filledCancellationFee = jobIsFilled && !companyHasUnlimited ? 10 : 0;
         const previousJob = job;
         const previousApplications = state.applications;
-        const previousCompanyCreditsRemaining = state.subscription.companyCreditsRemaining;
-
-        if (filledCancellationFee > 0 && state.subscription.companyCreditsRemaining < filledCancellationFee) {
-          return {
-            ok: false,
-            message: `Esta vaga já está preenchida. Para cancelar, a empresa precisa de ${filledCancellationFee} moedas empresariais. Saldo atual: ${state.subscription.companyCreditsRemaining}.`
-          };
-        }
 
         commit((current) => {
           const nextApplications = current.applications.map((application) => {
@@ -1396,27 +1281,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return {
             ...current,
             applications: nextApplications,
-            subscription:
-              filledCancellationFee > 0
-                ? {
-                    ...current.subscription,
-                    companyCreditsRemaining: Math.max(0, current.subscription.companyCreditsRemaining - filledCancellationFee)
-                  }
-                : current.subscription,
-            coinLedger:
-              filledCancellationFee > 0
-                ? [
-                    coinLedgerEntry({
-                      role: "empresa",
-                      kind: "spend",
-                      reason: "cancel_filled_job",
-                      amount: -filledCancellationFee,
-                      balanceAfter: Math.max(0, current.subscription.companyCreditsRemaining - filledCancellationFee),
-                      jobId
-                    }),
-                    ...current.coinLedger
-                  ]
-                : current.coinLedger,
             jobs: current.jobs.map((item) =>
               item.id === jobId
                 ? {
@@ -1461,27 +1325,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         if (supabaseMarketplaceEnabled) {
-          // When filledCancellationFee > 0, this same update is what the
-          // database trigger charges the 10 moedas against (see
-          // supabase/coin_enforcement.sql), using the empresa's real wallet
-          // - not the local companyCreditsRemaining, which a user could
-          // otherwise forge. If the real balance is short, this rejects and
-          // we undo the optimistic status/fee commit above.
+          // Se o servidor recusar, desfazemos a mudança otimista acima.
           publishJob(user, currentCompany, { ...job, status, urgent: status === "Cancelada" || status === "Concluída" ? false : job.urgent })
-            .then(() => {
-              if (filledCancellationFee > 0 && supabaseCoinsEnabled && user) {
-                loadRemoteWalletBalance(user.id, "empresa")
-                  .then((balance) => {
-                    commit((current) => ({
-                      ...current,
-                      subscription: { ...current.subscription, companyCreditsRemaining: balance }
-                    }));
-                  })
-                  .catch(() => {
-                    // Next periodic wallet refresh will reconcile this.
-                  });
-              }
-            })
             .catch((error) => {
               commit((current) => ({
                 ...current,
@@ -1490,30 +1335,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   if (item.jobId !== jobId) return item;
                   const original = previousApplications.find((prev) => prev.id === item.id);
                   return original ?? item;
-                }),
-                subscription:
-                  filledCancellationFee > 0
-                    ? { ...current.subscription, companyCreditsRemaining: previousCompanyCreditsRemaining }
-                    : current.subscription,
-                coinLedger:
-                  filledCancellationFee > 0
-                    ? current.coinLedger.filter((entry) => !(entry.jobId === jobId && entry.reason === "cancel_filled_job"))
-                    : current.coinLedger
+                })
               }));
               setSyncError(error instanceof Error ? error.message : "Falha ao atualizar vaga.");
               setSyncStatus("erro");
             });
         }
 
-        return {
-          ok: true,
-          message:
-            filledCancellationFee > 0
-              ? `Vaga cancelada. Como ela já estava preenchida, foram cobradas ${filledCancellationFee} moedas.`
-              : jobIsFilled && companyHasUnlimited
-                ? "Vaga cancelada. Seu Plus dá cancelamentos ilimitados."
-                : `Vaga marcada como ${status}.`
-        };
+        return { ok: true, message: `Vaga marcada como ${status}.` };
       },
       duplicateJob(jobId) {
         const job = state.jobs.find((item) => item.id === jobId && item.companyId === currentCompany.id);
@@ -1614,15 +1443,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return { ok: false, message: "Esta empresa está em revisão pela administração. A candidatura está bloqueada por segurança." };
         }
 
-        const workerHasUnlimited = hasUnlimitedAccess(state.subscription.plusActiveUntil);
-        if (!workerHasUnlimited && state.subscription.creditsRemaining <= 0) {
-          return {
-            ok: false,
-            message: "Use 1 moeda para se candidatar a esta vaga.",
-            requiresPlan: true
-          };
-        }
-
         const result = canApply(job, state.applications, currentWorker);
         if (!result.allowed) {
           return { ok: false, message: result.reason };
@@ -1651,46 +1471,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           read: false
         };
 
-        const nextCreditsRemaining = workerHasUnlimited
-          ? state.subscription.creditsRemaining
-          : Math.max(0, state.subscription.creditsRemaining - 1);
-
         commit((current) => ({
           ...current,
-          subscription: workerHasUnlimited
-            ? current.subscription
-            : {
-                ...current.subscription,
-                creditsRemaining: Math.max(0, current.subscription.creditsRemaining - 1)
-              },
           applications: [application, ...current.applications.filter((item) => item.id !== application.id)],
           jobs: current.jobs.map((item) => (item.id === jobId ? { ...item, candidates: item.candidates + 1 } : item)),
           notifications: [
             companyNotification,
             ...current.notifications
-          ],
-          coinLedger: workerHasUnlimited
-            ? current.coinLedger
-            : [
-                coinLedgerEntry({
-                  role: "trabalhador",
-                  kind: "spend",
-                  reason: "apply_job",
-                  amount: -1,
-                  balanceAfter: nextCreditsRemaining,
-                  jobId,
-                  applicationId: application.id
-                }),
-                ...current.coinLedger
-              ]
+          ]
         }));
         if (supabaseMarketplaceEnabled) {
-          // The 1-moeda charge now happens as a database trigger on this
-          // same insert/update (see supabase/coin_enforcement.sql), using
-          // the worker's real wallet balance - not anything this client
-          // claims. If the real balance is empty, this call rejects and we
-          // undo the optimistic commit above instead of leaving a phantom
-          // "sent" application that was never actually created server-side.
+          // Se o servidor recusar, desfazemos o commit otimista acima em vez
+          // de deixar uma candidatura "enviada" que não existe no banco.
           publishApplication(currentWorker, jobId, application.id)
             .then(() => {
               if (company?.email) {
@@ -1706,20 +1498,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 });
               }
               publishRemoteNotification(job.companyId, companyNotification);
-              queueLowCoinsEmail(nextCreditsRemaining);
-
-              if (supabaseCoinsEnabled && user) {
-                loadRemoteWalletBalance(user.id, "trabalhador")
-                  .then((balance) => {
-                    commit((current) => ({
-                      ...current,
-                      subscription: { ...current.subscription, creditsRemaining: balance }
-                    }));
-                  })
-                  .catch(() => {
-                    // Next periodic wallet refresh will reconcile this.
-                  });
-              }
             })
             .catch((error) => {
               commit((current) => ({
@@ -1729,9 +1507,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   : current.applications.filter((item) => item.id !== application.id),
                 jobs: current.jobs.map((item) =>
                   item.id === jobId ? { ...item, candidates: Math.max(0, item.candidates - 1) } : item
-                ),
-                subscription: { ...current.subscription, creditsRemaining: state.subscription.creditsRemaining },
-                coinLedger: current.coinLedger.filter((entry) => entry.applicationId !== application.id)
+                )
               }));
               setSyncError(error instanceof Error ? error.message : "Falha ao enviar candidatura.");
               setSyncStatus("erro");
@@ -1741,12 +1517,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         track("application_sent", { jobId });
 
-        return {
-          ok: true,
-          message: workerHasUnlimited
-            ? "Candidatura enviada com sucesso. Seu Plus dá candidaturas ilimitadas."
-            : "Candidatura enviada com sucesso. 1 moeda foi utilizada."
-        };
+        return { ok: true, message: "Candidatura enviada com sucesso." };
       },
       updateApplicationStatus(applicationId, status) {
         const application = state.applications.find((item) => item.id === applicationId);

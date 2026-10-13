@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Filter, Lock, RotateCcw, Search } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Filter, RotateCcw, Search } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { JobCard } from "../components/JobCard";
 import { Modal } from "../components/Modal";
 import { SectionHeader } from "../components/SectionHeader";
-import { TermHint } from "../components/TermHint";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 import { functionLabel } from "../lib/functionInfo";
@@ -30,7 +28,6 @@ export function JobsPage() {
   const [sortBy, setSortBy] = useState<SortOption>("Melhor combinação");
   const [visibleCount, setVisibleCount] = useState(JOBS_PAGE_SIZE);
   const [showFilters, setShowFilters] = useState(false);
-  const hasCoins = state.subscription.creditsRemaining > 0;
 
   const scoredJobs = useMemo(() => {
     const experience = normalizeSearch(experienceFilter);
@@ -106,25 +103,6 @@ export function JobsPage() {
         title="Turnos e diárias disponíveis"
         description="Filtre por função, bairro, data, urgência, valor mínimo e experiência exigida."
       />
-
-      {!hasCoins && (
-        <section className="mb-5 rounded-lg border border-aqua-200 bg-aqua-50 p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="flex items-center gap-2 font-black text-white">
-                <Lock size={18} /> Você está sem <TermHint term="moedas" role="trabalhador">moedas</TermHint>
-              </h3>
-              <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
-                Cada candidatura enviada usa 1 moeda. Compre um pacote para continuar se candidatando.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="badge bg-aqua-50 text-aqua-700">Saldo: {state.subscription.creditsRemaining} moeda(s)</span>
-              <Link to="/app/planos" className="primary">Comprar moedas</Link>
-            </div>
-          </div>
-        </section>
-      )}
 
       <section className="jobs-filter-panel">
         <div className="jobs-filter-title">

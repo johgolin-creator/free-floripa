@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   ClipboardList,
   Clock3,
-  CreditCard,
   Filter,
   Loader2,
   ShieldCheck,
@@ -88,18 +87,6 @@ function getMeta(notification: NotificationItem, role: UserRole): NotificationMe
       href: role === "empresa" ? "/app/minhas-vagas" : "/app/vagas",
       actionLabel: role === "empresa" ? "Minhas vagas" : "Ver vagas",
       helper: role === "empresa" ? "Ajuste publicação, urgência e preenchimento." : "Abra oportunidades compatíveis com seu perfil."
-    };
-  }
-
-  if (includesAny(text, ["plano", "assinatura", "credito", "pagamento", "profissional"])) {
-    return {
-      kind: "Pagamento",
-      label: "Pagamento",
-      tone: "bg-emerald-50 text-emerald-700 border-emerald-100",
-      Icon: CreditCard,
-      href: role === "empresa" ? "/app/empresa" : "/app/planos",
-      actionLabel: role === "empresa" ? "Ver painel" : "Ver planos",
-      helper: "Resolva pendências de moedas, pagamento ou liberação de recursos."
     };
   }
 

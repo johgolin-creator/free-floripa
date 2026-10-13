@@ -209,28 +209,6 @@ export interface ChatMessage {
   readByCompany: boolean;
 }
 
-export interface CoinLedgerEntry {
-  id: string;
-  role: UserRole;
-  kind: "purchase" | "spend" | "bonus" | "refund" | "admin_adjustment";
-  reason: string;
-  amount: number;
-  balanceAfter: number;
-  jobId?: string;
-  applicationId?: string;
-  createdAt: string;
-}
-
-export interface SubscriptionState {
-  plan: "Gratuito" | "Profissional" | "Plus";
-  creditsRemaining: number;
-  companyCreditsRemaining: number;
-  renewalDate: string;
-  unlockedJobIds: string[];
-  plusActiveUntil?: string;
-  companyPlusActiveUntil?: string;
-}
-
 export interface AdminModerationState {
   blockedWorkerIds: string[];
   blockedCompanyIds: string[];
@@ -311,8 +289,6 @@ export interface AppState {
   notifications: NotificationItem[];
   chatMessages: ChatMessage[];
   companyReviews: CompanyReview[];
-  coinLedger: CoinLedgerEntry[];
-  subscription: SubscriptionState;
   adminModeration: AdminModerationState;
   trustReports: TrustReport[];
   companyLeads: CompanyLead[];
