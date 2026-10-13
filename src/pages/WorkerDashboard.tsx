@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import {
   BadgeCheck,
   BriefcaseBusiness,
@@ -6,12 +7,14 @@ import {
   Star
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Feed } from "../components/Feed";
 import { JobCard } from "../components/JobCard";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
 import { TermHint } from "../components/TermHint";
 import { useAppStore } from "../lib/store";
-import { calculateReliability, getFunctionExperience, isJobOpenForApplications } from "../lib/rules";
+import { calculateReliability, isJobOpenForApplications } from "../lib/rules";
+import { buildWorkerFeed, type FeedTab } from "../lib/feed";
 import { formatDate } from "../lib/format";
 
 export function WorkerDashboard() {
@@ -32,21 +35,21 @@ export function WorkerDashboard() {
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
     .sort((a, b) => `${a.job.date} ${a.job.startsAt}`.localeCompare(`${b.job.date} ${b.job.startsAt}`))[0];
-  const bestMatches = openJobs
-    .map((job) => ({ job, score: getWorkerJobScore(job, currentWorker) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
+  const buildItems = useCallback((tab: FeedTab) => buildWorkerFeed(state, currentWorker, tab), [state, currentWorker]);
 
   return (
     <div className="grid gap-5">
+      {/* No celular o cabeçalho do AppLayout já cumprimenta; o feed sobe. */}
+      <div className="hidden md:block">
       <SectionHeader
         eyebrow="Início"
         title={`Olá, ${currentWorker.name.split(" ")[0]}`}
-        description="Veja vagas recomendadas, candidaturas e seus próximos turnos em Florianópolis."
+        description="Vagas, avaliações e conquistas da galera do PONT em Florianópolis."
         action={<Link to="/app/vagas" className="primary">Buscar vagas</Link>}
       />
+      </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3">
         <StatTile
           variant="primary"
           icon={<BadgeCheck />}
@@ -56,7 +59,7 @@ export function WorkerDashboard() {
         <StatTile icon={<Star />} label="Avaliação" value={currentWorker.rating.toFixed(1)} />
       </div>
 
-      <section className="smart-dashboard-hero">
+      <section className={`smart-dashboard-hero ${nextWork ? "" : "hidden md:block"}`}>
         <div>
           <span className="section-eyebrow">Seu próximo passo</span>
           <h2>{nextWork ? `Próximo turno: ${nextWork.job.title}` : "Nenhum turno confirmado agora"}</h2>
@@ -73,16 +76,17 @@ export function WorkerDashboard() {
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <section>
-          <SectionHeader eyebrow="Recomendadas" title="Boas vagas para você" />
-          <div className="stagger-list grid gap-3">
-            {bestMatches.map(({ job, score }) => (
-              <JobCard key={job.id} job={job} matchLabel={score >= 75 ? "Ótima combinação" : score >= 55 ? "Boa combinação" : "Compatível"} matchScore={score} />
-            ))}
-          </div>
-        </section>
+        <Feed
+          tabs={["Para você", "Vagas", "Novidades"]}
+          buildItems={buildItems}
+          emptyText={{
+            "Para você": "Ainda não há vagas abertas nem novidades. Volte daqui a pouco!",
+            Vagas: "Nenhuma vaga aberta agora. Ative as notificações para saber quando surgir uma.",
+            Novidades: "Avaliações e conquistas aparecem aqui conforme os turnos acontecem."
+          }}
+        />
 
-        <aside className="grid content-start gap-4">
+        <aside className="hidden content-start gap-4 xl:grid">
           <section className="smart-panel">
             <div className="smart-panel-head">
               <h3>Candidaturas aguardando</h3>
@@ -113,17 +117,5 @@ export function WorkerDashboard() {
         </aside>
       </div>
     </div>
-  );
-}
-
-function getWorkerJobScore(job: { function: Parameters<typeof getFunctionExperience>[1]; neighborhood: string; distanceKm: number; urgent: boolean; dailyValue: number }, worker: Parameters<typeof getFunctionExperience>[0]) {
-  const experience = getFunctionExperience(worker, job.function);
-  return (
-    (experience ? 45 : 0) +
-    (job.neighborhood === worker.neighborhood ? 18 : job.distanceKm <= worker.maxDistanceKm ? 10 : 0) +
-    (job.urgent ? 10 : 0) +
-    (job.dailyValue >= 250 ? 10 : 0) +
-    (experience?.verified ? 10 : 0) +
-    (experience && experience.level !== "Iniciante" ? 7 : 0)
   );
 }
