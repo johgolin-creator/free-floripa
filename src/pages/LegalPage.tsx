@@ -4,7 +4,7 @@ import { BrandLogo } from "../components/BrandLogo";
 
 type LegalKind = "terms" | "privacy";
 
-const lastUpdated = "29 de agosto de 2026";
+const lastUpdated = "12 de outubro de 2026";
 const supportEmail = "contato@usepont.com.br";
 
 // Responsável pela plataforma (pessoa física). Esses dados aparecem no
@@ -27,7 +27,7 @@ const termsSummary = [
 ];
 
 const privacySummary = [
-  "Coletamos apenas o necessário para operar contas, vagas, mensagens e moedas internas; não vendemos seus dados.",
+  "Coletamos apenas o necessário para operar contas, vagas e mensagens; não vendemos seus dados.",
   "O contato completo (telefone e endereço) só aparece quando o fluxo da vaga permite, após a confirmação.",
   `Você pode acessar, corrigir ou excluir seus dados pelo aplicativo ou pelo e-mail ${supportEmail}.`
 ];
@@ -47,7 +47,7 @@ const termsSections = [
   },
   {
     title: "O papel do PONT",
-    text: "O PONT é um intermediário tecnológico que aproxima as partes e organiza cadastro, vagas, candidaturas, escalas, mensagens, moedas internas e histórico de avaliações. O PONT não é empregador, não participa da negociação entre empresa e profissional, não intermedeia o pagamento pelo serviço prestado e não garante contratação, comparecimento, pagamento ou qualidade do trabalho."
+    text: "O PONT é um intermediário tecnológico que aproxima as partes e organiza cadastro, vagas, candidaturas, escalas, mensagens e histórico de avaliações. O PONT não é empregador, não participa da negociação entre empresa e profissional, não intermedeia o pagamento pelo serviço prestado e não garante contratação, comparecimento, pagamento ou qualidade do trabalho."
   },
   {
     title: "Responsabilidades da empresa",
@@ -62,12 +62,8 @@ const termsSections = [
     text: "É vedado usar identidade falsa, fraudar avaliações ou candidaturas, assediar ou discriminar outros usuários, publicar dados de terceiros sem base legal, tentar burlar a segurança da plataforma, coletar dados de forma automatizada ou usar o PONT para qualquer atividade ilícita."
   },
   {
-    title: "Moedas internas",
-    text: "As moedas do PONT são um recurso interno usado para habilitar ações dentro do aplicativo, como enviar candidaturas ou liberar detalhes completos de vagas. Elas não são moeda de curso legal, dinheiro eletrônico, investimento nem saldo resgatável, não podem ser transferidas entre contas nem convertidas em dinheiro, e as moedas concedidas como bônus podem ter prazo de validade."
-  },
-  {
-    title: "Pagamentos",
-    text: "Quando houver compra de moedas ou de pacotes pagos, os valores, as formas de pagamento e as regras de reembolso são exibidos no momento da compra. Compras de itens digitais realizadas pelo aplicativo Android são processadas pelo sistema de pagamentos da loja de aplicativos, conforme as regras dessa loja."
+    title: "Uso gratuito",
+    text: "O PONT é gratuito para profissionais e empresas. Cadastro, publicação de vagas, candidaturas e demais funções do aplicativo não têm custo."
   },
   {
     title: "Avaliações e moderação",
@@ -110,11 +106,11 @@ const privacySections = [
   },
   {
     title: "Dados coletados automaticamente",
-    text: "Coletamos dados de uso e de funcionamento do aplicativo, como registros de acesso, identificadores técnicos do dispositivo, ações realizadas no app e o saldo e o histórico de movimentação de moedas. Não coletamos dados sensíveis de forma intencional nem localização precisa em segundo plano."
+    text: "Coletamos dados de uso e de funcionamento do aplicativo, como registros de acesso, identificadores técnicos do dispositivo e ações realizadas no app. Não coletamos dados sensíveis de forma intencional nem localização precisa em segundo plano."
   },
   {
     title: "Finalidades e bases legais",
-    text: "Tratamos seus dados para: criar e manter sua conta e autenticar o acesso; exibir perfis, publicar vagas e permitir candidaturas e recomendações; liberar informações de contato após a confirmação; registrar moedas e compras; enviar notificações sobre vagas, convites e avaliações; garantir segurança, prevenir fraudes e moderar abusos; melhorar o aplicativo; e cumprir obrigações legais e exercer direitos. As bases legais aplicáveis são a execução de contrato, o cumprimento de obrigação legal ou regulatória, o legítimo interesse e o exercício regular de direitos."
+    text: "Tratamos seus dados para: criar e manter sua conta e autenticar o acesso; exibir perfis, publicar vagas e permitir candidaturas e recomendações; liberar informações de contato após a confirmação; enviar notificações sobre vagas, convites e avaliações; garantir segurança, prevenir fraudes e moderar abusos; melhorar o aplicativo; e cumprir obrigações legais e exercer direitos. As bases legais aplicáveis são a execução de contrato, o cumprimento de obrigação legal ou regulatória, o legítimo interesse e o exercício regular de direitos."
   },
   {
     title: "Compartilhamento de dados",
@@ -158,7 +154,7 @@ export function LegalPage({ kind }: { kind: LegalKind }) {
   const isPrivacy = kind === "privacy";
   const title = isPrivacy ? "Política de Privacidade" : "Termos de Uso";
   const subtitle = isPrivacy
-    ? "Como o PONT trata os dados de trabalhadores, empresas, vagas, mensagens e moedas internas."
+    ? "Como o PONT trata os dados de trabalhadores, empresas, vagas e mensagens."
     : "Regras principais para usar o PONT com clareza entre empresas e trabalhadores.";
   const intro = isPrivacy ? privacyIntro : termsIntro;
   const sections = isPrivacy ? privacySections : termsSections;

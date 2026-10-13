@@ -1,9 +1,6 @@
-import { getCoinProduct } from "./coinCatalog";
-
 // Comissão do vendedor por plano vendido: 40% no Plus mensal (mais barato),
-// 30% no Plus trimestral (mais caro). O preço de cada faixa vem do catálogo
-// (coinCatalog.ts) para não desalinhar se o preço mudar lá; só cai no valor
-// fixo abaixo se o produto sumir do catálogo.
+// 30% no Plus trimestral (mais caro). Os preços são os da época em que os
+// planos eram vendidos, para as vendas já registradas continuarem batendo.
 const MONTHLY_PRODUCT_ID = "company_plus_30d";
 const QUARTERLY_PRODUCT_ID = "company_plus_90d";
 
@@ -14,8 +11,8 @@ interface CommissionTier {
 }
 
 const SALES_COMMISSION_TIERS: CommissionTier[] = [
-  { productId: MONTHLY_PRODUCT_ID, priceCents: getCoinProduct(MONTHLY_PRODUCT_ID)?.priceCents ?? 19990, rate: 0.4 },
-  { productId: QUARTERLY_PRODUCT_ID, priceCents: getCoinProduct(QUARTERLY_PRODUCT_ID)?.priceCents ?? 53990, rate: 0.3 }
+  { productId: MONTHLY_PRODUCT_ID, priceCents: 19990, rate: 0.4 },
+  { productId: QUARTERLY_PRODUCT_ID, priceCents: 53990, rate: 0.3 }
 ].sort((a, b) => a.priceCents - b.priceCents);
 
 /** Taxa de comissão (0-1) para uma venda: casa pelo id do plano (vendas

@@ -25,7 +25,6 @@ const JobDetailsPage = lazy(() => import("./pages/JobDetailsPage").then(({ JobDe
 const ApplicationsPage = lazy(() => import("./pages/ApplicationsPage").then(({ ApplicationsPage }) => ({ default: ApplicationsPage })));
 const MyJobsPage = lazy(() => import("./pages/MyJobsPage").then(({ MyJobsPage }) => ({ default: MyJobsPage })));
 const WorkerProfilePage = lazy(() => import("./pages/WorkerProfilePage").then(({ WorkerProfilePage }) => ({ default: WorkerProfilePage })));
-const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage").then(({ SubscriptionPage }) => ({ default: SubscriptionPage })));
 const CompanyDashboard = lazy(() => import("./pages/CompanyDashboard").then(({ CompanyDashboard }) => ({ default: CompanyDashboard })));
 const CompanyJobsPage = lazy(() => import("./pages/CompanyJobsPage").then(({ CompanyJobsPage }) => ({ default: CompanyJobsPage })));
 const CandidatesPage = lazy(() => import("./pages/CandidatesPage").then(({ CandidatesPage }) => ({ default: CandidatesPage })));
@@ -176,7 +175,8 @@ export default function App() {
           <Route path="vagas/:id" element={<RoleRoute role="trabalhador"><JobDetailsPage /></RoleRoute>} />
           <Route path="candidaturas" element={<RoleRoute role="trabalhador"><ApplicationsPage /></RoleRoute>} />
           <Route path="trabalhos" element={<RoleRoute role="trabalhador"><MyJobsPage /></RoleRoute>} />
-          <Route path="planos" element={<SubscriptionPage />} />
+          {/* Link antigo da página de planos: o app agora é gratuito. */}
+          <Route path="planos" element={<Navigate to="/app" replace />} />
           <Route path="perfil-trabalhador" element={<RoleRoute role="trabalhador"><WorkerProfilePage /></RoleRoute>} />
           <Route path="empresa" element={<RoleRoute role="empresa"><CompanyDashboard /></RoleRoute>} />
           <Route path="minhas-vagas" element={<RoleRoute role="empresa"><CompanyJobsPage /></RoleRoute>} />

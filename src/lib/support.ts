@@ -1,6 +1,4 @@
-// Support contact used for coin top-ups. Coins are no longer bought inside
-// the app: the user talks to support on WhatsApp, pays, and the support
-// team credits the wallet from the admin console.
+// Contato do suporte (botão de ajuda): WhatsApp quando configurado, senão e-mail.
 
 const rawWhatsapp = String(import.meta.env.VITE_SUPPORT_WHATSAPP || "");
 

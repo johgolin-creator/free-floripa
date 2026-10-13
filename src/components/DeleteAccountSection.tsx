@@ -43,8 +43,8 @@ export function DeleteAccountSection() {
         <strong className="text-sm font-black uppercase tracking-wide">Excluir conta</strong>
       </div>
       <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
-        A exclusão é permanente e remove seu perfil, suas vagas ou candidaturas, mensagens, avaliações e o
-        saldo de moedas. Alguns registros podem ser mantidos pelo prazo exigido por lei, conforme a Política
+        A exclusão é permanente e remove seu perfil, suas vagas ou candidaturas, mensagens e
+        avaliações. Alguns registros podem ser mantidos pelo prazo exigido por lei, conforme a Política
         de Privacidade.
       </p>
 

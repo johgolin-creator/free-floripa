@@ -3,8 +3,6 @@ import {
   BriefcaseBusiness,
   CalendarCheck,
   ClipboardCheck,
-  ClipboardList,
-  CreditCard,
   Star
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -48,7 +46,7 @@ export function WorkerDashboard() {
         action={<Link to="/app/vagas" className="primary">Buscar vagas</Link>}
       />
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2">
         <StatTile
           variant="primary"
           icon={<BadgeCheck />}
@@ -56,12 +54,6 @@ export function WorkerDashboard() {
           value={`${reliability}%`}
         />
         <StatTile icon={<Star />} label="Avaliação" value={currentWorker.rating.toFixed(1)} />
-        <StatTile
-          icon={<CreditCard />}
-          label={<TermHint term="moedas" role="trabalhador">Moedas</TermHint>}
-          value={state.subscription.creditsRemaining}
-        />
-        <StatTile icon={<ClipboardList />} label="Pode se candidatar" value={state.subscription.creditsRemaining > 0 ? "Sim" : "Sem moedas"} />
       </div>
 
       <section className="smart-dashboard-hero">
@@ -78,16 +70,6 @@ export function WorkerDashboard() {
             <Link to="/app/vagas" className="company-action"><BriefcaseBusiness size={17} /> Buscar vagas</Link>
           </div>
         </div>
-      </section>
-
-      <section className="soft-panel grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-center">
-        <div>
-          <h3 className="font-black text-white">Acesso profissional</h3>
-          <p className="text-sm text-slate-600">
-            Saldo atual: {state.subscription.creditsRemaining} moeda(s). Cada candidatura enviada usa 1 moeda.
-          </p>
-        </div>
-        <Link to="/app/planos" className="primary">Comprar moedas</Link>
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
