@@ -1,51 +1,55 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  BriefcaseBusiness,
-  CalendarCheck,
+  AlertTriangle,
+  CheckCircle2,
   ClipboardCheck,
   Clock3,
   Heart,
   Lock,
-  Mail,
   MessageCircle,
   Phone,
+  RotateCcw,
   ShieldCheck,
   Star,
   UserCheck,
-  UserX,
-  UsersRound
+  UserRound,
+  UserX
 } from "lucide-react";
+import { AvatarButton } from "../components/AvatarButton";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
-import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { ShiftReceipt } from "../components/ShiftReceipt";
-import { StatTile } from "../components/StatTile";
-import { StatusBadge, StatusLegend } from "../components/StatusBadge";
+import { StatusBadge } from "../components/StatusBadge";
 import { TermHint } from "../components/TermHint";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { WorkerCard } from "../components/WorkerCard";
 import { useAppStore } from "../lib/store";
 import { functionLabel } from "../lib/functionInfo";
 import { formatCurrency, formatDate, getWhatsAppUrl } from "../lib/format";
-import { calculateReliability, getOpenSlots } from "../lib/rules";
+import { calculateReliability, getCompatibilityLabel, getOpenSlots, isWorkerVerified } from "../lib/rules";
 import { getShiftVerificationCode } from "../lib/shiftVerification";
-import type { AppState, Application, Job, WorkerProfile } from "../lib/types";
+import type { AppState, Application, ApplicationStatus, Job, WorkerProfile } from "../lib/types";
 
-const terminalStatuses = ["Recusada", "Cancelada", "Trabalho concluído", "Falta registrada", "Convite recusado"];
-const candidateStatusFilters = [
-  "Todos",
-  "Enviada",
-  "Em análise",
-  "Convidada",
-  "Aprovada",
-  "Trabalho concluído",
-  "Recusada",
-  "Convite recusado",
-  "Falta registrada"
-] as const;
-type CandidateStatusFilter = (typeof candidateStatusFilters)[number];
+// Cada candidatura cai em uma aba. Quem é aprovado ou recusado sai de
+// "Aguardando" na hora e passa para a aba correspondente.
+type CandidateTab = "aguardando" | "equipe" | "recusados";
+
+const tabStatuses: Record<CandidateTab, ApplicationStatus[]> = {
+  aguardando: ["Enviada", "Em análise", "Convidada"],
+  equipe: ["Aprovada", "Trabalho concluído", "Falta registrada"],
+  recusados: ["Recusada", "Convite recusado", "Cancelada"]
+};
+
+const tabLabels: Record<CandidateTab, { full: string; short: string }> = {
+  aguardando: { full: "Aguardando decisão", short: "Aguardando" },
+  equipe: { full: "Equipe confirmada", short: "Equipe" },
+  recusados: { full: "Recusados", short: "Recusados" }
+};
+
+// Tempo da animação de saída do cartão antes de mudar o status.
+const LEAVE_ANIMATION_MS = 220;
 
 type ReviewTarget = {
   application: Application;
@@ -75,13 +79,15 @@ type EventCandidateOption = {
 export function CandidatesPage() {
   const { state, currentCompany, toggleFavorite, updateApplicationStatus, addReview } = useAppStore();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
+  const [tab, setTab] = useState<CandidateTab>("aguardando");
+  const [leavingIds, setLeavingIds] = useState<string[]>([]);
+  const [profileWorker, setProfileWorker] = useState<{ worker: WorkerProfile; job: Job } | null>(null);
   const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewError, setReviewError] = useState("");
   const [receiptTarget, setReceiptTarget] = useState<ReceiptTarget | null>(null);
-  const [candidateStatusFilter, setCandidateStatusFilter] = useState<CandidateStatusFilter>("Todos");
   const [trustedCandidatesOnly, setTrustedCandidatesOnly] = useState(false);
   const companyJobs = state.jobs.filter((job) => job.companyId === currentCompany.id);
   const eventOptions = useMemo(() => getEventCandidateOptions(companyJobs), [companyJobs]);
@@ -93,20 +99,26 @@ export function CandidatesPage() {
   const selectedJobIds = new Set(selectedJobs.map((job) => job.id));
   const selectedControlValue = selectedEvent ? `event:${selectedEvent.key}` : selectedJob?.id ?? "";
   const applications = state.applications.filter((application) => companyJobs.some((job) => job.id === application.jobId));
-  const candidateCountByJobId = useMemo(() => {
+  const pendingCountByJobId = useMemo(() => {
     const counts = new Map<string, number>();
     for (const application of applications) {
+      if (!tabStatuses.aguardando.includes(application.status)) continue;
       counts.set(application.jobId, (counts.get(application.jobId) ?? 0) + 1);
     }
     return counts;
   }, [applications]);
   const selectedApplications = selectedJobs.length > 0 ? applications.filter((application) => selectedJobIds.has(application.jobId)) : [];
+  const tabCounts = {
+    aguardando: selectedApplications.filter((application) => tabStatuses.aguardando.includes(application.status)).length,
+    equipe: selectedApplications.filter((application) => tabStatuses.equipe.includes(application.status)).length,
+    recusados: selectedApplications.filter((application) => tabStatuses.recusados.includes(application.status)).length
+  };
   const visibleApplications = useMemo(
     () =>
       selectedApplications
-        .filter((application) => candidateStatusFilter === "Todos" || application.status === candidateStatusFilter)
+        .filter((application) => tabStatuses[tab].includes(application.status))
         .filter((application) => {
-          if (!trustedCandidatesOnly) return true;
+          if (tab !== "aguardando" || !trustedCandidatesOnly) return true;
           const worker = state.workers.find((item) => item.id === application.workerId);
           return worker ? isTrustedCandidate(worker, state) : false;
         })
@@ -118,15 +130,16 @@ export function CandidatesPage() {
           if (scoreA !== scoreB) return scoreB - scoreA;
           return b.createdAt.localeCompare(a.createdAt);
         }),
-    [candidateStatusFilter, selectedApplications, state, trustedCandidatesOnly]
+    [selectedApplications, state, tab, trustedCandidatesOnly]
   );
-  const stats = useMemo(() => getJobStats(selectedApplications), [selectedApplications]);
   const selectedCapacity = useMemo(() => getSelectedCapacity(selectedJobs), [selectedJobs]);
-  const generalStats = useMemo(() => getCompanyCandidateStats(applications), [applications]);
   const pendingReviews = useMemo(
     () => getPendingReviews(applications, state.jobs, state.workers),
     [applications, state.jobs, state.workers]
   );
+  const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
+  const progress = selectedCapacity.quantity > 0 ? Math.min(100, Math.round((selectedCapacity.filled / selectedCapacity.quantity) * 100)) : 0;
+  const headerJob = selectedEvent ? selectedJobs[0] : selectedJob;
 
   useEffect(() => {
     if (selectedEventKey && !selectedEvent) {
@@ -138,10 +151,35 @@ export function CandidatesPage() {
     }
   }, [companyJobs, selectedEvent, selectedEventKey, selectedJobId, setSearchParams]);
 
-  function runStatus(applicationId: string, status: Application["status"]) {
-    const result = updateApplicationStatus(applicationId, status);
-    setMessage(result.message);
-    return result.ok;
+  // Aprovar/recusar: o cartão faz uma saída rápida e só então muda de aba.
+  function decide(application: Application, worker: WorkerProfile, status: "Aprovada" | "Recusada" | "Em análise") {
+    setLeavingIds((current) => [...current, application.id]);
+    window.setTimeout(() => {
+      const result = updateApplicationStatus(application.id, status);
+      setLeavingIds((current) => current.filter((id) => id !== application.id));
+      if (!result.ok) {
+        setMessage({ text: result.message, ok: false });
+        return;
+      }
+      const firstName = worker.name.split(" ")[0];
+      setMessage({
+        ok: true,
+        text:
+          status === "Aprovada"
+            ? `${firstName} foi aprovado(a) e agora está em Equipe confirmada.`
+            : status === "Recusada"
+              ? `${firstName} foi recusado(a) e saiu da lista.`
+              : `${firstName} voltou para Aguardando decisão.`
+      });
+    }, LEAVE_ANIMATION_MS);
+  }
+
+  function openProfile(application: Application, worker: WorkerProfile, job: Job) {
+    setProfileWorker({ worker, job });
+    // Abrir o perfil conta como "olhei a candidatura": sai de Enviada para Em análise.
+    if (application.status === "Enviada" && !companyBlocked && !state.adminModeration.blockedWorkerIds.includes(worker.id)) {
+      updateApplicationStatus(application.id, "Em análise");
+    }
   }
 
   function openReview(application: Application, job: Job, workerId: string, workerName: string) {
@@ -169,7 +207,7 @@ export function CandidatesPage() {
       applicationId: reviewTarget.application.id,
       createdAt: new Date().toISOString()
     });
-    setMessage(`Avaliação registrada para ${reviewTarget.workerName}.`);
+    setMessage({ ok: true, text: `Avaliação registrada para ${reviewTarget.workerName}.` });
     setReviewTarget(null);
   }
 
@@ -177,66 +215,15 @@ export function CandidatesPage() {
     <div>
       <SectionHeader
         eyebrow="Candidatos"
-        title="Gerenciar candidatos"
-        description="Aprove profissionais, acompanhe presença, finalize turnos e registre a avaliação do serviço."
+        title="Candidatos"
+        description="Escolha a vaga, decida quem entra na equipe e acompanhe os confirmados."
       />
-      <StatusLegend type="application" />
-      {message && <div className="mb-4 mt-3 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
+
       {companyJobs.length === 0 ? (
         <EmptyState title="Nenhuma vaga publicada" text="Crie uma vaga para começar a receber candidatos." />
       ) : (
         <div className="grid gap-4">
-          <section className="grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
-            <div className="candidate-hero-metrics">
-              <StatTile variant="primary" icon={<UsersRound size={19} />} label="candidatos" value={generalStats.total} />
-              <StatTile icon={<BriefcaseBusiness size={19} />} label="vagas" value={companyJobs.length} />
-              <StatTile icon={<Clock3 size={19} />} label="em análise" value={generalStats.pending} />
-              <StatTile tone="positive" icon={<CalendarCheck size={19} />} label="aprovados" value={generalStats.approved} />
-            </div>
-          </section>
-
-          {pendingReviews.length > 0 && (
-            <section className="candidate-selector-panel border-aqua-200 bg-aqua-50/70">
-              <div>
-                <div className="flex items-center gap-2 text-sm font-black text-white">
-                  <Star size={18} /> Avaliações pendentes
-                </div>
-                <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
-                  Finalize o pós-turno avaliando quem já concluiu o trabalho. Isso melhora a reputação do profissional e deixa o histórico da empresa organizado.
-                </p>
-              </div>
-              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                {pendingReviews.slice(0, 6).map(({ application, job, worker }) => (
-                  <article key={application.id} className="rounded-lg border border-white/10 bg-brand-dark p-3 shadow-sm">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <strong className="block truncate text-sm text-white">{worker.name}</strong>
-                        <p className="mt-1 truncate text-xs font-bold text-slate-500">{job.title}</p>
-                        <span className="mt-2 inline-flex rounded-full bg-aqua-50 px-2 py-1 text-[0.7rem] font-black uppercase text-aqua-700">
-                          Trabalho concluído
-                        </span>
-                      </div>
-                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-navy-950 text-aqua-300">
-                        <ClipboardCheck size={17} />
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearchParams({ vaga: job.id });
-                        openReview(application, job, worker.id, worker.name);
-                      }}
-                      className="primary mt-3 w-full"
-                    >
-                      <Star size={16} /> Avaliar agora
-                    </button>
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
-
-          <section className="candidate-selector-panel">
+          <section className="cand-job-panel">
             <label className="label">
               Vaga
               <select
@@ -244,6 +231,8 @@ export function CandidatesPage() {
                 value={selectedControlValue}
                 onChange={(event) => {
                   const value = event.target.value;
+                  setTab("aguardando");
+                  setMessage(null);
                   if (value.startsWith("event:")) {
                     setSearchParams({ evento: value.slice(6) });
                     return;
@@ -255,248 +244,202 @@ export function CandidatesPage() {
                   <optgroup label="Pacotes de evento">
                     {eventOptions.map((eventOption) => (
                       <option key={eventOption.key} value={`event:${eventOption.key}`}>
-                        {eventOption.name} - {eventOption.jobs.length} vagas do pacote
+                        {eventOption.name} ({eventOption.jobs.length} funções)
                       </option>
                     ))}
                   </optgroup>
                 )}
-                <optgroup label="Vagas individuais">
-                {companyJobs.map((job) => {
-                  const jobCandidateCount = candidateCountByJobId.get(job.id) ?? 0;
-                  return (
-                    <option key={job.id} value={job.id}>
-                      {job.title} - {formatDate(job.date)} - {jobCandidateCount} candidato{jobCandidateCount === 1 ? "" : "s"}
-                    </option>
-                  );
-                })}
+                <optgroup label="Vagas">
+                  {companyJobs.map((job) => {
+                    const pending = pendingCountByJobId.get(job.id) ?? 0;
+                    return (
+                      <option key={job.id} value={job.id}>
+                        {job.title} · {formatDate(job.date)}
+                        {pending > 0 ? ` · ${pending} aguardando` : ""}
+                      </option>
+                    );
+                  })}
                 </optgroup>
               </select>
             </label>
-            {selectedJobs.length > 0 && (
-              <div className="candidate-stat-grid">
-                <Stat label="candidatos" value={String(stats.total)} />
-                <Stat label="em análise" value={String(stats.pending)} />
-                <Stat label="confirmados" value={`${selectedCapacity.filled}/${selectedCapacity.quantity}`} />
-                <Stat label="vagas abertas" value={String(selectedCapacity.openSlots)} />
-              </div>
-            )}
-            {selectedJobs.length > 0 && (
-              <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-                <label className="label">
-                  Filtrar candidatos
-                  <select
-                    className="input"
-                    value={candidateStatusFilter}
-                    onChange={(event) => setCandidateStatusFilter(event.target.value as CandidateStatusFilter)}
-                  >
-                    {candidateStatusFilters.map((status) => (
-                      <option key={status}>{status}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="flex min-h-11 items-center gap-2 self-end rounded-lg border border-slate-200 bg-brand-charcoal px-3 py-2 text-sm font-bold text-slate-600">
-                  <input
-                    type="checkbox"
-                    checked={trustedCandidatesOnly}
-                    onChange={(event) => setTrustedCandidatesOnly(event.target.checked)}
-                    className="h-5 w-5 accent-aqua-500"
-                  />
-                  <ShieldCheck size={17} /> Somente confiáveis
-                </label>
+
+            {headerJob && (
+              <div className="cand-job-summary">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {!selectedEvent && selectedJob?.urgent && <UrgentBadge />}
+                    <span className="cand-chip">{selectedEvent ? "Pacote de evento" : functionLabel(headerJob.function)}</span>
+                    {!selectedEvent && <span className="cand-chip">{formatCurrency(headerJob.dailyValue)} / diária</span>}
+                  </div>
+                  <h3 className="cand-job-title">{selectedEvent ? selectedEvent.name : headerJob.title}</h3>
+                  <p className="cand-job-meta">
+                    {formatDate(headerJob.date)} · {headerJob.startsAt} às {headerJob.endsAt} · {headerJob.neighborhood}
+                  </p>
+                </div>
+                <div className="cand-team-meter">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span>Equipe</span>
+                    <strong>
+                      {selectedCapacity.filled} de {selectedCapacity.quantity}
+                    </strong>
+                  </div>
+                  <div className="company-progress-track">
+                    <span style={{ width: `${progress}%` }} />
+                  </div>
+                  <small>
+                    {selectedCapacity.openSlots === 0
+                      ? "Equipe completa"
+                      : `${selectedCapacity.openSlots} vaga${selectedCapacity.openSlots === 1 ? "" : "s"} em aberto`}
+                  </small>
+                </div>
               </div>
             )}
           </section>
 
-          {selectedJobs.length > 0 && (
-            <section className="candidate-job-summary">
-              <div className="candidate-job-main">
-                <div>
-                  <div className="mb-2 flex flex-wrap gap-2">
-                    {!selectedEvent && selectedJob?.urgent && <UrgentBadge />}
-                    <span className="badge">{selectedEvent ? "Pacote de evento" : selectedJob ? functionLabel(selectedJob.function) : ""}</span>
-                    <span className="badge">
-                      {selectedEvent ? `${selectedJobs.length} vagas` : formatCurrency(selectedJob?.dailyValue ?? 0)}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-black text-white">{selectedEvent ? selectedEvent.name : selectedJob?.title}</h3>
-                  <p className="text-sm font-semibold text-slate-600">
-                    {selectedEvent && selectedJobs[0]
-                      ? `${selectedJobs[0].neighborhood} - ${formatDate(selectedJobs[0].date)} - ${selectedJobs[0].startsAt} até ${selectedJobs[0].endsAt}`
-                      : selectedJob
-                        ? `${selectedJob.neighborhood} - ${formatDate(selectedJob.date)} - ${selectedJob.startsAt} até ${selectedJob.endsAt}`
-                        : ""}
-                  </p>
-                </div>
-                <div className="candidate-job-result">
-                  <strong>{stats.completed}</strong>
-                  <span>concluído{stats.completed === 1 ? "" : "s"}</span>
-                  <strong>{stats.noShow}</strong>
-                  <span>falta{stats.noShow === 1 ? "" : "s"}</span>
-                </div>
-              </div>
-            </section>
+          {pendingReviews.length > 0 && (
+            <button
+              type="button"
+              className="cand-review-banner"
+              onClick={() => {
+                const first = pendingReviews[0];
+                setSearchParams({ vaga: first.job.id });
+                setTab("equipe");
+                openReview(first.application, first.job, first.worker.id, first.worker.name);
+              }}
+            >
+              <Star size={18} />
+              <span>
+                <strong>
+                  {pendingReviews.length} avaliaç{pendingReviews.length === 1 ? "ão pendente" : "ões pendentes"}
+                </strong>{" "}
+                de quem já concluiu o trabalho
+              </span>
+              <span className="cand-review-banner-cta">Avaliar agora</span>
+            </button>
           )}
 
-          <SafetyNotice title="Decisão segura">
-            Antes de aprovar, confira experiência, comparecimento, cancelamentos e avaliações. O contato do profissional só é liberado depois da confirmação.
-          </SafetyNotice>
+          {companyBlocked && (
+            <div className="cand-alert">
+              <AlertTriangle size={17} /> Sua empresa está em revisão pela administração. As decisões de candidatos ficam pausadas.
+            </div>
+          )}
 
-          {selectedJobs.length === 0 || selectedApplications.length === 0 ? (
-            <EmptyState
-              title={selectedEvent ? "Nenhum candidato neste evento" : "Nenhum candidato nesta vaga"}
-              text="Quando alguém se candidatar, os dados aparecerão aqui com ações de aprovação."
-            />
-          ) : visibleApplications.length === 0 ? (
-            <EmptyState title="Nenhum candidato neste filtro" text="Altere o status ou desmarque somente confiáveis para ver mais candidatos." />
+          <div className="cand-tabs" role="tablist" aria-label="Situação dos candidatos">
+            {(Object.keys(tabLabels) as CandidateTab[]).map((item) => (
+              <button
+                key={item}
+                type="button"
+                role="tab"
+                aria-selected={tab === item}
+                onClick={() => {
+                  setTab(item);
+                  setMessage(null);
+                }}
+                className={`cand-tab ${tab === item ? "is-active" : ""}`}
+              >
+                <span className="hidden sm:inline">{tabLabels[item].full}</span>
+                <span className="sm:hidden">{tabLabels[item].short}</span>
+                <span className="cand-tab-count">{tabCounts[item]}</span>
+              </button>
+            ))}
+          </div>
+
+          {message && (
+            <div className={`cand-toast ${message.ok ? "" : "is-error"}`} role="status">
+              {message.ok ? <CheckCircle2 size={17} /> : <AlertTriangle size={17} />} {message.text}
+            </div>
+          )}
+
+          {tab === "aguardando" && tabCounts.aguardando > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-slate-500">
+                Ordenados pela confiabilidade. O contato é liberado depois da aprovação.
+              </p>
+              <label className="cand-toggle">
+                <input
+                  type="checkbox"
+                  checked={trustedCandidatesOnly}
+                  onChange={(event) => setTrustedCandidatesOnly(event.target.checked)}
+                />
+                <ShieldCheck size={16} /> Somente confiáveis
+              </label>
+            </div>
+          )}
+
+          {visibleApplications.length === 0 ? (
+            <EmptyState {...getEmptyCopy(tab, selectedApplications.length, trustedCandidatesOnly)} />
           ) : (
-            <div className="stagger-list grid gap-3">
+            <div className="grid gap-2.5">
               {visibleApplications.map((application) => {
                 const worker = state.workers.find((item) => item.id === application.workerId);
-                const jobForApplication = companyJobs.find((job) => job.id === application.jobId);
-                if (!worker || !jobForApplication) return null;
-                const favorite = state.favoriteWorkerIds.includes(worker.id);
-                const approved = application.status === "Aprovada";
-                const completed = application.status === "Trabalho concluído";
-                const reviewed = worker.reviews.some(
-                  (review) => review.jobId === jobForApplication.id && review.applicationId === application.id
-                );
-                const contactUnlocked = approved || completed;
-                const refused = terminalStatuses.includes(application.status) && !approved;
-                const noSlots = getOpenSlots(jobForApplication) === 0 && !approved && !completed;
-                const isPendingInvite = application.status === "Convidada";
+                const job = companyJobs.find((item) => item.id === application.jobId);
+                if (!worker || !job) return null;
                 const workerBlocked = state.adminModeration.blockedWorkerIds.includes(worker.id);
-                const companyBlocked = state.adminModeration.blockedCompanyIds.includes(currentCompany.id);
                 const blockedAction = workerBlocked || companyBlocked;
-                const verificationCode = getShiftVerificationCode(jobForApplication.id, worker.id);
+                const leaving = leavingIds.includes(application.id);
 
                 return (
-                  <article key={application.id} className="candidate-card">
-                    <WorkerCard worker={worker} functionFocus={jobForApplication.function} showActions={false} />
-                    <div className="candidate-control-panel">
-                      {selectedEvent && (
-                        <div className="candidate-event-context">
-                          <span>
-                            <BriefcaseBusiness size={16} /> {functionLabel(jobForApplication.function)}
-                          </span>
-                          <strong>{jobForApplication.title}</strong>
-                          <small>
-                            {jobForApplication.quantity} vaga{jobForApplication.quantity === 1 ? "" : "s"} • {formatCurrency(jobForApplication.dailyValue)} • {getOpenSlots(jobForApplication)} aberta{getOpenSlots(jobForApplication) === 1 ? "" : "s"}
-                          </small>
-                        </div>
-                      )}
-                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                        <div className="flex flex-wrap gap-2">
-                          <StatusBadge type="application" status={application.status} />
-                          <span className="badge">Inscrito em {formatDate(application.createdAt.slice(0, 10))}</span>
-                          <span className="badge bg-aqua-50 text-aqua-700"><TermHint term="codigoVerificacao">Código {verificationCode}</TermHint></span>
-                        </div>
-                        <button type="button" onClick={() => toggleFavorite(worker.id)} className="secondary">
-                          <Heart size={17} fill={favorite ? "currentColor" : "none"} /> {favorite ? "Favorito" : "Favoritar"}
-                        </button>
+                  <article key={application.id} className={`cand-card ${leaving ? "is-leaving" : ""}`}>
+                    <CandidateIdentity
+                      worker={worker}
+                      job={job}
+                      showJob={Boolean(selectedEvent)}
+                      status={application.status}
+                      showRiskWarning={tab === "aguardando"}
+                      onOpenProfile={() => openProfile(application, worker, job)}
+                    />
+
+                    {tab === "aguardando" && (
+                      <PendingActions
+                        application={application}
+                        job={job}
+                        disabled={blockedAction || leaving}
+                        workerBlocked={workerBlocked}
+                        onOpenProfile={() => openProfile(application, worker, job)}
+                        onApprove={() => decide(application, worker, "Aprovada")}
+                        onRefuse={() => decide(application, worker, "Recusada")}
+                      />
+                    )}
+
+                    {tab === "equipe" && (
+                      <TeamActions
+                        application={application}
+                        job={job}
+                        worker={worker}
+                        companyName={currentCompany.establishmentName}
+                        favorite={state.favoriteWorkerIds.includes(worker.id)}
+                        onToggleFavorite={() => toggleFavorite(worker.id)}
+                        onReview={() => openReview(application, job, worker.id, worker.name)}
+                        onReceipt={() => setReceiptTarget({ application, job, worker })}
+                      />
+                    )}
+
+                    {tab === "recusados" && (
+                      <div className="cand-actions">
+                        {application.status === "Recusada" && (
+                          <button
+                            type="button"
+                            className="cand-btn"
+                            disabled={blockedAction || leaving}
+                            onClick={() => decide(application, worker, "Em análise")}
+                          >
+                            <RotateCcw size={16} /> Reconsiderar
+                          </button>
+                        )}
                       </div>
-
-                      {blockedAction && (
-                        <SafetyNotice title="Ações bloqueadas por segurança" tone="warning">
-                          {workerBlocked
-                            ? "Este profissional está em revisão pela administração. Aprovação, presença e convite ficam pausados."
-                            : "Sua empresa está em revisão pela administração. As decisões de candidatos ficam pausadas."}
-                        </SafetyNotice>
-                      )}
-
-                      {isPendingInvite ? (
-                        <SafetyNotice title="Aguardando resposta do convite">
-                          Você convidou este profissional diretamente. Ele ainda não aceitou nem recusou - as ações de aprovação ficam liberadas depois da resposta dele.
-                        </SafetyNotice>
-                      ) : (
-                        <div className="candidate-action-grid">
-                          <button
-                            type="button"
-                            onClick={() => runStatus(application.id, "Em análise")}
-                            disabled={blockedAction || application.status !== "Enviada"}
-                            className="candidate-action-square"
-                          >
-                            <Clock3 size={20} /> Analisar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => runStatus(application.id, "Aprovada")}
-                            disabled={blockedAction || approved || completed || noSlots}
-                            className="candidate-action-square candidate-action-square-primary"
-                          >
-                            <UserCheck size={20} /> {approved || completed ? "Confirmado" : noSlots ? "Sem vaga" : "Aprovar"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => runStatus(application.id, "Recusada")}
-                            disabled={blockedAction || refused || approved || completed}
-                            className="candidate-action-square candidate-action-square-danger"
-                          >
-                            <UserX size={20} /> Recusar
-                          </button>
-                        </div>
-                      )}
-
-                      {contactUnlocked ? (
-                        <div className="candidate-contact-card">
-                          <div>
-                            <strong className="text-sm text-white">Contato liberado</strong>
-                            <div className="mt-1 flex flex-wrap gap-3 text-sm font-semibold text-slate-600">
-                              <span className="flex items-center gap-1.5"><Phone size={15} /> {worker.phone}</span>
-                              <span className="flex items-center gap-1.5"><Mail size={15} /> {worker.email}</span>
-                            </div>
-                          </div>
-                          <a
-                            className="primary"
-                            href={getWhatsAppUrl(worker.phone, `Olá, ${worker.name}. Sua vaga ${jobForApplication.title} no ${currentCompany.establishmentName} foi aprovada.`)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <MessageCircle size={17} /> WhatsApp
-                          </a>
-                        </div>
-                      ) : (
-                        <div className="candidate-locked-note">
-                          <Lock size={17} /> Contato protegido até a aprovação.
-                        </div>
-                      )}
-
-                      {completed && (
-                        <div className="candidate-review-panel">
-                          <div>
-                            <strong className="text-sm text-white">
-                              {reviewed ? "Avaliação registrada" : "Avaliação pendente"}
-                            </strong>
-                            <p className="mt-1 text-sm font-semibold text-slate-500">
-                              {reviewed
-                                ? "Esse trabalho já entrou no histórico do profissional."
-                                : "Avalie presença, postura e qualidade antes de encerrar o ciclo."}
-                            </p>
-                          </div>
-                          {!reviewed && (
-                            <button
-                              type="button"
-                              onClick={() => openReview(application, jobForApplication, worker.id, worker.name)}
-                              className="primary"
-                            >
-                              <Star size={17} /> Avaliar
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => setReceiptTarget({ application, job: jobForApplication, worker })}
-                            className="secondary"
-                          >
-                            <ClipboardCheck size={17} /> Comprovante
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </article>
                 );
               })}
             </div>
           )}
         </div>
+      )}
+
+      {profileWorker && (
+        <Modal title={profileWorker.worker.name} onClose={() => setProfileWorker(null)}>
+          <WorkerCard worker={profileWorker.worker} functionFocus={profileWorker.job.function} showActions={false} />
+        </Modal>
       )}
 
       {reviewTarget && (
@@ -553,13 +496,200 @@ export function CandidatesPage() {
   );
 }
 
-function getJobStats(applications: Application[]) {
-  return {
-    total: applications.length,
-    pending: applications.filter((item) => item.status === "Enviada" || item.status === "Em análise").length,
-    completed: applications.filter((item) => item.status === "Trabalho concluído").length,
-    noShow: applications.filter((item) => item.status === "Falta registrada").length
-  };
+function CandidateIdentity({
+  worker,
+  job,
+  showJob,
+  status,
+  showRiskWarning,
+  onOpenProfile
+}: {
+  worker: WorkerProfile;
+  job: Job;
+  showJob: boolean;
+  status: ApplicationStatus;
+  showRiskWarning: boolean;
+  onOpenProfile: () => void;
+}) {
+  const reliability = calculateReliability(worker);
+  const riskyHistory = showRiskWarning && (worker.cancellations >= 3 || worker.attendanceRate < 85);
+
+  return (
+    <div className="cand-identity">
+      <AvatarButton src={worker.avatarUrl} name={worker.name} className="h-14 w-14 rounded-lg object-cover" />
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <button type="button" onClick={onOpenProfile} className="cand-name">
+            {worker.name}
+          </button>
+          {isWorkerVerified(worker) && (
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-aqua-700">
+              <CheckCircle2 size={13} /> Verificado
+            </span>
+          )}
+          <StatusBadge type="application" status={status} />
+        </div>
+        <p className="cand-sub">
+          {showJob ? `${functionLabel(job.function)} · ` : ""}
+          {getCompatibilityLabel(worker, job.function)}
+        </p>
+        <div className="cand-metrics">
+          <span>
+            <Star size={13} /> {worker.rating.toFixed(1)}
+          </span>
+          <span>{worker.completedJobs} trabalhos</span>
+          <span>{worker.attendanceRate}% presença</span>
+          <span className="is-highlight">
+            <TermHint term="confiabilidade">{reliability}% confiável</TermHint>
+          </span>
+        </div>
+        {riskyHistory && (
+          <p className="cand-warning">
+            <AlertTriangle size={13} /> Histórico com faltas ou cancelamentos: confirme disponibilidade antes de aprovar.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PendingActions({
+  application,
+  job,
+  disabled,
+  workerBlocked,
+  onOpenProfile,
+  onApprove,
+  onRefuse
+}: {
+  application: Application;
+  job: Job;
+  disabled: boolean;
+  workerBlocked: boolean;
+  onOpenProfile: () => void;
+  onApprove: () => void;
+  onRefuse: () => void;
+}) {
+  if (application.status === "Convidada") {
+    return (
+      <div className="cand-actions">
+        <span className="cand-note">
+          <Clock3 size={15} /> Convite enviado. Aguardando a resposta do profissional.
+        </span>
+      </div>
+    );
+  }
+
+  const noSlots = getOpenSlots(job) === 0;
+
+  return (
+    <div className="cand-actions">
+      {workerBlocked && (
+        <span className="cand-note is-warning">
+          <AlertTriangle size={15} /> Perfil em revisão pela administração
+        </span>
+      )}
+      <button type="button" onClick={onOpenProfile} className="cand-btn">
+        <UserRound size={16} /> Perfil
+      </button>
+      <button type="button" onClick={onRefuse} disabled={disabled} className="cand-btn is-danger">
+        <UserX size={16} /> Recusar
+      </button>
+      <button type="button" onClick={onApprove} disabled={disabled || noSlots} className="cand-btn is-primary">
+        <UserCheck size={16} /> {noSlots ? "Equipe completa" : "Aprovar"}
+      </button>
+    </div>
+  );
+}
+
+function TeamActions({
+  application,
+  job,
+  worker,
+  companyName,
+  favorite,
+  onToggleFavorite,
+  onReview,
+  onReceipt
+}: {
+  application: Application;
+  job: Job;
+  worker: WorkerProfile;
+  companyName: string;
+  favorite: boolean;
+  onToggleFavorite: () => void;
+  onReview: () => void;
+  onReceipt: () => void;
+}) {
+  const completed = application.status === "Trabalho concluído";
+  const reviewed = worker.reviews.some((review) => review.jobId === job.id && review.applicationId === application.id);
+  const contactUnlocked = application.status === "Aprovada" || completed;
+  const verificationCode = getShiftVerificationCode(job.id, worker.id);
+
+  return (
+    <div className="cand-actions cand-team-actions">
+      {contactUnlocked ? (
+        <span className="cand-contact">
+          <Phone size={14} /> {worker.phone}
+          <span className="text-slate-500">·</span>
+          <TermHint term="codigoVerificacao">código {verificationCode}</TermHint>
+        </span>
+      ) : (
+        <span className="cand-note">
+          <Lock size={15} /> Contato indisponível
+        </span>
+      )}
+      <div className="flex flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          onClick={onToggleFavorite}
+          className={`cand-btn is-icon ${favorite ? "is-favorite" : ""}`}
+          aria-label={favorite ? "Remover dos favoritos" : "Favoritar"}
+          title={favorite ? "Remover dos favoritos" : "Favoritar"}
+        >
+          <Heart size={16} fill={favorite ? "currentColor" : "none"} />
+        </button>
+        {completed && !reviewed && (
+          <button type="button" onClick={onReview} className="cand-btn is-primary">
+            <Star size={16} /> Avaliar
+          </button>
+        )}
+        {completed && (
+          <button type="button" onClick={onReceipt} className="cand-btn">
+            <ClipboardCheck size={16} /> Comprovante
+          </button>
+        )}
+        {contactUnlocked && (
+          <a
+            className="cand-btn is-primary"
+            href={getWhatsAppUrl(worker.phone, `Olá, ${worker.name}. Sua vaga ${job.title} no ${companyName} foi aprovada.`)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <MessageCircle size={16} /> WhatsApp
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function getEmptyCopy(tab: CandidateTab, totalApplications: number, trustedOnly: boolean) {
+  if (totalApplications === 0) {
+    return {
+      title: "Nenhum candidato ainda",
+      text: "Quando alguém se candidatar a esta vaga, aparece aqui para você aprovar ou recusar."
+    };
+  }
+  if (tab === "aguardando") {
+    return trustedOnly
+      ? { title: "Nenhum candidato confiável aguardando", text: "Desmarque \"Somente confiáveis\" para ver todos." }
+      : { title: "Tudo decidido por aqui", text: "Não há candidatos aguardando decisão nesta vaga." };
+  }
+  if (tab === "equipe") {
+    return { title: "Ninguém confirmado ainda", text: "Aprove candidatos em \"Aguardando decisão\" para montar a equipe." };
+  }
+  return { title: "Nenhum recusado", text: "Candidatos recusados ficam guardados aqui, fora da lista principal." };
 }
 
 function getSelectedCapacity(jobs: Job[]) {
@@ -600,15 +730,6 @@ function getEventPackageKey(job: Job, eventName = getEventPackageName(job)) {
   return eventName ? `${eventName}|${job.date}|${job.startsAt}|${job.endsAt}` : "";
 }
 
-function getCompanyCandidateStats(applications: Application[]) {
-  return {
-    total: applications.length,
-    pending: applications.filter((item) => item.status === "Enviada" || item.status === "Em análise").length,
-    approved: applications.filter((item) => item.status === "Aprovada").length,
-    completed: applications.filter((item) => item.status === "Trabalho concluído").length
-  };
-}
-
 function getPendingReviews(applications: Application[], jobs: Job[], workers: WorkerProfile[]): PendingReview[] {
   return applications
     .filter((application) => application.status === "Trabalho concluído")
@@ -634,13 +755,4 @@ function isTrustedCandidate(worker: WorkerProfile, state: AppState) {
   const blocked = state.adminModeration.blockedWorkerIds.includes(worker.id);
 
   return calculateReliability(worker) >= 85 && worker.attendanceRate >= 90 && worker.cancellations <= 2 && !blocked && !hasOpenReport;
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="candidate-stat-tile">
-      <strong>{value}</strong>
-      <span>{label}</span>
-    </span>
-  );
 }

@@ -1227,6 +1227,305 @@ a {
   @apply flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-500;
 }
 
+/* Candidatos (empresa): vaga no topo, abas por situação e cartões compactos. */
+.cand-job-panel {
+  @apply grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5;
+}
+
+.cand-job-summary {
+  @apply grid gap-4 border-t border-white/10 pt-4 md:grid-cols-[minmax(0,1fr)_260px] md:items-center;
+}
+
+.cand-job-title {
+  @apply mt-2 text-lg font-black leading-snug text-white md:text-xl;
+}
+
+.cand-job-meta {
+  @apply mt-1 text-sm font-semibold text-slate-500;
+}
+
+.cand-chip {
+  @apply inline-flex min-h-6 items-center rounded-full bg-white/5 px-2.5 text-xs font-black text-slate-300 ring-1 ring-white/10;
+}
+
+.cand-team-meter {
+  @apply grid gap-2 rounded-lg bg-brand-dark/60 p-3 ring-1 ring-white/5;
+}
+
+.cand-team-meter span {
+  @apply text-xs font-black uppercase tracking-wide text-slate-500;
+}
+
+.cand-team-meter strong {
+  @apply text-lg font-black text-white;
+}
+
+.cand-team-meter small {
+  @apply text-xs font-bold text-slate-500;
+}
+
+.cand-review-banner {
+  @apply flex w-full flex-wrap items-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-4 py-3 text-left text-sm font-semibold text-slate-300 transition hover:bg-aqua-100;
+}
+
+.cand-review-banner > svg {
+  @apply text-aqua-300;
+}
+
+.cand-review-banner strong {
+  @apply text-white;
+}
+
+.cand-review-banner-cta {
+  @apply ml-auto text-sm font-black text-aqua-300;
+}
+
+.cand-alert {
+  @apply flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700;
+}
+
+.cand-tabs {
+  @apply flex gap-1 overflow-x-auto rounded-lg border border-white/10 bg-brand-dark p-1;
+  scrollbar-width: none;
+}
+
+.cand-tabs.is-grid {
+  @apply grid grid-cols-2 sm:flex;
+}
+
+.cand-tab {
+  @apply inline-flex min-h-10 min-w-0 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md px-1.5 text-[0.82rem] sm:gap-2 sm:px-3 sm:text-sm font-black text-slate-400 transition hover:text-white;
+}
+
+.cand-tab.is-active {
+  @apply bg-brand-charcoal text-white shadow-soft ring-1 ring-white/10;
+}
+
+.cand-tab-count {
+  @apply inline-flex min-w-6 items-center justify-center rounded-full bg-white/10 px-1.5 text-xs font-black text-slate-300;
+}
+
+.cand-tab.is-active .cand-tab-count {
+  @apply bg-aqua-500 text-navy-950;
+}
+
+.cand-toast {
+  @apply flex items-center gap-2 rounded-lg border border-aqua-200 bg-aqua-50 px-4 py-3 text-sm font-bold text-white;
+  animation: cand-toast-in var(--dur-base, 220ms) cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.cand-toast > svg {
+  @apply shrink-0 text-aqua-300;
+}
+
+.cand-toast.is-error {
+  @apply border-red-200 bg-red-50;
+}
+
+.cand-toast.is-error > svg {
+  @apply text-alert;
+}
+
+.cand-toggle {
+  @apply inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-brand-charcoal px-3 text-sm font-bold text-slate-300;
+}
+
+.cand-toggle input {
+  @apply h-4 w-4 accent-aqua-500;
+}
+
+.cand-card {
+  @apply grid gap-3 rounded-lg border border-white/10 bg-brand-charcoal p-3 shadow-sm ring-1 ring-white/5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:p-4;
+  transition:
+    opacity 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.cand-card.is-leaving {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+.cand-identity {
+  @apply flex min-w-0 items-start gap-3;
+}
+
+.cand-name {
+  @apply truncate text-left text-base font-black text-white underline-offset-4 hover:underline;
+}
+
+.cand-sub {
+  @apply mt-0.5 truncate text-sm font-semibold text-slate-500;
+}
+
+.cand-metrics {
+  @apply mt-2 flex flex-wrap gap-1.5;
+}
+
+.cand-metrics > span {
+  @apply inline-flex items-center gap-1 rounded-md bg-white/5 px-2 py-0.5 text-xs font-bold text-slate-300;
+}
+
+.cand-metrics > span.is-highlight {
+  @apply bg-aqua-50 text-aqua-700;
+}
+
+.cand-warning {
+  @apply mt-2 flex items-start gap-1.5 text-xs font-bold leading-5 text-amber-700;
+}
+
+.cand-warning svg {
+  @apply mt-0.5 shrink-0;
+}
+
+.cand-actions {
+  @apply flex flex-wrap items-center gap-2 border-t border-white/10 pt-3 md:justify-end md:border-0 md:pt-0;
+}
+
+.cand-actions:empty {
+  display: none;
+}
+
+.cand-team-actions {
+  @apply justify-between md:max-w-md md:flex-col md:items-end;
+}
+
+.cand-btn {
+  @apply inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-brand-charcoal px-4 text-sm font-black text-white transition hover:border-aqua-200 hover:bg-aqua-50 disabled:cursor-not-allowed disabled:opacity-45 md:flex-none;
+}
+
+.cand-btn.is-primary {
+  @apply border-aqua-500 bg-aqua-500 text-navy-950 hover:border-aqua-700 hover:bg-aqua-700;
+}
+
+.cand-btn.is-danger {
+  @apply border-red-200 bg-red-50 text-alert hover:border-red-200 hover:bg-red-100;
+}
+
+.cand-btn.is-icon {
+  @apply flex-none px-3;
+}
+
+.cand-btn.is-favorite {
+  @apply text-coral;
+}
+
+.cand-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.cand-note {
+  @apply inline-flex items-center gap-1.5 text-sm font-bold text-slate-500;
+}
+
+.cand-note.is-warning {
+  @apply w-full text-amber-700 md:w-auto;
+}
+
+.cand-contact {
+  @apply inline-flex flex-wrap items-center gap-1.5 text-sm font-bold text-slate-300;
+}
+
+/* Minhas vagas (empresa): resumo enxuto, filtros em abas e cartão de vaga limpo. */
+.jobs-overview {
+  @apply grid gap-3 rounded-lg border border-white/10 bg-brand-charcoal p-3 shadow-soft ring-1 ring-white/5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center;
+}
+
+.jobs-overview-stats {
+  @apply grid grid-cols-2 gap-2 sm:grid-cols-4;
+}
+
+.jobs-overview-stats > * {
+  @apply grid gap-0.5 rounded-lg bg-brand-dark/60 px-3 py-2 text-left ring-1 ring-white/5 transition;
+}
+
+.jobs-overview-stats > button:hover {
+  @apply ring-aqua-200;
+}
+
+.jobs-overview-stats strong {
+  @apply truncate text-lg font-black text-white;
+}
+
+.jobs-overview-stats span {
+  @apply text-xs font-bold text-slate-500;
+}
+
+.jobs-overview-stats > .is-highlight {
+  @apply bg-aqua-50 ring-aqua-200;
+}
+
+.jobs-overview-stats > .is-highlight strong {
+  @apply text-aqua-300;
+}
+
+.jobs-overview-stats > .is-alert strong {
+  @apply text-coral;
+}
+
+.jobs-overview-actions {
+  @apply flex gap-2;
+}
+
+.jobs-card {
+  @apply grid gap-3 rounded-lg border border-white/10 bg-brand-charcoal p-3 shadow-sm ring-1 ring-white/5 md:p-4;
+}
+
+.jobs-card-main {
+  @apply grid gap-3 md:grid-cols-[minmax(0,1fr)_240px] md:items-center;
+}
+
+.jobs-card-actions {
+  @apply flex flex-wrap items-start gap-2;
+}
+
+.jobs-pending-pill {
+  @apply ml-1 rounded-full bg-navy-950 px-2 py-0.5 text-[0.7rem] font-black text-aqua-300;
+}
+
+.jobs-more {
+  @apply relative flex-1 md:flex-none;
+}
+
+.jobs-more > summary {
+  @apply w-full cursor-pointer list-none;
+}
+
+.jobs-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.jobs-more-menu {
+  @apply absolute right-0 z-20 mt-1 grid min-w-56 gap-0.5 rounded-lg border border-white/10 bg-brand-dark p-1 shadow-lift;
+}
+
+.jobs-more-menu button {
+  @apply flex min-h-10 items-center gap-2 rounded-md px-3 text-left text-sm font-bold text-white transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40;
+}
+
+.jobs-more-menu button.is-danger {
+  @apply text-alert;
+}
+
+@keyframes cand-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cand-card,
+  .cand-toast {
+    transition: none;
+    animation: none;
+  }
+}
+
 .schedule-hero {
   @apply mb-4 grid gap-5 rounded-lg border border-white/10 bg-brand-charcoal p-5 shadow-soft ring-1 ring-white/5 lg:grid-cols-[1fr_520px] lg:items-center;
 }
