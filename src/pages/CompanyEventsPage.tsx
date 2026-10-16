@@ -1,15 +1,14 @@
 import { useMemo, useRef, useState } from "react";
-import { CalendarDays, CheckCircle2, ClipboardList, Clock3, MapPin, PartyPopper, Plus, Search, Star, UsersRound } from "lucide-react";
+import { CalendarDays, MapPin, Minus, Plus, Search, ShieldCheck, Sparkles, UsersRound } from "lucide-react";
 import { EmptyState } from "../components/EmptyState";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
-import { StatTile } from "../components/StatTile";
 import { WorkerCard } from "../components/WorkerCard";
 import { functions, neighborhoods } from "../data/demoData";
-import { formatCurrency, todayLocalISODate } from "../lib/format";
+import { formatCurrency, formatDate, todayLocalISODate } from "../lib/format";
 import { calculateReliability, getFunctionExperience } from "../lib/rules";
 import { useAppStore } from "../lib/store";
-import type { JobFunction, Neighborhood, PaymentMethod, WorkerProfile } from "../lib/types";
+import type { JobFunction, Neighborhood, PaymentMethod } from "../lib/types";
 
 const demoWorkerIds = new Set(["worker-1", "worker-2", "worker-3", "worker-4"]);
 const eventTypes = ["Casamento", "Aniversário", "Evento corporativo", "Formatura", "Confraternização", "Outro"];
@@ -76,7 +75,7 @@ export function CompanyEventsPage() {
   const requestedFunctions = eventFunctions.filter((item) => needs[item] > 0);
   const totalProfessionals = requestedFunctions.reduce((total, item) => total + needs[item], 0);
   const estimatedEventCost = totalProfessionals * dailyValue;
-  const availableByFunction = requestedFunctions.reduce((acc, item) => {
+  const availableByFunction = eventFunctions.reduce((acc, item) => {
     acc[item] = realWorkers.filter((worker) => Boolean(getFunctionExperience(worker, item))).length;
     return acc;
   }, {} as CrewNeeds);
@@ -163,133 +162,161 @@ export function CompanyEventsPage() {
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       <SectionHeader
         eyebrow="Eventos"
         title="Monte a equipe do evento"
-        description="Ideal para casamento, aniversário, formatura ou evento corporativo. Defina a equipe desejada, veja profissionais disponíveis por função e crie as vagas em lote."
+        description="Preencha os dados, escolha quantas pessoas precisa em cada função e o PONT cria uma vaga para cada função."
       />
 
-      {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
-      <SafetyNotice title="Evento protegido" tone={companyBlocked ? "warning" : "info"}>
-        {companyBlocked
-          ? "Criação de vagas de evento está pausada enquanto a administração revisa sua empresa."
-          : "Perfis em revisão não entram nas sugestões do evento, mantendo a seleção mais segura para sua equipe."}
-      </SafetyNotice>
+      {companyBlocked && (
+        <SafetyNotice title="Criação pausada" tone="warning">
+          Criação de vagas de evento está pausada enquanto a administração revisa sua empresa.
+        </SafetyNotice>
+      )}
 
       <section className="event-builder-grid">
-        <div className="event-form-card">
-          <div className="event-form-title">
-            <PartyPopper size={18} /> Dados do evento
-          </div>
-          <div className="event-data-grid">
-            <label className="label">
-              Nome do evento
-              <input value={eventName} onChange={(event) => setEventName(event.target.value)} className="input" placeholder="Casamento Ana e Joao" />
-            </label>
-            <label className="label">
-              Tipo
-              <select value={eventType} onChange={(event) => setEventType(event.target.value)} className="input">
-                <option value="">Selecione o tipo</option>
-                {eventTypes.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            </label>
-            <label className="label">
-              Data
-              <input value={date} onChange={(event) => setDate(event.target.value)} className="input" type="date" />
-            </label>
-            <label className="label">
-              Convidados
-              <input value={guests} onChange={(event) => setGuests(Number(event.target.value || 0))} className="input" min={1} type="number" />
-            </label>
-            <label className="label">
-              Início
-              <input value={startsAt} onChange={(event) => setStartsAt(event.target.value)} className="input" type="time" />
-            </label>
-            <label className="label">
-              Término
-              <input value={endsAt} onChange={(event) => setEndsAt(event.target.value)} className="input" type="time" />
-            </label>
-            <label className="label">
-              Bairro
-              <input
-                value={neighborhood}
-                onChange={(event) => setNeighborhood(event.target.value as Neighborhood)}
-                list="neighborhoods-event"
-                className="input"
-                placeholder="Digite o bairro"
-                autoComplete="off"
-              />
-              <datalist id="neighborhoods-event">
-                {neighborhoods.map((item) => <option key={item} value={item} />)}
-              </datalist>
-            </label>
-            <label className="label">
-              Diária base
-              <input value={dailyValue} onChange={(event) => setDailyValue(Number(event.target.value || 0))} className="input" min={1} type="number" />
-            </label>
-            <label className="label md:col-span-2">
-              Local completo
-              <input value={location} onChange={(event) => setLocation(event.target.value)} className="input" placeholder="Endereço do salão, casa de eventos ou residência" />
-            </label>
-            <label className="label">
-              Pagamento
-              <select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)} className="input">
-                <option>Pix</option>
-                <option>Dinheiro</option>
-                <option>Transferência</option>
-                <option>A combinar</option>
-              </select>
-            </label>
-          </div>
-        </div>
-
-        <aside className="event-summary-panel">
-          <StatTile variant="primary" icon={<UsersRound />} label="Profissionais na equipe" value={totalProfessionals} />
-          <StatTile icon={<ClipboardList />} label="Funções com vagas" value={requestedFunctions.length} />
-          <StatTile icon={<Star />} label="Custo estimado" value={formatCurrency(estimatedEventCost)} />
-          <StatTile icon={<Clock3 />} label="Horário do evento" value={`${startsAt} - ${endsAt}`} />
-        </aside>
-      </section>
-
-      <section className="event-team-card">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="font-black text-white">Equipe necessária</h3>
-            <p className="mt-1 text-sm font-semibold text-slate-600">Ajuste quantas pessoas você precisa em cada função.</p>
-          </div>
-          <button type="button" onClick={applySuggestion} className="secondary">
-            <CheckCircle2 size={17} /> Sugerir equipe
-          </button>
-        </div>
-        <div className="event-needs-grid">
-          {eventFunctions.map((item) => (
-            <label key={item} className="event-need-card">
-              <span className="text-sm font-black text-white">{item}</span>
-              <span className="mt-2 flex items-center gap-2">
-                <input
-                  value={needs[item]}
-                  onChange={(event) => updateNeed(item, Number(event.target.value || 0))}
-                  className="input"
-                  min={0}
-                  type="number"
-                />
-                <small className="w-24 text-xs font-bold text-slate-500">
-                  {availableByFunction[item] ?? 0} disponível{(availableByFunction[item] ?? 0) === 1 ? "" : "is"}
-                </small>
-              </span>
-            </label>
-          ))}
-        </div>
-        {requestedFunctions.length > 0 && (
-          <div className="event-review-panel">
-            <div>
-              <p className="section-eyebrow">Conferência</p>
-              <h3>Vagas que serão criadas</h3>
-              <p>Cada função vira uma vaga separada para facilitar candidaturas, aprovação e controle da equipe no dia do evento.</p>
+        <div className="grid min-w-0 gap-4">
+          <div className="event-form-card">
+            <EventStep number={1} title="O evento" />
+            <div className="event-data-grid">
+              <label className="label md:col-span-2">
+                Nome do evento
+                <input value={eventName} onChange={(event) => setEventName(event.target.value)} className="input" placeholder="Ex.: Casamento Ana e João" />
+              </label>
+              <label className="label">
+                Tipo
+                <select value={eventType} onChange={(event) => setEventType(event.target.value)} className="input">
+                  <option value="">Selecione o tipo</option>
+                  {eventTypes.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="label">
+                Convidados
+                <input value={guests} onChange={(event) => setGuests(Number(event.target.value || 0))} className="input" min={1} type="number" inputMode="numeric" />
+              </label>
             </div>
+
+            <EventStep number={2} title="Quando e onde" />
+            <div className="event-data-grid md:grid-cols-3">
+              <label className="label">
+                Data
+                <input value={date} onChange={(event) => setDate(event.target.value)} className="input" type="date" />
+              </label>
+              <label className="label">
+                Início
+                <input value={startsAt} onChange={(event) => setStartsAt(event.target.value)} className="input" type="time" />
+              </label>
+              <label className="label">
+                Término
+                <input value={endsAt} onChange={(event) => setEndsAt(event.target.value)} className="input" type="time" />
+              </label>
+              <label className="label">
+                Bairro
+                <input
+                  value={neighborhood}
+                  onChange={(event) => setNeighborhood(event.target.value as Neighborhood)}
+                  list="neighborhoods-event"
+                  className="input"
+                  placeholder="Digite o bairro"
+                  autoComplete="off"
+                />
+                <datalist id="neighborhoods-event">
+                  {neighborhoods.map((item) => <option key={item} value={item} />)}
+                </datalist>
+              </label>
+              <label className="label md:col-span-2">
+                Endereço completo
+                <input value={location} onChange={(event) => setLocation(event.target.value)} className="input" placeholder="Salão, casa de eventos ou residência" />
+              </label>
+            </div>
+
+            <EventStep number={3} title="Pagamento" />
+            <div className="event-data-grid">
+              <label className="label">
+                Diária por pessoa (R$)
+                <input value={dailyValue} onChange={(event) => setDailyValue(Number(event.target.value || 0))} className="input" min={1} type="number" inputMode="numeric" />
+              </label>
+              <label className="label">
+                Forma de pagamento
+                <select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)} className="input">
+                  <option>Pix</option>
+                  <option>Dinheiro</option>
+                  <option>Transferência</option>
+                  <option>A combinar</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <section className="event-team-card">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <EventStep number={4} title="Equipe necessária" hint="Toque em + ou – para ajustar cada função." />
+              <button type="button" onClick={applySuggestion} className="cand-btn">
+                <Sparkles size={16} /> Sugerir para {guests} convidados
+              </button>
+            </div>
+            <div className="event-needs-grid">
+              {eventFunctions.map((item) => {
+                const quantity = needs[item];
+                const available = availableByFunction[item] ?? 0;
+                return (
+                  <div key={item} className={`event-need-card ${quantity > 0 ? "is-active" : ""}`}>
+                    <div className="min-w-0">
+                      <strong>{item}</strong>
+                      <small>
+                        {available} disponíve{available === 1 ? "l" : "is"}
+                      </small>
+                    </div>
+                    <div className="event-stepper">
+                      <button type="button" onClick={() => updateNeed(item, quantity - 1)} disabled={quantity === 0} aria-label={`Menos ${item}`}>
+                        <Minus size={16} />
+                      </button>
+                      <span aria-live="polite">{quantity}</span>
+                      <button type="button" onClick={() => updateNeed(item, quantity + 1)} aria-label={`Mais ${item}`}>
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+
+        <aside className="event-summary-card">
+          <span className="section-eyebrow">Resumo</span>
+          <h3>{eventName.trim() || "Seu evento"}</h3>
+          <p>
+            {eventType || "Tipo não escolhido"} · {guests} convidados
+          </p>
+          <dl className="event-summary-list">
+            <div>
+              <dt>
+                <CalendarDays size={15} /> Quando
+              </dt>
+              <dd>
+                {date ? formatDate(date) : "-"} · {startsAt} às {endsAt}
+              </dd>
+            </div>
+            <div>
+              <dt>
+                <MapPin size={15} /> Onde
+              </dt>
+              <dd>{neighborhood || "-"}</dd>
+            </div>
+            <div>
+              <dt>
+                <UsersRound size={15} /> Equipe
+              </dt>
+              <dd>
+                {totalProfessionals} pessoa{totalProfessionals === 1 ? "" : "s"} em {requestedFunctions.length} funç{requestedFunctions.length === 1 ? "ão" : "ões"}
+              </dd>
+            </div>
+          </dl>
+          {requestedFunctions.length > 0 && (
             <div className="event-review-list">
               {requestedFunctions.map((item) => (
                 <span key={item}>
@@ -298,94 +325,79 @@ export function CompanyEventsPage() {
                 </span>
               ))}
             </div>
-            <div className="event-review-footer">
-              <span>
-                <CalendarDays size={16} /> {date} • {neighborhood}
-              </span>
-              <strong>{formatCurrency(estimatedEventCost)} estimado</strong>
-            </div>
+          )}
+          <div className="event-summary-total">
+            <span>Custo estimado</span>
+            <strong>{formatCurrency(estimatedEventCost)}</strong>
           </div>
-        )}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button aria-busy={isCreating}
+          {message && <div className="event-created-note">{message}</div>}
+          <button
+            aria-busy={isCreating}
             type="button"
             onClick={createEventJobs}
             disabled={isCreating || requestedFunctions.length === 0 || companyBlocked || eventAlreadyCreated}
-            className="primary"
+            className="primary w-full"
           >
-            <Plus size={17} /> {isCreating ? "Criando vagas..." : eventAlreadyCreated ? "Vagas já criadas" : "Criar vagas do evento"}
+            <Plus size={17} />{" "}
+            {isCreating
+              ? "Criando vagas..."
+              : eventAlreadyCreated
+                ? "Vagas já criadas"
+                : `Criar ${requestedFunctions.length} vaga${requestedFunctions.length === 1 ? "" : "s"} do evento`}
           </button>
-          {eventAlreadyCreated && <span className="event-created-note">Altere algum dado do evento para gerar um novo pacote de vagas.</span>}
-        </div>
+          <small className="text-xs font-semibold leading-5 text-slate-500">
+            {eventAlreadyCreated
+              ? "Altere algum dado do evento para gerar um novo pacote de vagas."
+              : "Cada função vira uma vaga separada. Perfis em revisão não entram nas sugestões."}
+          </small>
+        </aside>
       </section>
 
       <details className="event-browse-professionals">
         <summary>
           <Search size={17} /> Ver profissionais disponíveis por função
         </summary>
-        <section className="mt-4 grid gap-4 xl:grid-cols-[320px_1fr]">
-          <aside className="card p-4">
-            <div className="grid gap-2">
-              {eventFunctions.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setSelectedFunction(item)}
-                  className={`flex min-h-11 items-center justify-between rounded-lg border px-3 text-left text-sm font-black transition ${
-                    selectedFunction === item ? "border-aqua-200 bg-aqua-50 text-aqua-800" : "border-slate-200 bg-white text-navy-950 hover:bg-slate-50"
-                  }`}
-                >
-                  <span>{item}</span>
-                  <span>{realWorkers.filter((worker) => Boolean(getFunctionExperience(worker, item))).length}</span>
-                </button>
+        <div className="mt-4 grid gap-4">
+          <div className="cand-tabs flex-wrap" role="tablist" aria-label="Função">
+            {eventFunctions.map((item) => (
+              <button
+                key={item}
+                type="button"
+                role="tab"
+                aria-selected={selectedFunction === item}
+                onClick={() => setSelectedFunction(item)}
+                className={`cand-tab flex-none ${selectedFunction === item ? "is-active" : ""}`}
+              >
+                {item}
+                <span className="cand-tab-count">{availableByFunction[item] ?? 0}</span>
+              </button>
+            ))}
+          </div>
+          <p className="flex items-center gap-1.5 text-sm font-bold text-slate-500">
+            <ShieldCheck size={16} /> {selectedFunction}: ordenados por confiabilidade
+          </p>
+          {selectedWorkers.length === 0 ? (
+            <EmptyState title="Nenhum profissional nesta função" text="Quando trabalhadores completarem o perfil com essa profissão, eles aparecerão aqui." />
+          ) : (
+            <div className="grid gap-4 xl:grid-cols-2">
+              {selectedWorkers.slice(0, 8).map((worker) => (
+                <WorkerCard key={worker.id} worker={worker} showActions={false} functionFocus={selectedFunction} />
               ))}
             </div>
-          </aside>
-
-          <div className="grid gap-4">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="section-eyebrow">Disponíveis</p>
-                <h3 className="text-xl font-black text-white">{selectedFunction}</h3>
-              </div>
-              <p className="flex items-center gap-1.5 text-sm font-bold text-slate-600">
-                <MapPin size={16} /> Ordenado por confiabilidade
-              </p>
-            </div>
-            {selectedWorkers.length === 0 ? (
-              <EmptyState title="Nenhum profissional nesta função" text="Quando trabalhadores completarem o perfil com essa profissão, eles aparecerão aqui." />
-            ) : (
-              <div className="grid gap-4 2xl:grid-cols-2">
-                {selectedWorkers.slice(0, 8).map((worker) => (
-                  <WorkerOption key={worker.id} worker={worker} functionFocus={selectedFunction} />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
+          )}
+        </div>
       </details>
     </div>
   );
 }
 
-function WorkerOption({ worker, functionFocus }: { worker: WorkerProfile; functionFocus: JobFunction }) {
-  const reliability = calculateReliability(worker);
+function EventStep({ number, title, hint }: { number: number; title: string; hint?: string }) {
   return (
-    <div className="grid gap-2">
-      <WorkerCard worker={worker} showActions={false} functionFocus={functionFocus} />
-      <div className="grid grid-cols-3 gap-2 text-sm">
-        <span className="metric-tile">
-          <strong className="block text-white">{worker.rating.toFixed(1)}</strong>
-          <span className="text-slate-500">nota</span>
-        </span>
-        <span className="metric-tile">
-          <strong className="block text-white">{worker.completedJobs}</strong>
-          <span className="text-slate-500">trabalhos</span>
-        </span>
-        <span className="metric-tile bg-aqua-50">
-          <strong className="block text-white">{reliability}%</strong>
-          <span className="text-slate-600">confiável</span>
-        </span>
+    <div className="event-step">
+      <span>{number}</span>
+      <div>
+        <h3>{title}</h3>
+        {hint && <p>{hint}</p>}
       </div>
     </div>
   );
