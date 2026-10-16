@@ -1,19 +1,17 @@
 import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  AlertTriangle,
-  BriefcaseBusiness,
   CalendarCheck,
   CheckCircle2,
   ClipboardList,
   Copy,
   Edit3,
+  MoreHorizontal,
   PartyPopper,
   Plus,
   RotateCcw,
   Square,
   UsersRound,
-  WalletCards,
   XCircle,
   Zap
 } from "lucide-react";
@@ -21,8 +19,7 @@ import { SectionHeader } from "../components/SectionHeader";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
-import { StatTile } from "../components/StatTile";
-import { StatusBadge, StatusLegend } from "../components/StatusBadge";
+import { StatusBadge } from "../components/StatusBadge";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { useAppStore } from "../lib/store";
 import { formatCurrency, formatDate } from "../lib/format";
@@ -31,8 +28,8 @@ import type { Application, Job, JobStatus } from "../lib/types";
 
 type JobFilter = "Ativas" | "Urgentes" | "Rascunhos" | "Histórico";
 
-const filters: JobFilter[] = ["Ativas", "Urgentes"];
-const archiveFilters: JobFilter[] = ["Rascunhos", "Histórico"];
+const allFilters: JobFilter[] = ["Ativas", "Urgentes", "Rascunhos", "Histórico"];
+const pendingStatuses: Application["status"][] = ["Enviada", "Em análise", "Convidada"];
 type EventPackage = {
   key: string;
   name: string;
@@ -51,7 +48,6 @@ export function CompanyJobsPage() {
   const { state, currentCompany, updateJobStatus, duplicateJob } = useAppStore();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<JobFilter>("Ativas");
-  const [showArchive, setShowArchive] = useState(false);
   const [message, setMessage] = useState("");
   const [confirmCancelJobId, setConfirmCancelJobId] = useState<string | null>(null);
   const jobListRef = useRef<HTMLDivElement | null>(null);
@@ -63,7 +59,7 @@ export function CompanyJobsPage() {
   const dashboard = {
     active: jobs.filter((job) => isActiveStatus(getJobStatus(job))).length,
     urgent: jobs.filter((job) => job.urgent && isActiveStatus(getJobStatus(job))).length,
-    candidates: companyApplications.length,
+    pending: companyApplications.filter((application) => pendingStatuses.includes(application.status)).length,
     expected: companyApplications
       .filter((application) => application.status === "Aprovada" || application.status === "Trabalho concluído")
       .reduce((total, application) => {
@@ -108,15 +104,20 @@ export function CompanyJobsPage() {
     jobListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  const filterCounts: Record<JobFilter, number> = {
+    Ativas: jobs.filter((job) => matchesFilter(job, "Ativas")).length,
+    Urgentes: jobs.filter((job) => matchesFilter(job, "Urgentes")).length,
+    Rascunhos: jobs.filter((job) => matchesFilter(job, "Rascunhos")).length,
+    Histórico: jobs.filter((job) => matchesFilter(job, "Histórico")).length
+  };
+
   return (
     <div>
       <SectionHeader
         eyebrow="Minhas vagas"
-        title="Operação das vagas"
-        description="Controle status, candidatos, encerramento, cancelamento, duplicação e histórico."
+        title="Minhas vagas"
+        description="Acompanhe cada vaga, veja quem está aguardando decisão e feche a equipe."
       />
-      <StatusLegend type="job" />
-      {message && <div className="mb-4 mt-3 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
       {companyBlocked && (
         <div className="mb-4">
           <SafetyNotice title="Vagas em revisão" tone="warning">
@@ -138,92 +139,65 @@ export function CompanyJobsPage() {
         </EmptyState>
       ) : (
         <div className="grid gap-4">
-          <section className="grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
-            <div className="company-hero-metrics">
-              <StatTile
-                variant="primary"
-                icon={<BriefcaseBusiness size={19} />}
-                label="ativas"
-                value={dashboard.active}
-                onClick={() => goToFilter("Ativas")}
-              />
-              <StatTile
-                tone={dashboard.urgent > 0 ? "alert" : "normal"}
-                icon={<AlertTriangle size={19} />}
-                label="urgentes"
-                value={dashboard.urgent}
-                onClick={() => goToFilter("Urgentes")}
-              />
-              <StatTile
-                icon={<UsersRound size={19} />}
-                label="candidatos"
-                value={dashboard.candidates}
-                onClick={() => navigate("/app/candidatos")}
-              />
-              <StatTile
-                icon={<WalletCards size={19} />}
-                label="previsto"
-                value={formatCurrency(dashboard.expected)}
-                onClick={() => goToFilter("Ativas")}
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link to="/app/empresa?acao=criar-vaga" className="company-action company-action-primary">
-                <Plus size={17} /> Criar vaga
-              </Link>
-              <Link to="/app/eventos" className="company-action">
-                <PartyPopper size={17} /> Montar evento
-              </Link>
-            </div>
-          </section>
-
-          <section className="company-filter-bar" ref={jobListRef}>
-            <div className="company-filter-buttons">
-              {filters.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setFilter(item)}
-                  className={`company-filter-button ${filter === item ? "is-active" : ""}`}
-                >
-                  {item}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setShowArchive((current) => !current)}
-                className={`company-filter-button ${archiveFilters.includes(filter) ? "is-active" : ""}`}
-              >
-                Rascunhos e histórico
+          <section className="jobs-overview">
+            <div className="jobs-overview-stats">
+              <button type="button" onClick={() => goToFilter("Ativas")}>
+                <strong>{dashboard.active}</strong>
+                <span>ativas</span>
               </button>
-            </div>
-            {showArchive && (
-              <div className="company-filter-buttons">
-                {archiveFilters.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setFilter(item)}
-                    className={`company-filter-button ${filter === item ? "is-active" : ""}`}
-                  >
-                    {item}
-                  </button>
-                ))}
+              <button type="button" onClick={() => navigate("/app/candidatos")} className={dashboard.pending > 0 ? "is-highlight" : ""}>
+                <strong>{dashboard.pending}</strong>
+                <span>aguardando decisão</span>
+              </button>
+              <button type="button" onClick={() => goToFilter("Urgentes")} className={dashboard.urgent > 0 ? "is-alert" : ""}>
+                <strong>{dashboard.urgent}</strong>
+                <span>urgentes</span>
+              </button>
+              <div>
+                <strong>{formatCurrency(dashboard.expected)}</strong>
+                <span>previsto em diárias</span>
               </div>
-            )}
+            </div>
+            <div className="jobs-overview-actions">
+              <Link to="/app/empresa?acao=criar-vaga" className="cand-btn is-primary">
+                <Plus size={16} /> Criar vaga
+              </Link>
+              <Link to="/app/eventos" className="cand-btn">
+                <PartyPopper size={16} /> Montar evento
+              </Link>
+            </div>
           </section>
 
-          {eventPackages.length > 0 && (
+          {message && (
+            <div className="cand-toast" role="status">
+              <CheckCircle2 size={17} /> {message}
+            </div>
+          )}
+
+          <div className="cand-tabs is-grid" role="tablist" aria-label="Filtrar vagas" ref={jobListRef}>
+            {allFilters.map((item) => (
+              <button
+                key={item}
+                type="button"
+                role="tab"
+                aria-selected={filter === item}
+                onClick={() => setFilter(item)}
+                className={`cand-tab ${filter === item ? "is-active" : ""}`}
+              >
+                {item}
+                <span className="cand-tab-count">{filterCounts[item]}</span>
+              </button>
+            ))}
+          </div>
+
+          {filter === "Ativas" && eventPackages.length > 0 && (
             <section className="event-package-panel">
               <div className="event-package-heading">
                 <div>
                   <span className="section-eyebrow">Eventos montados</span>
                   <h3>Pacotes de evento</h3>
-                  <p>Veja o evento inteiro em uma visão só, mesmo com vagas separadas por função.</p>
+                  <p>O evento inteiro em uma visão só, mesmo com vagas separadas por função.</p>
                 </div>
-                <Link to="/app/eventos" className="secondary">
-                  <PartyPopper size={17} /> Montar outro evento
-                </Link>
               </div>
               <div className="event-package-grid">
                 {eventPackages.map((eventPackage) => (
@@ -232,15 +206,12 @@ export function CompanyJobsPage() {
                       <div>
                         <strong>{eventPackage.name}</strong>
                         <span>
-                          {formatDate(eventPackage.date)} • {eventPackage.startsAt} às {eventPackage.endsAt} • {eventPackage.neighborhood}
+                          {formatDate(eventPackage.date)} · {eventPackage.startsAt} às {eventPackage.endsAt} · {eventPackage.neighborhood}
                         </span>
                       </div>
-                      <span className="badge">{eventPackage.jobs.length} vagas</span>
-                    </div>
-                    <div className="event-package-metrics">
-                      <Mini label="equipe" value={`${eventPackage.totalConfirmed}/${eventPackage.totalNeeded}`} />
-                      <Mini label="candidatos" value={String(eventPackage.totalCandidates)} />
-                      <Mini label="previsto" value={formatCurrency(eventPackage.expectedValue)} />
+                      <span className="cand-chip">
+                        Equipe {eventPackage.totalConfirmed}/{eventPackage.totalNeeded}
+                      </span>
                     </div>
                     <div className="event-package-functions">
                       {eventPackage.jobs.map((job) => (
@@ -249,8 +220,8 @@ export function CompanyJobsPage() {
                         </span>
                       ))}
                     </div>
-                    <Link to={`/app/candidatos?evento=${encodeURIComponent(eventPackage.key)}`} className="company-action company-action-primary">
-                      <ClipboardList size={17} /> Ver candidatos do pacote
+                    <Link to={`/app/candidatos?evento=${encodeURIComponent(eventPackage.key)}`} className="cand-btn is-primary">
+                      <ClipboardList size={16} /> Ver candidatos do pacote ({eventPackage.totalCandidates})
                     </Link>
                   </article>
                 ))}
@@ -266,92 +237,99 @@ export function CompanyJobsPage() {
                 const status = getJobStatus(job);
                 const applications = state.applications.filter((application) => application.jobId === job.id);
                 const confirmed = applications.filter((application) => application.status === "Aprovada" || application.status === "Trabalho concluído").length;
-                const completed = applications.filter((application) => application.status === "Trabalho concluído").length;
-                const absences = applications.filter((application) => application.status === "Falta registrada").length;
-                const expectedValue = confirmed * job.dailyValue;
+                const pending = applications.filter((application) => pendingStatuses.includes(application.status)).length;
                 const terminal = status === "Concluída" || status === "Cancelada";
                 const progress = Math.min(100, Math.round((confirmed / job.quantity) * 100));
+                const openSlots = getOpenSlots(job);
 
                 return (
-                  <article key={job.id} className="company-job-card">
-                    <div className="company-job-head">
-                      <div>
-                        <div className="mb-2 flex flex-wrap gap-2">
+                  <article key={job.id} className="jobs-card">
+                    <div className="jobs-card-main">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
                           {status === "Urgente" ? <UrgentBadge /> : <StatusBadge type="job" status={status} />}
-                          {job.urgent && status !== "Urgente" && status !== "Cancelada" && status !== "Concluída" && <UrgentBadge />}
-                          <span className="badge">{job.function}</span>
+                          {job.urgent && status !== "Urgente" && !terminal && <UrgentBadge />}
+                          <span className="cand-chip">{job.function}</span>
+                          <span className="cand-chip">{formatCurrency(job.dailyValue)} / diária</span>
                         </div>
-                        <h3>{job.title}</h3>
-                        <p>
-                          {job.neighborhood} - {formatDate(job.date)} - {job.startsAt} às {job.endsAt}
+                        <h3 className="cand-job-title">{job.title}</h3>
+                        <p className="cand-job-meta">
+                          {formatDate(job.date)} · {job.startsAt} às {job.endsAt} · {job.neighborhood}
                         </p>
                       </div>
-
-                      <div className="company-mini-grid">
-                        <Mini label="confirmados" value={`${confirmed}/${job.quantity}`} />
-                        <Mini label="diária" value={formatCurrency(job.dailyValue)} />
+                      <div className="cand-team-meter">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span>Equipe</span>
+                          <strong>
+                            {confirmed} de {job.quantity}
+                          </strong>
+                        </div>
+                        <div className="company-progress-track">
+                          <span style={{ width: `${progress}%` }} />
+                        </div>
+                        <small>{openSlots === 0 ? "Equipe completa" : `${openSlots} vaga${openSlots === 1 ? "" : "s"} em aberto`}</small>
                       </div>
                     </div>
 
-                    <div className="company-job-progress">
-                      <div className="company-progress-track">
-                        <span style={{ width: `${progress}%` }} />
-                      </div>
-                      <small>
-                        {getOpenSlots(job)} vaga{getOpenSlots(job) === 1 ? "" : "s"} restante{getOpenSlots(job) === 1 ? "" : "s"}
-                      </small>
-                    </div>
-
-                    <div className="company-action-grid">
-                      <Link to={`/app/candidatos?vaga=${job.id}`} className="company-action company-action-primary">
-                        <ClipboardList size={17} /> Candidatos ({applications.length})
+                    <div className="jobs-card-actions">
+                      <Link to={`/app/candidatos?vaga=${job.id}`} className="cand-btn is-primary">
+                        <UsersRound size={16} /> Candidatos
+                        {pending > 0 && <span className="jobs-pending-pill">{pending} aguardando</span>}
                       </Link>
                       <Link
                         to={`/app/empresa?acao=editar-vaga&vaga=${job.id}`}
-                        className="company-action"
+                        className="cand-btn"
                         aria-disabled={terminal || companyBlocked}
                         onClick={(event) => {
                           if (terminal || companyBlocked) event.preventDefault();
                         }}
                       >
-                        <Edit3 size={17} /> Editar
+                        <Edit3 size={16} /> Editar
                       </Link>
-                      <button type="button" onClick={() => runStatus(job.id, "Concluída")} disabled={terminal || companyBlocked} className="company-action company-action-primary">
-                        <CheckCircle2 size={17} /> Encerrar
-                      </button>
+                      <details className="jobs-more">
+                        <summary className="cand-btn">
+                          <MoreHorizontal size={16} /> Mais
+                        </summary>
+                        <div
+                          className="jobs-more-menu"
+                          onClick={(event) => {
+                            // Fecha o menu depois de escolher uma ação.
+                            if ((event.target as HTMLElement).closest("button")) {
+                              event.currentTarget.parentElement?.removeAttribute("open");
+                            }
+                          }}
+                        >
+                          <button type="button" onClick={() => runStatus(job.id, "Concluída")} disabled={terminal || companyBlocked}>
+                            <CheckCircle2 size={16} /> Encerrar vaga
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => runStatus(job.id, "Publicada")}
+                            disabled={status === "Publicada" || status === "Urgente" || status === "Em andamento" || companyBlocked}
+                          >
+                            <RotateCcw size={16} /> Reabrir
+                          </button>
+                          <button type="button" onClick={() => runDuplicate(job.id)} disabled={companyBlocked}>
+                            <Copy size={16} /> Duplicar
+                          </button>
+                          <button type="button" onClick={() => runStatus(job.id, "Rascunho")} disabled={status === "Rascunho" || terminal || companyBlocked}>
+                            <Square size={16} /> Mover para rascunho
+                          </button>
+                          <button type="button" onClick={() => runStatus(job.id, "Cancelada")} disabled={terminal || companyBlocked} className="is-danger">
+                            <XCircle size={16} /> Cancelar vaga
+                          </button>
+                        </div>
+                      </details>
                     </div>
 
-                    <details className="company-history">
-                      <summary><Square size={16} /> Mais ações</summary>
-                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                        <Mini label="candidatos" value={String(applications.length)} />
-                        <Mini label="previsto" value={formatCurrency(expectedValue)} />
-                      </div>
-                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                        <button
-                          type="button"
-                          onClick={() => runStatus(job.id, "Publicada")}
-                          disabled={status === "Publicada" || status === "Urgente" || status === "Em andamento" || companyBlocked}
-                          className="company-action"
-                        >
-                          <RotateCcw size={17} /> Reabrir
-                        </button>
-                        <button type="button" onClick={() => runDuplicate(job.id)} disabled={companyBlocked} className="company-action">
-                          <Copy size={17} /> Duplicar
-                        </button>
-                        <button type="button" onClick={() => runStatus(job.id, "Rascunho")} disabled={status === "Rascunho" || terminal || companyBlocked} className="company-action">
-                          <Square size={17} /> Rascunho
-                        </button>
-                        <button type="button" onClick={() => runStatus(job.id, "Cancelada")} disabled={terminal || companyBlocked} className="company-action company-action-danger">
-                          <XCircle size={17} /> Cancelar
-                        </button>
-                      </div>
-                    </details>
-
-                    <details className="company-history">
-                      <summary><CalendarCheck size={16} /> Histórico da vaga</summary>
-                      <JobHistory applications={applications} />
-                    </details>
+                    {applications.length > 0 && (
+                      <details className="company-history">
+                        <summary>
+                          <CalendarCheck size={16} /> Histórico de candidaturas ({applications.length})
+                        </summary>
+                        <JobHistory applications={applications} />
+                      </details>
+                    )}
                   </article>
                 );
               })}
@@ -470,14 +448,5 @@ function JobHistory({ applications }: { applications: Application[] }) {
         );
       })}
     </div>
-  );
-}
-
-function Mini({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="company-mini-tile">
-      <strong>{value}</strong>
-      <span>{label}</span>
-    </span>
   );
 }
