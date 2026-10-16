@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, MapPin, Star, Users, UsersRound } from "lucide-react";
+import { CalendarDays, ChevronRight, Clock, MapPin, Star, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AvatarButton } from "./AvatarButton";
 import { UrgentBadge } from "./UrgentBadge";
@@ -8,6 +8,8 @@ import { functionLabel } from "../lib/functionInfo";
 import { getOpenSlots } from "../lib/rules";
 import type { Job } from "../lib/types";
 
+// Cartão de vaga compacto: título, empresa e diária no topo; dados do turno
+// em uma linha com ícones; combinação com o perfil como selo.
 export function JobCard({
   job,
   compact = false,
@@ -23,78 +25,71 @@ export function JobCard({
   const company = state.companies.find((item) => item.id === job.companyId);
   const companyReviews = state.companyReviews.filter((review) => review.companyId === job.companyId);
   const openSlots = getOpenSlots(job);
+  const strongMatch = typeof matchScore === "number" && matchScore >= 62;
 
   return (
-    <article className="card relative grid gap-4 overflow-hidden p-4 pl-5 hover:border-aqua-200/60 hover:shadow-lift">
-      <div className="absolute bottom-4 left-0 top-4 w-1 rounded-r-full bg-aqua-500" />
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 gap-3">
-          {company?.logoUrl && (
-            <AvatarButton
-              src={company.logoUrl}
-              name={company.establishmentName}
-              className="h-14 w-14 rounded-lg object-cover"
-              ringClassName="ring-2 ring-white/10"
-            />
-          )}
-          <div className="min-w-0">
-            <div className="mb-2 flex flex-wrap gap-2">
-              {job.urgent && <UrgentBadge />}
-              <span className="badge">{functionLabel(job.function)}</span>
-              <span className="badge">{job.paymentMethod}</span>
-              {matchLabel && <span className={matchScore && matchScore >= 62 ? "badge bg-aqua-100 text-aqua-700" : "badge bg-slate-100 text-slate-600"}><Star size={14} /> {matchLabel}</span>}
-            </div>
-            <h3 className="text-lg font-black leading-snug text-white">{job.title}</h3>
-            <p className="text-sm font-semibold text-slate-600">{company?.establishmentName}</p>
+    <article className={`job-card ${job.urgent ? "is-urgent" : ""}`}>
+      <div className="job-card-head">
+        {company?.logoUrl && (
+          <AvatarButton
+            src={company.logoUrl}
+            name={company.establishmentName}
+            className="h-11 w-11 rounded-lg object-cover"
+            ringClassName="ring-1 ring-white/10"
+          />
+        )}
+        <div className="min-w-0 flex-1">
+          <h3 className="job-card-title">{job.title}</h3>
+          <p className="job-card-company">
+            {company?.establishmentName}
             {companyReviews.length > 0 && (
-              <p className="mt-1 flex flex-wrap items-center gap-2 text-xs font-black text-slate-500">
-                <span className="inline-flex items-center gap-1"><Star size={14} /> {company?.rating.toFixed(1)}</span>
-                <span>{companyReviews.length} avaliaç{companyReviews.length === 1 ? "ão" : "ões"}</span>
-              </p>
+              <span>
+                <Star size={12} /> {company?.rating.toFixed(1)} ({companyReviews.length})
+              </span>
             )}
-          </div>
+          </p>
         </div>
-        <div className="w-fit shrink-0 rounded-lg bg-navy-950 px-3 py-2 text-left text-white shadow-soft sm:text-right">
-          <strong className="block text-lg text-white">{formatCurrency(job.dailyValue)}</strong>
-          <span className="text-xs font-black uppercase text-aqua-300">diária</span>
+        <div className="job-card-price">
+          <strong>{formatCurrency(job.dailyValue)}</strong>
+          <span>diária</span>
         </div>
       </div>
 
-      {!compact && job.description && <p className="line-clamp-2 text-sm leading-6 text-slate-600">{job.description}</p>}
-
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        <span className="meta-pill">
-          <MapPin size={16} /> {job.neighborhood}
-        </span>
-        <span className="meta-pill">
-          <CalendarDays size={16} /> {formatDate(job.date)}
-        </span>
-        <span className="meta-pill">
-          <Clock size={16} /> {job.startsAt} às {job.endsAt}
-        </span>
-        <span className="meta-pill">
-          <Users size={16} /> {pluralize(openSlots, "vaga", "vagas")}
-        </span>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {job.urgent && <UrgentBadge />}
+        <span className="cand-chip">{functionLabel(job.function)}</span>
+        <span className="cand-chip">{job.paymentMethod}</span>
+        {matchLabel && (
+          <span className={`job-card-match ${strongMatch ? "is-strong" : ""}`}>
+            <Star size={12} /> {typeof matchScore === "number" && !compact ? `${Math.min(100, matchScore)}% · ` : ""}
+            {matchLabel}
+          </span>
+        )}
       </div>
 
-      {typeof matchScore === "number" && !compact && (
-        <div className="job-match-bar">
-          <div>
-            <span>Combinação com seu perfil</span>
-            <strong>{Math.min(100, matchScore)}%</strong>
-          </div>
-          <div>
-            <span style={{ width: `${Math.min(100, matchScore)}%` }} />
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600">
-          <UsersRound size={14} /> {job.candidates} candidato{job.candidates === 1 ? "" : "s"}
+      <p className="job-card-meta">
+        <span>
+          <MapPin size={14} /> {job.neighborhood}
         </span>
-        <Link to={`/app/vagas/${job.id}`} className="primary w-full sm:w-auto">
-          Ver vaga
+        <span>
+          <CalendarDays size={14} /> {formatDate(job.date)}
+        </span>
+        <span>
+          <Clock size={14} /> {job.startsAt} às {job.endsAt}
+        </span>
+        <span>
+          <Users size={14} /> {pluralize(openSlots, "vaga", "vagas")}
+        </span>
+      </p>
+
+      {!compact && job.description && <p className="line-clamp-2 text-sm leading-6 text-slate-500">{job.description}</p>}
+
+      <div className="job-card-footer">
+        <span>
+          {job.candidates} candidato{job.candidates === 1 ? "" : "s"}
+        </span>
+        <Link to={`/app/vagas/${job.id}`} className="cand-btn is-primary">
+          Ver vaga <ChevronRight size={16} />
         </Link>
       </div>
     </article>

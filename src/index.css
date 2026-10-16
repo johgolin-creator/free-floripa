@@ -859,114 +859,134 @@ a {
   @apply rounded-lg border border-slate-200 bg-brand-charcoal p-3 shadow-sm;
 }
 
-.event-stepper {
-  @apply grid grid-cols-4 gap-2 rounded-lg border border-white/10 bg-brand-charcoal p-3 shadow-soft ring-1 ring-white/5;
-}
-
-.event-step {
-  @apply relative grid gap-1 rounded-lg border border-slate-100 bg-slate-50 px-2 py-3 text-center text-[0.68rem] font-black uppercase text-slate-500;
-}
-
-.event-step span {
-  @apply mx-auto grid h-7 w-7 place-items-center rounded-full bg-white text-xs text-navy-950 shadow-sm;
-}
-
-.event-step strong {
-  @apply truncate;
-}
-
-.event-step.is-current {
-  @apply border-aqua-200 bg-aqua-50 text-aqua-800 shadow-sm;
-}
-
-.event-step.is-current span {
-  @apply bg-aqua-500 text-navy-950;
-}
-
-.event-step.is-done {
-  @apply border-aqua-200 bg-aqua-50/60 text-aqua-700;
-}
-
-.event-step.is-done span {
-  @apply bg-aqua-300 text-navy-950;
-}
-
+/* Eventos (empresa): formulário em etapas, equipe com + / – e resumo fixo. */
 .event-builder-grid {
-  @apply grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_280px];
+  @apply grid grid-cols-[minmax(0,1fr)] gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start;
 }
 
 .event-form-card,
 .event-team-card {
-  @apply rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5;
+  @apply grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5 md:p-5;
 }
 
-.event-form-title {
-  @apply mb-4 flex items-center gap-2 border-b border-slate-100 pb-3 text-sm font-black text-white;
+.event-step {
+  @apply flex items-start gap-3;
+}
+
+.event-form-card .event-step:not(:first-child) {
+  @apply mt-2 border-t border-white/10 pt-5;
+}
+
+.event-step > span {
+  @apply grid h-7 w-7 shrink-0 place-items-center rounded-full bg-aqua-500 text-xs font-black text-navy-950;
+}
+
+.event-step h3 {
+  @apply text-base font-black leading-7 text-white;
+}
+
+.event-step p {
+  @apply text-sm font-semibold text-slate-500;
 }
 
 .event-data-grid {
   @apply grid gap-3 md:grid-cols-2;
 }
 
-.event-data-grid .label {
-  @apply rounded-lg border border-slate-100 bg-slate-50/70 p-3;
-}
-
-.event-data-grid .label:has(input[placeholder*="Endere"]),
-.event-data-grid .label:has(input[placeholder*="Endereco"]) {
-  @apply md:col-span-2;
-}
-
-.event-summary-panel {
-  @apply grid content-start gap-3 self-start sm:grid-cols-2 xl:sticky xl:top-24 xl:grid-cols-1;
-}
-
-.event-summary-panel .card {
-  @apply p-3;
-}
-
 .event-needs-grid {
-  @apply grid gap-2 md:grid-cols-2 xl:grid-cols-4;
+  @apply grid gap-2 sm:grid-cols-2 xl:grid-cols-3;
 }
 
 .event-need-card {
-  @apply rounded-lg border border-slate-200 bg-slate-50 p-3 transition hover:border-aqua-200 hover:bg-aqua-50/70;
+  @apply flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-brand-dark/50 px-3 py-2.5 transition;
 }
 
-.event-need-card .input {
-  @apply min-h-10;
+.event-need-card strong {
+  @apply block truncate text-sm font-black text-slate-300;
 }
 
-.event-review-panel {
-  @apply mt-4 grid gap-3 rounded-lg border border-aqua-100 bg-aqua-50/60 p-4;
+.event-need-card small {
+  @apply text-xs font-bold text-slate-500;
 }
 
-.event-review-panel h3 {
-  @apply text-lg font-black text-white;
+.event-need-card.is-active {
+  @apply border-aqua-200 bg-aqua-50;
 }
 
-.event-review-panel p:not(.section-eyebrow) {
-  @apply mt-1 text-sm font-semibold leading-6 text-slate-600;
+.event-need-card.is-active strong {
+  @apply text-white;
+}
+
+.event-stepper {
+  @apply flex shrink-0 items-center gap-1 rounded-lg bg-brand-dark p-1 ring-1 ring-white/10;
+}
+
+.event-stepper button {
+  @apply grid h-8 w-8 place-items-center rounded-md text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30;
+}
+
+.event-stepper span {
+  @apply min-w-7 text-center text-base font-black text-white;
+}
+
+.event-need-card.is-active .event-stepper span {
+  @apply text-aqua-300;
+}
+
+.event-summary-card {
+  @apply grid gap-3 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5 xl:sticky xl:top-24;
+}
+
+.event-summary-card .section-eyebrow {
+  @apply mb-0 w-fit;
+}
+
+.event-summary-card h3 {
+  @apply break-words text-lg font-black leading-snug text-white;
+}
+
+.event-summary-card > p {
+  @apply -mt-2 text-sm font-semibold text-slate-500;
+}
+
+.event-summary-list {
+  @apply grid gap-2 border-y border-white/10 py-3;
+}
+
+.event-summary-list > div {
+  @apply grid gap-0.5;
+}
+
+.event-summary-list dt {
+  @apply inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-slate-500;
+}
+
+.event-summary-list dd {
+  @apply text-sm font-bold text-white;
 }
 
 .event-review-list {
-  @apply grid gap-2 sm:grid-cols-2 lg:grid-cols-4;
+  @apply flex flex-wrap gap-1.5;
 }
 
 .event-review-list span {
-  @apply flex min-h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-3 text-sm font-black text-white shadow-sm;
+  @apply inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-white/5 px-2 text-xs font-black text-slate-300 ring-1 ring-white/10;
 }
 
 .event-review-list strong {
-  @apply grid h-7 min-w-7 place-items-center rounded-lg bg-navy-950 px-2 text-xs text-aqua-300;
+  @apply grid h-5 min-w-5 place-items-center rounded bg-aqua-500 px-1 text-[0.7rem] text-navy-950;
 }
 
-.event-review-footer {
-  @apply flex flex-wrap items-center justify-between gap-2 border-t border-aqua-100 pt-3 text-sm font-black text-white;
+.event-summary-total {
+  @apply flex items-baseline justify-between gap-3 rounded-lg bg-aqua-50 px-3 py-2.5 ring-1 ring-aqua-200;
 }
 
-.event-review-footer span {
-  @apply inline-flex items-center gap-1.5 text-slate-600;
+.event-summary-total span {
+  @apply text-xs font-black uppercase tracking-wide text-slate-400;
+}
+
+.event-summary-total strong {
+  @apply text-xl font-black text-aqua-300;
 }
 
 .event-created-note {
@@ -1531,6 +1551,71 @@ a {
   @apply text-alert;
 }
 
+/* Cartão de vaga (profissional): compacto, com a diária no topo e o turno em uma linha. */
+.job-card {
+  @apply relative grid gap-3 overflow-hidden rounded-lg border border-white/10 bg-brand-charcoal p-3.5 shadow-soft ring-1 ring-white/5 transition hover:border-aqua-200/60 hover:shadow-lift md:p-4;
+}
+
+.job-card.is-urgent {
+  @apply border-l-2 border-l-coral;
+}
+
+.job-card-head {
+  @apply flex items-start gap-3;
+}
+
+.job-card-title {
+  @apply text-base font-black leading-snug text-white md:text-lg;
+}
+
+.job-card-company {
+  @apply mt-0.5 flex flex-wrap items-center gap-x-2 text-sm font-semibold text-slate-500;
+}
+
+.job-card-company span {
+  @apply inline-flex items-center gap-1 text-xs font-black text-slate-400;
+}
+
+.job-card-price {
+  @apply shrink-0 text-right leading-tight;
+}
+
+.job-card-price strong {
+  @apply block text-base font-black text-aqua-300 md:text-lg;
+}
+
+.job-card-price span {
+  @apply text-[0.7rem] font-black uppercase tracking-wide text-slate-500;
+}
+
+.job-card-match {
+  @apply inline-flex min-h-6 items-center gap-1 rounded-full bg-white/5 px-2.5 text-xs font-black text-slate-400 ring-1 ring-white/10;
+}
+
+.job-card-match.is-strong {
+  @apply bg-aqua-50 text-aqua-300 ring-aqua-200;
+}
+
+.job-card-meta {
+  @apply flex flex-wrap gap-x-4 gap-y-1.5 text-sm font-bold text-slate-300;
+}
+
+.job-card-meta span {
+  @apply inline-flex items-center gap-1.5;
+}
+
+.job-card-meta svg {
+  @apply shrink-0 text-slate-500;
+}
+
+.job-card-footer {
+  @apply flex items-center justify-between gap-3 border-t border-white/10 pt-3;
+}
+
+.job-card-footer > span {
+  @apply text-xs font-bold text-slate-500;
+}
+
 @keyframes cand-toast-in {
   from {
     opacity: 0;
@@ -2049,26 +2134,6 @@ a {
 
 .jobs-active-filters {
   @apply flex flex-wrap gap-2 border-t border-slate-100 pt-3;
-}
-
-.job-match-bar {
-  @apply grid gap-2 rounded-lg bg-slate-50 p-3;
-}
-
-.job-match-bar > div:first-child {
-  @apply flex items-center justify-between gap-3 text-xs font-black uppercase text-slate-500;
-}
-
-.job-match-bar strong {
-  @apply text-sm text-white;
-}
-
-.job-match-bar > div:last-child {
-  @apply h-2 overflow-hidden rounded-lg bg-white/10;
-}
-
-.job-match-bar > div:last-child span {
-  @apply block h-full rounded-lg bg-aqua-500;
 }
 
 .smart-dashboard-hero {
