@@ -63,15 +63,17 @@ export function MyJobsPage() {
     [currentWorker.id, state.applications, state.jobs]
   );
 
-  const filtered = workItems.filter((item) => {
-    if (tab === "Próximos") return item.application.status === "Aprovada";
-    if (tab === "Concluídos") return item.application.status === "Trabalho concluído";
-    return item.application.status === "Cancelada" || item.application.status === "Falta registrada";
-  });
-  const actionItems = workItems
-    .filter((item) => item.application.status === "Aprovada")
-    .sort((a, b) => `${a.job.date} ${a.job.startsAt}`.localeCompare(`${b.job.date} ${b.job.startsAt}`))
-    .slice(0, 3);
+  // Próximos turnos em ordem de data (o mais próximo primeiro); os demais, do mais recente.
+  const filtered = workItems
+    .filter((item) => {
+      if (tab === "Próximos") return item.application.status === "Aprovada";
+      if (tab === "Concluídos") return item.application.status === "Trabalho concluído";
+      return item.application.status === "Cancelada" || item.application.status === "Falta registrada";
+    })
+    .sort((a, b) => {
+      const order = `${a.job.date} ${a.job.startsAt}`.localeCompare(`${b.job.date} ${b.job.startsAt}`);
+      return tab === "Próximos" ? order : -order;
+    });
   const agendaStats = {
     next: workItems.filter((item) => item.application.status === "Aprovada").length,
     done: workItems.filter((item) => item.application.status === "Trabalho concluído").length,
@@ -87,62 +89,17 @@ export function MyJobsPage() {
       />
       {message && <div className="mb-4 rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
 
-      <section className="mb-4 grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
-        <div className="worker-hero-metrics">
+      <div className="mb-4">
+        <div className="worker-hero-metrics sm:grid-cols-3 lg:grid-cols-3">
           <StatTile variant="primary" icon={<CalendarDays size={19} />} label="próximos" value={agendaStats.next} />
           <StatTile icon={<ClipboardCheck size={19} />} label="concluídos" value={agendaStats.done} />
           <StatTile tone={agendaStats.issues > 0 ? "alert" : "normal"} icon={<UserCheck size={19} />} label="ocorrências" value={agendaStats.issues} />
         </div>
-      </section>
+      </div>
 
       <SafetyNotice title="Presença segura">
         Confirme endereço, horário e uniforme antes do turno. Use o chat para manter combinados e pagamento documentados.
       </SafetyNotice>
-
-      {actionItems.length > 0 && (
-        <section className="candidate-selector-panel mb-4 border-aqua-200 bg-aqua-50/70">
-          <div>
-            <div className="flex items-center gap-2 text-sm font-black text-white">
-              <Clock size={18} /> Próximos turnos
-            </div>
-            <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
-              Atalhos para os turnos confirmados que estão chegando.
-            </p>
-          </div>
-          <div className="grid gap-2 md:grid-cols-3">
-            {actionItems.map((item) => {
-              const { application, job } = item;
-              const company = state.companies.find((companyItem) => companyItem.id === job.companyId);
-              const verificationCode = getShiftVerificationCode(job.id, application.workerId);
-
-              return (
-                <article key={application.id} className="rounded-lg border border-white/10 bg-brand-dark p-3 shadow-sm">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <strong className="block truncate text-sm text-white">{job.title}</strong>
-                      <p className="mt-1 truncate text-xs font-bold text-slate-500">
-                        {company?.establishmentName ?? "Empresa"} - {formatDate(job.date)} - {job.startsAt}
-                      </p>
-                      <span className={getStatusClass(application)}>{getWorkStatus(application)}</span>
-                      <span className="mt-2 inline-flex rounded-full bg-aqua-50 px-2 py-1 text-xs font-black text-aqua-700">
-                        <TermHint term="codigoVerificacao">Código {verificationCode}</TermHint>
-                      </span>
-                    </div>
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-navy-950 text-aqua-300">
-                      <UserCheck size={17} />
-                    </span>
-                  </div>
-                  <div className="mt-3 grid gap-2">
-                    <button type="button" onClick={() => setSelectedItem(item)} className="secondary w-full">
-                      <Clock size={17} /> Ver detalhes
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       <div className="worker-filter-buttons mb-4">
         {tabs.map((item) => (

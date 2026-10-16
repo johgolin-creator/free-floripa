@@ -65,14 +65,12 @@ export function ApplicationsPage() {
         <EmptyState title="Nenhuma candidatura enviada" text="Busque vagas disponíveis e envie sua primeira candidatura." />
       ) : (
         <div className="grid gap-4">
-          <section className="mb-4 grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
-            <div className="worker-hero-metrics">
-              <StatTile variant="primary" icon={<ClipboardCheck size={19} />} label="enviadas" value={stats.total} />
-              <StatTile tone={stats.waiting > 0 ? "alert" : "normal"} icon={<Clock3 size={19} />} label="aguardando" value={stats.waiting} />
-              <StatTile tone="positive" icon={<UserCheck size={19} />} label="aprovadas" value={stats.approved} />
-              <StatTile icon={<CreditCard size={19} />} label="concluídas" value={stats.completed} />
-            </div>
-          </section>
+          <div className="worker-hero-metrics">
+            <StatTile variant="primary" icon={<ClipboardCheck size={19} />} label="enviadas" value={stats.total} />
+            <StatTile tone={stats.waiting > 0 ? "alert" : "normal"} icon={<Clock3 size={19} />} label="aguardando" value={stats.waiting} />
+            <StatTile tone="positive" icon={<UserCheck size={19} />} label="aprovadas" value={stats.approved} />
+            <StatTile icon={<CreditCard size={19} />} label="concluídas" value={stats.completed} />
+          </div>
 
           <section className="worker-filter-panel">
             <div className="worker-filter-buttons">

@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+// Bloco de número compacto: ícone à esquerda, valor e rótulo ao lado.
+// "primary" só destaca a borda; o valor é sempre legível.
 export function StatTile({
   icon,
   label,
@@ -18,11 +20,11 @@ export function StatTile({
   const className = `metric-card ${variant === "secondary" ? "is-secondary" : ""} ${tone !== "normal" ? `is-${tone}` : ""} ${onClick ? "is-clickable" : ""}`;
   const content = (
     <>
-      <div className="mb-3 text-aqua-700">{icon}</div>
-      <strong className={variant === "primary" ? "block text-2xl font-black text-white" : "block text-lg font-black text-slate-200"}>
-        {value}
-      </strong>
-      <span className="text-sm font-semibold text-slate-500">{label}</span>
+      <span className="metric-card-icon">{icon}</span>
+      <span className="metric-card-text">
+        <strong className="metric-card-value">{value}</strong>
+        <span className="metric-card-label">{label}</span>
+      </span>
     </>
   );
 

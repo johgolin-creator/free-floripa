@@ -171,7 +171,7 @@ a {
 }
 
 .metric-card {
-  @apply relative rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5;
+  @apply relative flex min-w-0 items-center gap-3 rounded-lg border border-white/10 bg-brand-charcoal px-3.5 py-3 shadow-soft ring-1 ring-white/5;
   transition-property: border-color, box-shadow, background-color, transform;
   transition-duration: var(--dur-fast);
   transition-timing-function: var(--ease-out);
@@ -186,8 +186,32 @@ a {
   background: linear-gradient(180deg, #c8ff38, #f4b740);
 }
 
-.metric-card.is-secondary {
-  @apply p-3;
+.metric-card-icon {
+  @apply grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-aqua-50 text-aqua-300 ring-1 ring-aqua-200;
+}
+
+.metric-card-icon svg {
+  @apply h-[18px] w-[18px];
+}
+
+.metric-card-text {
+  @apply grid min-w-0 gap-0.5;
+}
+
+.metric-card-value {
+  @apply truncate text-xl font-black leading-tight text-white;
+}
+
+.metric-card-label {
+  @apply text-xs font-bold leading-tight text-slate-500;
+}
+
+.metric-card.is-secondary .metric-card-icon {
+  @apply bg-white/5 text-slate-300 ring-white/10;
+}
+
+.metric-card.is-alert .metric-card-icon {
+  @apply bg-red-50 text-coral ring-red-100;
 }
 
 .metric-card.is-secondary::before {
@@ -894,7 +918,7 @@ a {
 }
 
 .event-summary-panel {
-  @apply grid gap-3 sm:grid-cols-3 xl:grid-cols-1;
+  @apply grid content-start gap-3 self-start sm:grid-cols-2 xl:sticky xl:top-24 xl:grid-cols-1;
 }
 
 .event-summary-panel .card {
@@ -1664,7 +1688,7 @@ a {
 }
 
 .worker-hero-metrics {
-  @apply grid grid-cols-2 gap-2;
+  @apply grid grid-cols-2 gap-2 lg:grid-cols-4;
 }
 
 .worker-hero-metric {

@@ -46,7 +46,7 @@ export function WorkerDashboard() {
         action={<Link to="/app/vagas" className="primary">Buscar vagas</Link>}
       />
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <StatTile
           variant="primary"
           icon={<BadgeCheck />}
@@ -91,10 +91,16 @@ export function WorkerDashboard() {
             <div className="grid gap-2">
               {pendingApplications.slice(0, 3).map((application) => {
                 const job = state.jobs.find((item) => item.id === application.jobId);
+                const company = job ? state.companies.find((item) => item.id === job.companyId) : undefined;
                 return (
                   <Link key={application.id} to="/app/candidaturas" className="smart-action-item">
                     <ClipboardCheck size={16} />
-                    <span>{job?.title ?? "Vaga"}: {application.status}</span>
+                    <span className="min-w-0">
+                      <strong className="block break-words text-white">{job?.title ?? "Vaga"}</strong>
+                      <small className="block break-words text-xs font-semibold text-slate-500">
+                        {company?.establishmentName ?? "Empresa"} · {application.status === "Convidada" ? "convite para responder" : "aguardando a empresa"}
+                      </small>
+                    </span>
                   </Link>
                 );
               })}
