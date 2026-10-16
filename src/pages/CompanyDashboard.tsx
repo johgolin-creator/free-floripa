@@ -14,7 +14,7 @@ import {
   WalletCards,
   Zap
 } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
 import { SafetyNotice } from "../components/SafetyNotice";
@@ -90,6 +90,7 @@ function createUrgentReplacementKey(input: UrgentReplacementInput) {
 }
 
 export function CompanyDashboard() {
+  const navigate = useNavigate();
   const { state, currentCompany, createJob, updateJob, createUrgentReplacement } = useAppStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showJobForm, setShowJobForm] = useState(false);
@@ -143,7 +144,7 @@ export function CompanyDashboard() {
   }, [searchParams, setSearchParams, state.jobs, currentCompany.id]);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       <SectionHeader
         eyebrow="Painel da empresa"
         title={currentCompany.establishmentName}
@@ -160,12 +161,18 @@ export function CompanyDashboard() {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <StatTile icon={<UsersRound />} label="Profissionais disponíveis" value={`${shownAvailableWorkers}+`} />
-        <StatTile variant="primary" icon={<BriefcaseBusiness />} label="Vagas abertas" value={openJobs.length} />
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
+        <StatTile variant="primary" icon={<BriefcaseBusiness />} label="Vagas abertas" value={openJobs.length} onClick={() => navigate("/app/minhas-vagas")} />
+        <StatTile
+          tone={pendingApplications.length > 0 ? "positive" : "normal"}
+          icon={<ClipboardList />}
+          label="Aguardando decisão"
+          value={pendingApplications.length}
+          onClick={() => navigate("/app/candidatos")}
+        />
         <StatTile icon={<CheckCircle2 />} label="Profissionais confirmados" value={confirmed} />
-        <StatTile icon={<ClipboardList />} label="Candidaturas recebidas" value={companyApplications.length} />
-        <StatTile tone="alert" icon={<AlertTriangle />} label="Faltas registradas" value={absences} />
+        <StatTile icon={<UsersRound />} label="Profissionais disponíveis" value={`${shownAvailableWorkers}+`} onClick={() => navigate("/app/profissionais")} />
+        <StatTile tone={absences > 0 ? "alert" : "normal"} icon={<AlertTriangle />} label="Faltas registradas" value={absences} />
       </div>
 
       {message && <div className="rounded-lg bg-navy-950 p-3 text-sm font-bold text-white">{message}</div>}
@@ -191,7 +198,7 @@ export function CompanyDashboard() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+      <section className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
         <div className="card p-4">
           <h3 className="mb-3 font-black text-white">Vagas abertas</h3>
           {companyJobs.length === 0 ? (
@@ -225,15 +232,24 @@ export function CompanyDashboard() {
               <span>{pendingApplications.length}</span>
             </div>
             <div className="grid gap-2">
-              {pendingApplications.slice(0, 3).map((application) => {
+              {pendingApplications.slice(0, 4).map((application) => {
                 const job = companyJobs.find((item) => item.id === application.jobId);
+                const worker = state.workers.find((item) => item.id === application.workerId);
                 return (
                   <Link key={application.id} to={`/app/candidatos?vaga=${application.jobId}`} className="smart-action-item">
                     <ClipboardList size={16} />
-                    <span>{job?.title ?? "Vaga"}: {application.status}</span>
+                    <span className="min-w-0">
+                      <strong className="block break-words text-white">{worker?.name ?? "Profissional"}</strong>
+                      <small className="block break-words text-xs font-semibold text-slate-500">{job?.title ?? "Vaga"} · aguardando decisão</small>
+                    </span>
                   </Link>
                 );
               })}
+              {pendingApplications.length > 4 && (
+                <Link to="/app/candidatos" className="text-sm font-black text-aqua-300 hover:underline">
+                  Ver todos os {pendingApplications.length} candidatos
+                </Link>
+              )}
               {pendingApplications.length === 0 && <p className="smart-empty-text">Nenhum candidato aguardando decisão agora.</p>}
             </div>
           </section>

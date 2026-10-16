@@ -9,8 +9,6 @@ import {
   CalendarCheck,
   CheckCircle2,
   ClipboardList,
-  Clock3,
-  Filter,
   Loader2,
   ShieldCheck,
   UserRound
@@ -113,10 +111,6 @@ function getMeta(notification: NotificationItem, role: UserRole): NotificationMe
   };
 }
 
-function isToday(createdAt: string) {
-  return new Date(createdAt).toDateString() === new Date().toDateString();
-}
-
 export function NotificationsPage() {
   const { state, markNotificationRead, markRoleNotificationsRead } = useAppStore();
   const { user } = useAuth();
@@ -160,8 +154,6 @@ export function NotificationsPage() {
   });
 
   const unreadCount = notifications.filter(({ notification }) => !notification.read).length;
-  const todayCount = notifications.filter(({ notification }) => isToday(notification.createdAt)).length;
-  const actionCount = notifications.filter(({ notification, meta }) => !notification.read && meta.kind !== "Sistema").length;
   const hasUnread = unreadCount > 0;
 
   return (
@@ -219,49 +211,7 @@ export function NotificationsPage() {
         </section>
       )}
 
-      <section className="mb-5 grid gap-4 rounded-lg border border-white/10 bg-brand-charcoal p-4 shadow-soft ring-1 ring-white/5">
-        <div className="smart-dashboard-metrics">
-          <div className="smart-dashboard-metric">
-            <span>
-              <Bell size={18} />
-            </span>
-            <strong>{notifications.length}</strong>
-            <small>Total</small>
-          </div>
-          <div className="smart-dashboard-metric is-alert">
-            <span>
-              <Clock3 size={18} />
-            </span>
-            <strong>{unreadCount}</strong>
-            <small>Não lidas</small>
-          </div>
-          <div className="smart-dashboard-metric">
-            <span>
-              <CalendarCheck size={18} />
-            </span>
-            <strong>{todayCount}</strong>
-            <small>Hoje</small>
-          </div>
-          <div className="smart-dashboard-metric">
-            <span>
-              <ArrowRight size={18} />
-            </span>
-            <strong>{actionCount}</strong>
-            <small>Com ação</small>
-          </div>
-        </div>
-      </section>
-
-      <section className="jobs-filter-panel">
-        <div className="jobs-filter-title">
-          <div>
-            <h3>
-              <Filter size={18} /> Filtrar notificações
-            </h3>
-            <p>Use os filtros para separar avisos operacionais de mensagens de sistema.</p>
-          </div>
-          <span className="badge">{filteredNotifications.length} exibidas</span>
-        </div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="worker-filter-buttons">
           {filters.map((filter) => (
             <button
@@ -271,10 +221,14 @@ export function NotificationsPage() {
               className={`worker-filter-button ${activeFilter === filter ? "is-active" : ""}`}
             >
               {filter}
+              {filter === "Não lidas" && unreadCount > 0 ? ` (${unreadCount})` : ""}
             </button>
           ))}
         </div>
-      </section>
+        <span className="text-xs font-bold text-slate-500">
+          {filteredNotifications.length} de {notifications.length}
+        </span>
+      </div>
 
       {notifications.length === 0 ? (
         <EmptyState title="Nenhuma notificação" text="Atualizações importantes aparecerão nesta central." />
