@@ -1,12 +1,20 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Award, BadgeCheck, Ban, Bell, BriefcaseBusiness, Building2, CalendarDays, Check, CheckCircle2, ClipboardList, Copy, Link2, Mail, MapPin, Phone, Plus, Search, ShieldCheck, Star, Target, Trash2, UserRound, WalletCards } from "lucide-react";
+import { AlertTriangle, Award, BadgeCheck, Ban, Bell, BriefcaseBusiness, Building2, CalendarDays, Check, CheckCircle2, ClipboardList, Copy, ImagePlus, Link2, Mail, MapPin, Phone, Plus, Search, ShieldCheck, Star, Target, Trash2, UserRound, Users, WalletCards, X } from "lucide-react";
+import {
+  listAnnouncementResponders,
+  listAnnouncements,
+  sendAnnouncementToWorkers,
+  uploadAnnouncementImage,
+  type Announcement,
+  type AnnouncementResponder
+} from "../lib/announcements";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatusBadge } from "../components/StatusBadge";
 import { UrgentBadge } from "../components/UrgentBadge";
 import { Modal } from "../components/Modal";
 import { AvatarButton } from "../components/AvatarButton";
-import { formatCurrency, formatDate, todayLocalISODate } from "../lib/format";
+import { formatCurrency, formatDate, formatDateTime, todayLocalISODate } from "../lib/format";
 import { calculateReliability, getExperienceLabel, getFunctionExperience, getJobStatus, getOpenSlots, isWorkerVerified } from "../lib/rules";
 import { getTrustBadges } from "../lib/trust";
 import { useAppStore } from "../lib/store";
@@ -1041,23 +1049,46 @@ function DangerDeleteAccount({
 }
 
 function BroadcastNotificationSection() {
-  const [title, setTitle] = useState("Foto de perfil obrigatória");
-  const [body, setBody] = useState(
-    "Coloque uma foto real no seu perfil — isso é muito importante para você aparecer nas vagas e ser aprovado mais rápido. Atualize agora em Perfil."
-  );
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [rsvpEnabled, setRsvpEnabled] = useState(true);
   const [armed, setArmed] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState<number | null>(null);
+  const [historyKey, setHistoryKey] = useState(0);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview("");
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+
+  function resetDone() {
+    setDone(null);
+  }
 
   async function send() {
     if (pending || !title.trim() || !body.trim()) return;
     setPending(true);
     setError("");
     try {
-      const { count } = await adminNotifyAllWorkers(title.trim(), body.trim());
+      const imageUrl = imageFile ? await uploadAnnouncementImage(imageFile) : undefined;
+      const { count } = await sendAnnouncementToWorkers({
+        title: title.trim(),
+        body: body.trim(),
+        imageUrl,
+        rsvpEnabled
+      });
       setDone(count);
       setArmed(false);
+      setHistoryKey((key) => key + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível enviar o aviso.");
     } finally {
@@ -1071,16 +1102,47 @@ function BroadcastNotificationSection() {
         <Bell size={18} /> Aviso geral aos freelancers
       </summary>
       <p className="mb-3 mt-2 text-sm font-semibold text-slate-600">
-        Manda uma notificação dentro do PONT para todos os trabalhadores cadastrados.
+        Manda uma notificação dentro do PONT (e push no celular) para todos os trabalhadores cadastrados. Pode levar
+        imagem (flyer) e o botão "Comparecerei".
       </p>
       <div className="grid gap-3">
         <label className="label">
           Título
-          <input className="input" value={title} onChange={(event) => { setTitle(event.target.value); setDone(null); }} maxLength={80} />
+          <input className="input" value={title} onChange={(event) => { setTitle(event.target.value); resetDone(); }} maxLength={80} />
         </label>
         <label className="label">
           Mensagem
-          <textarea className="input min-h-20 py-3" value={body} onChange={(event) => { setBody(event.target.value); setDone(null); }} maxLength={400} />
+          <textarea className="input min-h-20 py-3" value={body} onChange={(event) => { setBody(event.target.value); resetDone(); }} maxLength={600} />
+        </label>
+        <div className="grid gap-2">
+          <span className="label">Imagem (opcional)</span>
+          {imagePreview ? (
+            <div className="relative w-40">
+              <img src={imagePreview} alt="Prévia do flyer" className="w-40 rounded-lg border border-white/10" />
+              <button
+                type="button"
+                className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/70 text-white"
+                onClick={() => { setImageFile(null); resetDone(); }}
+                aria-label="Remover imagem"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <label className="secondary cursor-pointer justify-self-start">
+              <ImagePlus size={15} /> Escolher imagem
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={(event) => { setImageFile(event.target.files?.[0] ?? null); resetDone(); }}
+              />
+            </label>
+          )}
+        </div>
+        <label className="flex items-center gap-2 text-sm font-bold text-slate-600">
+          <input type="checkbox" checked={rsvpEnabled} onChange={(event) => { setRsvpEnabled(event.target.checked); resetDone(); }} />
+          Mostrar botão "Comparecerei" para quem tiver interesse
         </label>
         {error && <span className="text-xs font-bold text-alert">{error}</span>}
         {done !== null ? (
@@ -1101,7 +1163,83 @@ function BroadcastNotificationSection() {
           </div>
         )}
       </div>
+      <AnnouncementHistory key={historyKey} />
     </details>
+  );
+}
+
+function AnnouncementHistory() {
+  const [announcements, setAnnouncements] = useState<Announcement[] | null>(null);
+  const [error, setError] = useState("");
+  const [openId, setOpenId] = useState("");
+  const [responders, setResponders] = useState<AnnouncementResponder[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    listAnnouncements()
+      .then((items) => { if (active) setAnnouncements(items); })
+      .catch((err) => { if (active) setError(err instanceof Error ? err.message : "Não foi possível carregar os avisos."); });
+    return () => { active = false; };
+  }, []);
+
+  async function toggle(announcementId: string) {
+    if (openId === announcementId) {
+      setOpenId("");
+      return;
+    }
+    setOpenId(announcementId);
+    setResponders(null);
+    try {
+      setResponders(await listAnnouncementResponders(announcementId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível carregar os confirmados.");
+    }
+  }
+
+  if (error) return <p className="mt-4 text-xs font-bold text-alert">{error}</p>;
+  if (!announcements || announcements.length === 0) return null;
+
+  return (
+    <div className="mt-5 grid gap-2 border-t border-white/10 pt-4">
+      <h4 className="font-black text-white">Avisos enviados</h4>
+      {announcements.map((announcement) => (
+        <div key={announcement.id} className="rounded-lg border border-white/10 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-3">
+              {announcement.imageUrl && (
+                <img src={announcement.imageUrl} alt="" className="h-12 w-9 shrink-0 rounded object-cover" />
+              )}
+              <div className="min-w-0">
+                <strong className="block truncate text-white">{announcement.title}</strong>
+                <span className="text-xs font-bold text-slate-500">{formatDateTime(announcement.createdAt)}</span>
+              </div>
+            </div>
+            {announcement.rsvpEnabled && (
+              <button type="button" className="secondary" onClick={() => toggle(announcement.id)}>
+                <Users size={15} /> {announcement.responseCount} comparecerão
+              </button>
+            )}
+          </div>
+          {openId === announcement.id && (
+            <div className="mt-3 grid gap-1 text-sm font-semibold text-slate-600">
+              {responders === null ? (
+                <span>Carregando...</span>
+              ) : responders.length === 0 ? (
+                <span>Ninguém confirmou ainda.</span>
+              ) : (
+                responders.map((person) => (
+                  <div key={person.userId} className="flex flex-wrap gap-x-3">
+                    <strong className="text-white">{person.displayName}</strong>
+                    {person.phone && <span>{person.phone}</span>}
+                    {person.email && <span>{person.email}</span>}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
 

@@ -9,10 +9,13 @@ import {
   CalendarCheck,
   CheckCircle2,
   ClipboardList,
+  HandHeart,
   Loader2,
+  Megaphone,
   ShieldCheck,
   UserRound
 } from "lucide-react";
+import { loadMyAnnouncementResponses, setAnnouncementAttendance } from "../lib/announcements";
 import { EmptyState } from "../components/EmptyState";
 import { SectionHeader } from "../components/SectionHeader";
 import { formatDateTime } from "../lib/format";
@@ -51,6 +54,18 @@ function includesAny(text: string, terms: string[]) {
 function getMeta(notification: NotificationItem, role: UserRole): NotificationMeta {
   const text = normalizeText(`${notification.title} ${notification.body}`);
   const workerProfilePath = role === "empresa" ? "/app/perfil-empresa" : "/app/perfil-trabalhador";
+
+  if (notification.announcementId || notification.imageUrl) {
+    return {
+      kind: "Sistema",
+      label: "Aviso",
+      tone: "bg-aqua-50 text-aqua-700 border-aqua-100",
+      Icon: Megaphone,
+      href: role === "empresa" ? "/app/empresa" : "/app/trabalhador",
+      actionLabel: "Ver painel",
+      helper: "Aviso geral do PONT. Se tiver interesse, toque em \"Comparecerei\"."
+    };
+  }
 
   if (includesAny(text, ["escala", "turno", "finalizou"])) {
     return {
@@ -118,6 +133,50 @@ export function NotificationsPage() {
   const [pushStatus, setPushStatus] = useState<WebPushStatus>("not-subscribed");
   const [pushPending, setPushPending] = useState(false);
   const [pushMessage, setPushMessage] = useState("");
+  const [attending, setAttending] = useState<Set<string>>(new Set());
+  const [attendancePending, setAttendancePending] = useState("");
+  const [attendanceError, setAttendanceError] = useState<{ id: string; message: string } | null>(null);
+  const [zoomImage, setZoomImage] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    loadMyAnnouncementResponses(user.id)
+      .then((ids) => {
+        if (active) setAttending(ids);
+      })
+      .catch(() => {
+        // sem a tabela ou offline: o botão só aparece desmarcado
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  async function toggleAttendance(notification: NotificationItem) {
+    const announcementId = notification.announcementId;
+    if (!user || !announcementId || attendancePending) return;
+    const willAttend = !attending.has(announcementId);
+    setAttendancePending(announcementId);
+    setAttendanceError(null);
+    try {
+      await setAnnouncementAttendance(announcementId, user.id, willAttend);
+      setAttending((current) => {
+        const next = new Set(current);
+        if (willAttend) next.add(announcementId);
+        else next.delete(announcementId);
+        return next;
+      });
+      if (!notification.read) markNotificationRead(notification.id);
+    } catch (err) {
+      setAttendanceError({
+        id: announcementId,
+        message: err instanceof Error ? err.message : "Não foi possível registrar sua resposta."
+      });
+    } finally {
+      setAttendancePending("");
+    }
+  }
 
   useEffect(() => {
     if (!webPushSupported) {
@@ -254,13 +313,44 @@ export function NotificationsPage() {
                         {!notification.read && <span className="badge border-aqua-200 bg-aqua-50 text-aqua-700">Nova</span>}
                       </div>
                       <h3 className="mt-2">{notification.title}</h3>
-                      <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">{notification.body}</p>
+                      <p className="mt-1 whitespace-pre-line text-sm font-semibold leading-6 text-slate-600">{notification.body}</p>
+                      {notification.imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setZoomImage(notification.imageUrl ?? "")}
+                          className="mt-3 block w-full max-w-sm overflow-hidden rounded-lg border border-white/10"
+                          aria-label="Ver imagem do aviso em tamanho cheio"
+                        >
+                          <img src={notification.imageUrl} alt={notification.title} loading="lazy" className="h-auto w-full" />
+                        </button>
+                      )}
                       <span className="mt-2 block text-xs font-black uppercase text-slate-500">
                         {formatDateTime(notification.createdAt)}
                       </span>
                     </div>
                   </div>
                   <div className="worker-action-row">
+                    {notification.announcementId && state.activeRole === "trabalhador" && (
+                      <button
+                        type="button"
+                        aria-busy={attendancePending === notification.announcementId}
+                        disabled={attendancePending === notification.announcementId}
+                        onClick={() => toggleAttendance(notification)}
+                        className={attending.has(notification.announcementId) ? "secondary" : "primary"}
+                      >
+                        {attendancePending === notification.announcementId ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : attending.has(notification.announcementId) ? (
+                          <CheckCircle2 size={16} />
+                        ) : (
+                          <HandHeart size={16} />
+                        )}
+                        {attending.has(notification.announcementId) ? "Presença confirmada · desfazer" : "Comparecerei"}
+                      </button>
+                    )}
+                    {attendanceError && attendanceError.id === notification.announcementId && (
+                      <span className="text-xs font-bold text-alert">{attendanceError.message}</span>
+                    )}
                     <Link to={meta.href} className="primary">
                       {meta.actionLabel} <ArrowRight size={16} />
                     </Link>
@@ -279,6 +369,17 @@ export function NotificationsPage() {
             );
           })}
         </div>
+      )}
+
+      {zoomImage && (
+        <button
+          type="button"
+          onClick={() => setZoomImage("")}
+          className="fixed inset-0 z-50 grid place-items-center bg-black/85 p-4"
+          aria-label="Fechar imagem"
+        >
+          <img src={zoomImage} alt="" className="max-h-full max-w-full rounded-lg object-contain" />
+        </button>
       )}
     </div>
   );
