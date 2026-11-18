@@ -193,6 +193,10 @@ export interface NotificationItem {
   role: UserRole;
   createdAt: string;
   read: boolean;
+  /** Imagem (flyer) anexada a um aviso geral do admin. */
+  imageUrl?: string;
+  /** Aviso geral de origem; usado no botão "Comparecerei". */
+  announcementId?: string;
 }
 
 export interface ChatMessage {

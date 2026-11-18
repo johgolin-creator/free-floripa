@@ -171,6 +171,8 @@ interface NotificationRow {
   body: string;
   read: boolean;
   created_at: string;
+  image_url?: string | null;
+  announcement_id?: string | null;
 }
 
 export interface MarketplaceJobsPayload {
@@ -352,7 +354,9 @@ function mapNotification(row: NotificationRow): NotificationItem {
     body: row.body,
     role: row.role,
     createdAt: row.created_at,
-    read: row.read
+    read: row.read,
+    imageUrl: row.image_url ?? undefined,
+    announcementId: row.announcement_id ?? undefined
   };
 }
 
@@ -801,7 +805,7 @@ export async function loadRemoteNotifications(userId: string) {
 
   const { data, error } = await supabase
     .from("notifications")
-    .select("id,role,title,body,read,created_at")
+    .select("id,role,title,body,read,created_at,image_url,announcement_id")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(80);

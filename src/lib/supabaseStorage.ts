@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 
-export type ProfileImageKind = "trabalhadores" | "empresas";
+export type ProfileImageKind = "trabalhadores" | "empresas" | "avisos";
 
 const PROFILE_IMAGES_BUCKET = "avatars";
 export const MAX_IMAGE_SIZE_MB = 5;
