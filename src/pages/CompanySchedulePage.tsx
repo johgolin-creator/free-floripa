@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Edit3, Plus, Printer, Receipt, Save, Trash2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { Modal } from "../components/Modal";
 import { PrintPortal } from "../components/PrintPortal";
 import { ReceiptsModal } from "../components/schedule/ReceiptsModal";
@@ -122,6 +123,25 @@ export function CompanySchedulePage() {
       setAnchor(next.date);
     }
   }, [items, today]);
+
+  // Atalhos vindos do Painel: ?nova=1 abre o formulário; ?escala=<id> abre aquela escala.
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const wantsNew = searchParams.get("nova") === "1";
+    const scheduleId = searchParams.get("escala");
+    if (!wantsNew && !scheduleId) return;
+    if (wantsNew) {
+      if (!companyBlocked) setCreating({ date: today });
+    } else if (scheduleId) {
+      const target = companySchedules.find((schedule) => schedule.id === scheduleId);
+      if (!target) return; // ainda carregando: tenta de novo quando a lista chegar
+      userPicked.current = true;
+      setSelectedDate(target.date);
+      setAnchor(target.date);
+      setSelectedItemKey(`manual:${target.id}`);
+    }
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams, companySchedules, companyBlocked, today]);
 
   const markedDates = useMemo(() => new Set(items.map((item) => item.date)), [items]);
   const dayItems = filteredItems.filter((item) => item.date === selectedDate);

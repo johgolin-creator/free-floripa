@@ -46,14 +46,14 @@ const workerSecondaryLinks = [
 
 const companyPrimaryLinks = [
   { to: "/app/empresa", label: "Painel", mobileLabel: "Painel", icon: Home },
-  { to: "/app/eventos", label: "Eventos", mobileLabel: "Eventos", icon: CalendarDays },
-  { to: "/app/minhas-vagas", label: "Minhas vagas", mobileLabel: "Vagas", icon: BriefcaseBusiness },
-  { to: "/app/candidatos", label: "Candidatos", mobileLabel: "Cand.", icon: UsersRound }
+  { to: "/app/escala", label: "Escalas", mobileLabel: "Escalas", icon: CalendarCheck },
+  { to: "/app/candidatos", label: "Candidatos", mobileLabel: "Cand.", icon: UsersRound },
+  { to: "/app/eventos", label: "Eventos", mobileLabel: "Eventos", icon: CalendarDays }
 ];
 
 const companySecondaryLinks = [
+  { to: "/app/minhas-vagas", label: "Minhas vagas", mobileLabel: "Vagas", icon: BriefcaseBusiness },
   { to: "/app/profissionais", label: "Banco", mobileLabel: "Banco", icon: Search },
-  { to: "/app/escala", label: "Escala", mobileLabel: "Escala", icon: CalendarDays },
   MENSAGENS_LINK,
   { to: "/app/equipe", label: "Minha equipe", mobileLabel: "Equipe", icon: Star },
   { to: "/app/perfil-empresa", label: "Perfil", mobileLabel: "Perfil", icon: Building2 }

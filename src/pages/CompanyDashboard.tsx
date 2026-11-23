@@ -21,6 +21,7 @@ import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
 import { UrgentBadge } from "../components/UrgentBadge";
+import { UpcomingSchedulesPanel } from "../components/schedule/UpcomingSchedulesPanel";
 import { useWizardStep, WizardActions, WizardPanel, WizardProgress, WizardSteps } from "../components/Wizard";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
@@ -148,17 +149,24 @@ export function CompanyDashboard() {
       <SectionHeader
         eyebrow="Painel da empresa"
         title={currentCompany.establishmentName}
-        description="Publique vagas temporárias, acompanhe candidatos e confirme sua equipe."
+        description="Monte suas escalas, mande o link para a equipe confirmar e, se precisar, publique vagas."
         action={
           <div className="grid gap-2 sm:flex">
             <button type="button" onClick={() => setShowUrgentForm(true)} disabled={companyBlocked} className="danger">
               <Zap size={17} /> Preciso de reposição urgente
             </button>
-            <button type="button" onClick={() => setShowJobForm(true)} disabled={companyBlocked} className="primary">
+            <button type="button" onClick={() => setShowJobForm(true)} disabled={companyBlocked} className="secondary">
               <Plus size={17} /> Criar nova vaga
             </button>
           </div>
         }
+      />
+
+      <UpcomingSchedulesPanel
+        schedules={(state.companySchedules ?? []).filter((schedule) => schedule.companyId === currentCompany.id)}
+        companyName={currentCompany.establishmentName}
+        today={today}
+        disabled={companyBlocked}
       />
 
       <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
