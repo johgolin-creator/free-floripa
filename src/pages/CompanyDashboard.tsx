@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
 import {
   AlertTriangle,
   BriefcaseBusiness,
   CalendarCheck,
-  CalendarDays,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   ClipboardList,
-  MapPin,
   Plus,
-  ShieldCheck,
   UsersRound,
-  WalletCards,
   Zap
 } from "lucide-react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
@@ -21,7 +18,6 @@ import { SafetyNotice } from "../components/SafetyNotice";
 import { SectionHeader } from "../components/SectionHeader";
 import { StatTile } from "../components/StatTile";
 import { UrgentBadge } from "../components/UrgentBadge";
-import { useWizardStep, WizardActions, WizardPanel, WizardProgress, WizardSteps } from "../components/Wizard";
 import { functions, neighborhoods } from "../data/demoData";
 import { useAppStore } from "../lib/store";
 import { functionLabel } from "../lib/functionInfo";
@@ -29,14 +25,6 @@ import type { CreateJobInput, UrgentReplacementInput } from "../lib/store";
 import { formatCurrency, formatDate, todayLocalISODate } from "../lib/format";
 import { getJobStatus, getOpenSlots } from "../lib/rules";
 import type { Job, JobFunction, Neighborhood, PaymentMethod } from "../lib/types";
-
-const requiredJobFieldGroups = [
-  { title: "Vaga", fields: ["Título", "Função", "Quantidade"] },
-  { title: "Turno", fields: ["Data", "Entrada", "Saída", "Valor da diária", "Pagamento"] },
-  { title: "Local", fields: ["Bairro", "Endereço aproximado", "Endereço completo"] },
-  { title: "Requisitos", fields: ["Uniforme", "Experiência exigida", "Descrição", "Benefícios"] }
-];
-const jobSteps = ["Vaga", "Turno", "Local", "Requisitos", "Revisão"] as const;
 
 type JobDraft = {
   title: string;
@@ -380,7 +368,6 @@ function CreateJobForm({ editingJob, onSubmit }: { editingJob?: Job; onSubmit: (
   const [isPublishing, setIsPublishing] = useState(false);
   const isPublishingRef = useRef(false);
   const lastSubmittedKey = useRef("");
-  const { step, isFirst, isLast, goTo, goNext: goToNext, goBack } = useWizardStep(jobSteps.length);
   const [draft, setDraft] = useState<JobDraft>(
     editingJob
       ? jobToDraft(editingJob)
@@ -403,53 +390,13 @@ function CreateJobForm({ editingJob, onSubmit }: { editingJob?: Job; onSubmit: (
           urgent: false
         }
   );
-
-  const benefits = draft.benefits
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-  const parsed = {
-    quantity: Number(draft.quantity),
-    dailyValue: Number(draft.dailyValue)
-  };
-  const requiredFields = [
-    draft.title.trim(),
-    parsed.quantity > 0,
-    draft.date,
-    draft.startsAt,
-    draft.endsAt,
-    parsed.dailyValue > 0,
-    draft.approximateAddress.trim(),
-    draft.fullAddress.trim(),
-    draft.uniform.trim(),
-    draft.requiredExperience.trim(),
-    draft.description.trim(),
-    benefits.length > 0
-  ];
-  const completedFields = requiredFields.filter(Boolean).length;
+  // Na edição, os detalhes já vêm abertos se a vaga tem algum preenchido.
+  const [showDetails, setShowDetails] = useState(
+    Boolean(editingJob && (editingJob.uniform || editingJob.requiredExperience || editingJob.description || editingJob.benefits.length > 0))
+  );
 
   function setField<Key extends keyof JobDraft>(field: Key, value: JobDraft[Key]) {
     setDraft((current) => ({ ...current, [field]: value }));
-  }
-
-  function handleNext() {
-    const result = validateJobDraft(draft, step);
-    if (!result.ok) {
-      setError(result.message);
-      return;
-    }
-    setError("");
-    goToNext();
-  }
-
-  function handleBack() {
-    setError("");
-    goBack();
-  }
-
-  function handleStepSelect(index: number) {
-    setError("");
-    goTo(index);
   }
 
   function publish() {
@@ -460,24 +407,7 @@ function CreateJobForm({ editingJob, onSubmit }: { editingJob?: Job; onSubmit: (
       setError(result.message);
       return;
     }
-    const input: CreateJobInput = {
-      title: draft.title.trim(),
-      function: draft.function,
-      quantity: parsed.quantity,
-      date: draft.date,
-      startsAt: draft.startsAt,
-      endsAt: draft.endsAt,
-      dailyValue: parsed.dailyValue,
-      paymentMethod: draft.paymentMethod,
-      approximateAddress: draft.approximateAddress.trim(),
-      fullAddress: draft.fullAddress.trim(),
-      neighborhood: draft.neighborhood,
-      uniform: draft.uniform.trim(),
-      requiredExperience: draft.requiredExperience.trim(),
-      description: draft.description.trim(),
-      benefits,
-      urgent: draft.urgent
-    };
+    const input = jobDraftToInput(draft);
     const submitKey = createJobInputKey(input);
     if (!isEditing && lastSubmittedKey.current === submitKey) {
       setError("Essa vaga já foi enviada. Altere algum dado para publicar novamente.");
@@ -499,187 +429,145 @@ function CreateJobForm({ editingJob, onSubmit }: { editingJob?: Job; onSubmit: (
 
   return (
     <form
-      className="wizard"
+      className="grid max-h-[75vh] gap-3 overflow-auto pr-1"
       onSubmit={(event) => {
         event.preventDefault();
         publish();
       }}
     >
-      {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
-      <RequiredFieldSummary />
-      <WizardProgress
-        completed={completedFields}
-        total={requiredFields.length}
-        label={`${completedFields}/${requiredFields.length} itens obrigatórios completos`}
-      />
-      <WizardSteps steps={jobSteps} current={step} onSelect={handleStepSelect} />
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem]">
+        <label className="label">
+          Função
+          <select value={draft.function} onChange={(event) => setField("function", event.target.value as JobFunction)} className="input">
+            {functions.map((item) => <option key={item} value={item}>{functionLabel(item)}</option>)}
+          </select>
+        </label>
+        <label className="label">Quantas pessoas<input value={draft.quantity} onChange={(event) => setField("quantity", event.target.value)} type="number" min="1" className="input" /></label>
+      </div>
 
-      {step === 0 && (
-        <WizardPanel eyebrow="Etapa 1" title="Que vaga você precisa preencher?">
-          <label className="label">Título<input value={draft.title} onChange={(event) => setField("title", event.target.value)} className="input" placeholder="Garçom para beach club" /></label>
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="label">
-              Função
-              <select value={draft.function} onChange={(event) => setField("function", event.target.value as JobFunction)} className="input">
-                {functions.map((item) => <option key={item} value={item}>{functionLabel(item)}</option>)}
-              </select>
-            </label>
-            <label className="label">Quantidade<input value={draft.quantity} onChange={(event) => setField("quantity", event.target.value)} type="number" min="1" className="input" /></label>
-          </div>
-          <label className="wizard-toggle-card">
-            <input checked={draft.urgent} onChange={(event) => setField("urgent", event.target.checked)} type="checkbox" className="h-5 w-5 accent-alert" /> Marcar como vaga urgente
-          </label>
-        </WizardPanel>
-      )}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <label className="label col-span-2 sm:col-span-1">Data<input value={draft.date} onChange={(event) => setField("date", event.target.value)} type="date" className="input" /></label>
+        <label className="label">Entrada<input value={draft.startsAt} onChange={(event) => setField("startsAt", event.target.value)} type="time" className="input" /></label>
+        <label className="label">Saída<input value={draft.endsAt} onChange={(event) => setField("endsAt", event.target.value)} type="time" className="input" /></label>
+      </div>
 
-      {step === 1 && (
-        <WizardPanel eyebrow="Etapa 2" title="Quando será o turno?">
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="label">Data<input value={draft.date} onChange={(event) => setField("date", event.target.value)} type="date" className="input" /></label>
-            <label className="label">Valor da diária<input value={draft.dailyValue} onChange={(event) => setField("dailyValue", event.target.value)} type="number" min="1" className="input" placeholder="250" /></label>
-            <label className="label">Entrada<input value={draft.startsAt} onChange={(event) => setField("startsAt", event.target.value)} type="time" className="input" /></label>
-            <label className="label">Saída<input value={draft.endsAt} onChange={(event) => setField("endsAt", event.target.value)} type="time" className="input" /></label>
-            <label className="label md:col-span-2">
-              Pagamento
-              <select value={draft.paymentMethod} onChange={(event) => setField("paymentMethod", event.target.value as PaymentMethod)} className="input">
-                <option>Dinheiro</option>
-                <option>Pix</option>
-                <option>Transferência</option>
-                <option>A combinar</option>
-              </select>
-            </label>
-          </div>
-        </WizardPanel>
-      )}
+      <div className="grid grid-cols-2 gap-3">
+        <label className="label">Diária (R$)<input value={draft.dailyValue} onChange={(event) => setField("dailyValue", event.target.value)} type="number" min="1" inputMode="decimal" className="input" placeholder="150" /></label>
+        <label className="label">
+          Bairro
+          <input
+            value={draft.neighborhood}
+            onChange={(event) => setField("neighborhood", event.target.value as Neighborhood)}
+            list="neighborhoods-job"
+            className="input"
+            placeholder="Digite o bairro"
+            autoComplete="off"
+          />
+          <datalist id="neighborhoods-job">
+            {neighborhoods.map((item) => <option key={item} value={item} />)}
+          </datalist>
+        </label>
+      </div>
 
-      {step === 2 && (
-        <WizardPanel eyebrow="Etapa 3" title="Onde a pessoa vai trabalhar?">
+      <label className="flex min-h-11 items-center gap-3 rounded-lg border border-white/10 px-3 text-sm font-bold text-white">
+        <input checked={draft.urgent} onChange={(event) => setField("urgent", event.target.checked)} type="checkbox" className="h-5 w-5 accent-alert" /> É urgente (destaca a vaga)
+      </label>
+
+      <button
+        type="button"
+        className="flex min-h-11 items-center justify-between rounded-lg border border-dashed border-white/15 px-3 text-sm font-black text-aqua-300"
+        onClick={() => setShowDetails((open) => !open)}
+        aria-expanded={showDetails}
+      >
+        <span>Mais detalhes (opcional)</span>
+        {showDetails ? <ChevronUp size={17} /> : <ChevronDown size={17} />}
+      </button>
+
+      {showDetails && (
+        <div className="grid gap-3 rounded-lg border border-white/10 p-3">
+          <label className="label">Título<input value={draft.title} onChange={(event) => setField("title", event.target.value)} className="input" placeholder={`${functionLabel(draft.function)} - ${draft.neighborhood || "bairro"}`} /></label>
           <label className="label">
-            Bairro
-            <input
-              value={draft.neighborhood}
-              onChange={(event) => setField("neighborhood", event.target.value as Neighborhood)}
-              list="neighborhoods-job"
-              className="input"
-              placeholder="Digite o bairro"
-              autoComplete="off"
-            />
-            <datalist id="neighborhoods-job">
-              {neighborhoods.map((item) => <option key={item} value={item} />)}
-            </datalist>
+            Pagamento
+            <select value={draft.paymentMethod} onChange={(event) => setField("paymentMethod", event.target.value as PaymentMethod)} className="input">
+              <option>Pix</option>
+              <option>Dinheiro</option>
+              <option>Transferência</option>
+              <option>A combinar</option>
+            </select>
           </label>
-          <label className="label">Endereço aproximado<input value={draft.approximateAddress} onChange={(event) => setField("approximateAddress", event.target.value)} className="input" placeholder="Jurerê, próximo à praia" /></label>
-          <label className="label">Endereço completo<input value={draft.fullAddress} onChange={(event) => setField("fullAddress", event.target.value)} className="input" placeholder="Rua, número e referência. Só aparece após aprovação." /></label>
-          <div className="wizard-note"><MapPin size={17} /> O endereço completo continua protegido até a confirmação do profissional.</div>
-        </WizardPanel>
-      )}
-
-      {step === 3 && (
-        <WizardPanel eyebrow="Etapa 4" title="Quais requisitos a vaga precisa ter?">
+          <label className="label">Referência do local<input value={draft.approximateAddress} onChange={(event) => setField("approximateAddress", event.target.value)} className="input" placeholder="Jurerê, próximo à praia" /></label>
+          <label className="label">Endereço completo<input value={draft.fullAddress} onChange={(event) => setField("fullAddress", event.target.value)} className="input" placeholder="Rua e número. Só aparece para quem for aprovado." /></label>
           <label className="label">Uniforme<input value={draft.uniform} onChange={(event) => setField("uniform", event.target.value)} className="input" placeholder="Camisa preta e calça preta" /></label>
-          <label className="label">Experiência exigida<input value={draft.requiredExperience} onChange={(event) => setField("requiredExperience", event.target.value)} className="input" placeholder="Experiência com atendimento em salão" /></label>
-          <label className="label">Descrição<textarea value={draft.description} onChange={(event) => setField("description", event.target.value)} className="input min-h-24 py-3" placeholder="Explique a rotina, ritmo do turno e tarefas principais." /></label>
+          <label className="label">Experiência<input value={draft.requiredExperience} onChange={(event) => setField("requiredExperience", event.target.value)} className="input" placeholder="Experiência com atendimento em salão" /></label>
+          <label className="label">Descrição<textarea value={draft.description} onChange={(event) => setField("description", event.target.value)} className="input min-h-20 py-3" placeholder="Rotina, ritmo do turno, tarefas principais." /></label>
           <label className="label">Benefícios<input value={draft.benefits} onChange={(event) => setField("benefits", event.target.value)} className="input" placeholder="Alimentação, transporte" /></label>
-        </WizardPanel>
+        </div>
       )}
 
-      {step === 4 && (
-        <WizardPanel eyebrow="Etapa 5" title="Revise antes de publicar">
-          <div className="job-review-card">
-            <div>
-              {draft.urgent ? <UrgentBadge /> : <span className="badge">{draft.function}</span>}
-              <h4>{draft.title || "Título da vaga"}</h4>
-              <p>{draft.description || "Descrição da vaga ainda não preenchida."}</p>
-            </div>
-            <div className="job-review-grid">
-              <ReviewItem icon={<BriefcaseBusiness size={16} />} label="Função" value={`${draft.function} - ${draft.quantity || 0} vaga${Number(draft.quantity) === 1 ? "" : "s"}`} />
-              <ReviewItem icon={<CalendarDays size={16} />} label="Turno" value={`${draft.date || "sem data"} - ${draft.startsAt || "--:--"} às ${draft.endsAt || "--:--"}`} />
-              <ReviewItem icon={<WalletCards size={16} />} label="Diária" value={parsed.dailyValue > 0 ? formatCurrency(parsed.dailyValue) : "sem valor"} />
-              <ReviewItem icon={<MapPin size={16} />} label="Local" value={`${draft.neighborhood} - ${draft.approximateAddress || "sem endereço"}`} />
-              <ReviewItem icon={<ShieldCheck size={16} />} label="Experiência" value={draft.requiredExperience || "não preenchida"} />
-              <ReviewItem icon={<CheckCircle2 size={16} />} label="Benefícios" value={benefits.length > 0 ? benefits.join(", ") : "não preenchido"} />
-            </div>
-          </div>
-          {isEditing && editingJob && editingJob.filled > 0 && (
-            <div className="wizard-note">
-              <AlertTriangle size={17} /> {editingJob.filled} profissional(is) já confirmado(s) nesta vaga. Mudanças de data, horário ou valor podem afetá-los — avise-os se precisar.
-            </div>
-          )}
-          <div className="wizard-note">
-            <ShieldCheck size={17} />{" "}
-            {isEditing
-              ? "Ao salvar, os candidatos e freelancers compatíveis passam a ver os dados atualizados."
-              : "Ao publicar, a vaga aparece para freelancers compatíveis. Contato e endereço completo só liberam após aprovação."}
-          </div>
-        </WizardPanel>
+      {isEditing && editingJob && editingJob.filled > 0 && (
+        <div className="wizard-note">
+          <AlertTriangle size={17} /> {editingJob.filled} profissional(is) já confirmado(s) nesta vaga. Mudanças de data, horário ou valor podem afetá-los — avise-os se precisar.
+        </div>
       )}
 
-      <WizardActions
-        isFirst={isFirst}
-        isLast={isLast}
-        onBack={handleBack}
-        onNext={handleNext}
-        submitLabel={isEditing ? "Salvar alterações" : "Publicar vaga"}
-        pendingLabel={isEditing ? "Salvando..." : "Publicando..."}
-        pending={isPublishing}
-      />
+      {error && <div className="rounded-lg bg-red-50 p-3 text-sm font-bold text-alert">{error}</div>}
+
+      <button type="submit" className="primary min-h-12" disabled={isPublishing}>
+        {isPublishing ? (isEditing ? "Salvando..." : "Publicando...") : isEditing ? "Salvar alterações" : "Publicar vaga"}
+      </button>
+      {!isEditing && (
+        <p className="text-center text-xs font-semibold text-slate-400">
+          A vaga aparece para freelancers dessa função. Contato e endereço completo só liberam após a aprovação.
+        </p>
+      )}
     </form>
   );
 }
 
-function validateJobDraft(draft: JobDraft, step?: number) {
+/** Converte o rascunho em vaga, preenchendo os opcionais vazios com textos padrão legíveis. */
+function jobDraftToInput(draft: JobDraft): CreateJobInput {
+  const fn = functionLabel(draft.function);
+  const neighborhood = String(draft.neighborhood).trim();
+  return {
+    title: draft.title.trim() || `${fn} - ${neighborhood}`,
+    function: draft.function,
+    quantity: Number(draft.quantity),
+    date: draft.date,
+    startsAt: draft.startsAt,
+    endsAt: draft.endsAt,
+    dailyValue: Number(draft.dailyValue),
+    paymentMethod: draft.paymentMethod,
+    approximateAddress: draft.approximateAddress.trim() || neighborhood,
+    fullAddress: draft.fullAddress.trim() || "Combinar com a empresa após a confirmação",
+    neighborhood: neighborhood as Neighborhood,
+    uniform: draft.uniform.trim() || "A combinar",
+    requiredExperience: draft.requiredExperience.trim() || "Não exigida",
+    description: draft.description.trim() || `${fn} para turno das ${draft.startsAt} às ${draft.endsAt} (${neighborhood}).`,
+    benefits: draft.benefits
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    urgent: draft.urgent
+  };
+}
+
+function validateJobDraft(draft: JobDraft) {
   const checks = [
-    { step: 0, failed: !draft.title.trim(), label: "título" },
-    { step: 0, failed: Number(draft.quantity) <= 0, label: "quantidade" },
-    { step: 1, failed: !draft.date, label: "data" },
-    { step: 1, failed: !draft.startsAt, label: "entrada" },
-    { step: 1, failed: !draft.endsAt, label: "saída" },
-    { step: 1, failed: Number(draft.dailyValue) <= 0, label: "valor da diária" },
-    { step: 2, failed: !draft.approximateAddress.trim(), label: "endereço aproximado" },
-    { step: 2, failed: !draft.fullAddress.trim(), label: "endereço completo" },
-    { step: 3, failed: !draft.uniform.trim(), label: "uniforme" },
-    { step: 3, failed: !draft.requiredExperience.trim(), label: "experiência exigida" },
-    { step: 3, failed: !draft.description.trim(), label: "descrição" },
-    { step: 3, failed: draft.benefits.split(",").map((item) => item.trim()).filter(Boolean).length === 0, label: "benefícios" }
+    { failed: Number(draft.quantity) <= 0, label: "quantidade" },
+    { failed: !draft.date, label: "data" },
+    { failed: !draft.startsAt, label: "entrada" },
+    { failed: !draft.endsAt, label: "saída" },
+    { failed: Number(draft.dailyValue) <= 0, label: "valor da diária" },
+    { failed: !String(draft.neighborhood).trim(), label: "bairro" }
   ];
-  const missing = checks.filter((check) => check.failed && (step === undefined || check.step === step)).map((check) => check.label);
-
+  const missing = checks.filter((check) => check.failed).map((check) => check.label);
   if (missing.length > 0) {
-    return { ok: false, message: `Preencha antes de continuar: ${missing.join(", ")}.` };
+    return { ok: false, message: `Preencha: ${missing.join(", ")}.` };
   }
-
-  if ((step === undefined || step === 1) && draft.startsAt && draft.endsAt && draft.startsAt === draft.endsAt) {
+  if (draft.startsAt === draft.endsAt) {
     return { ok: false, message: "Entrada e saída não podem ser iguais." };
   }
-
   return { ok: true, message: "" };
-}
-
-function ReviewItem({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <div className="job-review-item">
-      <span>{icon} {label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function RequiredFieldSummary() {
-  return (
-    <section className="rounded-lg border border-aqua-100 bg-aqua-100 p-3">
-      <div className="flex items-center gap-2 text-sm font-black text-white">
-        <ClipboardList size={17} /> Campos obrigatórios
-      </div>
-      <div className="mt-3 grid gap-2 md:grid-cols-2">
-        {requiredJobFieldGroups.map((group) => (
-          <div key={group.title} className="rounded-lg bg-brand-dark p-3">
-            <strong className="text-xs uppercase text-aqua-700">{group.title}</strong>
-            <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{group.fields.join(", ")}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
 }
 
 function UrgentForm({ onSubmit }: { onSubmit: (input: UrgentReplacementInput) => SubmitResult | void }) {
